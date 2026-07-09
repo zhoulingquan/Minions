@@ -21,16 +21,16 @@ FROM ${NODE_IMAGE}
 # ENV variables
 ENV NODE_ENV=production
 ENV WORKSPACE_DIR=/app
-ENV QWENPAW_WORKING_DIR=/app/working
-ENV QWENPAW_SECRET_DIR=/app/working.secret
-ENV QWENPAW_BACKUP_DIR=/app/working.backups
+ENV MINIONS_WORKING_DIR=/app/working
+ENV MINIONS_SECRET_DIR=/app/working.secret
+ENV MINIONS_BACKUP_DIR=/app/working.backups
 
-# Channel filtering: use QWENPAW_DISABLED_CHANNELS (exclusion, recommended)
-# or QWENPAW_ENABLED_CHANNELS (whitelist). Override at runtime with -e.
-ARG QWENPAW_DISABLED_CHANNELS="imessage"
-ENV QWENPAW_DISABLED_CHANNELS=${QWENPAW_DISABLED_CHANNELS}
-ARG QWENPAW_ENABLED_CHANNELS=""
-ENV QWENPAW_ENABLED_CHANNELS=${QWENPAW_ENABLED_CHANNELS}
+# Channel filtering: use MINIONS_DISABLED_CHANNELS (exclusion, recommended)
+# or MINIONS_ENABLED_CHANNELS (whitelist). Override at runtime with -e.
+ARG MINIONS_DISABLED_CHANNELS="imessage"
+ENV MINIONS_DISABLED_CHANNELS=${MINIONS_DISABLED_CHANNELS}
+ARG MINIONS_ENABLED_CHANNELS=""
+ENV MINIONS_ENABLED_CHANNELS=${MINIONS_ENABLED_CHANNELS}
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -83,7 +83,7 @@ ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 # Avoid Playwright downloading its own browser when executable_path is used.
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 # Indicate running in container (used e.g. for Chromium --no-sandbox).
-ENV QWENPAW_RUNNING_IN_CONTAINER=1
+ENV MINIONS_RUNNING_IN_CONTAINER=1
 
 WORKDIR ${WORKSPACE_DIR}
 
@@ -92,16 +92,16 @@ ENV PATH="/app/venv/bin:$PATH"
 
 COPY pyproject.toml setup.py README.md ./
 COPY src ./src
-COPY website/public/docs/ ./src/qwenpaw/docs/
+COPY website/public/docs/ ./src/minions/docs/
 # Inject console dist from build stage (repo does not commit dist).
-COPY --from=console-builder /app/console/dist/ ./src/qwenpaw/console/
+COPY --from=console-builder /app/console/dist/ ./src/minions/console/
 # Speed up Python package installation with uv.
 COPY --from=uv-src /uv /bin/uv
 RUN uv pip install --no-cache-dir . && rm -rf ./build
 
 
-# QwenPaw app port (default 8088). Override at runtime with -e QWENPAW_PORT=3000.
-ENV QWENPAW_PORT=8088
+# Minions app port (default 8088). Override at runtime with -e MINIONS_PORT=3000.
+ENV MINIONS_PORT=8088
 
 COPY deploy/config/supervisord.conf.template /etc/supervisor/conf.d/supervisord.conf.template
 COPY --chmod=755 deploy/entrypoint.sh /entrypoint.sh

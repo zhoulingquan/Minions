@@ -26,7 +26,6 @@ import styles from "../../Control/Channels/index.module.less";
 import stylesACP from "./index.module.less";
 
 const BUILTIN_ACP_ORDER = [
-  "opencode",
   "qwen_code",
   "claude_code",
   "codex",

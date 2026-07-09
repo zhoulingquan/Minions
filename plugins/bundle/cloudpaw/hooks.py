@@ -49,8 +49,8 @@ def _check_iac_model_configured() -> bool:
         if not _IAC_CODE_SETTINGS_PATH.exists():
             return False
         content = _IAC_CODE_SETTINGS_PATH.read_text(encoding="utf-8")
-        # If llm_source is qwenpaw, iac-code uses QwenPaw's model config
-        if "llm_source: qwenpaw" in content:
+        # If llm_source is minions, iac-code uses Minions's model config
+        if "llm_source: minions" in content:
             return True
         return _parse_iac_settings(content)
     except Exception:
@@ -82,25 +82,25 @@ def _check_environment_ready() -> (  # pylint: disable=too-many-branches
             "❌ 阿里云 AK-SK 未配置\n"
             f"   获取 AccessKey: {_AK_CONSOLE_URL}\n"
             "   配置命令:\n"
-            "     qwenpaw env set ALIBABA_CLOUD_ACCESS_KEY_ID <your-ak>\n"
-            "     qwenpaw env set ALIBABA_CLOUD_ACCESS_KEY_SECRET <your-sk>\n"
-            "     qwenpaw env set ALIBABA_CLOUD_REGION_ID cn-hangzhou",
+            "     minions env set ALIBABA_CLOUD_ACCESS_KEY_ID <your-ak>\n"
+            "     minions env set ALIBABA_CLOUD_ACCESS_KEY_SECRET <your-sk>\n"
+            "     minions env set ALIBABA_CLOUD_REGION_ID cn-hangzhou",
         )
 
-    # 3. QwenPaw model configured?
-    qwenpaw_model_ok = False
+    # 3. Minions model configured?
+    minions_model_ok = False
     try:
-        from qwenpaw.providers.provider_manager import ProviderManager
+        from minions.providers.provider_manager import ProviderManager
 
         pm = ProviderManager()
         active_slot = pm.get_active_model()
         if active_slot and active_slot.provider_id and active_slot.model:
-            qwenpaw_model_ok = True
+            minions_model_ok = True
     except Exception:
         pass
-    if not qwenpaw_model_ok:
+    if not minions_model_ok:
         issues.append(
-            "❌ QwenPaw 模型未配置\n" + "   配置命令: qwenpaw models config",
+            "❌ Minions 模型未配置\n" + "   配置命令: minions models config",
         )
 
     # 4. iac-code model configured?
@@ -142,7 +142,7 @@ _CLOUDPAW_BASE_SUPPLEMENT = _load_prompt_file("base_supplement.md")
 # ACP permission auto-approve for trusted runners (iac-code)
 # ---------------------------------------------------------------------------
 #
-# qwenpaw v1.1.7b1 `ACPAgentConfig.trusted` is *not* actually honoured by
+# minions v1.1.7b1 `ACPAgentConfig.trusted` is *not* actually honoured by
 # `ACPHostedClient.request_permission` — every edit / write / execute tool
 # call made by iac-code still suspends and waits for an external `respond`.
 # For CloudPaw the iac-code runner is a fully trusted backend (we explicitly
@@ -225,7 +225,7 @@ def setup_acp_auto_approve() -> None:
     Non-trusted runners keep the original suspend-and-wait flow intact.
     """
     try:
-        from qwenpaw.agents.acp.client import ACPHostedClient
+        from minions.agents.acp.client import ACPHostedClient
     except ImportError as exc:
         logger.error(
             "Cannot import ACPHostedClient; "
@@ -327,23 +327,23 @@ def setup_acp_auto_approve() -> None:
 def setup_tool_and_prompt_hooks() -> (  # pylint: disable=too-many-statements
     None
 ):
-    """Monkey-patch QwenPawAgent to add cloudpaw tools and prompt sections."""
+    """Monkey-patch MinionsAgent to add cloudpaw tools and prompt sections."""
     # IaC operations are delegated to iac-code via the built-in async
-    # `delegate_external_agent` tool (qwenpaw >= v1.1.7b1).  No CloudPaw-side
+    # `delegate_external_agent` tool (minions >= v1.1.7b1).  No CloudPaw-side
     # ACP wrapper is required — the plugin only enables the built-in tool
     # with `async_execution=True` via constants.py.
     try:
-        from qwenpaw.agents.react_agent import QwenPawAgent
-        from qwenpaw.runtime.tool_guard import GuardedFunctionTool
+        from minions.agents.react_agent import MinionsAgent
+        from minions.runtime.tool_guard import GuardedFunctionTool
     except ImportError as exc:
         logger.error(
-            "Cannot import QwenPawAgent; tool/prompt hooks skipped: %s",
+            "Cannot import MinionsAgent; tool/prompt hooks skipped: %s",
             exc,
         )
         return
 
-    _original_create_toolkit = QwenPawAgent._create_toolkit
-    _original_build_sys_prompt = QwenPawAgent._build_sys_prompt
+    _original_create_toolkit = MinionsAgent._create_toolkit
+    _original_build_sys_prompt = MinionsAgent._build_sys_prompt
 
     def _append_tool(toolkit, tool_fn, agent_id):
         """Append a plugin tool to the toolkit's basic group, skipping if
@@ -446,7 +446,7 @@ def setup_tool_and_prompt_hooks() -> (  # pylint: disable=too-many-statements
 
         return sys_prompt
 
-    _original_interrupt = QwenPawAgent.interrupt
+    _original_interrupt = MinionsAgent.interrupt
 
     async def _patched_interrupt(self, msg=None):
         """Cancel async tasks on stop (e.g. delegate_external_agent)."""
@@ -463,11 +463,11 @@ def setup_tool_and_prompt_hooks() -> (  # pylint: disable=too-many-statements
                     )
         await _original_interrupt(self, msg)
 
-    QwenPawAgent._create_toolkit = _patched_create_toolkit
-    QwenPawAgent._build_sys_prompt = _patched_build_sys_prompt
-    QwenPawAgent.interrupt = _patched_interrupt
+    MinionsAgent._create_toolkit = _patched_create_toolkit
+    MinionsAgent._build_sys_prompt = _patched_build_sys_prompt
+    MinionsAgent.interrupt = _patched_interrupt
     logger.info(
-        "Patched QwenPawAgent with cloudpaw tools, prompt hooks, "
+        "Patched MinionsAgent with cloudpaw tools, prompt hooks, "
         "and interrupt",
     )
 
@@ -492,7 +492,7 @@ def _setup_a2a_query_rewrite() -> None:  # pylint: disable=too-many-statements
     removed as part of Runtime 2.0.
     """
     try:
-        from qwenpaw.app._app import DynamicMultiAgentRunner
+        from minions.app._app import DynamicMultiAgentRunner
     except ImportError as exc:
         logger.warning(
             "Cannot import DynamicMultiAgentRunner; "
@@ -565,7 +565,7 @@ def _wire_existing_channels(patched_fn) -> None:
     importable (CLI-only mode, headless runner).
     """
     try:
-        from qwenpaw.app._app import app as fastapi_app
+        from minions.app._app import app as fastapi_app
     except Exception:
         logger.debug("CloudPaw: FastAPI app not importable; skip rewire")
         return
@@ -621,7 +621,7 @@ def _patch_make_process_factory(patched_fn) -> None:
     """Wrap ``make_process_from_runner`` so workspaces created after this
     point also receive the patched proxy instead of a bound method."""
     try:
-        from qwenpaw.app.channels import utils as ch_utils
+        from minions.app.channels import utils as ch_utils
     except Exception:
         logger.debug(
             "CloudPaw: channels.utils not importable; skip factory patch",
@@ -709,7 +709,7 @@ def _patch_stream_task_timeout() -> None:
     provisioning workflows that can take 10+ minutes.
     """
     try:
-        from qwenpaw.app._app import agent_app
+        from minions.app._app import agent_app
 
         old = agent_app.stream_task_timeout
         agent_app.stream_task_timeout = _CLOUDPAW_STREAM_TASK_TIMEOUT
@@ -735,8 +735,8 @@ def _patch_mission_master_prompt() -> None:
     builder is called unchanged.
     """
     try:
-        from qwenpaw.modes.mission import prompts as mission_prompts
-        from qwenpaw.modes.mission.prompts import (
+        from minions.modes.mission import prompts as mission_prompts
+        from minions.modes.mission.prompts import (
             WORKER_PROMPT_TEMPLATE,
             _build_git_sections,
             build_master_prompt as _original_build_master_prompt,
@@ -831,7 +831,7 @@ def _patch_mission_master_prompt() -> None:
     mission_prompts.build_master_prompt = _patched_build_master_prompt
 
     try:
-        from qwenpaw.modes.mission import handler as mission_handler
+        from minions.modes.mission import handler as mission_handler
 
         mission_handler.build_master_prompt = _patched_build_master_prompt
     except (ImportError, AttributeError):

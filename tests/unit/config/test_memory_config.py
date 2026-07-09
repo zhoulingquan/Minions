@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Tests for memory backend configuration defaults."""
 
-from qwenpaw.config.config import ADBPGMemoryConfig
+from minions.config.config import ADBPGMemoryConfig
 
 
 def test_adbpg_auto_memory_search_defaults():

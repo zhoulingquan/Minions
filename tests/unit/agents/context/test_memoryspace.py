@@ -12,13 +12,13 @@ from pathlib import Path
 
 import pytest
 
-from qwenpaw.agents.context.scroll.history import HistoryStore
-from qwenpaw.agents.context.scroll.memoryspace import (
+from minions.agents.context.scroll.history import HistoryStore
+from minions.agents.context.scroll.memoryspace import (
     MemorySpace,
     fts_match_query,
     sanitize_suffix,
 )
-from qwenpaw.agents.context.types import LogEntry
+from minions.agents.context.types import LogEntry
 
 
 @pytest.fixture
@@ -270,7 +270,7 @@ def test_active_turn_floor_ignores_continuation_stubs(tmp_path: Path):
             "context_msg",
             "user",
             "Continue working on the task.",
-            {"qwenpaw_tag": "loop_continuation"},
+            {"minions_tag": "loop_continuation"},
         ),
         ("a2", "model_turn", "assistant", "tanks continued reply", None),
     ]

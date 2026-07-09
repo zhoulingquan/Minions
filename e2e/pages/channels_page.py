@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-QwenPaw Channels page object.
+Minions Channels page object.
 
 Wraps all interactions on the Channels page and exposes business-level methods.
 """
@@ -29,7 +29,7 @@ class ChannelsPage(BasePage):
     - Save/cancel channel configuration
     """
 
-    PAGE_TITLE = "QwenPaw Console"
+    PAGE_TITLE = "Minions Console"
     PAGE_URL = f"{config.base_url}/channels"
 
     # ========== Selector definitions ==========
@@ -58,22 +58,22 @@ class ChannelsPage(BasePage):
     CHANNEL_BOT_PREFIX = '[class*=channelCard] [class*=botPrefix]'
 
     # Edit drawer (match only the visible drawer to avoid strict mode violations)
-    CHANNEL_DRAWER = '.qwenpaw-drawer:visible, .ant-drawer:visible'
-    DRAWER_TITLE = '.qwenpaw-drawer-title, .ant-drawer-title'
-    DRAWER_CLOSE_BTN = '.qwenpaw-drawer-close, .ant-drawer-close'
+    CHANNEL_DRAWER = '.minions-drawer:visible, .ant-drawer:visible'
+    DRAWER_TITLE = '.minions-drawer-title, .ant-drawer-title'
+    DRAWER_CLOSE_BTN = '.minions-drawer-close, .ant-drawer-close'
 
     # Form fields
-    FORM_ITEM = '.ant-form-item, .qwenpaw-form-item'
-    FORM_LABEL = '.ant-form-item-label, .qwenpaw-form-item-label'
-    FORM_INPUT = 'input.ant-input, input.qwenpaw-input'
-    FORM_SWITCH = '.ant-switch, .qwenpaw-switch'
-    FORM_SELECT = '.ant-select-selector, .qwenpaw-select-selector'
-    FORM_SUBMIT_BTN = '.qwenpaw-drawer button:has-text("保 存"), .qwenpaw-drawer button:has-text("保存"), .qwenpaw-drawer button:has-text("Save"), .ant-drawer button:has-text("Save")'
-    FORM_CANCEL_BTN = '.qwenpaw-drawer button:has-text("取 消"), .qwenpaw-drawer button:has-text("取消"), .qwenpaw-drawer button:has-text("Cancel"), .ant-drawer button:has-text("Cancel")'
+    FORM_ITEM = '.ant-form-item, .minions-form-item'
+    FORM_LABEL = '.ant-form-item-label, .minions-form-item-label'
+    FORM_INPUT = 'input.ant-input, input.minions-input'
+    FORM_SWITCH = '.ant-switch, .minions-switch'
+    FORM_SELECT = '.ant-select-selector, .minions-select-selector'
+    FORM_SUBMIT_BTN = '.minions-drawer button:has-text("保 存"), .minions-drawer button:has-text("保存"), .minions-drawer button:has-text("Save"), .ant-drawer button:has-text("Save")'
+    FORM_CANCEL_BTN = '.minions-drawer button:has-text("取 消"), .minions-drawer button:has-text("取消"), .minions-drawer button:has-text("Cancel"), .ant-drawer button:has-text("Cancel")'
 
     # Channel-specific field selectors (composed dynamically per channel type)
-    BOT_PREFIX_INPUT = '.qwenpaw-drawer input[placeholder*="@bot"], .qwenpaw-drawer input[placeholder*="bot prefix" i], input[placeholder*="Bot Prefix" i], input[placeholder*="机器人前缀" i]'
-    ENABLE_TOGGLE = '.ant-switch, .qwenpaw-switch'
+    BOT_PREFIX_INPUT = '.minions-drawer input[placeholder*="@bot"], .minions-drawer input[placeholder*="bot prefix" i], input[placeholder*="Bot Prefix" i], input[placeholder*="机器人前缀" i]'
+    ENABLE_TOGGLE = '.ant-switch, .minions-switch'
 
     # Toast messages and loading state (inherited from BasePage; no redefinition needed)
 
@@ -279,7 +279,7 @@ class ChannelsPage(BasePage):
         timeout = timeout or self.timeout
         logger.info("Waiting for drawer to open")
         try:
-            self.page.locator('.qwenpaw-drawer, .ant-drawer').first.wait_for(state="visible", timeout=timeout)
+            self.page.locator('.minions-drawer, .ant-drawer').first.wait_for(state="visible", timeout=timeout)
             return True
         except Exception:
             return False
@@ -332,8 +332,8 @@ class ChannelsPage(BasePage):
         """
         logger.info(f"Toggling enable to: {enable}")
         # Locate the switch inside the drawer
-        drawer = self.page.locator('.qwenpaw-drawer, .ant-drawer')
-        switch = drawer.locator('.qwenpaw-switch, .ant-switch').first
+        drawer = self.page.locator('.minions-drawer, .ant-drawer')
+        switch = drawer.locator('.minions-switch, .ant-switch').first
 
         # Read the current state
         aria_checked = switch.get_attribute('aria-checked') or 'false'
@@ -388,7 +388,7 @@ class ChannelsPage(BasePage):
     def has_form_validation_errors(self) -> bool:
         """Check whether the form has validation errors."""
         errors = self.page.locator(
-            '.qwenpaw-form-item-explain-error, .ant-form-item-explain-error'
+            '.minions-form-item-explain-error, .ant-form-item-explain-error'
         )
         count = errors.count()
         if count > 0:

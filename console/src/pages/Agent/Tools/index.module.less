@@ -15,7 +15,7 @@
   flex-shrink: 0;
 
   :global {
-    .qwenpaw-switch-inner-unchecked {
+    .minions-switch-inner-unchecked {
       color: #000000 !important;
     }
   }
@@ -156,7 +156,7 @@
   box-sizing: border-box;
   transition: all 0.2s ease-in-out;
 
-  :global(.qwenpaw-card-body) {
+  :global(.minions-card-body) {
     padding: 0 !important;
   }
 
@@ -403,41 +403,41 @@
 
   /* Switch component in dark mode */
   .headerAction {
-    :global(.qwenpaw-switch) {
+    :global(.minions-switch) {
       background-color: rgba(255, 255, 255, 0.15);
 
-      &:hover:not(.qwenpaw-switch-disabled) {
+      &:hover:not(.minions-switch-disabled) {
         background-color: rgba(255, 255, 255, 0.25);
       }
 
-      &.qwenpaw-switch-disabled {
+      &.minions-switch-disabled {
         background-color: rgba(255, 255, 255, 0.08);
         opacity: 0.65;
 
-        :global(.qwenpaw-switch-inner) {
+        :global(.minions-switch-inner) {
           color: rgba(255, 255, 255, 0.45);
         }
       }
     }
 
-    :global(.qwenpaw-switch-checked) {
+    :global(.minions-switch-checked) {
       background-color: #ff7f16;
 
-      &:hover:not(.qwenpaw-switch-disabled) {
+      &:hover:not(.minions-switch-disabled) {
         background-color: #ff9d4d;
       }
 
-      &.qwenpaw-switch-disabled {
+      &.minions-switch-disabled {
         background-color: rgba(255, 127, 22, 0.35);
         opacity: 0.65;
 
-        :global(.qwenpaw-switch-inner) {
+        :global(.minions-switch-inner) {
           color: rgba(255, 255, 255, 0.55);
         }
       }
     }
 
-    :global(.qwenpaw-switch-inner) {
+    :global(.minions-switch-inner) {
       color: rgba(255, 255, 255, 0.85);
     }
   }

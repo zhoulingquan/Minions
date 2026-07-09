@@ -7,7 +7,7 @@ import httpx
 from agentscope.tool import Toolkit
 
 from agentscope.tool import FunctionTool
-from qwenpaw.agents.tools import agent_management
+from minions.agents.tools import agent_management
 
 
 class _FakeResponse:

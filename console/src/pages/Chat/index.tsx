@@ -540,7 +540,7 @@ function renderSuggestionLabel(command: string, description?: string) {
 
 const DEFAULT_USER_ID = "default";
 const DEFAULT_CHANNEL = "console";
-const WIDE_MODE_STORAGE_KEY = "qwenpaw_chat_wide_mode";
+const WIDE_MODE_STORAGE_KEY = "minions_chat_wide_mode";
 
 function isSkillAvailableInConsole(skill: SkillSpec): boolean {
   if (!skill.enabled) return false;
@@ -878,7 +878,7 @@ function useMessageHistoryNavigation(
 // Chat input draft persistence
 // ---------------------------------------------------------------------------
 
-const DRAFT_STORAGE_KEY_PREFIX = "qwenpaw_chat_input_draft";
+const DRAFT_STORAGE_KEY_PREFIX = "minions_chat_input_draft";
 let draftSuppressed = false;
 
 function getDraftStorageKey(agentId?: string): string {
@@ -1075,7 +1075,7 @@ const timestampStyle: React.CSSProperties = {
   whiteSpace: "nowrap",
 };
 
-const HISTORY_PANEL_STORAGE_KEY = "qwenpaw_history_panel_open";
+const HISTORY_PANEL_STORAGE_KEY = "minions_history_panel_open";
 
 export default function ChatPage() {
   const { t, i18n } = useTranslation();
@@ -2741,8 +2741,8 @@ export default function ChatPage() {
       },
       welcome: {
         ...i18nConfig.welcome,
-        nick: extNick ?? "QwenPaw",
-        avatar: extAvatar ?? "/qwenpaw.png",
+        nick: extNick ?? "Minions",
+        avatar: extAvatar ?? "/minions.png",
         ...(extGreeting !== undefined ? { greeting: extGreeting } : {}),
         ...(extDescription !== undefined
           ? { description: extDescription }

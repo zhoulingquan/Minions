@@ -341,9 +341,9 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
       location.pathname.startsWith("/chat") ||
       location.pathname.startsWith("/coding");
     if (onChatPage) {
-      window.dispatchEvent(new CustomEvent("qwenpaw:sidebar-new-chat"));
+      window.dispatchEvent(new CustomEvent("minions:sidebar-new-chat"));
     } else {
-      sessionStorage.setItem("qwenpaw_pending_new_chat", "1");
+      sessionStorage.setItem("minions_pending_new_chat", "1");
       const mode = codingMode ? "coding" : "chat";
       navigate(`/${mode}`);
     }

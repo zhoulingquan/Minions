@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from agentscope.message import Msg, TextBlock
 
-from qwenpaw.agents.middlewares import MemoryMiddleware
+from minions.agents.middlewares import MemoryMiddleware
 
 
 # ---------------------------------------------------------------------------

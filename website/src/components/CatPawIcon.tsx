@@ -1,5 +1,5 @@
 /**
- * QwenPaw branding logo (logo.png). Favicon uses qwenpaw-symbol.svg.
+ * Minions branding logo (logo.png). Favicon uses minions-symbol.svg.
  */
 interface CatPawIconProps {
   size: number;

@@ -64,10 +64,10 @@ def patch_mcp_runtime_clients(monkeypatch) -> None:
     FakeStdIOClient.instances.clear()
     FakeHttpClient.instances.clear()
     monkeypatch.setattr(
-        "qwenpaw.drivers.handlers.mcp.StdIOStatefulClient",
+        "minions.drivers.handlers.mcp.StdIOStatefulClient",
         FakeStdIOClient,
     )
     monkeypatch.setattr(
-        "qwenpaw.drivers.handlers.mcp.HttpStatefulClient",
+        "minions.drivers.handlers.mcp.HttpStatefulClient",
         FakeHttpClient,
     )

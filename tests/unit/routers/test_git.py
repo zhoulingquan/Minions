@@ -7,8 +7,8 @@ from typing import Any
 
 import pytest
 
-from qwenpaw.app.routers import git as git_router
-from qwenpaw.utils.command_runner import CommandResult
+from minions.app.routers import git as git_router
+from minions.utils.command_runner import CommandResult
 
 
 @pytest.mark.asyncio

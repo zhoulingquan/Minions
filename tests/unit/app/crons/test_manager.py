@@ -18,8 +18,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from qwenpaw.app.crons.manager import CronManager
-from qwenpaw.app.crons.models import CronJobState, ScheduleSpec
+from minions.app.crons.manager import CronManager
+from minions.app.crons.models import CronJobState, ScheduleSpec
 from tests.unit.app.conftest import (
     InMemoryJobRepository,
     make_cron_job_spec,

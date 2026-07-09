@@ -1,5 +1,5 @@
 /**
- * install.test.ts — validates the public window.QwenPaw.chat API surface.
+ * install.test.ts — validates the public window.Minions.chat API surface.
  *
  * Focuses on the sugar/wiring layer in install.ts; the underlying registry
  * mechanics (LIFO, audit, disposeAll) are covered by chatExtensions.test.ts.
@@ -12,19 +12,19 @@ import { chatExtensions } from "../registry/chatExtensions";
 import { auditStore } from "../registry/audit";
 
 beforeEach(() => {
-  // Reset the window.QwenPaw namespace before each test so installHostSdk
+  // Reset the window.Minions namespace before each test so installHostSdk
   // attaches fresh references.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (window as any).QwenPaw = undefined;
+  (window as any).Minions = undefined;
   installHostExternals();
   installHostSdk();
   chatExtensions.__resetForTests();
   auditStore.clear();
 });
 
-describe("window.QwenPaw.chat.welcome", () => {
+describe("window.Minions.chat.welcome", () => {
   it("set(partial) writes multiple scalar fields", () => {
-    window.QwenPaw.chat!.welcome.set("p1", {
+    window.Minions.chat!.welcome.set("p1", {
       greeting: "Hi",
       avatar: "/a.png",
     });
@@ -35,7 +35,7 @@ describe("window.QwenPaw.chat.welcome", () => {
   });
 
   it("set() returns a Disposable that reverts every field it wrote", () => {
-    const d = window.QwenPaw.chat!.welcome.set("p1", {
+    const d = window.Minions.chat!.welcome.set("p1", {
       greeting: "Hi",
       avatar: "/a.png",
     });
@@ -46,15 +46,15 @@ describe("window.QwenPaw.chat.welcome", () => {
   });
 
   it("set() from different plugins on different fields coexist (no overwrite)", () => {
-    window.QwenPaw.chat!.welcome.set("p1", { greeting: "P1 hi" });
-    window.QwenPaw.chat!.welcome.set("p2", { avatar: "/p2.png" });
+    window.Minions.chat!.welcome.set("p1", { greeting: "P1 hi" });
+    window.Minions.chat!.welcome.set("p2", { avatar: "/p2.png" });
     const snap = chatExtensions.getScalarSnapshot();
     expect(snap["welcome.greeting"]?.pluginId).toBe("p1");
     expect(snap["welcome.avatar"]?.pluginId).toBe("p2");
   });
 
   it("render(node) writes a welcome.render scalar", () => {
-    window.QwenPaw.chat!.welcome.render("p1", "<plain node>");
+    window.Minions.chat!.welcome.render("p1", "<plain node>");
     const entry = chatExtensions.getScalarSnapshot()["welcome.render"];
     expect(entry?.pluginId).toBe("p1");
     expect(typeof entry?.value).toBe("function");
@@ -62,16 +62,16 @@ describe("window.QwenPaw.chat.welcome", () => {
 
   it("render(fn) keeps the fn as-is", () => {
     const fn = () => null as never;
-    window.QwenPaw.chat!.welcome.render("p1", fn);
+    window.Minions.chat!.welcome.render("p1", fn);
     expect(chatExtensions.getScalarSnapshot()["welcome.render"]?.value).toBe(
       fn,
     );
   });
 });
 
-describe("window.QwenPaw.chat.leftHeader", () => {
+describe("window.Minions.chat.leftHeader", () => {
   it("set(partial) writes header.leftLogo / header.leftTitle", () => {
-    window.QwenPaw.chat!.leftHeader.set("p1", {
+    window.Minions.chat!.leftHeader.set("p1", {
       title: "MyApp",
       logo: "/logo.png",
     });
@@ -81,23 +81,23 @@ describe("window.QwenPaw.chat.leftHeader", () => {
   });
 
   it("render(node) writes header.leftHeader.render scalar", () => {
-    window.QwenPaw.chat!.leftHeader.render("p1", "<custom>");
+    window.Minions.chat!.leftHeader.render("p1", "<custom>");
     expect(
       chatExtensions.getScalarSnapshot()["header.leftHeader.render"]?.value,
     ).toBe("<custom>");
   });
 });
 
-describe("window.QwenPaw.chat.theme / sender", () => {
+describe("window.Minions.chat.theme / sender", () => {
   it("theme.set(partial) writes theme.colorPrimary", () => {
-    window.QwenPaw.chat!.theme.set("p1", { colorPrimary: "#123456" });
+    window.Minions.chat!.theme.set("p1", { colorPrimary: "#123456" });
     expect(
       chatExtensions.getScalarSnapshot()["theme.colorPrimary"]?.value,
     ).toBe("#123456");
   });
 
   it("sender.set(partial) writes placeholder and disclaimer", () => {
-    window.QwenPaw.chat!.sender.set("p1", {
+    window.Minions.chat!.sender.set("p1", {
       placeholder: "Ask anything",
       disclaimer: "Beta",
     });
@@ -107,24 +107,24 @@ describe("window.QwenPaw.chat.theme / sender", () => {
   });
 
   it("sender.addPrefix appends to sender.prefix list", () => {
-    window.QwenPaw.chat!.sender.addPrefix("p1", "<icon>");
+    window.Minions.chat!.sender.addPrefix("p1", "<icon>");
     const list = chatExtensions.getListSnapshot()["sender.prefix"];
     expect(list).toHaveLength(1);
     expect(list[0].pluginId).toBe("p1");
   });
 });
 
-describe("window.QwenPaw.chat.rightHeader / actions", () => {
+describe("window.Minions.chat.rightHeader / actions", () => {
   it("rightHeader.add appends, never replaces", () => {
-    window.QwenPaw.chat!.rightHeader.add("p1", "btn1", { order: 200 });
-    window.QwenPaw.chat!.rightHeader.add("p2", "btn2", { order: 300 });
+    window.Minions.chat!.rightHeader.add("p1", "btn1", { order: 200 });
+    window.Minions.chat!.rightHeader.add("p2", "btn2", { order: 300 });
     const list = chatExtensions.getListSnapshot()["header.rightHeader"];
     expect(list.map((e) => e.pluginId)).toEqual(["p1", "p2"]);
   });
 
   it("actions.add and requestActions.add are separate lists", () => {
-    window.QwenPaw.chat!.actions.add("p1", { id: "a1", onClick: () => {} });
-    window.QwenPaw.chat!.requestActions.add("p1", {
+    window.Minions.chat!.actions.add("p1", { id: "a1", onClick: () => {} });
+    window.Minions.chat!.requestActions.add("p1", {
       id: "r1",
       onClick: () => {},
     });
@@ -134,14 +134,14 @@ describe("window.QwenPaw.chat.rightHeader / actions", () => {
   });
 });
 
-describe("window.QwenPaw.chat.requestPayload", () => {
+describe("window.Minions.chat.requestPayload", () => {
   it("add writes a request payload transform list entry", () => {
     const transform = ({ payload }: { payload: Record<string, unknown> }) => ({
       ...payload,
       request_context: { source: "test" },
     });
 
-    window.QwenPaw.chat!.requestPayload.add("p1", transform, {
+    window.Minions.chat!.requestPayload.add("p1", transform, {
       id: "p1.payload",
       order: 25,
     });
@@ -155,32 +155,32 @@ describe("window.QwenPaw.chat.requestPayload", () => {
   });
 });
 
-describe("window.QwenPaw.host.* hooks attached", () => {
+describe("window.Minions.host.* hooks attached", () => {
   it("attaches the four hooks + fetch + imperative getters", () => {
-    expect(typeof window.QwenPaw.host.useTheme).toBe("function");
-    expect(typeof window.QwenPaw.host.useLocale).toBe("function");
-    expect(typeof window.QwenPaw.host.useSelectedAgent).toBe("function");
-    expect(typeof window.QwenPaw.host.useCurrentSession).toBe("function");
-    expect(typeof window.QwenPaw.host.getSelectedAgentId).toBe("function");
-    expect(typeof window.QwenPaw.host.getCurrentSessionId).toBe("function");
-    expect(typeof window.QwenPaw.host.fetch).toBe("function");
+    expect(typeof window.Minions.host.useTheme).toBe("function");
+    expect(typeof window.Minions.host.useLocale).toBe("function");
+    expect(typeof window.Minions.host.useSelectedAgent).toBe("function");
+    expect(typeof window.Minions.host.useCurrentSession).toBe("function");
+    expect(typeof window.Minions.host.getSelectedAgentId).toBe("function");
+    expect(typeof window.Minions.host.getCurrentSessionId).toBe("function");
+    expect(typeof window.Minions.host.fetch).toBe("function");
   });
 });
 
-describe("window.QwenPaw.audit", () => {
+describe("window.Minions.audit", () => {
   it("overrides() returns the audit ring buffer", () => {
-    window.QwenPaw.chat!.welcome.set("p1", { greeting: "Hi" });
-    const records = window.QwenPaw.audit!.overrides();
+    window.Minions.chat!.welcome.set("p1", { greeting: "Hi" });
+    const records = window.Minions.audit!.overrides();
     expect(records.length).toBeGreaterThan(0);
     expect(records.some((r) => r.field === "welcome.greeting")).toBe(true);
   });
 });
 
-describe("window.QwenPaw.chat.request / response", () => {
+describe("window.Minions.chat.request / response", () => {
   it("request.render writes a request.render scalar", () => {
     const fn = ({ fallback }: { fallback: () => React.ReactElement }) =>
       fallback();
-    window.QwenPaw.chat!.request.render("p1", fn);
+    window.Minions.chat!.request.render("p1", fn);
     expect(chatExtensions.getScalarSnapshot()["request.render"]?.value).toBe(
       fn,
     );
@@ -189,14 +189,14 @@ describe("window.QwenPaw.chat.request / response", () => {
   it("response.render writes a response.render scalar", () => {
     const fn = ({ fallback }: { fallback: () => React.ReactElement }) =>
       fallback();
-    window.QwenPaw.chat!.response.render("p1", fn);
+    window.Minions.chat!.response.render("p1", fn);
     expect(chatExtensions.getScalarSnapshot()["response.render"]?.value).toBe(
       fn,
     );
   });
 
   it("response.set writes the assistant identity through welcome avatar/nick", () => {
-    window.QwenPaw.chat!.response.set("p1", {
+    window.Minions.chat!.response.set("p1", {
       avatar: "/bot.png",
       nick: "My Bot",
     });
@@ -209,8 +209,8 @@ describe("window.QwenPaw.chat.request / response", () => {
   it("request.prepend / append append to their respective lists", () => {
     const r1 = () => null;
     const r2 = () => null;
-    window.QwenPaw.chat!.request.prepend("p1", r1, { id: "p1.pre" });
-    window.QwenPaw.chat!.request.append("p1", r2, { id: "p1.post" });
+    window.Minions.chat!.request.prepend("p1", r1, { id: "p1.pre" });
+    window.Minions.chat!.request.append("p1", r2, { id: "p1.post" });
 
     const snap = chatExtensions.getListSnapshot();
     expect(snap["request.prepend"].map((e) => e.item.id)).toEqual(["p1.pre"]);
@@ -218,8 +218,8 @@ describe("window.QwenPaw.chat.request / response", () => {
   });
 
   it("response.prepend / append from multiple plugins coexist", () => {
-    window.QwenPaw.chat!.response.prepend("p1", () => null, { id: "a" });
-    window.QwenPaw.chat!.response.prepend("p2", () => null, { id: "b" });
+    window.Minions.chat!.response.prepend("p1", () => null, { id: "a" });
+    window.Minions.chat!.response.prepend("p2", () => null, { id: "b" });
     expect(
       chatExtensions
         .getListSnapshot()
@@ -228,7 +228,7 @@ describe("window.QwenPaw.chat.request / response", () => {
   });
 
   it("returned Disposables actually clean up the slots", () => {
-    const d = window.QwenPaw.chat!.request.prepend("p1", () => null, {
+    const d = window.Minions.chat!.request.prepend("p1", () => null, {
       id: "x",
     });
     expect(chatExtensions.getListSnapshot()["request.prepend"]).toHaveLength(1);
@@ -239,17 +239,17 @@ describe("window.QwenPaw.chat.request / response", () => {
 
 describe("disposeAll", () => {
   it("clears every registration from the named plugin", () => {
-    window.QwenPaw.chat!.welcome.set("p1", { greeting: "Hi", avatar: "/x" });
-    window.QwenPaw.chat!.actions.add("p1", {
+    window.Minions.chat!.welcome.set("p1", { greeting: "Hi", avatar: "/x" });
+    window.Minions.chat!.actions.add("p1", {
       id: "p1.a",
       onClick: () => {},
     });
-    window.QwenPaw.chat!.actions.add("p2", {
+    window.Minions.chat!.actions.add("p2", {
       id: "p2.a",
       onClick: () => {},
     });
 
-    window.QwenPaw.chat!.disposeAll("p1");
+    window.Minions.chat!.disposeAll("p1");
 
     const snap = chatExtensions.getScalarSnapshot();
     expect(snap["welcome.greeting"]).toBeUndefined();

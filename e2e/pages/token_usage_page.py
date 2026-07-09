@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-QwenPaw Token Usage page object.
+Minions Token Usage page object.
 
 Wraps all interactions on the token usage statistics page and exposes
 business-level methods.
@@ -33,11 +33,11 @@ class TokenUsagePage(BasePage):
     # ========== Selector definitions ==========
 
     # Table-related selectors
-    USAGE_TABLE = ".qwenpaw-table"
-    USAGE_ROW = ".qwenpaw-table-tbody tr"
+    USAGE_TABLE = ".minions-table"
+    USAGE_ROW = ".minions-table-tbody tr"
 
     # Date picker
-    DATE_PICKER = ".qwenpaw-picker"
+    DATE_PICKER = ".minions-picker"
 
     # Chart container
     CHART_CONTAINER = 'div[class*="chart"], canvas'

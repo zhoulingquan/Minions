@@ -14,8 +14,8 @@ sandbox backend is needed.
 import pytest
 from agentscope.message import ToolResultState
 
-from qwenpaw.agents.context.scroll.history import HistoryStore
-from qwenpaw.agents.context.scroll.repl import make_recall_history_python
+from minions.agents.context.scroll.history import HistoryStore
+from minions.agents.context.scroll.repl import make_recall_history_python
 
 
 @pytest.fixture

@@ -11,13 +11,13 @@ from __future__ import annotations
 
 import asyncio
 
-from qwenpaw.app.approvals.display import approval_display_fields
-from qwenpaw.app.approvals.service import ApprovalService, PendingApproval
-from qwenpaw.security.tool_guard.approval import (
+from minions.app.approvals.display import approval_display_fields
+from minions.app.approvals.service import ApprovalService, PendingApproval
+from minions.security.tool_guard.approval import (
     ApprovalDecision,
     ApprovalScope,
 )
-from qwenpaw.security.tool_guard.models import (
+from minions.security.tool_guard.models import (
     GuardSeverity,
     ToolGuardResult,
 )

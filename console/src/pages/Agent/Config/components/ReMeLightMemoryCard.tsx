@@ -11,7 +11,7 @@ import {
 import { useTranslation } from "react-i18next";
 import styles from "../index.module.less";
 
-// Keep in sync with src/qwenpaw/agents/memory/reme_config.py
+// Keep in sync with src/minions/agents/memory/reme_config.py
 // _OPENAI_COMPAT_EMBEDDING_BACKENDS.
 const OPENAI_COMPAT_EMBEDDING_BACKENDS = new Set([
   "openai",

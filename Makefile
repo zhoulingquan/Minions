@@ -25,7 +25,7 @@ test-integration:
 # Full coverage (all modules)
 coverage-full:
 	$(PYTEST) tests/unit/ tests/integration/ -v \
-		--cov=src/qwenpaw \
+		--cov=src/minions \
 		--cov-report=term-missing \
 		--cov-report=html
 

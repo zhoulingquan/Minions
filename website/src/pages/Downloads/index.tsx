@@ -63,8 +63,8 @@ async function fetchProductIndex(
 }
 
 export default function Downloads() {
-  const { t, i18n } = useTranslation();
-  const isZh = i18n.resolvedLanguage === "zh";
+  const { t } = useTranslation();
+  const isZh = true;
   const { docsPath } = useSiteConfig();
   const [loading, setLoading] = useState(true);
   const [isEmpty, setIsEmpty] = useState(false);

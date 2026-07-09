@@ -35,11 +35,11 @@ dist/
 # Console frontend build (generated in Docker/CI, do not commit)
 console/.cursor/
 console/.wiki/
-src/qwenpaw/console/dist/
-src/qwenpaw/console/
+src/minions/console/dist/
+src/minions/console/
 
 # Docs bundled at build time (copied from website/public/docs/)
-src/qwenpaw/docs/
+src/minions/docs/
 
 # frontend (website)
 website/node_modules/
@@ -133,7 +133,7 @@ src/.hypothesis/
 
 # Worktrees
 .worktrees/
-.qwenpaw/worktrees/
+.minions/worktrees/
 
 # Local File
 /localfile/

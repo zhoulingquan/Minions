@@ -112,7 +112,7 @@ function ChannelPill({ iconSrc, name }: { iconSrc: string; name: string }) {
 
 export function Channels() {
   const { t, i18n } = useTranslation();
-  const isZh = i18n.resolvedLanguage === "zh";
+  const isZh = true;
 
   return (
     <motion.section
@@ -165,7 +165,7 @@ export function Channels() {
 
       <motion.div className="relative mt-12 w-full" variants={itemVariants}>
         <div className="group/row-top overflow-hidden">
-          <div className="inline-flex w-max items-center gap-3 whitespace-nowrap py-1 will-change-transform animate-[qwenpaw-channels-marquee-right_72s_linear_infinite] group-hover/row-top:[animation-play-state:paused]">
+          <div className="inline-flex w-max items-center gap-3 whitespace-nowrap py-1 will-change-transform animate-[minions-channels-marquee-right_72s_linear_infinite] group-hover/row-top:[animation-play-state:paused]">
             {[...TOP_CHANNELS, ...TOP_CHANNELS].map((item, idx) => (
               <ChannelPill
                 key={`${item.name}-${idx}`}
@@ -177,7 +177,7 @@ export function Channels() {
         </div>
 
         <div className="group/row-bottom mt-3 overflow-hidden">
-          <div className="inline-flex w-max items-center gap-3 whitespace-nowrap py-2 will-change-transform animate-[qwenpaw-channels-marquee-left_72s_linear_infinite] group-hover/row-bottom:[animation-play-state:paused]">
+          <div className="inline-flex w-max items-center gap-3 whitespace-nowrap py-2 will-change-transform animate-[minions-channels-marquee-left_72s_linear_infinite] group-hover/row-bottom:[animation-play-state:paused]">
             {[...TOP_CHANNELS, ...TOP_CHANNELS].map((item, idx) => (
               <ChannelPill
                 key={`${item.name}-bottom-${idx}`}

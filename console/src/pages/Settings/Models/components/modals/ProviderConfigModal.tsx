@@ -395,24 +395,6 @@ export function ProviderConfigModal({
     if (useBaseUrlSelect) {
       return t("models.selectBaseURLHint");
     }
-    if (provider.id === "azure-openai") {
-      return t("models.azureEndpointHint");
-    }
-    if (provider.id === "anthropic") {
-      return t("models.anthropicEndpointHint");
-    }
-    if (provider.id === "openai") {
-      return t("models.openAIEndpoint");
-    }
-    if (provider.id === "opencode") {
-      return t("models.openAICompatibleEndpoint");
-    }
-    if (provider.id === "ollama") {
-      return t("models.ollamaEndpointHint");
-    }
-    if (provider.id === "lmstudio") {
-      return t("models.lmstudioEndpointHint");
-    }
     if (provider.is_custom) {
       return effectiveChatModel === "AnthropicChatModel"
         ? t("models.anthropicEndpointHint")
@@ -431,24 +413,6 @@ export function ProviderConfigModal({
   const baseUrlPlaceholder = useMemo(() => {
     if (!canEditBaseUrl) {
       return "";
-    }
-    if (provider.id === "azure-openai") {
-      return "https://<resource>.openai.azure.com/openai/v1";
-    }
-    if (provider.id === "anthropic") {
-      return "https://api.anthropic.com";
-    }
-    if (provider.id === "openai") {
-      return "https://api.openai.com/v1";
-    }
-    if (provider.id === "opencode") {
-      return "https://opencode.ai/zen/v1";
-    }
-    if (provider.id === "ollama") {
-      return "http://localhost:11434";
-    }
-    if (provider.id === "lmstudio") {
-      return "http://localhost:1234/v1";
     }
     if (provider.is_custom && effectiveChatModel === "AnthropicChatModel") {
       return "https://api.anthropic.com";

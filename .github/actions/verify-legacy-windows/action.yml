@@ -36,7 +36,7 @@ runs:
     - name: Verify desktop (Legacy Windows)
       shell: pwsh
       env:
-        QWENPAW_DASHSCOPE_API_KEY: ${{ inputs.dashscope-api-key }}
+        MINIONS_DASHSCOPE_API_KEY: ${{ inputs.dashscope-api-key }}
         RUNNER_PYTHON: ${{ inputs.runner-python }}
         PYTHONIOENCODING: utf-8
         EXPECTED_VERSION: ${{ inputs.version }}
@@ -45,14 +45,14 @@ runs:
         $ErrorActionPreference = "Stop"
 
         # 1. Locate the freshly built NSIS installer.
-        $installer = Get-ChildItem dist/QwenPaw-Setup-*.exe |
+        $installer = Get-ChildItem dist/Minions-Setup-*.exe |
           Select-Object -First 1
-        if (-not $installer) { throw "No QwenPaw-Setup-*.exe found in dist/" }
+        if (-not $installer) { throw "No Minions-Setup-*.exe found in dist/" }
 
         # 2. Silent install to a deterministic ASCII path under RUNNER_TEMP
         #    so we don't need to reverse-lookup the install location.
         #    NSIS requires /D=<path> to be the LAST argument and unquoted.
-        $installDir = Join-Path $env:RUNNER_TEMP "QwenPaw-Verify"
+        $installDir = Join-Path $env:RUNNER_TEMP "Minions-Verify"
         if (Test-Path $installDir) { Remove-Item -Recurse -Force $installDir }
         $nsisArgs = "/S /D=$installDir"
         Write-Host "Installer: $($installer.FullName)"
@@ -74,23 +74,23 @@ runs:
         #    background. Use the bundled python so dependencies match the
         #    actual installed env users will use.
         $env:PYTHONNOUSERSITE = "1"
-        & $bundledPython -m qwenpaw init --defaults --accept-security
-        if ($LASTEXITCODE -ne 0) { throw "qwenpaw init failed ($LASTEXITCODE)" }
+        & $bundledPython -m minions init --defaults --accept-security
+        if ($LASTEXITCODE -ne 0) { throw "minions init failed ($LASTEXITCODE)" }
 
         # Skip the BootstrapHook onboarding script so the verifier
         # can drive the agent in normal QA mode (see
         # scripts/verify/desktop_verify.py::verify_ui_chat docstring).
-        $bootstrapMd = Join-Path $env:USERPROFILE ".qwenpaw\workspaces\default\BOOTSTRAP.md"
+        $bootstrapMd = Join-Path $env:USERPROFILE ".minions\workspaces\default\BOOTSTRAP.md"
         if (Test-Path $bootstrapMd) { Remove-Item -Force $bootstrapMd }
 
-        $stdoutLog = Join-Path $env:RUNNER_TEMP "qwenpaw-desktop-stdout.log"
-        $stderrLog = Join-Path $env:RUNNER_TEMP "qwenpaw-desktop-stderr.log"
+        $stdoutLog = Join-Path $env:RUNNER_TEMP "minions-desktop-stdout.log"
+        $stderrLog = Join-Path $env:RUNNER_TEMP "minions-desktop-stderr.log"
         $proc = Start-Process -PassThru -NoNewWindow `
           -FilePath $bundledPython `
-          -ArgumentList "-m","qwenpaw","app","--host","127.0.0.1","--port","8088" `
+          -ArgumentList "-m","minions","app","--host","127.0.0.1","--port","8088" `
           -RedirectStandardOutput $stdoutLog `
           -RedirectStandardError $stderrLog
-        $proc.Id | Out-File -FilePath (Join-Path $env:RUNNER_TEMP "qwenpaw-desktop.pid") -Encoding ascii
+        $proc.Id | Out-File -FilePath (Join-Path $env:RUNNER_TEMP "minions-desktop.pid") -Encoding ascii
 
         # 5. Wait for /api/version (~120s budget).
         $ready = $false

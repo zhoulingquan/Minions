@@ -4,10 +4,10 @@ const defaultConfig = {
   theme: {
     colorPrimary: "#FF7F16",
     darkMode: false,
-    prefix: "qwenpaw",
+    prefix: "minions",
     leftHeader: {
       logo: "",
-      title: "Work with QwenPaw",
+      title: "Work with Minions",
     },
     bubbleList: {
       userMessageAnchors: {

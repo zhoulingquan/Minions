@@ -5,12 +5,12 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from qwenpaw.config.config import (
+from minions.config.config import (
     LightContextConfig,
     ToolResultPruningConfig,
 )
-from qwenpaw.runtime.builder import AgentBuilder
-from qwenpaw.tool_calls import ToolCoordinator, ToolCoordinatorMiddleware
+from minions.runtime.builder import AgentBuilder
+from minions.tool_calls import ToolCoordinator, ToolCoordinatorMiddleware
 
 
 def test_builder_uses_execution_layer_limit_independent_of_recent_limit(

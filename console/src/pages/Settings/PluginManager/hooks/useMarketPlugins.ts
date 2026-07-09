@@ -24,7 +24,7 @@ export function isMarketPluginCompatible(
   currentVersion: string | null,
 ): boolean {
   if (!currentVersion) return true;
-  const labels = entry.qwenpaw_compat_labels;
+  const labels = entry.minions_compat_labels;
   if (!labels || labels.length === 0) return true;
   const label = deriveCompatLabel(currentVersion);
   if (!label) return true; // Cannot parse version → treat as compatible
@@ -50,7 +50,7 @@ export function useMarketPlugins({ onInstalled }: UseMarketPluginsOptions) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string | undefined>(undefined);
   const [installingId, setInstallingId] = useState<string | null>(null);
-  const [qwenpawVersion, setQwenpawVersion] = useState<string | null>(null);
+  const [minionsVersion, setMinionsVersion] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -64,7 +64,7 @@ export function useMarketPlugins({ onInstalled }: UseMarketPluginsOptions) {
       .then((data) => {
         const version =
           typeof data === "object" && data !== null ? data.version : null;
-        setQwenpawVersion(typeof version === "string" ? version : null);
+        setMinionsVersion(typeof version === "string" ? version : null);
       })
       .catch((err) => {
         if (err instanceof Error && err.name === "AbortError") {
@@ -72,7 +72,7 @@ export function useMarketPlugins({ onInstalled }: UseMarketPluginsOptions) {
         }
         // eslint-disable-next-line no-console
         console.error("[useMarketPlugins] failed to fetch version:", err);
-        setQwenpawVersion(null);
+        setMinionsVersion(null);
       });
     return () => {
       controller.abort();
@@ -127,8 +127,8 @@ export function useMarketPlugins({ onInstalled }: UseMarketPluginsOptions) {
 
   const isCompatible = useCallback(
     (entry: MarketPluginEntry) =>
-      isMarketPluginCompatible(entry, qwenpawVersion),
-    [qwenpawVersion],
+      isMarketPluginCompatible(entry, minionsVersion),
+    [minionsVersion],
   );
 
   const handleInstall = useCallback(
@@ -164,7 +164,7 @@ export function useMarketPlugins({ onInstalled }: UseMarketPluginsOptions) {
     pageSize,
     category,
     installingId,
-    qwenpawVersion,
+    minionsVersion,
     isCompatible,
     handleSearch,
     handleCategoryChange,

@@ -21,10 +21,10 @@ from agentscope.message import ToolResultState
 from agentscope.tool import ToolChunk
 
 # pylint: disable=no-name-in-module
-from qwenpaw.app.interaction import InteractionManager
-from qwenpaw.app.agent_context import get_current_session_id
+from minions.app.interaction import InteractionManager
+from minions.app.agent_context import get_current_session_id
 
-logger = logging.getLogger("qwenpaw").getChild(
+logger = logging.getLogger("minions").getChild(
     __name__.replace("plugin_cloudpaw.", ""),
 )
 

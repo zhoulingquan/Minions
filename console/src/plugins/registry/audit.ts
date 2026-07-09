@@ -1,9 +1,9 @@
 /**
- * registry/audit.ts — single override log shared by all QwenPaw registries
+ * registry/audit.ts — single override log shared by all Minions registries
  * (console-wide menu/route/slot + chat extensions).
  *
  * Ring buffer (default 500 entries). Plugin authors can read via
- * `window.QwenPaw.audit.overrides()` for debugging / change attribution.
+ * `window.Minions.audit.overrides()` for debugging / change attribution.
  *
  * OverrideRecord carries two interchangeable id fields:
  *   - `targetId` — preferred by console-wide registries (menuId / routeId / slotName)
@@ -39,12 +39,12 @@ class AuditStore {
       rec.kind === "chat.error"
     ) {
       console.warn(
-        `[QwenPaw audit] ${rec.kind} ${id} by ${rec.pluginId}` +
+        `[Minions audit] ${rec.kind} ${id} by ${rec.pluginId}` +
           (rec.detail ? `: ${rec.detail}` : ""),
       );
     } else {
       console.info(
-        `[QwenPaw audit] ${rec.kind} ${id} by ${rec.pluginId}` +
+        `[Minions audit] ${rec.kind} ${id} by ${rec.pluginId}` +
           (rec.supersededPluginId
             ? ` (superseded ${rec.supersededPluginId})`
             : ""),

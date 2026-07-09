@@ -8,10 +8,10 @@ from __future__ import annotations
 
 import pytest
 
-from qwenpaw.agents.acp.meta import ACP_CODING_PROJECT_META_KEY
-from qwenpaw.config.config import AgentProfileConfig
-from qwenpaw.runtime.builder import AgentBuilder
-from qwenpaw.runtime.prompt_contributors import CodingModeContributor
+from minions.agents.acp.meta import ACP_CODING_PROJECT_META_KEY
+from minions.config.config import AgentProfileConfig
+from minions.runtime.builder import AgentBuilder
+from minions.runtime.prompt_contributors import CodingModeContributor
 
 
 def test_request_coding_project_enables_clone(tmp_path):
@@ -41,7 +41,7 @@ def test_request_coding_project_ignores_non_directory(tmp_path):
     assert config.coding_mode.enabled is False
 
 
-@pytest.mark.usefixtures("capture_qwenpaw_logs")
+@pytest.mark.usefixtures("capture_minions_logs")
 def test_request_coding_project_warns_for_unsupported_config(
     caplog,
     tmp_path,
@@ -66,7 +66,7 @@ def test_coding_prompt_prefers_request_project(monkeypatch, tmp_path):
         raise AssertionError("request project should be used first")
 
     monkeypatch.setattr(
-        "qwenpaw.config.config.load_agent_config",
+        "minions.config.config.load_agent_config",
         fail_load_agent_config,
     )
 

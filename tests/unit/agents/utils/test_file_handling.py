@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Tests for qwenpaw.agents.utils.file_handling.
+"""Tests for minions.agents.utils.file_handling.
 
 Covers:
 - read_text_file_with_encoding_fallback
@@ -17,7 +17,7 @@ from unittest.mock import patch
 
 import pytest
 
-from qwenpaw.agents.utils.file_handling import (
+from minions.agents.utils.file_handling import (
     _default_download_dir,
     _guess_suffix_from_file_content,
     _resolve_local_path,
@@ -72,13 +72,13 @@ class TestReadTextFileWithEncodingFallback:
 class TestDefaultDownloadDir:
     """Tests for _default_download_dir."""
 
-    @patch("qwenpaw.agents.utils.file_handling.get_current_workspace_dir")
+    @patch("minions.agents.utils.file_handling.get_current_workspace_dir")
     def test_with_workspace(self, mock_ws):
         mock_ws.return_value = Path("/workspace")
         result = _default_download_dir()
         assert result == str(Path("/workspace/downloads"))
 
-    @patch("qwenpaw.agents.utils.file_handling.get_current_workspace_dir")
+    @patch("minions.agents.utils.file_handling.get_current_workspace_dir")
     def test_without_workspace(self, mock_ws):
         mock_ws.return_value = None
         result = _default_download_dir()
@@ -110,7 +110,7 @@ class TestResolveLocalPath:
         f = tmp_path / "empty.txt"
         f.write_text("", encoding="utf-8")
         parsed = urllib.parse.urlparse(f.as_uri())
-        from qwenpaw.exceptions import (
+        from minions.exceptions import (
             AgentRuntimeErrorException,
         )
 
@@ -240,7 +240,7 @@ class TestDownloadFileFromUrl:
 
     @pytest.mark.asyncio
     @patch(
-        "qwenpaw.agents.utils.file_handling._download_remote_to_path",
+        "minions.agents.utils.file_handling._download_remote_to_path",
     )
     async def test_remote_download(self, mock_download, tmp_path):
         # Create a file that the mock download would produce

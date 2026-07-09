@@ -22,8 +22,8 @@ import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from qwenpaw.sandbox import MountSpec, SandboxConfig, SandboxMode
-from qwenpaw.sandbox.windows_sandbox import (
+from minions.sandbox import MountSpec, SandboxConfig, SandboxMode
+from minions.sandbox.windows_sandbox import (
     _VIOLATION_RE,
     WindowsSandbox,
     _compute_acl_fingerprint,
@@ -43,9 +43,9 @@ class TestProbeSandboxSupport:
     """Test probe_sandbox_support delegates to AppContainer probe."""
 
     @patch("sys.platform", "win32")
-    @patch("qwenpaw.sandbox.config._probe_windows_appcontainer")
+    @patch("minions.sandbox.config._probe_windows_appcontainer")
     def test_windows_calls_appcontainer_probe(self, mock_probe):
-        from qwenpaw.sandbox.config import (
+        from minions.sandbox.config import (
             SandboxCapability,
             probe_sandbox_support,
         )
@@ -71,7 +71,7 @@ class TestProbeAppContainer:
 
     @patch("sys.platform", "linux")
     def test_non_windows_returns_unsupported(self):
-        from qwenpaw.sandbox.config import _probe_windows_appcontainer
+        from minions.sandbox.config import _probe_windows_appcontainer
 
         result = _probe_windows_appcontainer()
         assert result.supported is False
@@ -88,7 +88,7 @@ class TestProbeAppContainer:
             create=True,
             return_value=mock_ver,
         ):
-            from qwenpaw.sandbox.config import _probe_windows_appcontainer
+            from minions.sandbox.config import _probe_windows_appcontainer
 
             result = _probe_windows_appcontainer()
             assert result.supported is False
@@ -106,7 +106,7 @@ class TestProbeAppContainer:
             create=True,
             return_value=mock_ver,
         ):
-            from qwenpaw.sandbox.config import _probe_windows_appcontainer
+            from minions.sandbox.config import _probe_windows_appcontainer
 
             result = _probe_windows_appcontainer()
             assert result.supported is False
@@ -131,7 +131,7 @@ class TestProbeAppContainer:
             ),
             patch.object(ctypes, "WinDLL", create=True, return_value=mock_dll),
         ):
-            from qwenpaw.sandbox.config import _probe_windows_appcontainer
+            from minions.sandbox.config import _probe_windows_appcontainer
 
             result = _probe_windows_appcontainer()
             assert result.supported is True
@@ -150,7 +150,7 @@ class TestACLCommandGeneration:
     Analogous to TestLinuxSandboxRuleCompilation in test_linux_sandbox.py.
     """
 
-    @patch("qwenpaw.sandbox.windows_sandbox._run_icacls")
+    @patch("minions.sandbox.windows_sandbox._run_icacls")
     @patch("os.path.isdir", return_value=True)
     @patch("os.path.exists", return_value=True)
     @patch.dict(
@@ -176,7 +176,7 @@ class TestACLCommandGeneration:
             allow_read_all=False,
         )
 
-        from qwenpaw.sandbox.windows_sandbox import _apply_all_acls
+        from minions.sandbox.windows_sandbox import _apply_all_acls
 
         asyncio.run(_apply_all_acls(config, "S-1-15-2-12345"))
 
@@ -189,7 +189,7 @@ class TestACLCommandGeneration:
         assert len(workspace_calls) == 1
         assert "(F)" in workspace_calls[0][2]
 
-    @patch("qwenpaw.sandbox.windows_sandbox._run_icacls")
+    @patch("minions.sandbox.windows_sandbox._run_icacls")
     @patch("os.path.isdir", return_value=True)
     @patch("os.path.exists", return_value=True)
     @patch.dict(
@@ -222,7 +222,7 @@ class TestACLCommandGeneration:
             allow_read_all=False,
         )
 
-        from qwenpaw.sandbox.windows_sandbox import _apply_all_acls
+        from minions.sandbox.windows_sandbox import _apply_all_acls
 
         asyncio.run(_apply_all_acls(config, "S-1-15-2-12345"))
 
@@ -238,7 +238,7 @@ class TestACLCommandGeneration:
         assert "/remove" in mount_calls[1]
         assert "(RX)" in mount_calls[2][2]
 
-    @patch("qwenpaw.sandbox.windows_sandbox._run_icacls")
+    @patch("minions.sandbox.windows_sandbox._run_icacls")
     @patch("os.path.isdir", return_value=True)
     @patch("os.path.exists", return_value=True)
     @patch.dict(
@@ -265,7 +265,7 @@ class TestACLCommandGeneration:
             allow_read_all=False,
         )
 
-        from qwenpaw.sandbox.windows_sandbox import _apply_all_acls
+        from minions.sandbox.windows_sandbox import _apply_all_acls
 
         asyncio.run(_apply_all_acls(config, "S-1-15-2-12345"))
 
@@ -276,7 +276,7 @@ class TestACLCommandGeneration:
         assert len(deny_calls) == 1
         assert r"C:\Users\testuser\.ssh" in deny_calls[0]
 
-    @patch("qwenpaw.sandbox.windows_sandbox._run_icacls")
+    @patch("minions.sandbox.windows_sandbox._run_icacls")
     @patch("os.path.isdir", return_value=True)
     @patch("os.path.exists", return_value=True)
     @patch.dict(
@@ -302,7 +302,7 @@ class TestACLCommandGeneration:
             allow_read_all=True,
         )
 
-        from qwenpaw.sandbox.windows_sandbox import _apply_all_acls
+        from minions.sandbox.windows_sandbox import _apply_all_acls
 
         asyncio.run(_apply_all_acls(config, "S-1-15-2-12345"))
 
@@ -312,7 +312,7 @@ class TestACLCommandGeneration:
         assert r"C:\Users" in all_paths
         assert r"C:\Users\testuser" in all_paths
 
-    @patch("qwenpaw.sandbox.windows_sandbox._run_icacls")
+    @patch("minions.sandbox.windows_sandbox._run_icacls")
     @patch("os.path.isdir", return_value=True)
     @patch("os.path.exists", return_value=False)
     @patch.dict(
@@ -338,7 +338,7 @@ class TestACLCommandGeneration:
             allow_read_all=False,
         )
 
-        from qwenpaw.sandbox.windows_sandbox import _apply_all_acls
+        from minions.sandbox.windows_sandbox import _apply_all_acls
 
         asyncio.run(_apply_all_acls(config, "S-1-15-2-12345"))
 
@@ -347,7 +347,7 @@ class TestACLCommandGeneration:
         for args in all_args:
             assert args[0] != "C:\\" or "/grant" not in " ".join(args)
 
-    @patch("qwenpaw.sandbox.windows_sandbox._run_icacls")
+    @patch("minions.sandbox.windows_sandbox._run_icacls")
     @patch("os.path.isdir", return_value=True)
     @patch("os.path.exists", return_value=True)
     @patch.dict(
@@ -375,7 +375,7 @@ class TestACLCommandGeneration:
             allow_read_all=True,
         )
 
-        from qwenpaw.sandbox.windows_sandbox import _apply_all_acls
+        from minions.sandbox.windows_sandbox import _apply_all_acls
 
         manifest = asyncio.run(_apply_all_acls(config, "S-1-15-2-12345"))
 
@@ -467,16 +467,16 @@ class TestSandboxReuse:
 
             _save_container_metadata(
                 state_dir,
-                "qwenpaw_test123",
+                "minions_test123",
                 "S-1-15-2-12345",
                 "abcdef1234567890",
                 r"C:\project",
-                r"C:\Users\foo\.qwenpaw\junctions\abc",
+                r"C:\Users\foo\.minions\junctions\abc",
             )
 
             loaded = _load_container_metadata(state_dir)
             assert len(loaded) == 1
-            assert loaded[0]["container_name"] == "qwenpaw_test123"
+            assert loaded[0]["container_name"] == "minions_test123"
             assert loaded[0]["sid"] == "S-1-15-2-12345"
             assert loaded[0]["acl_fingerprint"] == "abcdef1234567890"
 
@@ -498,11 +498,11 @@ class TestSandboxReuse:
 
             _save_container_metadata(
                 state_dir,
-                "qwenpaw_test456",
+                "minions_test456",
                 "S-1-15-2-67890",
                 "fedcba0987654321",
                 r"C:\project",
-                r"C:\Users\testuser\.qwenpaw\junctions\abc",
+                r"C:\Users\testuser\.minions\junctions\abc",
                 acl_manifest,
             )
 
@@ -517,7 +517,7 @@ class TestSandboxReuse:
             )
 
     @patch(
-        "qwenpaw.sandbox.windows_sandbox._get_appcontainer_sid",
+        "minions.sandbox.windows_sandbox._get_appcontainer_sid",
         return_value="S-1-15-2-12345",
     )
     def test_find_reusable_container_match(self, mock_get_sid):
@@ -526,19 +526,19 @@ class TestSandboxReuse:
 
             _save_container_metadata(
                 state_dir,
-                "qwenpaw_test123",
+                "minions_test123",
                 "S-1-15-2-12345",
                 "abcdef1234567890",
                 r"C:\project",
-                r"C:\Users\foo\.qwenpaw\junctions\abc",
+                r"C:\Users\foo\.minions\junctions\abc",
             )
 
             result = _find_reusable_container(state_dir, "abcdef1234567890")
             assert result is not None
-            assert result["container_name"] == "qwenpaw_test123"
+            assert result["container_name"] == "minions_test123"
 
     @patch(
-        "qwenpaw.sandbox.windows_sandbox._get_appcontainer_sid",
+        "minions.sandbox.windows_sandbox._get_appcontainer_sid",
         return_value="S-1-15-2-12345",
     )
     def test_find_reusable_container_no_match(self, mock_get_sid):
@@ -547,7 +547,7 @@ class TestSandboxReuse:
 
             _save_container_metadata(
                 state_dir,
-                "qwenpaw_test123",
+                "minions_test123",
                 "S-1-15-2-12345",
                 "abcdef1234567890",
                 r"C:\project",
@@ -558,7 +558,7 @@ class TestSandboxReuse:
             assert result is None
 
     @patch(
-        "qwenpaw.sandbox.windows_sandbox._get_appcontainer_sid",
+        "minions.sandbox.windows_sandbox._get_appcontainer_sid",
         return_value=None,
     )
     def test_find_reusable_container_stale(self, mock_get_sid):
@@ -568,7 +568,7 @@ class TestSandboxReuse:
 
             _save_container_metadata(
                 state_dir,
-                "qwenpaw_stale",
+                "minions_stale",
                 "S-1-15-2-99999",
                 "abcdef1234567890",
                 r"C:\project",
@@ -613,7 +613,7 @@ class TestFactoryAppContainer:
     """Test that create_sandbox correctly routes to WindowsSandbox."""
 
     def test_create_sandbox_appcontainer(self):
-        from qwenpaw.sandbox import create_sandbox
+        from minions.sandbox import create_sandbox
 
         config = SandboxConfig(
             mode=SandboxMode.APPCONTAINER,
@@ -631,10 +631,10 @@ class TestFactoryAppContainer:
 class TestAppContainerProfileLifecycle:
     """Test profile creation and deletion via mocked Win32 APIs."""
 
-    @patch("qwenpaw.sandbox.windows_sandbox._sid_to_string")
+    @patch("minions.sandbox.windows_sandbox._sid_to_string")
     @patch("ctypes.windll", create=True)
-    @patch("qwenpaw.sandbox.windows_sandbox._get_advapi32")
-    @patch("qwenpaw.sandbox.windows_sandbox._get_userenv")
+    @patch("minions.sandbox.windows_sandbox._get_advapi32")
+    @patch("minions.sandbox.windows_sandbox._get_userenv")
     def test_create_profile_success(
         self,
         mock_userenv_fn,
@@ -653,12 +653,12 @@ class TestAppContainerProfileLifecycle:
         mock_windll.ole32.CoTaskMemFree = MagicMock()
         mock_sid_to_str.return_value = "S-1-15-2-111-222-333"
 
-        from qwenpaw.sandbox.windows_sandbox import (
+        from minions.sandbox.windows_sandbox import (
             _create_appcontainer_profile,
         )
 
         sid = _create_appcontainer_profile(
-            "qwenpaw_test",
+            "minions_test",
             "Test",
             "Test container",
         )
@@ -666,9 +666,9 @@ class TestAppContainerProfileLifecycle:
         mock_userenv.CreateAppContainerProfile.assert_called_once()
         mock_sid_to_str.assert_called_once()
 
-    @patch("qwenpaw.sandbox.windows_sandbox._get_appcontainer_sid")
-    @patch("qwenpaw.sandbox.windows_sandbox._get_advapi32")
-    @patch("qwenpaw.sandbox.windows_sandbox._get_userenv")
+    @patch("minions.sandbox.windows_sandbox._get_appcontainer_sid")
+    @patch("minions.sandbox.windows_sandbox._get_advapi32")
+    @patch("minions.sandbox.windows_sandbox._get_userenv")
     def test_create_profile_already_exists(
         self,
         mock_userenv_fn,
@@ -683,21 +683,21 @@ class TestAppContainerProfileLifecycle:
 
         mock_get_sid.return_value = "S-1-15-2-999-888-777"
 
-        from qwenpaw.sandbox.windows_sandbox import (
+        from minions.sandbox.windows_sandbox import (
             _create_appcontainer_profile,
         )
 
         sid = _create_appcontainer_profile(
-            "qwenpaw_existing",
+            "minions_existing",
             "Test",
             "Existing container",
         )
         assert sid == "S-1-15-2-999-888-777"
-        mock_get_sid.assert_called_once_with("qwenpaw_existing")
+        mock_get_sid.assert_called_once_with("minions_existing")
 
-    @patch("qwenpaw.sandbox.windows_sandbox._get_appcontainer_sid")
-    @patch("qwenpaw.sandbox.windows_sandbox._get_advapi32")
-    @patch("qwenpaw.sandbox.windows_sandbox._get_userenv")
+    @patch("minions.sandbox.windows_sandbox._get_appcontainer_sid")
+    @patch("minions.sandbox.windows_sandbox._get_advapi32")
+    @patch("minions.sandbox.windows_sandbox._get_userenv")
     def test_create_profile_already_exists_no_sid(
         self,
         mock_userenv_fn,
@@ -713,19 +713,19 @@ class TestAppContainerProfileLifecycle:
 
         import pytest
 
-        from qwenpaw.sandbox.windows_sandbox import (
+        from minions.sandbox.windows_sandbox import (
             _create_appcontainer_profile,
         )
 
         with pytest.raises(OSError, match="cannot derive SID"):
             _create_appcontainer_profile(
-                "qwenpaw_broken",
+                "minions_broken",
                 "Test",
                 "Broken container",
             )
 
-    @patch("qwenpaw.sandbox.windows_sandbox._get_advapi32")
-    @patch("qwenpaw.sandbox.windows_sandbox._get_userenv")
+    @patch("minions.sandbox.windows_sandbox._get_advapi32")
+    @patch("minions.sandbox.windows_sandbox._get_userenv")
     def test_create_profile_unexpected_hresult(
         self,
         mock_userenv_fn,
@@ -738,55 +738,55 @@ class TestAppContainerProfileLifecycle:
 
         import pytest
 
-        from qwenpaw.sandbox.windows_sandbox import (
+        from minions.sandbox.windows_sandbox import (
             _create_appcontainer_profile,
         )
 
         with pytest.raises(OSError, match="CreateAppContainerProfile failed"):
             _create_appcontainer_profile(
-                "qwenpaw_fail",
+                "minions_fail",
                 "Test",
                 "Failing container",
             )
 
-    @patch("qwenpaw.sandbox.windows_sandbox._get_userenv")
+    @patch("minions.sandbox.windows_sandbox._get_userenv")
     def test_delete_profile_success(self, mock_userenv_fn):
         """DeleteAppContainerProfile returns 0 → True."""
         mock_userenv = MagicMock()
         mock_userenv.DeleteAppContainerProfile.return_value = 0
         mock_userenv_fn.return_value = mock_userenv
 
-        from qwenpaw.sandbox.windows_sandbox import (
+        from minions.sandbox.windows_sandbox import (
             _delete_appcontainer_profile,
         )
 
-        assert _delete_appcontainer_profile("qwenpaw_test") is True
+        assert _delete_appcontainer_profile("minions_test") is True
 
-    @patch("qwenpaw.sandbox.windows_sandbox._get_userenv")
+    @patch("minions.sandbox.windows_sandbox._get_userenv")
     def test_delete_profile_failure(self, mock_userenv_fn):
         """DeleteAppContainerProfile returns non-zero → False."""
         mock_userenv = MagicMock()
         mock_userenv.DeleteAppContainerProfile.return_value = -1
         mock_userenv_fn.return_value = mock_userenv
 
-        from qwenpaw.sandbox.windows_sandbox import (
+        from minions.sandbox.windows_sandbox import (
             _delete_appcontainer_profile,
         )
 
-        assert _delete_appcontainer_profile("qwenpaw_missing") is False
+        assert _delete_appcontainer_profile("minions_missing") is False
 
-    @patch("qwenpaw.sandbox.windows_sandbox._get_userenv")
+    @patch("minions.sandbox.windows_sandbox._get_userenv")
     def test_delete_profile_oserror(self, mock_userenv_fn):
         """OSError during delete → returns False."""
         mock_userenv = MagicMock()
         mock_userenv.DeleteAppContainerProfile.side_effect = OSError("fail")
         mock_userenv_fn.return_value = mock_userenv
 
-        from qwenpaw.sandbox.windows_sandbox import (
+        from minions.sandbox.windows_sandbox import (
             _delete_appcontainer_profile,
         )
 
-        assert _delete_appcontainer_profile("qwenpaw_err") is False
+        assert _delete_appcontainer_profile("minions_err") is False
 
 
 # ============================================================================
@@ -881,12 +881,12 @@ class TestWindowsSandboxExecute:
         config = SandboxConfig(**defaults)
         sandbox = WindowsSandbox(config)
         sandbox._container_sid = "S-1-15-2-12345"
-        sandbox._container_name = "qwenpaw_test"
+        sandbox._container_name = "minions_test"
         sandbox._junction_path = None
         return sandbox
 
-    @patch("qwenpaw.sandbox.windows_sandbox._wait_and_read_process")
-    @patch("qwenpaw.sandbox.windows_sandbox._create_process_in_appcontainer")
+    @patch("minions.sandbox.windows_sandbox._wait_and_read_process")
+    @patch("minions.sandbox.windows_sandbox._create_process_in_appcontainer")
     def test_execute_success(self, mock_create, mock_wait):
         """Successful command returns exit_code=0, no violation."""
         mock_create.return_value = (
@@ -909,8 +909,8 @@ class TestWindowsSandboxExecute:
         assert result.sandbox_violation is None
         assert result.timed_out is False
 
-    @patch("qwenpaw.sandbox.windows_sandbox._wait_and_read_process")
-    @patch("qwenpaw.sandbox.windows_sandbox._create_process_in_appcontainer")
+    @patch("minions.sandbox.windows_sandbox._wait_and_read_process")
+    @patch("minions.sandbox.windows_sandbox._create_process_in_appcontainer")
     def test_execute_violation_detected(self, mock_create, mock_wait):
         """Access denied in stderr → sandbox_violation is populated."""
         mock_create.return_value = (
@@ -932,8 +932,8 @@ class TestWindowsSandboxExecute:
         assert result.sandbox_violation is not None
         assert "Access is denied" in result.sandbox_violation
 
-    @patch("qwenpaw.sandbox.windows_sandbox._wait_and_read_process")
-    @patch("qwenpaw.sandbox.windows_sandbox._create_process_in_appcontainer")
+    @patch("minions.sandbox.windows_sandbox._wait_and_read_process")
+    @patch("minions.sandbox.windows_sandbox._create_process_in_appcontainer")
     def test_execute_timeout(self, mock_create, mock_wait):
         """Process exceeds timeout → timed_out=True."""
         mock_create.return_value = (
@@ -953,8 +953,8 @@ class TestWindowsSandboxExecute:
 
         assert result.timed_out is True
 
-    @patch("qwenpaw.sandbox.windows_sandbox._wait_and_read_process")
-    @patch("qwenpaw.sandbox.windows_sandbox._create_process_in_appcontainer")
+    @patch("minions.sandbox.windows_sandbox._wait_and_read_process")
+    @patch("minions.sandbox.windows_sandbox._create_process_in_appcontainer")
     def test_execute_oserror(self, mock_create, mock_wait):
         """CreateProcessW failure → exit_code=-1, error in stderr."""
         mock_create.side_effect = OSError("CreateProcessW failed: error=5")
@@ -965,8 +965,8 @@ class TestWindowsSandboxExecute:
         assert result.exit_code == -1
         assert "CreateProcessW failed" in result.stderr
 
-    @patch("qwenpaw.sandbox.windows_sandbox._wait_and_read_process")
-    @patch("qwenpaw.sandbox.windows_sandbox._create_process_in_appcontainer")
+    @patch("minions.sandbox.windows_sandbox._wait_and_read_process")
+    @patch("minions.sandbox.windows_sandbox._create_process_in_appcontainer")
     def test_execute_violation_in_stdout_on_failure(
         self,
         mock_create,
@@ -991,8 +991,8 @@ class TestWindowsSandboxExecute:
         assert result.sandbox_violation is not None
         assert "error 5" in result.sandbox_violation
 
-    @patch("qwenpaw.sandbox.windows_sandbox._wait_and_read_process")
-    @patch("qwenpaw.sandbox.windows_sandbox._create_process_in_appcontainer")
+    @patch("minions.sandbox.windows_sandbox._wait_and_read_process")
+    @patch("minions.sandbox.windows_sandbox._create_process_in_appcontainer")
     def test_execute_chinese_violation(self, mock_create, mock_wait):
         """Chinese locale violation patterns are detected."""
         mock_create.return_value = (

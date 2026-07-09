@@ -15,9 +15,9 @@ from types import SimpleNamespace
 
 import pytest
 
-import qwenpaw.agents.context as context_mod
-from qwenpaw.agents.context import build_scroll_components
-from qwenpaw.config.config import LightContextConfig
+import minions.agents.context as context_mod
+from minions.agents.context import build_scroll_components
+from minions.config.config import LightContextConfig
 
 
 class _DummyModel:
@@ -47,12 +47,12 @@ def _notice_records(caplog) -> list[logging.LogRecord]:
     ]
 
 
-@pytest.mark.usefixtures("capture_qwenpaw_logs")
+@pytest.mark.usefixtures("capture_minions_logs")
 def test_first_run_logs_notice_once(tmp_path: Path, caplog):
     db = tmp_path / "history.db"
     assert not db.exists()
 
-    with caplog.at_level(logging.WARNING, logger="qwenpaw.agents.context"):
+    with caplog.at_level(logging.WARNING, logger="minions.agents.context"):
         components = _build(tmp_path)
     # Scroll actually wired and created the durable store.
     assert components is not None
@@ -71,7 +71,7 @@ def test_notice_does_not_repeat_when_db_exists(tmp_path: Path, caplog):
     assert (tmp_path / "history.db").exists()
 
     caplog.clear()  # drop the first run's notice; only watch the second
-    with caplog.at_level(logging.WARNING, logger="qwenpaw.agents.context"):
+    with caplog.at_level(logging.WARNING, logger="minions.agents.context"):
         _build(tmp_path)
     assert _notice_records(caplog) == []
 
@@ -84,7 +84,7 @@ def _size_records(caplog) -> list[logging.LogRecord]:
     ]
 
 
-@pytest.mark.usefixtures("capture_qwenpaw_logs")
+@pytest.mark.usefixtures("capture_minions_logs")
 def test_large_existing_db_warns_about_retention(tmp_path: Path, caplog):
     # First build creates a small store (no size warning, just first-run).
     _build(tmp_path)
@@ -99,7 +99,7 @@ def test_large_existing_db_warns_about_retention(tmp_path: Path, caplog):
     context_mod._DB_SIZE_WARN_BYTES = monkey
     try:
         caplog.clear()
-        with caplog.at_level(logging.WARNING, logger="qwenpaw.agents.context"):
+        with caplog.at_level(logging.WARNING, logger="minions.agents.context"):
             _build(tmp_path)
             records = _size_records(caplog)
             assert len(records) == 1
@@ -114,7 +114,7 @@ def test_large_existing_db_warns_about_retention(tmp_path: Path, caplog):
 
 
 def test_no_notice_when_strategy_is_native(tmp_path: Path, caplog):
-    with caplog.at_level(logging.WARNING, logger="qwenpaw.agents.context"):
+    with caplog.at_level(logging.WARNING, logger="minions.agents.context"):
         components = build_scroll_components(
             agent_config=_agent_config("native"),
             workspace_dir=str(tmp_path),

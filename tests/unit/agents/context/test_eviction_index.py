@@ -6,7 +6,7 @@ Covers the two moves (``add_eviction`` + carry, ``compact``), the lossless
 span/headline bookkeeping, the checkpoint round-trip, and the rendered map.
 """
 
-from qwenpaw.agents.context.scroll.eviction_index import (
+from minions.agents.context.scroll.eviction_index import (
     EvictionIndex,
     Leaf,
     _TIER_CAP,

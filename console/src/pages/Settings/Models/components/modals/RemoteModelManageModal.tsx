@@ -576,6 +576,7 @@ export function RemoteModelManageModal({
   const darkBtnStyle = isDark ? { color: "rgba(255,255,255,0.65)" } : undefined;
   const { message } = useAppMessage();
   const supportsAutoDiscover = provider.support_model_discovery;
+  const isOpenRouter = provider.id === "openrouter";
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [discoveringModels, setDiscoveringModels] = useState(false);
@@ -586,8 +587,6 @@ export function RemoteModelManageModal({
   );
   const [modelSearchQuery, setModelSearchQuery] = useState("");
   const [form] = Form.useForm();
-  // OpenRouter filter state
-  const isOpenRouter = provider.id === "openrouter";
   const [showFilters, setShowFilters] = useState(false);
   const [availableSeries, setAvailableSeries] = useState<string[]>([]);
   const [discoveredModels, setDiscoveredModels] = useState<ExtendedModelInfo[]>(

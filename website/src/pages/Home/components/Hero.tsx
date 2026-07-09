@@ -20,8 +20,8 @@ const container = {
 };
 
 export function Hero() {
-  const { t, i18n } = useTranslation();
-  const isZh = i18n.resolvedLanguage === "zh";
+  const { t } = useTranslation();
+  const isZh = true;
   const [isHovered, setIsHovered] = useState(false);
   const [showIdle, setShowIdle] = useState(false);
   const [idlePlayedOnce, setIdlePlayedOnce] = useState(false);
@@ -58,7 +58,7 @@ export function Hero() {
   }, [showIdle, idlePlayedOnce]);
 
   const scrollToQuickStart = () => {
-    const section = document.getElementById("qwenpaw-quickstart");
+    const section = document.getElementById("minions-quickstart");
     if (!section) return;
     section.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -73,7 +73,7 @@ export function Hero() {
     <>
       <motion.section
         className="relative text-center"
-        aria-labelledby="qwenpaw-hero-heading"
+        aria-labelledby="minions-hero-heading"
         variants={container}
         initial="hidden"
         animate="visible"
@@ -97,7 +97,7 @@ export function Hero() {
             />
           </div>
           <h1
-            id="qwenpaw-hero-heading"
+            id="minions-hero-heading"
             className="font-newsreader font-semibold leading-[1.1] tracking-[-0.02em] text-(--color-text) sm:leading-[1.08] text-[32px] md:text-[48px] md:leading-[1.06]"
           >
             <span className="font-newsreader font-medium whitespace-pre-wrap">
@@ -175,7 +175,7 @@ export function Hero() {
             >
               <img
                 src="https://img.alicdn.com/imgextra/i1/O1CN01BLYCfm1Qyf5WcMDDf_!!6000000002045-2-tps-1924-1202.png"
-                alt="QwenPaw console preview"
+                alt="Minions console preview"
                 className="block h-auto max-h-full w-full rounded-t-[8px] object-top shadow-[0px_6px_56px_0px_rgba(38,33,29,0.24)] md:h-full md:object-cover"
                 loading="lazy"
               />

@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-import qwenpaw.providers.anthropic_provider as anthropic_provider_module
-from qwenpaw.providers.anthropic_provider import AnthropicProvider
+import minions.providers.anthropic_provider as anthropic_provider_module
+from minions.providers.anthropic_provider import AnthropicProvider
 
 
 def _make_provider(is_custom: bool = False) -> AnthropicProvider:

@@ -1,9 +1,9 @@
-# Build QwenPaw Desktop:
+# Build Minions Desktop:
 # - Legacy desktop: Windows (conda-pack + NSIS), macOS (conda-pack -> .app)
 # - Tauri desktop: Windows/macOS app bundles with PyInstaller backend sidecar
 # Runs on release publish and manual dispatch.
 
-name: QwenPaw Desktop Build
+name: Minions Desktop Build
 
 on:
   release:
@@ -31,10 +31,10 @@ jobs:
     steps:
       - name: Ensure DashScope secret is configured
         env:
-          QWENPAW_DASHSCOPE_API_KEY: ${{ secrets.QWENPAW_DASHSCOPE_API_KEY }}
+          MINIONS_DASHSCOPE_API_KEY: ${{ secrets.MINIONS_DASHSCOPE_API_KEY }}
         run: |
-          if [ -z "$QWENPAW_DASHSCOPE_API_KEY" ]; then
-            echo "::error::QWENPAW_DASHSCOPE_API_KEY is not set; release verification cannot validate the LLM chat round. Configure the repo secret before publishing."
+          if [ -z "$MINIONS_DASHSCOPE_API_KEY" ]; then
+            echo "::error::MINIONS_DASHSCOPE_API_KEY is not set; release verification cannot validate the LLM chat round. Configure the repo secret before publishing."
             exit 1
           fi
           echo "DashScope secret present"
@@ -66,7 +66,7 @@ jobs:
         with:
           auto-update-conda: true
           python-version: "3.11"
-          activate-environment: "qwenpaw-build"
+          activate-environment: "minions-build"
           condarc-file: .github/condarc
           conda-remove-defaults: false
 
@@ -83,7 +83,7 @@ jobs:
 
       - name: Build Windows installer
         shell: pwsh
-        run: conda run -n qwenpaw-build pwsh -File ./scripts/pack/build_win.ps1
+        run: conda run -n minions-build pwsh -File ./scripts/pack/build_win.ps1
 
       - name: List dist (on failure)
         if: failure()
@@ -106,7 +106,7 @@ jobs:
         timeout-minutes: 10
         uses: ./.github/actions/verify-legacy-windows
         with:
-          dashscope-api-key: ${{ secrets.QWENPAW_DASHSCOPE_API_KEY }}
+          dashscope-api-key: ${{ secrets.MINIONS_DASHSCOPE_API_KEY }}
           version: ${{ steps.version.outputs.version }}
           runner-python: ${{ steps.runner-python.outputs.python-path }}
 
@@ -114,7 +114,7 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          $pidFile = Join-Path $env:RUNNER_TEMP "qwenpaw-desktop.pid"
+          $pidFile = Join-Path $env:RUNNER_TEMP "minions-desktop.pid"
           if (Test-Path $pidFile) {
             $pidValue = (Get-Content $pidFile | Select-Object -First 1).Trim()
             if ($pidValue) {
@@ -131,7 +131,7 @@ jobs:
           }
 
           # Uninstall to leave the runner clean.
-          $installDir = Join-Path $env:RUNNER_TEMP "QwenPaw-Verify"
+          $installDir = Join-Path $env:RUNNER_TEMP "Minions-Verify"
           $uninstaller = Join-Path $installDir "Uninstall.exe"
           if (Test-Path $uninstaller) {
             Start-Process -FilePath $uninstaller -ArgumentList "/S" -Wait `
@@ -145,8 +145,8 @@ jobs:
         with:
           name: desktop-verify-logs-legacy-windows-${{ steps.version.outputs.version }}
           path: |
-            ${{ runner.temp }}/qwenpaw-desktop-stdout.log
-            ${{ runner.temp }}/qwenpaw-desktop-stderr.log
+            ${{ runner.temp }}/minions-desktop-stdout.log
+            ${{ runner.temp }}/minions-desktop-stderr.log
           if-no-files-found: ignore
           retention-days: 7
 
@@ -162,8 +162,8 @@ jobs:
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
-          name: QwenPaw-Desktop-Windows-${{ steps.version.outputs.version }}
-          path: dist/QwenPaw-Setup-*.exe
+          name: Minions-Desktop-Windows-${{ steps.version.outputs.version }}
+          path: dist/Minions-Setup-*.exe
 
   build-macos:
     needs: [check-release-secrets]
@@ -192,7 +192,7 @@ jobs:
         with:
           auto-update-conda: true
           python-version: "3.11"
-          activate-environment: "qwenpaw-build"
+          activate-environment: "minions-build"
           condarc-file: .github/condarc
           conda-remove-defaults: false
 
@@ -204,7 +204,7 @@ jobs:
           NODE_OPTIONS: "--max-old-space-size=8192"
         run: |
           chmod +x scripts/pack/build_macos.sh
-          conda run -n qwenpaw-build bash -c 'CREATE_ZIP=1 ./scripts/pack/build_macos.sh'
+          conda run -n minions-build bash -c 'CREATE_ZIP=1 ./scripts/pack/build_macos.sh'
 
       - name: Set up runner Python for verification
         id: runner-python
@@ -216,15 +216,15 @@ jobs:
         timeout-minutes: 10
         uses: ./.github/actions/verify-legacy-macos
         with:
-          dashscope-api-key: ${{ secrets.QWENPAW_DASHSCOPE_API_KEY }}
+          dashscope-api-key: ${{ secrets.MINIONS_DASHSCOPE_API_KEY }}
           version: ${{ steps.version.outputs.version }}
           runner-python: ${{ steps.runner-python.outputs.python-path }}
 
       - name: Stop desktop server (Legacy macOS)
         if: always()
         run: |
-          if [ -f "$RUNNER_TEMP/qwenpaw-desktop.pid" ]; then
-            kill "$(cat "$RUNNER_TEMP/qwenpaw-desktop.pid")" 2>/dev/null || true
+          if [ -f "$RUNNER_TEMP/minions-desktop.pid" ]; then
+            kill "$(cat "$RUNNER_TEMP/minions-desktop.pid")" 2>/dev/null || true
           fi
           lsof -ti:8088 | xargs kill 2>/dev/null || true
           rm -rf dist/verify-legacy
@@ -235,8 +235,8 @@ jobs:
         with:
           name: desktop-verify-logs-legacy-macos-${{ steps.version.outputs.version }}
           path: |
-            ${{ runner.temp }}/qwenpaw-desktop-stdout.log
-            ${{ runner.temp }}/qwenpaw-desktop-stderr.log
+            ${{ runner.temp }}/minions-desktop-stdout.log
+            ${{ runner.temp }}/minions-desktop-stderr.log
           if-no-files-found: ignore
           retention-days: 7
 
@@ -252,8 +252,8 @@ jobs:
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
-          name: QwenPaw-Desktop-macOS-${{ steps.version.outputs.version }}
-          path: dist/QwenPaw-*.zip
+          name: Minions-Desktop-macOS-${{ steps.version.outputs.version }}
+          path: dist/Minions-*.zip
 
   build-tauri-windows:
     needs: [check-release-secrets]
@@ -328,14 +328,14 @@ jobs:
             --bundle-dir console/src-tauri/target/release/bundle/nsis `
             --pattern '*-setup.exe' `
             --target windows-x86_64 `
-            --output "dist/QwenPaw-Tauri-${{ steps.version.outputs.version }}-Windows-setup.exe" `
+            --output "dist/Minions-Tauri-${{ steps.version.outputs.version }}-Windows-setup.exe" `
             --pubkey-config console/src-tauri/tauri.version.conf.json
 
       - name: Verify desktop (Tauri Windows)
         timeout-minutes: 10
         uses: ./.github/actions/verify-tauri-windows
         with:
-          dashscope-api-key: ${{ secrets.QWENPAW_DASHSCOPE_API_KEY }}
+          dashscope-api-key: ${{ secrets.MINIONS_DASHSCOPE_API_KEY }}
 
       - name: Stop desktop server (Tauri Windows)
         if: always()
@@ -343,14 +343,14 @@ jobs:
         run: |
           $ErrorActionPreference = "Continue"
           # Kill the Tauri shell and its sidecar subprocess by name.
-          Get-Process -Name "qwenpaw-desktop" -ErrorAction SilentlyContinue |
+          Get-Process -Name "minions-desktop" -ErrorAction SilentlyContinue |
             Stop-Process -Force -ErrorAction SilentlyContinue
-          Get-Process -Name "qwenpaw-backend" -ErrorAction SilentlyContinue |
+          Get-Process -Name "minions-backend" -ErrorAction SilentlyContinue |
             Stop-Process -Force -ErrorAction SilentlyContinue
           Start-Sleep -Seconds 2
-          Get-Process -Name "qwenpaw-desktop" -ErrorAction SilentlyContinue |
+          Get-Process -Name "minions-desktop" -ErrorAction SilentlyContinue |
             Stop-Process -Force -ErrorAction SilentlyContinue
-          Get-Process -Name "qwenpaw-backend" -ErrorAction SilentlyContinue |
+          Get-Process -Name "minions-backend" -ErrorAction SilentlyContinue |
             Stop-Process -Force -ErrorAction SilentlyContinue
           exit 0
 
@@ -360,9 +360,9 @@ jobs:
         with:
           name: desktop-verify-logs-tauri-windows-${{ steps.version.outputs.version }}
           path: |
-            ${{ runner.temp }}/qwenpaw-desktop-stdout.log
-            ${{ runner.temp }}/qwenpaw-desktop-stderr.log
-            ~/AppData/Local/com.qwenpaw.desktop/logs/
+            ${{ runner.temp }}/minions-desktop-stdout.log
+            ${{ runner.temp }}/minions-desktop-stderr.log
+            ~/AppData/Local/com.minions.desktop/logs/
           if-no-files-found: ignore
           retention-days: 7
 
@@ -378,8 +378,8 @@ jobs:
       - name: Upload Tauri Windows artifact
         uses: actions/upload-artifact@v4
         with:
-          name: QwenPaw-Desktop-Tauri-Windows-${{ steps.version.outputs.version }}
-          path: dist/QwenPaw-Tauri-*-Windows-setup.exe
+          name: Minions-Desktop-Tauri-Windows-${{ steps.version.outputs.version }}
+          path: dist/Minions-Tauri-*-Windows-setup.exe
 
       - name: Upload Tauri Windows updater metadata
         if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.upload_to_oss == 'true')
@@ -387,7 +387,7 @@ jobs:
         with:
           name: tauri-updater-meta-windows
           path: |
-            dist/QwenPaw-Tauri-*-Windows-setup.exe.sig
+            dist/Minions-Tauri-*-Windows-setup.exe.sig
             dist/tauri-windows-x86_64-updater.json
 
   build-tauri-macos:
@@ -456,17 +456,17 @@ jobs:
         timeout-minutes: 10
         uses: ./.github/actions/verify-tauri-macos
         with:
-          dashscope-api-key: ${{ secrets.QWENPAW_DASHSCOPE_API_KEY }}
+          dashscope-api-key: ${{ secrets.MINIONS_DASHSCOPE_API_KEY }}
 
       - name: Stop desktop server (Tauri macOS)
         if: always()
         run: |
           # Kill the Tauri shell and its sidecar subprocess.
-          pkill -f "QwenPaw Desktop" 2>/dev/null || true
-          pkill -f "qwenpaw-backend" 2>/dev/null || true
+          pkill -f "Minions Desktop" 2>/dev/null || true
+          pkill -f "minions-backend" 2>/dev/null || true
           sleep 2
-          pkill -9 -f "QwenPaw Desktop" 2>/dev/null || true
-          pkill -9 -f "qwenpaw-backend" 2>/dev/null || true
+          pkill -9 -f "Minions Desktop" 2>/dev/null || true
+          pkill -9 -f "minions-backend" 2>/dev/null || true
           # Best-effort: kill anything sitting on the detected port.
           if [ -n "${BASE_URL:-}" ]; then
             PORT="${BASE_URL##*:}"
@@ -480,9 +480,9 @@ jobs:
         with:
           name: desktop-verify-logs-tauri-macos-${{ steps.version.outputs.version }}
           path: |
-            ${{ runner.temp }}/qwenpaw-desktop-stdout.log
-            ${{ runner.temp }}/qwenpaw-desktop-stderr.log
-            ~/Library/Logs/com.qwenpaw.desktop/
+            ${{ runner.temp }}/minions-desktop-stdout.log
+            ${{ runner.temp }}/minions-desktop-stderr.log
+            ~/Library/Logs/com.minions.desktop/
           if-no-files-found: ignore
           retention-days: 7
 
@@ -498,8 +498,8 @@ jobs:
       - name: Upload Tauri macOS artifact
         uses: actions/upload-artifact@v4
         with:
-          name: QwenPaw-Desktop-Tauri-macOS-${{ steps.version.outputs.version }}
-          path: dist/QwenPaw-Tauri-*-macOS.zip
+          name: Minions-Desktop-Tauri-macOS-${{ steps.version.outputs.version }}
+          path: dist/Minions-Tauri-*-macOS.zip
 
       - name: Upload Tauri macOS updater metadata
         if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.upload_to_oss == 'true')
@@ -507,8 +507,8 @@ jobs:
         with:
           name: tauri-updater-meta-macos
           path: |
-            dist/QwenPaw-Tauri-*-macOS.app.tar.gz
-            dist/QwenPaw-Tauri-*-macOS.app.tar.gz.sig
+            dist/Minions-Tauri-*-macOS.app.tar.gz
+            dist/Minions-Tauri-*-macOS.app.tar.gz.sig
             dist/tauri-darwin-*-updater.json
 
   upload-release:
@@ -538,15 +538,15 @@ jobs:
 
       - name: Move artifacts to root for upload
         run: |
-          mv QwenPaw-Desktop-Windows-*/QwenPaw-Setup-*.exe . 2>/dev/null || true
-          mv QwenPaw-Desktop-macOS-*/QwenPaw-*.zip . 2>/dev/null || true
-          mv QwenPaw-Desktop-Tauri-Windows-*/QwenPaw-Tauri-*-Windows-setup.exe . 2>/dev/null || true
-          mv QwenPaw-Desktop-Tauri-macOS-*/QwenPaw-Tauri-*-macOS.zip . 2>/dev/null || true
+          mv Minions-Desktop-Windows-*/Minions-Setup-*.exe . 2>/dev/null || true
+          mv Minions-Desktop-macOS-*/Minions-*.zip . 2>/dev/null || true
+          mv Minions-Desktop-Tauri-Windows-*/Minions-Tauri-*-Windows-setup.exe . 2>/dev/null || true
+          mv Minions-Desktop-Tauri-macOS-*/Minions-Tauri-*-macOS.zip . 2>/dev/null || true
           # Updater metadata from internal artifacts
-          mv tauri-updater-meta-windows/QwenPaw-Tauri-*-Windows-setup.exe.sig . 2>/dev/null || true
+          mv tauri-updater-meta-windows/Minions-Tauri-*-Windows-setup.exe.sig . 2>/dev/null || true
           mv tauri-updater-meta-windows/tauri-windows-*-updater.json . 2>/dev/null || true
-          mv tauri-updater-meta-macos/QwenPaw-Tauri-*-macOS.app.tar.gz . 2>/dev/null || true
-          mv tauri-updater-meta-macos/QwenPaw-Tauri-*-macOS.app.tar.gz.sig . 2>/dev/null || true
+          mv tauri-updater-meta-macos/Minions-Tauri-*-macOS.app.tar.gz . 2>/dev/null || true
+          mv tauri-updater-meta-macos/Minions-Tauri-*-macOS.app.tar.gz.sig . 2>/dev/null || true
           mv tauri-updater-meta-macos/tauri-darwin-*-updater.json . 2>/dev/null || true
 
       - name: Generate Tauri updater manifest
@@ -558,24 +558,24 @@ jobs:
           for f in tauri-windows-*-updater.json tauri-darwin-*-updater.json; do
             [ -f "$f" ] && metadata_args+=(--metadata "$f")
           done
-          NOTES="${RELEASE_BODY:-QwenPaw Desktop ${{ steps.version.outputs.version }}}"
+          NOTES="${RELEASE_BODY:-Minions Desktop ${{ steps.version.outputs.version }}}"
           python scripts/pack-tauri/generate_update_manifest.py manifest \
             --version "${{ steps.version.outputs.version }}" \
             --base-url "https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}" \
             "${metadata_args[@]}" \
             --notes "$NOTES" \
-            --output qwenpaw-tauri-latest.json
+            --output minions-tauri-latest.json
 
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            QwenPaw-Setup-*.exe
-            QwenPaw-[0-9]*-macOS.zip
-            QwenPaw-Tauri-*-Windows-setup.exe
-            QwenPaw-Tauri-*-macOS.zip
-            QwenPaw-Tauri-*-macOS.app.tar.gz
-            qwenpaw-tauri-latest.json
+            Minions-Setup-*.exe
+            Minions-[0-9]*-macOS.zip
+            Minions-Tauri-*-Windows-setup.exe
+            Minions-Tauri-*-macOS.zip
+            Minions-Tauri-*-macOS.app.tar.gz
+            minions-tauri-latest.json
           fail-on-unmatched-files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -591,8 +591,8 @@ jobs:
       needs.build-tauri-macos.result == 'success'
     runs-on: ubuntu-latest
     env:
-      OSS_BUCKET: ${{ vars.OSS_BUCKET || 'qwenpaw-download' }}
-      OSS_PUBLIC_BASE_URL: ${{ vars.OSS_PUBLIC_BASE_URL || 'https://download.qwenpaw.agentscope.io/files/apps/desktop' }}
+      OSS_BUCKET: ${{ vars.OSS_BUCKET || 'minions-download' }}
+      OSS_PUBLIC_BASE_URL: ${{ vars.OSS_PUBLIC_BASE_URL || 'https://download.minions.agentscope.io/files/apps/desktop' }}
     steps:
       - name: Checkout (for scripts)
         uses: actions/checkout@v4
@@ -628,10 +628,10 @@ jobs:
             -L CH
 
       - name: Process and upload Windows artifacts
-        if: hashFiles('QwenPaw-Desktop-Windows-*/*.exe') != ''
+        if: hashFiles('Minions-Desktop-Windows-*/*.exe') != ''
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          WIN_EXE=$(find QwenPaw-Desktop-Windows-* -name "QwenPaw-Setup-*.exe" | head -1)
+          WIN_EXE=$(find Minions-Desktop-Windows-* -name "Minions-Setup-*.exe" | head -1)
 
           if [ -z "$WIN_EXE" ]; then
             echo "No Windows exe found, skipping"
@@ -650,35 +650,35 @@ jobs:
 
           # Upload file (versioned)
           ossutil cp "$WIN_EXE" \
-            "oss://${OSS_BUCKET}/files/apps/desktop/win/QwenPaw-Setup-${VERSION}.exe" \
+            "oss://${OSS_BUCKET}/files/apps/desktop/win/Minions-Setup-${VERSION}.exe" \
             --acl public-read \
             --force
 
           # Upload file (latest)
           ossutil cp "$WIN_EXE" \
-            "oss://${OSS_BUCKET}/files/apps/desktop/win/QwenPaw-Setup-latest.exe" \
+            "oss://${OSS_BUCKET}/files/apps/desktop/win/Minions-Setup-latest.exe" \
             --acl public-read \
             --force
 
           # Upload metadata (versioned)
           ossutil cp win-metadata.json \
-            "oss://${OSS_BUCKET}/metadata/apps/desktop/win/QwenPaw-Setup-${VERSION}.exe.json" \
+            "oss://${OSS_BUCKET}/metadata/apps/desktop/win/Minions-Setup-${VERSION}.exe.json" \
             --acl public-read \
             --force
 
           # Upload metadata (latest)
           ossutil cp win-metadata.json \
-            "oss://${OSS_BUCKET}/metadata/apps/desktop/win/QwenPaw-Setup-latest.exe.json" \
+            "oss://${OSS_BUCKET}/metadata/apps/desktop/win/Minions-Setup-latest.exe.json" \
             --acl public-read \
             --force
 
           echo "✓ Windows artifacts uploaded"
 
       - name: Process and upload macOS artifacts
-        if: hashFiles('QwenPaw-Desktop-macOS-*/*.zip') != ''
+        if: hashFiles('Minions-Desktop-macOS-*/*.zip') != ''
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          MAC_ZIP=$(find QwenPaw-Desktop-macOS-* -name "QwenPaw-*.zip" | head -1)
+          MAC_ZIP=$(find Minions-Desktop-macOS-* -name "Minions-*.zip" | head -1)
 
           if [ -z "$MAC_ZIP" ]; then
             echo "No macOS zip found, skipping"
@@ -697,32 +697,32 @@ jobs:
 
           # Upload file (versioned)
           ossutil cp "$MAC_ZIP" \
-            "oss://${OSS_BUCKET}/files/apps/desktop/mac/QwenPaw-${VERSION}-macOS.zip" \
+            "oss://${OSS_BUCKET}/files/apps/desktop/mac/Minions-${VERSION}-macOS.zip" \
             --acl public-read \
             --force
 
           # Upload file (latest)
           ossutil cp "$MAC_ZIP" \
-            "oss://${OSS_BUCKET}/files/apps/desktop/mac/QwenPaw-latest-macOS.zip" \
+            "oss://${OSS_BUCKET}/files/apps/desktop/mac/Minions-latest-macOS.zip" \
             --acl public-read \
             --force
 
           # Upload metadata (versioned)
           ossutil cp mac-metadata.json \
-            "oss://${OSS_BUCKET}/metadata/apps/desktop/mac/QwenPaw-${VERSION}-macOS.zip.json" \
+            "oss://${OSS_BUCKET}/metadata/apps/desktop/mac/Minions-${VERSION}-macOS.zip.json" \
             --acl public-read \
             --force
 
           # Upload metadata (latest)
           ossutil cp mac-metadata.json \
-            "oss://${OSS_BUCKET}/metadata/apps/desktop/mac/QwenPaw-latest-macOS.zip.json" \
+            "oss://${OSS_BUCKET}/metadata/apps/desktop/mac/Minions-latest-macOS.zip.json" \
             --acl public-read \
             --force
 
           echo "✓ macOS artifacts uploaded"
 
       - name: Process and upload Tauri artifacts
-        if: hashFiles('QwenPaw-Desktop-Tauri-*/*') != ''
+        if: hashFiles('Minions-Desktop-Tauri-*/*') != ''
         run: |
           VERSION="${{ steps.version.outputs.version }}"
 
@@ -768,19 +768,19 @@ jobs:
           }
 
           upload_tauri_artifact \
-            "QwenPaw-Desktop-Tauri-Windows-*" \
-            "QwenPaw-Tauri-*-Windows-setup.exe" \
+            "Minions-Desktop-Tauri-Windows-*" \
+            "Minions-Tauri-*-Windows-setup.exe" \
             "win-tauri" \
-            "QwenPaw-Tauri-${VERSION}-Windows-setup.exe" \
-            "QwenPaw-Tauri-latest-Windows-setup.exe" \
+            "Minions-Tauri-${VERSION}-Windows-setup.exe" \
+            "Minions-Tauri-latest-Windows-setup.exe" \
             "win-tauri-metadata.json"
 
           upload_tauri_artifact \
-            "QwenPaw-Desktop-Tauri-macOS-*" \
-            "QwenPaw-Tauri-*-macOS.zip" \
+            "Minions-Desktop-Tauri-macOS-*" \
+            "Minions-Tauri-*-macOS.zip" \
             "mac-tauri" \
-            "QwenPaw-Tauri-${VERSION}-macOS.zip" \
-            "QwenPaw-Tauri-latest-macOS.zip" \
+            "Minions-Tauri-${VERSION}-macOS.zip" \
+            "Minions-Tauri-latest-macOS.zip" \
             "mac-tauri-metadata.json"
 
       - name: Upload Tauri macOS updater archive to OSS
@@ -788,13 +788,13 @@ jobs:
         if: hashFiles('tauri-updater-meta-macos/*.app.tar.gz') != ''
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          APP_TAR_GZ=$(find tauri-updater-meta-macos -name "QwenPaw-Tauri-*-macOS.app.tar.gz" | head -1)
+          APP_TAR_GZ=$(find tauri-updater-meta-macos -name "Minions-Tauri-*-macOS.app.tar.gz" | head -1)
           if [ -z "$APP_TAR_GZ" ]; then
             echo "No macOS .app.tar.gz found, skipping"
             exit 0
           fi
           ossutil cp "$APP_TAR_GZ" \
-            "oss://${OSS_BUCKET}/files/apps/desktop/mac-tauri/QwenPaw-Tauri-${VERSION}-macOS.app.tar.gz" \
+            "oss://${OSS_BUCKET}/files/apps/desktop/mac-tauri/Minions-Tauri-${VERSION}-macOS.app.tar.gz" \
             --acl public-read \
             --force
 
@@ -804,7 +804,7 @@ jobs:
           # The manifest generator expects the artifact binary alongside the
           # sidecar JSON.  After artifact splitting the exe lives in a separate
           # artifact directory, so we symlink it into the meta directory.
-          for f in QwenPaw-Desktop-Tauri-Windows-*/QwenPaw-Tauri-*-Windows-setup.exe; do
+          for f in Minions-Desktop-Tauri-Windows-*/Minions-Tauri-*-Windows-setup.exe; do
             [ -f "$f" ] && ln -sf "../$f" tauri-updater-meta-windows/ 2>/dev/null || true
           done
 
@@ -828,7 +828,7 @@ jobs:
             echo "No Tauri updater sidecars found, skipping OSS manifest"
             exit 0
           fi
-          NOTES="${RELEASE_BODY:-QwenPaw Desktop ${VERSION}}"
+          NOTES="${RELEASE_BODY:-Minions Desktop ${VERSION}}"
           python scripts/pack-tauri/generate_update_manifest.py manifest \
             --version "$VERSION" \
             --base-url "$OSS_BASE" \
@@ -836,9 +836,9 @@ jobs:
             --target-base "darwin-aarch64=${OSS_BASE}/mac-tauri" \
             "${metadata_args[@]}" \
             --notes "$NOTES" \
-            --output qwenpaw-tauri-latest-oss.json
-          ossutil cp qwenpaw-tauri-latest-oss.json \
-            "oss://${OSS_BUCKET}/metadata/qwenpaw-tauri-latest.json" \
+            --output minions-tauri-latest-oss.json
+          ossutil cp minions-tauri-latest-oss.json \
+            "oss://${OSS_BUCKET}/metadata/minions-tauri-latest.json" \
             --acl public-read \
             --force
 
@@ -860,7 +860,7 @@ jobs:
           # Merge Windows metadata if exists
           if [ -f "win-metadata.json" ]; then
             python scripts/pack/generate_oss_metadata.py \
-              --file "$(find QwenPaw-Desktop-Windows-* -name 'QwenPaw-Setup-*.exe' | head -1)" \
+              --file "$(find Minions-Desktop-Windows-* -name 'Minions-Setup-*.exe' | head -1)" \
               --product desktop \
               --platform win \
               --version "$VERSION" \
@@ -872,7 +872,7 @@ jobs:
           # Merge macOS metadata if exists
           if [ -f "mac-metadata.json" ]; then
             python scripts/pack/generate_oss_metadata.py \
-              --file "$(find QwenPaw-Desktop-macOS-* -name 'QwenPaw-*.zip' | head -1)" \
+              --file "$(find Minions-Desktop-macOS-* -name 'Minions-*.zip' | head -1)" \
               --product desktop \
               --platform mac \
               --version "$VERSION" \
@@ -901,13 +901,13 @@ jobs:
 
           merge_tauri_metadata \
             "win-tauri-metadata.json" \
-            "QwenPaw-Desktop-Tauri-Windows-*" \
-            "QwenPaw-Tauri-*-Windows-setup.exe" \
+            "Minions-Desktop-Tauri-Windows-*" \
+            "Minions-Tauri-*-Windows-setup.exe" \
             "win-tauri"
           merge_tauri_metadata \
             "mac-tauri-metadata.json" \
-            "QwenPaw-Desktop-Tauri-macOS-*" \
-            "QwenPaw-Tauri-*-macOS.zip" \
+            "Minions-Desktop-Tauri-macOS-*" \
+            "Minions-Tauri-*-macOS.zip" \
             "mac-tauri"
 
           # Upload updated desktop/index.json

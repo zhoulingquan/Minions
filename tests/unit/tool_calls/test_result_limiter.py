@@ -9,9 +9,9 @@ import pytest
 from agentscope.message import DataBlock, TextBlock, ToolResultState, URLSource
 from agentscope.tool import ToolResponse
 
-from qwenpaw.constant import TRUNCATION_NOTICE_MARKER
-from qwenpaw.tool_calls._context import ToolCallContext
-from qwenpaw.tool_calls._result_limiter import (
+from minions.constant import TRUNCATION_NOTICE_MARKER
+from minions.tool_calls._context import ToolCallContext
+from minions.tool_calls._result_limiter import (
     EXECUTION_TRUNCATION_NOTICE_MARKER,
     ToolResultLimiter,
 )

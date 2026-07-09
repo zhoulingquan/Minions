@@ -7,6 +7,7 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+// prettier-ignore
 import { Menu, ChevronRight, ArrowUp } from "lucide-react";
 import { DocSearchResults } from "@/components/DocSearchResults";
 import { FeatureDemoGallery } from "@/components/FeatureDemoGallery";
@@ -24,8 +25,8 @@ import { DocMarkdown } from "./components/DocMarkdown";
 import { FaqArticle } from "./components/FaqArticle";
 
 export default function Docs() {
-  const { t, i18n } = useTranslation();
-  const lang: "zh" | "en" = i18n.resolvedLanguage === "zh" ? "zh" : "en";
+  const { t } = useTranslation();
+  const lang: "zh" = "zh";
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const location = useLocation();

@@ -14,8 +14,8 @@ from pathlib import Path
 
 import pytest
 
-from qwenpaw.agents.context.scroll.history import HistoryStore
-from qwenpaw.agents.context.types import LogEntry
+from minions.agents.context.scroll.history import HistoryStore
+from minions.agents.context.types import LogEntry
 
 
 @pytest.fixture
@@ -261,7 +261,7 @@ class _NoFTSConn:
         return getattr(self._real, name)
 
 
-@pytest.mark.usefixtures("capture_qwenpaw_logs")
+@pytest.mark.usefixtures("capture_minions_logs")
 def test_init_fts_degrades_and_warns_without_fts5(tmp_path: Path, caplog):
     """A SQLite build without FTS5 must not break the store: history.db still
     works and search degrades to LIKE, with one warning logged."""

@@ -9,9 +9,7 @@ import {
   message,
 } from "antd";
 import type { MenuProps } from "antd";
-import LanguageSwitcher, {
-  LANGUAGE_LIST,
-} from "../components/LanguageSwitcher/index";
+import LanguageSwitcher from "../components/LanguageSwitcher/index";
 import ThemeToggleButton from "../components/ThemeToggleButton";
 import CodingModeToggle from "../components/CodingModeToggle";
 import { useTranslation } from "react-i18next";
@@ -217,18 +215,6 @@ export default function Header() {
 
   const mobileMenuItems: MenuProps["items"] = [
     {
-      key: "language",
-      label: t("sidebar.settings.language"),
-      children: LANGUAGE_LIST.map(({ key, label }) => ({
-        key,
-        label,
-        onClick: () => {
-          i18n.changeLanguage(key);
-          localStorage.setItem("language", key);
-        },
-      })),
-    },
-    {
       key: "theme",
       label: t("sidebar.settings.theme"),
       children: [
@@ -273,12 +259,12 @@ export default function Header() {
     }
 
     const faqLang = lang === "zh" ? "zh" : "en";
-    const url = `https://qwenpaw.agentscope.io/docs/faq.${faqLang}.md`;
+    const url = `https://minions.agentscope.io/docs/faq.${faqLang}.md`;
     fetch(url, { cache: "no-cache" })
       .then((res) => (res.ok ? res.text() : Promise.reject()))
       .then((text) => {
-        const zhPattern = /###\s*QwenPaw如何更新[\s\S]*?(?=\n###|$)/;
-        const enPattern = /###\s*How to update QwenPaw[\s\S]*?(?=\n###|$)/;
+        const zhPattern = /###\s*Minions如何更新[\s\S]*?(?=\n###|$)/;
+        const enPattern = /###\s*How to update Minions[\s\S]*?(?=\n###|$)/;
         const match = text.match(faqLang === "zh" ? zhPattern : enPattern);
         setUpdateMarkdown(
           match && lang !== "ru"
@@ -346,7 +332,7 @@ export default function Header() {
           <Slot name="header.logo" kind="replace">
             <img
               src={isDark ? "/logo-dark.svg" : "/logo-light.svg"}
-              alt="QwenPaw"
+              alt="Minions"
               className={styles.logoImg}
             />
           </Slot>

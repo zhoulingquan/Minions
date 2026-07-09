@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build QwenPaw with Tauri for macOS (PyInstaller backend)
+# Build Minions with Tauri for macOS (PyInstaller backend)
 # Creates a self-contained desktop app with bundled Python backend
 #
 # Usage:
@@ -10,10 +10,10 @@ set -e
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$REPO_ROOT"
 
-VERSION=$(sed -n 's/^__version__[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' src/qwenpaw/__version__.py)
+VERSION=$(sed -n 's/^__version__[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' src/minions/__version__.py)
 
 echo "========================================="
-echo "QwenPaw Tauri Build - macOS (PyInstaller)"
+echo "Minions Tauri Build - macOS (PyInstaller)"
 echo "========================================="
 echo "Version: ${VERSION}"
 echo ""
@@ -98,7 +98,7 @@ echo ""
 
 echo "== Step 2b: Signing PyInstaller Backend =="
 bash "${SIGN_MACOS_BUNDLE}" \
-    "${REPO_ROOT}/console/src-tauri/binaries/qwenpaw-backend" \
+    "${REPO_ROOT}/console/src-tauri/binaries/minions-backend" \
     "${APPLE_SIGNING_IDENTITY}"
 echo "PyInstaller backend signed"
 echo ""
@@ -116,7 +116,7 @@ cd ..
 echo "Tauri app built"
 echo ""
 
-APP_PATH="${BUNDLE_DIR}/macos/QwenPaw Desktop.app"
+APP_PATH="${BUNDLE_DIR}/macos/Minions Desktop.app"
 if [ ! -d "${APP_PATH}" ]; then
     echo "ERROR: No Tauri macOS app found at ${APP_PATH}"
     exit 1
@@ -147,7 +147,7 @@ STAGED_APP_PATH="${DIST_DIR}/$(basename "${APP_PATH}")"
 echo ".app copied to ${STAGED_APP_PATH}"
 
 # Create ZIP archive
-ZIP_NAME="${DIST_ROOT}/QwenPaw-Tauri-${VERSION}-macOS.zip"
+ZIP_NAME="${DIST_ROOT}/Minions-Tauri-${VERSION}-macOS.zip"
 if [ -f "${ZIP_NAME}" ]; then
     rm -f "${ZIP_NAME}"
 fi
@@ -168,7 +168,7 @@ else
 fi
 echo ""
 
-UPDATER_NAME="${DIST_ROOT}/QwenPaw-Tauri-${VERSION}-macOS.app.tar.gz"
+UPDATER_NAME="${DIST_ROOT}/Minions-Tauri-${VERSION}-macOS.app.tar.gz"
 case "$(uname -m)" in
     arm64 | aarch64) UPDATER_TARGET="darwin-aarch64" ;;
     *) UPDATER_TARGET="darwin-x86_64" ;;

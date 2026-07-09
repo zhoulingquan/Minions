@@ -12,8 +12,8 @@ import sys
 
 import pytest
 
-from qwenpaw.agents.acp.meta import ACP_CODING_PROJECT_META_KEY
-from qwenpaw.cli.tui.events import (
+from minions.agents.acp.meta import ACP_CODING_PROJECT_META_KEY
+from minions.cli.tui.events import (
     BackendWarmed,
     Connected,
     PermissionRequest,
@@ -24,7 +24,7 @@ from qwenpaw.cli.tui.events import (
     TurnEnded,
     UserTurn,
 )
-from qwenpaw.cli.tui.transport.acp import AcpTransport
+from minions.cli.tui.transport.acp import AcpTransport
 
 pytestmark = [pytest.mark.unit, pytest.mark.p1]
 
@@ -66,7 +66,7 @@ async def test_start_and_basic_turn():
         connected = await asyncio.wait_for(transport.start(), timeout=10.0)
         assert isinstance(connected, Connected)
         assert connected.session_id == "sess-1"
-        assert connected.qwenpaw_version == "0.0.1"
+        assert connected.minions_version == "0.0.1"
         assert connected.warming is True
 
         await transport.send("hi there")
@@ -240,10 +240,10 @@ async def test_load_session_replays_history():
 def test_session_agent_reads_meta():
     from types import SimpleNamespace
 
-    from qwenpaw.cli.tui.transport.acp import _session_agent
+    from minions.cli.tui.transport.acp import _session_agent
 
     # Agent id reported via the session response _meta.
-    sess = SimpleNamespace(field_meta={"qwenpaw.agent": "writer"})
+    sess = SimpleNamespace(field_meta={"minions.agent": "writer"})
     assert _session_agent(sess) == "writer"
 
     # Missing / unrelated meta → None (caller falls back to the requested id).

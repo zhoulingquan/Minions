@@ -6,7 +6,7 @@ The Tauri backend is a PyInstaller-frozen executable, so ``sys.executable`` is
 not a usable Python interpreter. To install third-party *plugin* dependencies
 at runtime we ship a standalone CPython (python-build-standalone) whose
 ``X.Y``/architecture match the frozen interpreter, and drive ``pip install``
-with it (see ``qwenpaw.plugins.loader``).
+with it (see ``minions.plugins.loader``).
 
 This script downloads the matching ``install_only`` build and extracts it to
 ``<dest>/python``. Run it with the SAME interpreter used for the PyInstaller
@@ -62,7 +62,7 @@ def _http_get(url: str) -> bytes:
     token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
     if token:
         request.add_header("Authorization", f"Bearer {token}")
-    request.add_header("User-Agent", "qwenpaw-build")
+    request.add_header("User-Agent", "minions-build")
     with urllib.request.urlopen(request, timeout=120) as resp:
         return resp.read()
 

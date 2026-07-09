@@ -24,8 +24,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 # Import BaseChannel directly for internal logic testing
-from qwenpaw.app.channels.base import BaseChannel, ProcessHandler
-from qwenpaw.app.channels.console.channel import ConsoleChannel
+from minions.app.channels.base import BaseChannel, ProcessHandler
+from minions.app.channels.console.channel import ConsoleChannel
 
 
 # =============================================================================
@@ -38,7 +38,7 @@ def mock_process() -> ProcessHandler:
     """Mock agent processing flow, returns simple text response."""
 
     async def process(_request: Any):
-        from qwenpaw.schemas import (
+        from minions.schemas import (
             RunStatus,
             Event,
             Message,
@@ -83,7 +83,7 @@ def base_channel(mock_process) -> BaseChannel:
 @pytest.fixture
 def content_builder():
     """Build different types of content parts for testing."""
-    from qwenpaw.schemas import (
+    from minions.schemas import (
         TextContent,
         ImageContent,
         RefusalContent,
@@ -177,7 +177,7 @@ class TestBuildAgentRequestCore:
 
     def test_empty_content_gets_default(self, base_channel):
         """Empty content should auto-fill with default empty text"""
-        from qwenpaw.schemas import ContentType
+        from minions.schemas import ContentType
 
         request = base_channel.build_agent_request_from_user_content(
             channel_id="test",
@@ -891,7 +891,7 @@ class TestStreamWithTracker:
 
     async def test_stream_with_tracker_yields_sse_events(self, base_channel):
         """_stream_with_tracker should yield SSE-formatted events."""
-        from qwenpaw.schemas import (
+        from minions.schemas import (
             RunStatus,
             Event,
             Message,
@@ -997,7 +997,7 @@ class TestStreamWithTracker:
         base_channel,
     ):
         """_stream_with_tracker should fallback on malformed surrogate data."""
-        from qwenpaw.schemas import RunStatus
+        from minions.schemas import RunStatus
 
         class BrokenJsonEvent:
             object = "response"
@@ -1068,7 +1068,7 @@ class TestAudioContentDetection:
 
     def test_audio_content_returns_true(self, base_channel):
         """Content with AudioContent should return True."""
-        from qwenpaw.schemas import (
+        from minions.schemas import (
             AudioContent,
             ContentType,
         )
@@ -1093,7 +1093,7 @@ class TestAudioContentDetection:
 
     def test_mixed_content_with_audio_returns_true(self, base_channel):
         """Mixed content with audio should return True."""
-        from qwenpaw.schemas import (
+        from minions.schemas import (
             AudioContent,
             TextContent,
             ContentType,
@@ -1363,7 +1363,7 @@ class TestRunProcessLoopIntegration:
 
     async def test_completed_message_triggers_send(self, base_channel):
         """Complete message event should trigger sending"""
-        from qwenpaw.schemas import (
+        from minions.schemas import (
             RunStatus,
             Event,
             Message,

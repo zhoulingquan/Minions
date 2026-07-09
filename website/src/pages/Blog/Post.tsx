@@ -26,7 +26,7 @@ function linkifySessionUrls(body: string): string {
   );
 }
 
-const DEVELOPER_DAY_COLLECTION_SLUG = "qwenpaw-developer-day-collection";
+const DEVELOPER_DAY_COLLECTION_SLUG = "minions-developer-day-collection";
 
 async function fetchBlogPost(
   slug: string,
@@ -56,9 +56,8 @@ function BlogPostShell({ children }: { children: ReactNode }) {
 
 export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
-  const { t, i18n } = useTranslation();
-  const isZh = i18n.resolvedLanguage === "zh";
-  const locale = i18n.resolvedLanguage ?? "en";
+  const { t } = useTranslation();
+  const isZh = true;
   const [post, setPost] = useState<ParsedBlogPost | null>(null);
   const [adjacentPost, setAdjacentPost] = useState<{
     slug: string;
@@ -69,7 +68,7 @@ export default function BlogPost() {
   const [notFound, setNotFound] = useState(false);
 
   const isKnownSlug = BLOG_POSTS.some((entry) => entry.slug === slug);
-  const isSessionList = slug === "qwenpaw-developer-day-collection";
+  const isSessionList = slug === "minions-developer-day-collection";
 
   useEffect(() => {
     if (!slug || !isKnownSlug) {

@@ -1,22 +1,21 @@
 import {
   useCallback,
-  useDeferredValue,
   useEffect,
   useMemo,
   useState,
 } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Button, Input, Modal } from "@agentscope-ai/design";
-import { PlusOutlined, SearchOutlined, SyncOutlined } from "@ant-design/icons";
+import { Button, Modal } from "@agentscope-ai/design";
+import { SyncOutlined } from "@ant-design/icons";
 import { useProviders } from "./useProviders";
 import {
   LoadingState,
   ProviderCard,
   ProviderGroupCard,
-  CustomProviderModal,
   ModelsSection,
   ProviderConfigModal,
   ModelManageModal,
+  AddCloudModel,
 } from "./components";
 import { PageHeader } from "@/components/PageHeader";
 import { useTranslation } from "react-i18next";
@@ -37,8 +36,7 @@ function ModelsPage() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { providers, activeModels, loading, error, fetchAll } = useProviders();
-  const [addProviderOpen, setAddProviderOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+
 
   // Shared Modal state — only one instance each instead of N per card
   const [configModalProvider, setConfigModalProvider] =
@@ -104,9 +102,6 @@ function ModelsPage() {
     setModelsModalProvider(provider);
   }, []);
 
-  // P1: Defer search filtering to avoid blocking input responsiveness
-  const deferredSearchQuery = useDeferredValue(searchQuery);
-
   const {
     localConfigured,
     localAvailable,
@@ -127,17 +122,17 @@ function ModelsPage() {
       return getIsConfigured(p);
     };
 
-    // QwenPaw Local is always "configured" (embedded)
+    // Minions Local is always "configured" (embedded)
     const isEmbedded = (p: ProviderInfo) =>
-      p.id === "qwenpaw-local" || p.id === "copaw-local";
+      p.id === "minions-local" || p.id === "copaw-local";
 
     // Separate local vs cloud first
     const allCloud: ProviderInfo[] = [];
     for (const p of providers) {
-      if (p.is_local || p.is_custom) {
+      if (p.is_local) {
         if (isEmbedded(p) || isReady(p)) localConf.push(p);
         else localAvail.push(p);
-      } else {
+      } else if (p.is_custom || (p.id !== "opencode" && p.id !== "deepseek")) {
         allCloud.push(p);
       }
     }
@@ -216,47 +211,14 @@ function ModelsPage() {
       return a.name.localeCompare(b.name);
     });
 
-    const query = deferredSearchQuery.trim().toLowerCase();
-    if (!query) {
-      return {
-        localConfigured: localConf,
-        localAvailable: localAvail,
-        cloudConfiguredGrouped: cloudResult.grouped,
-        cloudConfiguredUngrouped: cloudResult.ungrouped,
-        cloudAvailableGroups: cloudAvailGroups,
-      };
-    }
-
-    const matchProvider = (p: ProviderInfo) =>
-      p.name.toLowerCase().includes(query) ||
-      (p.provider_group_name || "").toLowerCase().includes(query) ||
-      (p.provider_variant || "").toLowerCase().includes(query);
-
-    const filterGroups = (
-      groups: ReturnType<typeof groupProviders>["grouped"],
-    ) =>
-      groups
-        .map((g) => ({
-          ...g,
-          providers: g.providers.filter(matchProvider),
-        }))
-        .filter(
-          (g) =>
-            g.providers.length > 0 || g.groupName.toLowerCase().includes(query),
-        );
-
     return {
-      localConfigured: localConf.filter(matchProvider),
-      localAvailable: localAvail.filter(matchProvider),
-      cloudConfiguredGrouped: filterGroups(cloudResult.grouped),
-      cloudConfiguredUngrouped: cloudResult.ungrouped.filter(matchProvider),
-      cloudAvailableGroups: cloudAvailGroups.filter(
-        (g) =>
-          g.name.toLowerCase().includes(query) ||
-          g.firstProvider.name.toLowerCase().includes(query),
-      ),
+      localConfigured: localConf,
+      localAvailable: localAvail,
+      cloudConfiguredGrouped: cloudResult.grouped,
+      cloudConfiguredUngrouped: cloudResult.ungrouped,
+      cloudAvailableGroups: cloudAvailGroups,
     };
-  }, [providers, deferredSearchQuery]);
+  }, [providers]);
 
   const configuredCloudProviderCount = useMemo(
     () =>
@@ -329,34 +291,12 @@ function ModelsPage() {
                       {t("common.edit")}
                     </span>
                   </div>
-                  {/* ---- Search ---- */}
-                  <div className={styles.searchRow}>
-                    <Input
-                      placeholder={t("models.searchPlaceholder")}
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className={styles.searchInput}
-                      prefix={<SearchOutlined />}
-                      allowClear
-                      autoComplete="off"
-                      name="models-provider-search-nofill"
-                      data-form-type="other"
-                    />
-                    <Button
-                      icon={<SyncOutlined />}
-                      onClick={() => fetchAll()}
-                      className={styles.searchBtn}
-                      title={t("common.refresh")}
-                    />
-                  </div>
                   <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={() => setAddProviderOpen(true)}
-                    className={styles.addProviderBtn}
-                  >
-                    {t("models.addProvider")}
-                  </Button>
+                    icon={<SyncOutlined />}
+                    onClick={() => fetchAll()}
+                    className={styles.searchBtn}
+                    title={t("common.refresh")}
+                  />
                 </div>
               </div>
 
@@ -396,6 +336,17 @@ function ModelsPage() {
               {/* ---- Tab Content ---- */}
               {activeTab === "cloud" && (
                 <>
+                  {/* Cloud Model Entry */}
+                  <div className={styles.panelSection}>
+                    <div className={styles.panelTitle}>
+                      <span className={styles.panelDotBlue} />
+                      {t("models.addCloudModel")}
+                    </div>
+                    <div style={{ padding: "16px 0" }}>
+                      <AddCloudModel onSaved={refreshProvidersSilently} />
+                    </div>
+                  </div>
+
                   {/* Cloud Configured */}
                   <div className={styles.panelSection}>
                     <div className={styles.panelTitle}>
@@ -421,23 +372,7 @@ function ModelsPage() {
                         ))}
                         {renderProviderCards(cloudConfiguredUngrouped)}
                       </div>
-                    ) : (
-                      <div className={styles.emptyConfigured}>
-                        <p>{t("models.noConfigured")}</p>
-                        <Button
-                          type="primary"
-                          onClick={() => {
-                            document
-                              .getElementById("available-providers")
-                              ?.scrollIntoView({
-                                behavior: "smooth",
-                              });
-                          }}
-                        >
-                          {t("models.goConfigureBtn")}
-                        </Button>
-                      </div>
-                    )}
+                    ) : null}
                   </div>
 
                   {/* Cloud Available */}
@@ -528,12 +463,6 @@ function ModelsPage() {
                 </>
               )}
             </div>
-
-            <CustomProviderModal
-              open={addProviderOpen}
-              onClose={() => setAddProviderOpen(false)}
-              onSaved={fetchAll}
-            />
 
             <Modal
               open={llmModalOpen}

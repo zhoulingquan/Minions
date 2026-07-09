@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-QwenPaw E2E tests - Login/Auth P0 cases
+Minions E2E tests - Login/Auth P0 cases
 
 Functional coverage:
 1. Auth status API

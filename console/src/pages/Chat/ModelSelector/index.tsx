@@ -46,13 +46,13 @@ export default function ModelSelector() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"pro" | "free">(
     () =>
-      (localStorage.getItem("qwenpaw_model_selector_tab") as "pro" | "free") ||
+      (localStorage.getItem("minions_model_selector_tab") as "pro" | "free") ||
       "pro",
   );
   const [collapsedProviders, setCollapsedProviders] = useState<Set<string>>(
     () => {
       try {
-        const raw = localStorage.getItem("qwenpaw_model_selector_collapsed");
+        const raw = localStorage.getItem("minions_model_selector_collapsed");
         return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
       } catch {
         return new Set();
@@ -417,7 +417,7 @@ export default function ModelSelector() {
         next.add(providerId);
       }
       localStorage.setItem(
-        "qwenpaw_model_selector_collapsed",
+        "minions_model_selector_collapsed",
         JSON.stringify([...next]),
       );
       return next;
@@ -705,7 +705,7 @@ export default function ModelSelector() {
           ].join(" ")}
           onClick={() => {
             setActiveTab("pro");
-            localStorage.setItem("qwenpaw_model_selector_tab", "pro");
+            localStorage.setItem("minions_model_selector_tab", "pro");
           }}
         >
           PRO
@@ -717,7 +717,7 @@ export default function ModelSelector() {
           ].join(" ")}
           onClick={() => {
             setActiveTab("free");
-            localStorage.setItem("qwenpaw_model_selector_tab", "free");
+            localStorage.setItem("minions_model_selector_tab", "free");
           }}
         >
           FREE

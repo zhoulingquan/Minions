@@ -6,10 +6,10 @@ from typing import Any
 
 from agentscope.tool import Toolkit
 
-from qwenpaw.agents.tools.file_io import read_file
-from qwenpaw.agents.tools.shell import execute_shell_command
-from qwenpaw.governance import PolicyGuardedTool
-from qwenpaw.providers.openai_chat_model_compat import _sanitize_tool_schemas
+from minions.agents.tools.file_io import read_file
+from minions.agents.tools.shell import execute_shell_command
+from minions.governance import PolicyGuardedTool
+from minions.providers.openai_chat_model_compat import _sanitize_tool_schemas
 
 
 def _type_null_paths(node: Any, path: tuple[str, ...] = ()) -> list[str]:

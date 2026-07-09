@@ -5,12 +5,12 @@ import json
 import logging
 from pathlib import Path
 
-from qwenpaw.runtime.commands.control.base import (
+from minions.runtime.commands.control.base import (
     BaseControlCommandHandler,
     ControlContext,
 )
 
-logger = logging.getLogger("qwenpaw").getChild(
+logger = logging.getLogger("minions").getChild(
     __name__.replace("plugin_cloudpaw.", ""),
 )
 

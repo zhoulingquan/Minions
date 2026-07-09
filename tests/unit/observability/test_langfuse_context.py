@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import pytest
 
-from qwenpaw.observability import langfuse as lf
+from minions.observability import langfuse as lf
 
 
 class FakeObservation:

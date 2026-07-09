@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
-"""Cleanup script: removes all QwenPaw AppContainer profiles, ACLs, and state.
+"""Cleanup script: removes all Minions AppContainer profiles, ACLs, and state.
 
 Run on Windows with administrator privileges:
     python scripts/cleanup_windows_sandbox.py
 
 This script performs the following cleanup steps:
-    For each container metadata file in ~/.qwenpaw/containers/*.json:
+    For each container metadata file in ~/.minions/containers/*.json:
         1. Removes ACLs (icacls /remove) from known paths
         2. Removes the associated NTFS junction
         3. Deletes the AppContainer profile via userenv.dll
         4. Deletes the metadata JSON file
 
     After all containers are processed:
-        5. Removes any remaining NTFS junctions in ~/.qwenpaw/junctions/
+        5. Removes any remaining NTFS junctions in ~/.minions/junctions/
         6. Removes empty state directories
 
 This per-file approach allows the script to be interrupted and resumed
@@ -41,10 +41,10 @@ def _is_admin() -> bool:
 
 
 def _get_state_dir() -> Path:
-    """Returns the QwenPaw state directory (~/.qwenpaw)."""
+    """Returns the Minions state directory (~/.minions)."""
     return (
         Path(os.environ.get("USERPROFILE", os.path.expanduser("~")))
-        / ".qwenpaw"
+        / ".minions"
     )
 
 
@@ -286,7 +286,7 @@ def _cleanup_state_dirs(state_dir: Path) -> None:
             except OSError as e:
                 print(f"    WARNING: Failed to remove {d}: {e}")
 
-    # Remove any remaining files in .qwenpaw (stray files, logs, etc.)
+    # Remove any remaining files in .minions (stray files, logs, etc.)
     if state_dir.is_dir():
         remaining = list(state_dir.iterdir())
         if not remaining:
@@ -315,7 +315,7 @@ def main() -> None:
         sys.exit(1)
 
     print("=" * 60)
-    print("WARNING: This will clean up ALL QwenPaw AppContainer sandboxes,")
+    print("WARNING: This will clean up ALL Minions AppContainer sandboxes,")
     print("including any that are currently RUNNING.")
     print("Please make sure no sandbox is currently in use before proceeding.")
     print("=" * 60)
@@ -328,7 +328,7 @@ def main() -> None:
 
     state_dir = _get_state_dir()
     print("=" * 60)
-    print("QwenPaw AppContainer Cleanup")
+    print("Minions AppContainer Cleanup")
     print("=" * 60)
     print(f"  State directory: {state_dir}")
     print()

@@ -19,14 +19,14 @@ from nio import (
 )
 from nio.responses import WhoamiResponse
 
-from qwenpaw.schemas import (
+from minions.schemas import (
     AgentRequest,
     ContentType,
     ImageContent,
     TextContent,
 )
-from qwenpaw.app.channels.matrix.channel import MatrixChannel
-from qwenpaw.config.config import MatrixConfig
+from minions.app.channels.matrix.channel import MatrixChannel
+from minions.config.config import MatrixConfig
 
 
 @pytest.fixture
@@ -681,7 +681,7 @@ class TestMatrixChannelStartStop:
     ):
         """Test that start creates and configures AsyncClient."""
         with patch(
-            "qwenpaw.app.channels.matrix.channel.QwenPawMatrixClient",
+            "minions.app.channels.matrix.channel.MinionsMatrixClient",
             return_value=mock_async_client,
         ):
             await matrix_channel.start()
@@ -697,7 +697,7 @@ class TestMatrixChannelStartStop:
     ):
         """Test that start creates sync task."""
         with patch(
-            "qwenpaw.app.channels.matrix.channel.QwenPawMatrixClient",
+            "minions.app.channels.matrix.channel.MinionsMatrixClient",
             return_value=mock_async_client,
         ):
             await matrix_channel.start()
@@ -712,7 +712,7 @@ class TestMatrixChannelStartStop:
     ):
         """Test that stop cancels sync task."""
         with patch(
-            "qwenpaw.app.channels.matrix.channel.QwenPawMatrixClient",
+            "minions.app.channels.matrix.channel.MinionsMatrixClient",
             return_value=mock_async_client,
         ):
             await matrix_channel.start()
@@ -725,7 +725,7 @@ class TestMatrixChannelStartStop:
     async def test_stop_closes_client(self, matrix_channel, mock_async_client):
         """Test that stop closes the client."""
         with patch(
-            "qwenpaw.app.channels.matrix.channel.QwenPawMatrixClient",
+            "minions.app.channels.matrix.channel.MinionsMatrixClient",
             return_value=mock_async_client,
         ):
             await matrix_channel.start()
@@ -1007,7 +1007,7 @@ class TestMatrixChannelSendMedia:
         tmp_path,
     ):
         """Test sending video media type."""
-        from qwenpaw.schemas import (
+        from minions.schemas import (
             VideoContent,
         )
 
@@ -1039,7 +1039,7 @@ class TestMatrixChannelSendMedia:
         tmp_path,
     ):
         """Test sending audio media type."""
-        from qwenpaw.schemas import (
+        from minions.schemas import (
             AudioContent,
         )
 
@@ -1096,7 +1096,7 @@ class TestMatrixChannelSendMedia:
         )
         mock_async_client.room_send = AsyncMock(return_value=MagicMock())
 
-        from qwenpaw.schemas import FileContent
+        from minions.schemas import FileContent
 
         part = FileContent(
             type=ContentType.FILE,

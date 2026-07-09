@@ -129,7 +129,7 @@ const docContentCache = new Map<string, Promise<string>>();
  */
 export function fetchDocContent(
   slug: string,
-  lang: "zh" | "en",
+  lang: "zh" = "zh",
 ): Promise<string> {
   const base = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "") || "";
   const cacheKey = `${slug}.${lang}`;
@@ -138,14 +138,7 @@ export function fetchDocContent(
 
   const promise = fetch(`${base}/docs/${slug}.${lang}.md`)
     .then((r) => (r.ok ? r.text() : ""))
-    .then((text) => {
-      if (text) return text;
-      return fetch(`${base}/docs/${slug}.md`).then((r) =>
-        r.ok ? r.text() : "",
-      );
-    })
     .catch(() => {
-      // Allow retry on a later attempt if the fetch failed.
       docContentCache.delete(cacheKey);
       return "";
     });
@@ -154,7 +147,7 @@ export function fetchDocContent(
 }
 
 /** Warm the in-memory doc cache so navigation feels instant. */
-export function prefetchDoc(slug: string, lang: "zh" | "en"): void {
+export function prefetchDoc(slug: string, lang: "zh" = "zh"): void {
   if (slug === "functiondemo") return;
   void fetchDocContent(slug, lang);
 }

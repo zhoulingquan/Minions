@@ -26,13 +26,13 @@ import pytest
 
 # pylint: disable=no-name-in-module
 pytest.importorskip(
-    "qwenpaw.app.runner.control_commands",
-    reason="qwenpaw.app.runner was removed in AgentScope 2.0",
+    "minions.app.runner.control_commands",
+    reason="minions.app.runner was removed in AgentScope 2.0",
 )
-from qwenpaw.app.runner import (  # type: ignore[import]
+from minions.app.runner import (  # type: ignore[import]
     control_commands,
 )
-from qwenpaw.app.runner.control_commands.base import (  # type: ignore[import]
+from minions.app.runner.control_commands.base import (  # type: ignore[import]
     BaseControlCommandHandler,
 )
 

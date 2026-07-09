@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from agentscope.message import Msg
 
-from qwenpaw.app.chats.utils import (
+from minions.app.chats.utils import (
     _abspath_from_url,
     _is_local_file_url,
     _resolve_content_url,
@@ -11,7 +11,7 @@ from qwenpaw.app.chats.utils import (
     clean_display_text,
     strip_injected_skill_block,
 )
-from qwenpaw.app.chats.title_generator import _clean_title
+from minions.app.chats.title_generator import _clean_title
 
 
 # ---------------------------------------------------------------------------

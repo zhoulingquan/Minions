@@ -12,7 +12,7 @@ import {
 
 type BlogListItem = ParsedBlogPost & { slug: string; cover?: string };
 
-const DEVELOPER_DAY_COLLECTION_SLUG = "qwenpaw-developer-day-collection";
+const DEVELOPER_DAY_COLLECTION_SLUG = "minions-developer-day-collection";
 
 async function fetchBlogPost(
   slug: string,
@@ -53,9 +53,9 @@ function BlogCover({ title, cover }: { title: string; cover?: string }) {
 }
 
 export default function Blog() {
-  const { t, i18n } = useTranslation();
-  const isZh = i18n.resolvedLanguage === "zh";
-  const locale = i18n.resolvedLanguage ?? "en";
+  const { t } = useTranslation();
+  const isZh = true;
+  const locale = "zh";
   const [posts, setPosts] = useState<BlogListItem[]>([]);
   const [loading, setLoading] = useState(true);
 

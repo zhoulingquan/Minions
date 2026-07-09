@@ -8,15 +8,15 @@ from typing import cast
 
 import pytest
 
-from qwenpaw.local_models import manager as local_model_manager_module
-from qwenpaw.local_models.llamacpp import LlamaCppServerSetupResult
-from qwenpaw.local_models.manager import (
+from minions.local_models import manager as local_model_manager_module
+from minions.local_models.llamacpp import LlamaCppServerSetupResult
+from minions.local_models.manager import (
     DownloadSource,
     LocalModelManager,
 )
-from qwenpaw.local_models.llamacpp import LlamaCppBackend
-from qwenpaw.local_models.model_manager import ModelManager
-from qwenpaw.providers.provider import ModelInfo
+from minions.local_models.llamacpp import LlamaCppBackend
+from minions.local_models.model_manager import ModelManager
+from minions.providers.provider import ModelInfo
 
 
 class _FakeLlamaCppBackend:

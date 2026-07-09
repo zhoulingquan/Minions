@@ -11,11 +11,11 @@ import pytest
 from agentscope.message import TextBlock, ToolResultBlock
 from agentscope.tool import ToolResponse
 
-from qwenpaw.tool_calls import ToolCoordinator, ToolCoordinatorMiddleware
-from qwenpaw.tool_calls._context import ToolCallContext
-from qwenpaw.tool_calls._entry import ToolCallEntry
-from qwenpaw.tool_calls._result_limiter import ToolResultLimiter
-from qwenpaw.tool_calls._stream import ToolStream
+from minions.tool_calls import ToolCoordinator, ToolCoordinatorMiddleware
+from minions.tool_calls._context import ToolCallContext
+from minions.tool_calls._entry import ToolCallEntry
+from minions.tool_calls._result_limiter import ToolResultLimiter
+from minions.tool_calls._stream import ToolStream
 
 
 @dataclass

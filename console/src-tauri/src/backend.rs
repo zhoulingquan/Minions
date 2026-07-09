@@ -132,7 +132,7 @@ pub(crate) fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Erro
             .targets([
                 Target::new(TargetKind::Stdout),
                 Target::new(TargetKind::LogDir {
-                    file_name: Some("qwenpaw-desktop".into()),
+                    file_name: Some("minions-desktop".into()),
                 }),
             ])
             .level(desktop_log_level())
@@ -149,7 +149,7 @@ pub(crate) fn stop(app: &tauri::AppHandle) {
 }
 
 fn desktop_log_level() -> log::LevelFilter {
-    if std::env::var("QWENPAW_DESKTOP_DEBUG").is_ok_and(|value| {
+    if std::env::var("MINIONS_DESKTOP_DEBUG").is_ok_and(|value| {
         matches!(
             value.to_ascii_lowercase().as_str(),
             "1" | "true" | "yes" | "on"
@@ -178,7 +178,7 @@ fn start(app: &tauri::AppHandle) {
     .env("PYTHONIOENCODING", "utf-8")
     .env("PYTHONUNBUFFERED", "1")
     .env("PYTHONFAULTHANDLER", "1")
-    .env("QWENPAW_DESKTOP_APP", "1");
+    .env("MINIONS_DESKTOP_APP", "1");
 
     log::info!("[backend] starting generation={generation}");
 

@@ -4,7 +4,7 @@ import type {
   IAgentScopeRuntimeWebUIMessage,
 } from "@agentscope-ai/chat";
 
-export const TURN_USAGE_META_KEY = "qwenpaw_turn_usage";
+export const TURN_USAGE_META_KEY = "minions_turn_usage";
 
 export interface TurnUsage {
   prompt_tokens?: number;
@@ -51,7 +51,7 @@ function parseTurnUsagePayload(raw: unknown): TurnUsageSnapshot | null {
   };
 }
 
-/** Read ``qwenpaw_turn_usage`` from backend message metadata wrappers. */
+/** Read ``minions_turn_usage`` from backend message metadata wrappers. */
 export function extractTurnUsageFromBackendMetadata(
   meta: unknown,
 ): TurnUsageSnapshot | null {

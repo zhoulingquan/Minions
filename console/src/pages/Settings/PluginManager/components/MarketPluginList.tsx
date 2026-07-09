@@ -69,7 +69,7 @@ export function MarketPluginList({ onInstalled }: MarketPluginListProps) {
     pageSize,
     category,
     installingId,
-    qwenpawVersion,
+    minionsVersion,
     isCompatible,
     handleSearch,
     handleCategoryChange,
@@ -191,13 +191,13 @@ export function MarketPluginList({ onInstalled }: MarketPluginListProps) {
                       {entry.locales[lang].category}
                     </Tag>
                   )}
-                  {entry.qwenpaw_compat_labels &&
-                    entry.qwenpaw_compat_labels.length > 0 && (
+                  {entry.minions_compat_labels &&
+                    entry.minions_compat_labels.length > 0 && (
                       <Tag
                         color={isCompatible(entry) ? "green" : "orange"}
                         style={{ margin: 0, fontSize: 11 }}
                       >
-                        {`QwenPaw ${entry.qwenpaw_compat_labels.join(", ")}`}
+                        {`Minions ${entry.minions_compat_labels.join(", ")}`}
                       </Tag>
                     )}
                 </div>
@@ -234,10 +234,10 @@ export function MarketPluginList({ onInstalled }: MarketPluginListProps) {
                 <Tooltip
                   title={
                     !isCompatible(entry)
-                      ? `This plugin is labeled for QwenPaw ${
-                          entry.qwenpaw_compat_labels?.join(", ") ?? "unknown"
-                        }; compatibility with QwenPaw ${
-                          qwenpawVersion ?? "unknown"
+                      ? `This plugin is labeled for Minions ${
+                          entry.minions_compat_labels?.join(", ") ?? "unknown"
+                        }; compatibility with Minions ${
+                          minionsVersion ?? "unknown"
                         } is unverified.`
                       : undefined
                   }
@@ -259,11 +259,11 @@ export function MarketPluginList({ onInstalled }: MarketPluginListProps) {
                           ),
                           content: t("pluginManager.compatWarningContent", {
                             defaultValue:
-                              "This plugin is labeled for QwenPaw {{labels}}. Your QwenPaw version is {{version}}. Installing it may cause errors. Are you sure you want to continue?",
+                              "This plugin is labeled for Minions {{labels}}. Your Minions version is {{version}}. Installing it may cause errors. Are you sure you want to continue?",
                             labels:
-                              entry.qwenpaw_compat_labels?.join(", ") ??
+                              entry.minions_compat_labels?.join(", ") ??
                               "unknown",
-                            version: qwenpawVersion ?? "unknown",
+                            version: minionsVersion ?? "unknown",
                           }),
                           okText: t(
                             "pluginManager.compatWarningConfirm",

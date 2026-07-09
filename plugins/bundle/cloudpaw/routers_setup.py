@@ -12,7 +12,7 @@ def mount_routers() -> None:
         from fastapi import APIRouter, Query
 
         # pylint: disable=no-name-in-module
-        from qwenpaw.app.interaction import InteractionManager
+        from minions.app.interaction import InteractionManager
 
         interaction_router = APIRouter(
             prefix="/interaction",
@@ -104,7 +104,7 @@ def _inject_routers(routers: list) -> None:
     """Inject routers into the running FastAPI application."""
     app = None
     try:
-        from qwenpaw.app._app import app as _app
+        from minions.app._app import app as _app
 
         if hasattr(_app, "state"):
             app = _app

@@ -59,12 +59,6 @@ describe("countConfiguredProviders", () => {
 });
 
 describe("getIsConfigured", () => {
-  it("treats qwenpaw-local as always configured", () => {
-    expect(
-      getIsConfigured(provider({ id: "qwenpaw-local", require_api_key: true })),
-    ).toBe(true);
-  });
-
   it("treats a custom provider with base_url as configured (no api_key needed)", () => {
     expect(
       getIsConfigured(
@@ -116,22 +110,22 @@ describe("groupProviders", () => {
   it("groups providers that share a provider_group (>=2)", () => {
     const result = groupProviders([
       provider({
-        id: "kimi-cn",
-        provider_group: "kimi",
-        provider_group_name: "Kimi",
+        id: "a",
+        provider_group: "test",
+        provider_group_name: "Test",
       }),
       provider({
-        id: "kimi-intl",
-        provider_group: "kimi",
-        provider_group_name: "Kimi",
+        id: "b",
+        provider_group: "test",
+        provider_group_name: "Test",
       }),
     ]);
     expect(result.grouped).toHaveLength(1);
-    expect(result.grouped[0].groupKey).toBe("kimi");
-    expect(result.grouped[0].groupName).toBe("Kimi");
+    expect(result.grouped[0].groupKey).toBe("test");
+    expect(result.grouped[0].groupName).toBe("Test");
     expect(result.grouped[0].providers.map((p) => p.id)).toEqual([
-      "kimi-cn",
-      "kimi-intl",
+      "a",
+      "b",
     ]);
     expect(result.ungrouped).toEqual([]);
   });

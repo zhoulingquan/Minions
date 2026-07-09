@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from qwenpaw.utils import command_runner
-from qwenpaw.utils.command_runner import (
+from minions.utils import command_runner
+from minions.utils.command_runner import (
     CommandExecutionError,
     ManagedProcess,
     ProcessLaunchError,
@@ -430,13 +430,13 @@ def test_start_multiprocessing_process_wraps_process() -> None:
 
     managed = start_multiprocessing_process(
         raw_process,
-        command=["qwenpaw-model-download", "demo/repo", "modelscope"],
+        command=["minions-model-download", "demo/repo", "modelscope"],
     )
 
     assert isinstance(managed, ManagedProcess)
     assert managed.creation_mode == "multiprocessing"
     assert managed.command == [
-        "qwenpaw-model-download",
+        "minions-model-download",
         "demo/repo",
         "modelscope",
     ]

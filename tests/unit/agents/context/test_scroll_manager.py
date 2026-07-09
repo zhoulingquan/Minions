@@ -17,11 +17,11 @@ from agentscope.message import (
     ToolResultBlock,
 )
 
-from qwenpaw.agents.context.scroll.history import HistoryStore
-from qwenpaw.agents.context.scroll.manager import ScrollContextManager
-from qwenpaw.agents.context.types import LogEntry
-from qwenpaw.agents.memory.base_memory_manager import BaseMemoryManager
-from qwenpaw.constant import AUTO_MEMORY_SEARCH_BLOCK_IDS_KEY
+from minions.agents.context.scroll.history import HistoryStore
+from minions.agents.context.scroll.manager import ScrollContextManager
+from minions.agents.context.types import LogEntry
+from minions.agents.memory.base_memory_manager import BaseMemoryManager
+from minions.constant import AUTO_MEMORY_SEARCH_BLOCK_IDS_KEY
 
 # -- fixtures ---------------------------------------------------------------
 
@@ -384,16 +384,16 @@ async def test_compress_keeps_active_turn_live(store: HistoryStore):
 
 def continuation_stub(text: str = "Continue working on the task.") -> Msg:
     """The user-role stub loop gates / stop handlers inject mid-turn."""
-    from qwenpaw.constant import (
+    from minions.constant import (
         LOOP_CONTINUATION_MESSAGE_TAG,
-        QWENPAW_MESSAGE_TAG_KEY,
+        MINIONS_MESSAGE_TAG_KEY,
     )
 
     return Msg(
         name="user",
         role="user",
         content=[TextBlock(type="text", text=text)],
-        metadata={QWENPAW_MESSAGE_TAG_KEY: LOOP_CONTINUATION_MESSAGE_TAG},
+        metadata={MINIONS_MESSAGE_TAG_KEY: LOOP_CONTINUATION_MESSAGE_TAG},
     )
 
 
@@ -583,7 +583,7 @@ async def test_empty_middle_still_compacts_index_under_pressure(
     """Regression for the phase-1 early return: with nothing evictable but
     an index already built, sustained pressure must still roll the index up
     (and re-render the placeholder) instead of doing nothing."""
-    from qwenpaw.agents.context.scroll.eviction_index import Leaf
+    from minions.agents.context.scroll.eviction_index import Leaf
 
     mgr = make_manager(store)
     for i in range(3):  # a multi-block Tier 0 from earlier evictions
@@ -759,17 +759,17 @@ def test_purge_old_drops_rows_past_window(store: HistoryStore):
 
 
 def test_serialize_persists_runtime_tag():
-    """The qwenpaw_tag survives into the durable row's metadata, so the
+    """The minions_tag survives into the durable row's metadata, so the
     recall layer's SQL floor can tell continuation stubs from requests."""
-    from qwenpaw.agents.context.scroll.serialize import msg_to_entries
-    from qwenpaw.constant import (
+    from minions.agents.context.scroll.serialize import msg_to_entries
+    from minions.constant import (
         LOOP_CONTINUATION_MESSAGE_TAG,
-        QWENPAW_MESSAGE_TAG_KEY,
+        MINIONS_MESSAGE_TAG_KEY,
     )
 
     (entry,) = msg_to_entries(continuation_stub())
     assert entry.metadata == {
-        QWENPAW_MESSAGE_TAG_KEY: LOOP_CONTINUATION_MESSAGE_TAG,
+        MINIONS_MESSAGE_TAG_KEY: LOOP_CONTINUATION_MESSAGE_TAG,
     }
     (plain,) = msg_to_entries(user("hello"))
     assert not plain.metadata
@@ -779,7 +779,7 @@ def test_serialize_captures_tool_input():
     """A tool call's arguments land in the ``tool_input`` column (it used to be
     dropped — only ``blocks`` carried them — so ``recall_tool`` returned None).
     """
-    from qwenpaw.agents.context.scroll.serialize import msg_to_entries
+    from minions.agents.context.scroll.serialize import msg_to_entries
 
     msg = Msg(
         name="a",
@@ -803,7 +803,7 @@ def test_serialize_captures_tool_input():
 
 def test_tool_input_round_trips_to_db(store: HistoryStore):
     """End-to-end: the persisted row's ``tool_input`` column is populated."""
-    from qwenpaw.agents.context.scroll.serialize import msg_to_entries
+    from minions.agents.context.scroll.serialize import msg_to_entries
 
     msg = Msg(
         name="a",

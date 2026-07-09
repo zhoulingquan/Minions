@@ -59,7 +59,7 @@ interface EcosystemProps {
 
 export function Ecosystem({ delay = 0 }: EcosystemProps) {
   const { t, i18n } = useTranslation();
-  const isZh = i18n.resolvedLanguage === "zh";
+  const isZh = true;
 
   return (
     <motion.section

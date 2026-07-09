@@ -15,9 +15,9 @@ from pathlib import Path
 import pytest
 from agentscope.message import ToolResultState
 
-from qwenpaw.agents.context.scroll.history import HistoryStore
-from qwenpaw.agents.context.scroll.recall_tool import make_recall_history
-from qwenpaw.agents.context.types import LogEntry
+from minions.agents.context.scroll.history import HistoryStore
+from minions.agents.context.scroll.recall_tool import make_recall_history
+from minions.agents.context.types import LogEntry
 
 
 @pytest.fixture
@@ -161,7 +161,7 @@ def test_descriptor_needs_no_sandbox(tool):
 def test_governance_registers_internal_type():
     """RecallHistory is an internal governance type: policy Phase 0 allows it
     outright — no deep scan, no sandbox fallback, no approval prompt."""
-    from qwenpaw.governance.tool_registry import DEFAULT_REGISTRY
+    from minions.governance.tool_registry import DEFAULT_REGISTRY
 
     assert DEFAULT_REGISTRY.get_type("RecallHistory") == "internal"
     assert (

@@ -26,8 +26,8 @@ try:
 except ImportError:
     GeminiChatFormatter = None
 
-from qwenpaw.agents import model_factory
-from qwenpaw.constant import MEDIA_UNSUPPORTED_PLACEHOLDER
+from minions.agents import model_factory
+from minions.constant import MEDIA_UNSUPPORTED_PLACEHOLDER
 
 
 def _data_block(media_type: str, url: str) -> DataBlock:
@@ -157,7 +157,7 @@ def test_force_strip_media_flag_overrides_multimodal_support(
     )
 
     original = _media_messages()
-    formatter_instance = SimpleNamespace(_qwenpaw_force_strip_media=True)
+    formatter_instance = SimpleNamespace(_minions_force_strip_media=True)
 
     (
         normalized,
@@ -264,7 +264,7 @@ def test_original_messages_not_modified_by_formatter_prep() -> None:
     ) = model_factory._normalize_messages_for_formatter(
         [original],
         OpenAIChatFormatter,
-        SimpleNamespace(_qwenpaw_force_strip_media=False),
+        SimpleNamespace(_minions_force_strip_media=False),
     )
 
     assert original.to_dict() == original_dict

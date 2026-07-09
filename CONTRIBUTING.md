@@ -1,45 +1,45 @@
-# Contributing to QwenPaw
+# 为 Minions 贡献代码
 
-## Welcome! 🐾
+## 欢迎！🐾
 
-Thank you for your interest in contributing to QwenPaw! QwenPaw is an open-source **personal AI assistant** that runs in your own environment—on your machine or in the cloud. It connects to DingTalk, Feishu, QQ, Discord, iMessage, and other chat apps, supports scheduled tasks and heartbeat, and extends its capabilities through **Skills**. We warmly welcome contributions that help make QwenPaw more useful for everyone: whether you add a new channel, a new model provider, a Skill, improve docs, or fix bugs.
+感谢你对 Minions 的关注！Minions 是一个开源的**个人 AI 助手**，可以在你自己的环境中运行——无论是你的机器还是云端。它可以连接钉钉、飞书、QQ、Discord、iMessage 等聊天应用，支持定时任务和心跳机制，并通过 **Skills** 扩展其能力。我们热烈欢迎能让 Minions 对所有人更有用的贡献：无论是添加新的频道、新的模型提供商、Skill，改进文档，还是修复 bug。
 
-**Quick links:** [GitHub](https://github.com/agentscope-ai/QwenPaw) · [Docs](https://qwenpaw.agentscope.io/) · [License: Apache 2.0](LICENSE)
+**快速链接：** [GitHub](https://github.com/agentscope-ai/Minions) · [文档](https://minions.agentscope.io/) · [许可证：Apache 2.0](LICENSE)
 
 ---
 
-## How to Contribute
+## 如何贡献
 
-To keep collaboration smooth and maintain quality, please follow these guidelines.
+为了保持协作顺畅并维护质量，请遵循以下指南。
 
-### 1. Check Existing Plans and Issues
+### 1. 检查现有计划和问题
 
-Before starting:
+在开始之前：
 
-- **Check [Open Issues](https://github.com/agentscope-ai/QwenPaw/issues)** and any [Projects](https://github.com/agentscope-ai/QwenPaw/projects) or roadmap labels.
-- **If a related issue exists** and is open or unassigned: comment to say you want to work on it to avoid duplicate effort.
-- **If no related issue exists**: open a new issue describing your proposal. The maintainers will respond and can help align with the project direction.
+- **检查 [Open Issues](https://github.com/agentscope-ai/Minions/issues)** 以及任何 [Projects](https://github.com/agentscope-ai/Minions/projects) 或路线图标签。
+- **如果存在相关 issue** 且处于开放或未分配状态：发表评论表示你想要处理它，以避免重复工作。
+- **如果不存在相关 issue**：创建一个新 issue 描述你的提案。维护者会回复并帮助与项目方向对齐。
 
-### 2. Commit Message Format
+### 2. 提交信息格式
 
-We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification for clear history and tooling.
+我们遵循 [Conventional Commits](https://www.conventionalcommits.org/) 规范，以保持清晰的历史记录和工具支持。
 
-**Format:**
+**格式：**
 ```
 <type>(<scope>): <subject>
 ```
 
-**Types:**
-- `feat:` New feature
-- `fix:` Bug fix
-- `docs:` Documentation only
-- `style:` Code style (whitespace, formatting, etc.)
-- `refactor:` Code change that neither fixes a bug nor adds a feature
-- `perf:` Performance improvement
-- `test:` Adding or updating tests
-- `chore:` Build, tooling, or maintenance
+**类型：**
+- `feat:` 新功能
+- `fix:` Bug 修复
+- `docs:` 仅文档更改
+- `style:` 代码风格（空格、格式等）
+- `refactor:` 既不修复 bug 也不添加功能的代码更改
+- `perf:` 性能改进
+- `test:` 添加或更新测试
+- `chore:` 构建、工具或维护
 
-**Examples:**
+**示例：**
 ```bash
 feat(channels): add Telegram channel stub
 fix(skills): correct SKILL.md front matter parsing
@@ -48,184 +48,186 @@ refactor(providers): simplify custom provider validation
 test(agents): add tests for skill loading
 ```
 
-### 3. Pull Request Title Format
+### 3. Pull Request 标题格式
 
-PR titles should follow the same convention:
+PR 标题应遵循相同的约定：
 
-**Format:** ` <type>(<scope>): <description> `
+**格式：** ` <type>(<scope>): <description> `
 
-- Use one of: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`, `perf`, `style`, `build`, `revert`.
-- **Scope must be lowercase** (letters, numbers, hyphens, underscores only).
-- Keep the description short and descriptive.
+- 使用以下之一：`feat`、`fix`、`docs`、`test`、`refactor`、`chore`、`perf`、`style`、`build`、`revert`。
+- **scope 必须小写**（仅字母、数字、连字符、下划线）。
+- 保持描述简短且描述性强。
 
-**Examples:**
+**示例：**
 ```
 feat(models): add custom provider for Azure OpenAI
 fix(channels): handle empty content_parts in Discord
 docs(skills): document Skills Hub import
 ```
 
-### 4. Code and Quality
+### 4. 代码和质量
 
-- **Required local gate (must pass before push/PR):**
+- **本地必跑门禁（push/提 PR 前必须通过）：**
   ```bash
   pip install -e ".[dev,full]"
   pre-commit install
   pre-commit run --all-files
   pytest
   ```
-- **If pre-commit modifies files:** Commit those changes, then rerun
-  `pre-commit run --all-files` until it passes cleanly.
-- **CI policy:** Pull requests with failing pre-commit checks are not merge-ready.
-- **Frontend formatting:** If your changes involve the `console` or `website` directories, run the formatter before committing:
+- **如果 pre-commit 自动修改了文件：** 先提交这些修改，再重复执行
+  `pre-commit run --all-files`，直到无修改且通过。
+- **CI 策略：** pre-commit 检查失败的 PR 视为未就绪（not merge-ready）。
+- **前端代码格式化：** 如果你的修改涉及到 `console` 或 `website` 目录，请在提交前运行格式化：
   ```bash
   cd console && npm run format
   cd website && npm run format
   ```
-- **Documentation:** Update docs and README when you add or change user-facing behavior. The docs live under `website/public/docs/`.
+- **文档：** 当你添加或更改面向用户的行为时，更新文档和 README。文档位于 `website/public/docs/` 下。
 
 ---
 
-## Types of Contributions
+## 贡献类型
 
-QwenPaw is designed to be **extensible**: you can add models, channels, Skills, and more. Below are the main contribution areas we care about.
-
----
-
-### Adding New Models / Model Providers
-
-QwenPaw supports multiple providers, including cloud providers (such as DashScope, ModelScope) and local providers (such as Ollama, LM Studio). We also welcome new model providers to enrich user choices.
-
-Contributed model providers should have the following characteristics:
-
-1. (Required) Natively compatible with the OpenAI `chat.completions` API or Anthropic `messages` API. If this condition is not met, please create an issue for discussion first. Directly adding an incompatible provider will significantly increase maintenance costs.
-2. (Recommended) Support the `/model/list` endpoint to automatically obtain the model list. Although not mandatory, this will greatly enhance the user experience.
-
-If the above conditions are met, you can create a new Provider instance in `src/qwenpaw/providers/provider_manager.py` and register it in the `ProviderManager` class to make it a built-in provider in QwenPaw.
-
-If you wish to submit a Pull Request, please ensure that the following conditions are met.
-
-1. (Required) Include at least one tested model to ensure the model list is not empty, and provide a connection test and a screenshot of a chat session using this model in the PR.
-2. (Required) Add the provider to the provider list in the model documentation (website/public/docs/models.*.md). If the provider's configuration is significantly different from others, a separate section should be added for detailed explanation.
-3. (Recommended) Pre-set capability tags for the built-in model (such as whether it supports images or videos). This can reduce the user's effort in manually verifying model capabilities.
+Minions 设计为**可扩展的**：你可以添加模型、频道、Skills 等。以下是我们关心的主要贡献领域。
 
 ---
 
-### Adding New Channels
+### 添加新模型 / 模型提供商
 
-Channels are how QwenPaw talks to **DingTalk, Feishu, QQ, Discord, iMessage**, etc. You can add a new channel so QwenPaw can work with your favorite IM or bot platform.
+Minions 支持多种提供商：包括云提供商（如 DashScope、ModelScope）以及本地提供商（如 Ollama、LM Studio），但我们也欢迎新的模型供应商以丰富用户选择。
 
-- **Protocol:** All channels use a unified in-process contract: **native payload → `content_parts`** (e.g. `TextContent`, `ImageContent`, `FileContent`). The agent receives `AgentRequest` with these content parts; replies are sent back via the channel’s send path.
-- **Implementation:** Implement a **subclass of `BaseChannel`** (in `src/qwenpaw/app/channels/base.py`):
-  - Set the class attribute `channel` to a unique channel key (e.g. `"telegram"`).
-  - Implement the lifecycle and message handling (e.g. receive → `content_parts` → `process` → send response).
-  - Use the manager’s queue and consumer loop if the channel is long-lived (default).
-- **Discovery:** Built-in channels are registered in `src/qwenpaw/app/channels/registry.py`. **Custom channels** are registered via the plugin system — create a plugin with `type: "channel"` and call `api.register_channel(...)` in your plugin's `register()` method. See the [Plugin System docs](website/public/docs/plugins.en.md) for a full example.
-- **CLI:** `qwenpaw channels config` — interactive config; `qwenpaw channels list` — view status.
+贡献的模型提供商具有以下特征：
 
-If you contribute a **new built-in channel**, add it to the registry and, if needed, a configurator so it appears in the Console and CLI. Document the new channel (auth, webhooks, etc.) in `website/public/docs/channels.*.md`.
+1. （强制）原生兼容 OpenAI `chat.completions` API 或 Anthropic `messages` API，如不满足该条件，请先创建 issue 讨论，直接添加一个不兼容的提供商会大幅增加维护成本。
+2. （推荐）支持 `/model/list` 端点以自动获取模型列表，虽然不强制，但这会大大提升用户体验。
+
+确定满足上述条件后，可以在 `src/minions/providers/provider_manager.py` 中创建新的 Provider 实例并在 `ProviderManager` 类中注册，使其成为 Minions 内置的提供商。
+
+如果想要将新的提供商作为内置提供商贡献，请在 PR 中提供以下内容：
+
+1. （强制）内置至少一个通过测试的模型，确保模型列表不为空，并且在 PR 中提供连接测试以及使用该模型的聊天实例截图。
+2. （强制）在模型文档（`website/public/docs/models.*.md`）的提供商列表中增加该提供商，并且如果该提供商的配置与其他提供商有明显区别，应该单独开一节详细说明。
+3. （推荐）为内置的模型提前设置能力标签（例如是否支持图片、视频），这能够减少用户手动验证模型能力的开销。
 
 ---
 
-### Adding Base Skills
+### 添加新频道
 
-**Skills** define what QwenPaw can do: cron, file reading, PDF/Office, news, browser, etc. We welcome **broadly useful** base skills (productivity, documents, communication, automation) that fit the majority of users.
+频道是 Minions 与**钉钉、飞书、QQ、Discord、iMessage** 等通信的方式。你可以添加新频道，以便 Minions 可以与你喜欢的 IM 或机器人平台配合使用。
 
-- **Structure:** Each skill is a **directory** containing:
-  - **`SKILL.md`** — Markdown instructions for the agent. Use YAML front matter for at least `name` and `description`; optional `metadata` (e.g. for Console).
-  - **`references/`** (optional) — Reference documents the agent can use.
-  - **`scripts/`** (optional) — Scripts or tools the skill uses.
-- **Location:** Built-in skills live under `src/qwenpaw/agents/skills/<skill_name>/`. The app merges built-in and user **customized_skills** from the working dir into **active_skills**; no extra registration is needed beyond placing a valid `SKILL.md` in a directory.
-- **Content:** Write clear, task-oriented instructions. Describe **when** the skill should be used and **how** (steps, commands, file formats). Avoid overly niche or personal workflows if targeting the **base** repository; those are great as custom or community Skills.
-- **Skills Hub:** QwenPaw supports importing skills from a community hub (e.g. ClawHub). If you want your skill to be installable via hub, follow the same `SKILL.md` + `references/`/`scripts/` layout and the hub’s packaging format.
+- **协议：** 所有频道使用统一的进程内契约：**原生 payload → `content_parts`**（如 `TextContent`、`ImageContent`、`FileContent`）。agent 接收带有这些内容部分的 `AgentRequest`；回复通过频道的发送路径返回。
+- **实现：** 实现 **`BaseChannel` 的子类**（在 `src/minions/app/channels/base.py` 中）：
+  - 将类属性 `channel` 设置为唯一的频道键（如 `"telegram"`）。
+  - 实现生命周期和消息处理（如 receive → `content_parts` → `process` → send response）。
+  - 如果频道是长期运行的（默认），使用 manager 的队列和消费者循环。
+- **发现：** 内置频道在 `src/minions/app/channels/registry.py` 中注册。**自定义频道**通过插件系统注册 — 创建 `type: "channel"` 的插件，在 `register()` 方法中调用 `api.register_channel(...)`。完整示例请参阅[插件系统文档](website/public/docs/plugins.zh.md)。
+- **CLI：** `minions channels config` — 交互式配置；`minions channels list` — 查看状态。
 
-Examples of in-repo base skills: **cron**, **file_reader**, **news**, **pdf**, **docx**, **pptx**, **xlsx**, **browser_visible**. Contributing a new base skill usually means: add the directory under `agents/skills/`, add a short entry in the docs (e.g. Skills table in `website/public/docs/skills.*.md`), and ensure it syncs correctly to the working directory.
+如果你贡献**新的内置频道**，将其添加到注册表，如有需要，添加配置器以使其出现在 Console 和 CLI 中。在 `website/public/docs/channels.*.md` 中记录新频道（身份验证、webhooks 等）。
 
-#### Writing Effective Skill Descriptions
+---
 
-To help the model accurately recognize and invoke your skill, the `description` field in your SKILL.md front matter must be **clear, specific, and include trigger keywords**. Follow these best practices:
+### 添加基础 Skills
 
-**✅ Recommended format:**
+**Skills** 定义了 Minions 可以做什么：cron、文件读取、PDF/Office、新闻、浏览器等。我们欢迎**广泛有用的**基础 skills（生产力、文档、通信、自动化），适合大多数用户。
+
+- **结构：** 每个 skill 是一个**目录**，包含：
+  - **`SKILL.md`** — agent 的 Markdown 指令。使用 YAML front matter 至少包含 `name` 和 `description`；可选的 `metadata`（如用于 Console）。
+  - **`references/`**（可选）— agent 可以使用的参考文档。
+  - **`scripts/`**（可选）— skill 使用的脚本或工具。
+- **位置：** 内置 skills 位于 `src/minions/agents/skills/<skill_name>/` 下。应用程序将内置和用户的 **customized_skills**（来自工作目录）合并到 **active_skills** 中；除了在目录中放置有效的 `SKILL.md` 外，不需要额外的注册。
+- **内容：** 编写清晰的、面向任务的指令。描述**何时**应该使用该 skill 以及**如何**使用（步骤、命令、文件格式）。如果针对**基础**仓库，避免过于小众或个人的工作流程；这些作为自定义或社区 Skills 非常好。
+
+#### 编写有效的 Skill Description
+
+为了让 model 能够准确识别并调用你的 skill，`description` 字段必须**清晰、具体且包含触发词**。请遵循以下最佳实践：
+
+**✅ 推荐格式：**
 ```yaml
 ---
 name: example_skill
-description: "Use this skill whenever user wants to [main functionality]. Trigger especially when user mentions: [trigger keywords]. Also use when [other scenarios]."
+description: "Use this skill whenever user wants to [主要功能]. Trigger especially when user mentions: [触发词列表]. Also use when [其他场景]."
 
-# Detailed instructions below
+# 详细说明
 ...
 ```
 
-**✅ Best practices:**
-1. **Clearly state when to trigger**: Use phrases like "Use this skill whenever user wants to..." or "Trigger when user asks for..."
-2. **List trigger keywords explicitly**: Make it easy for the model to recognize, for example:
+**✅ 最佳实践：**
+1. **明确触发时机**：使用 "Use this skill whenever user wants to..." 或 "Trigger when user asks for..."
+2. **列出触发关键词**：在 description 中明确列出触发词，例如：
    - "Trigger especially when user mentions: \"call\", \"dial\", \"phone\", \"microsip\""
    - "Also trigger for desktop automation tasks like opening apps, controlling windows"
-3. **Be specific about the skill's scope**: Say exactly what it does, avoid vague terms
-   - ✅ Good: "Make phone calls via MicroSIP or similar desktop apps"
-   - ❌ Not ideal: "Control desktop"
-4. **Provide usage examples**: If the skill has specific usage patterns, explain them in the body of SKILL.md
+3. **具体描述功能范围**：说明技能做什么，不要含糊
+   - ✅ 好的："Make phone calls via MicroSIP or similar desktop apps"
+   - ❌ 不好："Control desktop"
+4. **提供使用示例**：如果技能有特定用法，在 SKILL.md 主体部分说明
 
-**❌ Common pitfalls:**
-- Overly abstract descriptions (like "control desktop", "process files")
-- Missing trigger keywords, making it hard for the model to identify use cases
-- Lack of usage scenario context
+**❌ 常见问题：**
+- 描述过于抽象（如"控制桌面"、"处理文件"）
+- 没有列出触发关键词，导致 model 无法识别
+- 缺少使用场景说明
 
-**📝 Examples comparison:**
+**📝 示例对比：**
 
-| Skill | Description (Not ideal) | Description (Better) |
-|-------|-------------------------|----------------------|
-| Desktop Control | "Control desktop applications" | "Use this skill whenever user wants to control desktop applications or make phone calls. Trigger especially when user mentions: \"call\", \"dial\", \"phone\", \"microsip\", or requests to use specific desktop apps." |
-| File Reader | "Read files" | "Use this skill when user asks to read or summarize local text-based files. PDFs, Office documents, images are out of scope." |
+| 技能 | 描述（不好） | 描述（好） |
+|------|---------------|-------------|
+| Desktop Control | "控制桌面应用" | "Use this skill whenever user wants to control desktop applications or make phone calls. Trigger especially when user mentions: \"call\" (呼叫), \"dial\" (拨打), \"phone\" (电话), \"microsip\", or requests to use specific desktop apps." |
+| File Reader | "读取文件" | "Use this skill when user asks to read or summarize local text-based files. PDFs, Office documents, and images are out of scope." |
 
----
+- **Skills Hub：** Minions 支持从社区 hub（如 ClawHub）导入 skills。如果你希望你的 skill 可以通过 hub 安装，请遵循相同的 `SKILL.md` + `references/`/`scripts/` 布局和 hub 的打包格式。
 
-### Platform support (Windows, Linux, macOS, etc.)
-
-QwenPaw aims to run on **Windows**, **Linux**, and **macOS**. Contributions that improve support on a specific platform are welcome.
-
-- **Compatibility fixes:** Path handling, line endings, shell commands, or dependencies that behave differently per OS. For example: Windows compatibility for the memory/vector stack, or install scripts that work on both Linux and macOS.
-- **Install and run:** One-line install (`install.sh`), `pip` install, and `qwenpaw init` / `qwenpaw app` should work (or be clearly documented) on each supported platform. Fixes to install or startup on a given OS are valuable.
-- **Platform-specific features:** Optional integrations (e.g. notifying only when supported) are fine as long as they don’t break other platforms. Use runtime checks or optional dependencies where appropriate.
-- **Documentation:** Document any platform-specific steps, known limitations, or recommended setups (e.g. WSL on Windows, Apple Silicon vs x86) in the docs or README.
-
-If you add or change platform support, please test on the affected OS and mention it in the PR description. Opening an issue first is recommended for larger or ambiguous platform work.
+仓库内基础 skills 的示例：**cron**、**file_reader**、**news**、**pdf**、**docx**、**pptx**、**xlsx**、**browser_visible**。贡献新的基础 skill 通常意味着：在 `agents/skills/` 下添加目录，在文档中添加简短条目（如 `website/public/docs/skills.*.md` 中的 Skills 表），并确保它正确同步到工作目录。
 
 ---
 
-### Other Contributions
+### 平台支持（Windows、Linux、macOS 等）
 
-- **MCP (Model Context Protocol):** QwenPaw supports runtime **MCP tool** discovery and hot-plug. Contributing new MCP servers or tools (or docs on how to attach them) helps users extend the agent without changing core code.
-- **Documentation:** Fixes and improvements to [the docs](https://qwenpaw.agentscope.io/) (under `website/public/docs/`) and README are always welcome.
-- **Bug fixes and refactors:** Small fixes, clearer error messages, and refactors that keep behavior the same are valuable. Prefer opening an issue for larger refactors so we can align on approach.
-- **Examples and workflows:** Tutorials or example workflows (e.g. “daily digest to DingTalk”, “local model + cron”) can be documented or linked from the repo/docs.
-- **Any other useful things!**
----
+Minions 旨在在 **Windows**、**Linux** 和 **macOS** 上运行。欢迎改进特定平台支持的贡献。
 
-## Do's and Don'ts
+- **兼容性修复：** 路径处理、行尾、shell 命令或在不同操作系统上行为不同的依赖项。例如：内存/向量栈的 Windows 兼容性，或在 Linux 和 macOS 上都能工作的安装脚本。
+- **安装和运行：** 一行安装（`install.sh`）、`pip` 安装，以及 `minions init` / `minions app` 应该在每个支持的平台上工作（或有清晰的文档说明）。对给定操作系统上的安装或启动的修复很有价值。
+- **平台特定功能：** 可选集成（如仅在支持时通知）是可以的，只要它们不会破坏其他平台。在适当的地方使用运行时检查或可选依赖项。
+- **文档：** 在文档或 README 中记录任何平台特定的步骤、已知限制或推荐设置（如 Windows 上的 WSL、Apple Silicon vs x86）。
 
-### ✅ DO
-
-- Start with small, focused changes.
-- Discuss large or design-sensitive changes in an issue first.
-- Write or update tests where applicable.
-- Update documentation for user-facing changes.
-- Use conventional commit messages and PR titles.
-- Be respectful and constructive (we follow a welcoming Code of Conduct).
-
-### ❌ DON'T
-
-- Don’t open very large PRs without prior discussion.
-- Don’t ignore CI or pre-commit failures.
-- Don’t mix unrelated changes in one PR.
-- Don’t break existing APIs without a good reason and clear migration notes.
-- Don’t add heavy or optional dependencies to the core install without discussing in an issue.
+如果你添加或更改平台支持，请在受影响的操作系统上进行测试，并在 PR 描述中提及。对于较大或模糊的平台工作，建议先创建 issue。
 
 ---
 
-## Getting Help
+### 其他贡献
 
-- **Discussions:** [GitHub Discussions](https://github.com/agentscope-ai/QwenPaw/discussions)
-- **Bugs and features:** [GitHub Issues](https://github.com/agentscope-ai/QwenPaw/issues)
-- **Community:** DingTalk group (see [README](README.md)) and [Discord](https://discord.gg/eYMpfnkG8h)
+- **MCP（模型上下文协议）：** Minions 支持运行时 **MCP 工具**发现和热插拔。贡献新的 MCP 服务器或工具（或关于如何附加它们的文档）可以帮助用户扩展 agent 而无需更改核心代码。
+- **文档：** 对 [文档](https://minions.agentscope.io/)（位于 `website/public/docs/` 下）和 README 的修复和改进始终受欢迎。
+- **Bug 修复和重构：** 小的修复、更清晰的错误消息以及保持行为相同的重构都很有价值。对于较大的重构，最好先创建 issue，以便我们可以就方法达成一致。
+- **示例和工作流程：** 教程或示例工作流程（如"每日摘要到钉钉"、"本地模型 + cron"）可以记录或从仓库/文档链接。
+- **任何其他有用的东西！**
 
-Thank you for contributing to QwenPaw. Your work helps make it a better assistant for everyone. 🐾
+---
+
+## 应该做和不应该做
+
+### ✅ 应该做
+
+- 从小的、集中的更改开始。
+- 在 issue 中首先讨论大型或涉及敏感的更改。
+- 在适用的地方编写或更新测试。
+- 为面向用户的更改更新文档。
+- 使用常规提交消息和 PR 标题。
+- 保持尊重和建设性（我们遵循友好的行为准则）。
+
+### ❌ 不应该做
+
+- 不要在没有事先讨论的情况下打开非常大的 PR。
+- 不要忽略 CI 或 pre-commit 失败。
+- 不要在一个 PR 中混合不相关的更改。
+- 不要在没有充分理由和清晰迁移说明的情况下破坏现有 API。
+- 不要在没有在 issue 中讨论的情况下向核心安装添加重型或可选依赖项。
+
+---
+
+## 获取帮助
+
+- **讨论：** [GitHub Discussions](https://github.com/agentscope-ai/Minions/discussions)
+- **Bug 和功能：** [GitHub Issues](https://github.com/agentscope-ai/Minions/issues)
+- **社区：** 钉钉群（见 [README](README_zh.md)）和 [Discord](https://discord.gg/eYMpfnkG8h)
+
+感谢你为 Minions 贡献代码。你的工作帮助它成为每个人更好的助手。🐾

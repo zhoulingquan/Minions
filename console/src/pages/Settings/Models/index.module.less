@@ -977,6 +977,14 @@
   flex-shrink: 0;
 }
 
+.panelDotBlue {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #3b82f6;
+  flex-shrink: 0;
+}
+
 .panelCount {
   font-size: 11px;
   color: #10b981;
@@ -1774,13 +1782,82 @@
   line-height: 1.6;
 }
 
+/* ---- Discovered Models Section ---- */
+
+.discoveredModelsSection {
+  margin-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 16px;
+}
+
+.discoveredModelsTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 10px;
+}
+
+.discoveredModelsList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.discoveredModelItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #f8f9fa;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  border: 1px solid transparent;
+
+  &:hover {
+    background: #eef2ff;
+    border-color: #c7d2fe;
+  }
+}
+
+.discoveredModelId {
+  font-family: "SF Mono", "Menlo", monospace;
+  font-size: 12px;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.discoveredModelName {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.discoveredModelItemActive {
+  background: #eef2ff;
+  border-color: #6366f1;
+
+  &:hover {
+    background: #e0e7ff;
+    border-color: #6366f1;
+  }
+}
+
+.discoveredModelCheck {
+  color: #6366f1;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
 /* ─── Dark mode ─────────────────────────────────────────────────────────────── */
 :global(.dark-mode) {
   .settingsPage {
     :global {
-      .qwenpaw-table-wrapper
-        .qwenpaw-table-container
-        .qwenpaw-table-thead
+      .minions-table-wrapper
+        .minions-table-container
+        .minions-table-thead
         > tr
         > th {
         background: rgba(255, 255, 255, 0.04) !important;
@@ -2152,6 +2229,9 @@
   }
   .panelDotGray {
     background: rgba(255, 255, 255, 0.2);
+  }
+  .panelDotBlue {
+    background: #60a5fa;
   }
   .panelCount {
     color: #34d399;
@@ -2719,5 +2799,44 @@
         overflow-y: auto;
       }
     }
+  }
+
+  .discoveredModelsSection {
+    border-top-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .discoveredModelsTitle {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .discoveredModelItem {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .discoveredModelId {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .discoveredModelName {
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  .discoveredModelItem:hover {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.3);
+  }
+
+  .discoveredModelItemActive {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: #6366f1;
+
+    &:hover {
+      background: rgba(99, 102, 241, 0.25);
+      border-color: #6366f1;
+    }
+  }
+
+  .discoveredModelCheck {
+    color: #818cf8;
   }
 }

@@ -37,7 +37,7 @@ runs:
     - name: Verify desktop (Legacy macOS)
       shell: bash
       env:
-        QWENPAW_DASHSCOPE_API_KEY: ${{ inputs.dashscope-api-key }}
+        MINIONS_DASHSCOPE_API_KEY: ${{ inputs.dashscope-api-key }}
         RUNNER_PYTHON: ${{ inputs.runner-python }}
         EXPECTED_VERSION: ${{ inputs.version }}
         ALLOW_FLAKY_LLM: ${{ inputs.allow-flaky-llm }}
@@ -46,10 +46,10 @@ runs:
 
         # 1. Unpack the freshly built zip into an isolated verify dir.
         mkdir -p dist/verify-legacy
-        unzip -q dist/QwenPaw-*-macOS.zip -d dist/verify-legacy
+        unzip -q dist/Minions-*-macOS.zip -d dist/verify-legacy
         APP="$(find dist/verify-legacy -maxdepth 2 -name '*.app' -type d | head -1)"
         if [ -z "$APP" ]; then
-          echo "::error::QwenPaw.app not found inside zip"
+          echo "::error::Minions.app not found inside zip"
           exit 1
         fi
         ENV_DIR="$APP/Contents/Resources/env"
@@ -76,17 +76,17 @@ runs:
         fi
 
         # 5. Init workspace and start the desktop backend in the background.
-        bundled_python -m qwenpaw init --defaults --accept-security
+        bundled_python -m minions init --defaults --accept-security
         # Skip the BootstrapHook onboarding script so the verifier
         # can drive the agent in normal QA mode (see
         # scripts/verify/desktop_verify.py::verify_ui_chat docstring).
-        rm -f "$HOME/.qwenpaw/workspaces/default/BOOTSTRAP.md"
+        rm -f "$HOME/.minions/workspaces/default/BOOTSTRAP.md"
         nohup env PYTHONHOME="$ENV_DIR" PYTHONNOUSERSITE=1 \
           PATH="$ENV_DIR/bin:$PATH" \
-          "$PYTHON" -m qwenpaw app --host 127.0.0.1 --port 8088 \
-          > "$RUNNER_TEMP/qwenpaw-desktop-stdout.log" \
-          2> "$RUNNER_TEMP/qwenpaw-desktop-stderr.log" &
-        echo $! > "$RUNNER_TEMP/qwenpaw-desktop.pid"
+          "$PYTHON" -m minions app --host 127.0.0.1 --port 8088 \
+          > "$RUNNER_TEMP/minions-desktop-stdout.log" \
+          2> "$RUNNER_TEMP/minions-desktop-stderr.log" &
+        echo $! > "$RUNNER_TEMP/minions-desktop.pid"
 
         # 6. Wait for /api/version (~120s budget).
         for i in $(seq 1 60); do

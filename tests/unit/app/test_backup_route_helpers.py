@@ -4,11 +4,11 @@ from __future__ import annotations
 import json
 import zipfile
 
-from qwenpaw.app.routers import _backup_helpers as helpers
-from qwenpaw.app.routers._backup_helpers import restored_local_keys
-from qwenpaw.backup._utils import constants
-from qwenpaw.backup._utils.constants import META_FILE, PREFIX_CONFIG
-from qwenpaw.backup.models import BackupMeta, BackupScope, RestoreBackupRequest
+from minions.app.routers import _backup_helpers as helpers
+from minions.app.routers._backup_helpers import restored_local_keys
+from minions.backup._utils import constants
+from minions.backup._utils.constants import META_FILE, PREFIX_CONFIG
+from minions.backup.models import BackupMeta, BackupScope, RestoreBackupRequest
 
 
 def _meta(*, include_global_config: bool) -> BackupMeta:

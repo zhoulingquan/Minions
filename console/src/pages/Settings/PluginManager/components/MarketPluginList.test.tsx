@@ -28,7 +28,7 @@ vi.mock("../hooks/useMarketPlugins", () => ({
     pageSize: 20,
     category: undefined,
     installingId: null,
-    qwenpawVersion: "2.0.0",
+    minionsVersion: "2.0.0",
     isCompatible: () => true,
     handleSearch: vi.fn(),
     handleCategoryChange: vi.fn(),

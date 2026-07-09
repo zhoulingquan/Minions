@@ -13,7 +13,7 @@
   background: #f9f8f4;
 
   :global {
-    .qwenpaw-space-item {
+    .minions-space-item {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -89,7 +89,7 @@
     padding: 4px;
 
     :global {
-      .qwenpaw-menu {
+      .minions-menu {
         background: transparent !important;
       }
     }
@@ -162,7 +162,7 @@
     // agentScopedSection / sessionList / collapseToggleContainer become flex
     // items and only the sessionList scrolls.
     :global {
-      .qwenpaw-layout-sider-children {
+      .minions-layout-sider-children {
         flex: 1;
         display: flex;
         flex-direction: column;
@@ -191,8 +191,8 @@
 
     :global {
       /* Center icon in collapsed menu items */
-      .qwenpaw-menu-item,
-      .qwenpaw-menu-submenu .qwenpaw-menu-item {
+      .minions-menu-item,
+      .minions-menu-submenu .minions-menu-item {
         padding-left: 0 !important;
         padding-right: 0 !important;
         display: flex !important;
@@ -202,32 +202,32 @@
       }
 
       /* Ensure icon container allows badge overflow */
-      .qwenpaw-menu-item-icon,
-      .qwenpaw-menu-item .anticon {
+      .minions-menu-item-icon,
+      .minions-menu-item .anticon {
         overflow: visible !important;
       }
 
       /* Hide label text in collapsed mode */
-      .qwenpaw-menu-title-content,
-      .qwenpaw-menu-item > span:not([role]):not(.qwenpaw-badge),
-      .qwenpaw-menu-item-only-child > span:not(.qwenpaw-badge) {
+      .minions-menu-title-content,
+      .minions-menu-item > span:not([role]):not(.minions-badge),
+      .minions-menu-item-only-child > span:not(.minions-badge) {
         display: none !important;
       }
 
       /* Hide group labels */
-      .qwenpaw-menu-submenu-title {
+      .minions-menu-submenu-title {
         display: none !important;
       }
     }
   }
 
   :global {
-    .qwenpaw-menu {
+    .minions-menu {
       border-inline-end: 0 !important;
     }
 
     /* Group title (一级菜单分组) */
-    .qwenpaw-menu-submenu-title {
+    .minions-menu-submenu-title {
       font-family: "PingFang SC", sans-serif !important;
       font-size: 12px !important;
       font-weight: 500 !important;
@@ -244,43 +244,43 @@
     }
 
     /* Hide submenu arrow */
-    .qwenpaw-menu-submenu-arrow {
+    .minions-menu-submenu-arrow {
       display: none !important;
     }
 
     /* Always expand submenus */
-    .qwenpaw-menu-submenu {
-      > .qwenpaw-menu {
+    .minions-menu-submenu {
+      > .minions-menu {
         display: block !important;
       }
     }
 
     /* Menu item padding - align all items */
-    .qwenpaw-menu-item {
+    .minions-menu-item {
       padding-left: 8px !important;
     }
 
     /* Remove submenu indent - align with parent */
-    .qwenpaw-menu-submenu .qwenpaw-menu-item {
+    .minions-menu-submenu .minions-menu-item {
       padding-left: 8px !important;
     }
 
     /* Selected item */
-    .qwenpaw-menu-item-selected {
+    .minions-menu-item-selected {
       background: rgba(43, 18, 0, 0.08) !important;
       color: inherit !important;
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
 
-      .qwenpaw-menu-title-content {
+      .minions-menu-title-content {
         display: flex !important;
         align-items: center !important;
       }
     }
 
     /* Selected submenu item - keep text color unchanged */
-    .qwenpaw-menu-submenu .qwenpaw-menu-item-selected {
+    .minions-menu-submenu .minions-menu-item-selected {
       color: inherit !important;
     }
   }
@@ -322,13 +322,13 @@
   }
 
   :global {
-    .qwenpaw-menu {
+    .minions-menu {
       background: #1a1a1a !important;
       border-inline-end: 0 !important;
     }
 
     /* Group title (sub-menu label) */
-    .qwenpaw-menu-submenu-title {
+    .minions-menu-submenu-title {
       color: rgba(255, 255, 255, 0.45) !important;
 
       /* No hover effect for group titles in dark mode */
@@ -339,18 +339,18 @@
     }
 
     /* Regular menu item */
-    .qwenpaw-menu-item {
+    .minions-menu-item {
       color: rgba(255, 255, 255, 0.75) !important;
     }
 
     /* Hover state - only for menu items, not group titles */
-    .qwenpaw-menu-item:hover {
+    .minions-menu-item:hover {
       background: rgba(255, 255, 255, 0.1) !important;
       color: rgba(255, 255, 255, 0.95) !important;
     }
 
     /* Selected item */
-    .qwenpaw-menu-item-selected {
+    .minions-menu-item-selected {
       background: rgba(255, 127, 22, 0.5) !important;
       color: #ff7f16 !important;
     }
@@ -717,7 +717,7 @@
 
 // ─── Update Modal ─────────────────────────────────────────────────────────────
 .updateModal {
-  :global(.qwenpaw-modal-content) {
+  :global(.minions-modal-content) {
     padding: 0 !important;
     border-radius: 12px !important;
     overflow: visible !important;
@@ -725,26 +725,26 @@
     border: none !important;
   }
 
-  :global(.qwenpaw-modal-body) {
+  :global(.minions-modal-body) {
     padding: 0 !important;
   }
 
-  :global(.qwenpaw-modal-footer) {
+  :global(.minions-modal-footer) {
     padding: 12px 24px;
     margin-top: 0;
   }
 
-  :global(.qwenpaw-modal-header) {
+  :global(.minions-modal-header) {
     display: none !important;
   }
 
-  :global(.qwenpaw-modal-close) {
+  :global(.minions-modal-close) {
     display: none !important;
   }
 }
 
 .updateModalBanner {
-  background: url("/public/qwenpawBack.png") no-repeat center top;
+  background: url("/public/minionsBack.png") no-repeat center top;
   background-size: contain;
   padding: 48px 28px 0px;
   display: flex;
@@ -876,7 +876,7 @@
     color: rgba(255, 255, 255, 0.85);
 
     /* Text buttons (Docs / FAQ / GitHub / Changelog) */
-    :global(.qwenpaw-btn-text),
+    :global(.minions-btn-text),
     :global(.ant-btn-text) {
       color: rgba(255, 255, 255, 0.75) !important;
 

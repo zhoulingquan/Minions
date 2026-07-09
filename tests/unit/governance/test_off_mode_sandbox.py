@@ -10,8 +10,8 @@ from __future__ import annotations
 
 # pylint: disable=protected-access
 
-from qwenpaw.governance import tool_adapter
-from qwenpaw.governance.tool_registry import DEFAULT_REGISTRY
+from minions.governance import tool_adapter
+from minions.governance.tool_registry import DEFAULT_REGISTRY
 
 
 class _FakeGovernor:

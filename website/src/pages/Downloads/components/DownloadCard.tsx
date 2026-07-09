@@ -24,8 +24,8 @@ export function DownloadCard({
   kindLabel,
   downloadLabelKey = "downloads.download",
 }: DownloadCardProps) {
-  const { t, i18n } = useTranslation();
-  const language = i18n.resolvedLanguage;
+  const { t } = useTranslation();
+  const language = "zh";
   const [selectedFileId, setSelectedFileId] = useState(versions[0]?.id ?? "");
 
   const selected =

@@ -478,7 +478,7 @@ class ChatExtensionsRegistry {
       try {
         fn();
       } catch (err) {
-        console.warn("[QwenPaw] chatExtensions listener threw:", err);
+        console.warn("[Minions] chatExtensions listener threw:", err);
       }
     }
   }

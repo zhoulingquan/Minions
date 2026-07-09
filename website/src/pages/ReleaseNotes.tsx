@@ -14,8 +14,8 @@ interface ReleaseNote {
 }
 
 export default function ReleaseNotes() {
-  const { t, i18n } = useTranslation();
-  const isZh = i18n.resolvedLanguage === "zh";
+  const { t } = useTranslation();
+  const isZh = true;
   const [releases, setReleases] = useState<ReleaseNote[]>([]);
   const [expandedSet, setExpandedSet] = useState<Set<number>>(
     () => new Set([0]),

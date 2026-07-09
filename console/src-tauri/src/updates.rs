@@ -187,7 +187,7 @@ async fn run_cached_install(app: AppHandle) {
 fn install_cached_windows(app: &AppHandle, exe_path: &std::path::Path) {
     backend::stop(app);
     if let Err(err) = std::process::Command::new(exe_path)
-        .args(["/P", "/R", "/UPDATE", "/NO_QWENPAW_PATH"])
+        .args(["/P", "/R", "/UPDATE", "/NO_MINIONS_PATH"])
         .spawn()
     {
         return emit_error(

@@ -156,7 +156,7 @@ const VirtualRow = React.memo(function VirtualRow({
   );
 });
 
-/** Sessions from QwenPaw backend include extra fields beyond the runtime UI type */
+/** Sessions from Minions backend include extra fields beyond the runtime UI type */
 interface ExtendedChatSession extends IAgentScopeRuntimeWebUISession {
   realId?: string;
   sessionId?: string;
@@ -261,7 +261,7 @@ const ChatSessionDrawer: React.FC<ChatSessionDrawerProps> = (props) => {
       sessionApi.finishSessionSwitch();
     }
     if (embedded) {
-      window.dispatchEvent(new CustomEvent("qwenpaw:sidebar-new-chat"));
+      window.dispatchEvent(new CustomEvent("minions:sidebar-new-chat"));
     } else {
       await createNewSession();
       if (!pinned) {
@@ -427,9 +427,9 @@ const ChatSessionDrawer: React.FC<ChatSessionDrawerProps> = (props) => {
     const onDone = () => {
       setSwitchingSessionId(null);
     };
-    window.addEventListener("qwenpaw:sidebar-switch-done", onDone);
+    window.addEventListener("minions:sidebar-switch-done", onDone);
     return () =>
-      window.removeEventListener("qwenpaw:sidebar-switch-done", onDone);
+      window.removeEventListener("minions:sidebar-switch-done", onDone);
   }, []);
 
   // In embedded mode, clear switchingSessionId when the URL changes
@@ -473,7 +473,7 @@ const ChatSessionDrawer: React.FC<ChatSessionDrawerProps> = (props) => {
             (s as ExtendedChatSession).realId === urlChatId,
         );
         if (!stillExists) {
-          window.dispatchEvent(new CustomEvent("qwenpaw:sidebar-new-chat"));
+          window.dispatchEvent(new CustomEvent("minions:sidebar-new-chat"));
         }
       }
     },

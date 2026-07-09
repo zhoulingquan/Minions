@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from agentscope.message import Msg, TextBlock
 
-from qwenpaw.agents.command_handler import CommandHandler
+from minions.agents.command_handler import CommandHandler
 
 
 def _make_agent():
@@ -18,7 +18,7 @@ def _make_agent():
 
 def _msg(role: str, text: str, *, name: str | None = None, msg_id: str = ""):
     msg = Msg(
-        name=name or ("QwenPaw" if role == "assistant" else "user"),
+        name=name or ("Minions" if role == "assistant" else "user"),
         role=role,
         content=[TextBlock(type="text", text=text)],
     )
@@ -30,7 +30,7 @@ def _msg(role: str, text: str, *, name: str | None = None, msg_id: str = ""):
 @pytest.mark.asyncio
 async def test_process_clear_returns_clear_history_metadata() -> None:
     agent = _make_agent()
-    handler = CommandHandler(agent_name="QwenPaw", agent=agent)
+    handler = CommandHandler(agent_name="Minions", agent=agent)
 
     msg = await handler.handle_command("/clear")
 
@@ -46,7 +46,7 @@ async def test_system_prompt_command_returns_current_prompt() -> None:
 
     # pylint: disable=protected-access
     agent._get_system_prompt = _get_system_prompt
-    handler = CommandHandler(agent_name="QwenPaw", agent=agent)
+    handler = CommandHandler(agent_name="Minions", agent=agent)
 
     msg = await handler.handle_command("/system_prompt")
 
@@ -60,7 +60,7 @@ async def test_dream_command_runs_auto_dream_with_hint() -> None:
     memory_manager = MagicMock()
     memory_manager.dream = AsyncMock()
     handler = CommandHandler(
-        agent_name="QwenPaw",
+        agent_name="Minions",
         agent=agent,
         memory_manager=memory_manager,
     )
@@ -77,7 +77,7 @@ async def test_dream_command_runs_auto_dream_with_hint() -> None:
 @pytest.mark.asyncio
 async def test_dream_command_requires_memory_manager() -> None:
     agent = _make_agent()
-    handler = CommandHandler(agent_name="QwenPaw", agent=agent)
+    handler = CommandHandler(agent_name="Minions", agent=agent)
 
     msg = await handler.handle_command("/dream")
 
@@ -96,7 +96,7 @@ async def test_memorize_defaults_to_latest_reply_group() -> None:
     memory_manager = MagicMock()
     memory_manager.auto_memory = AsyncMock()
     handler = CommandHandler(
-        agent_name="QwenPaw",
+        agent_name="Minions",
         agent=agent,
         memory_manager=memory_manager,
     )
@@ -130,7 +130,7 @@ async def test_memorize_count_selects_latest_reply_groups() -> None:
     memory_manager = MagicMock()
     memory_manager.auto_memory = AsyncMock()
     handler = CommandHandler(
-        agent_name="QwenPaw",
+        agent_name="Minions",
         agent=agent,
         memory_manager=memory_manager,
     )
@@ -164,7 +164,7 @@ async def test_memorize_falls_back_to_assistant_replies_by_role() -> None:
     memory_manager = MagicMock()
     memory_manager.auto_memory = AsyncMock()
     handler = CommandHandler(
-        agent_name="QwenPaw",
+        agent_name="Minions",
         agent=agent,
         memory_manager=memory_manager,
     )
@@ -191,7 +191,7 @@ async def test_memorize_one_matches_explicit_one() -> None:
     memory_manager = MagicMock()
     memory_manager.auto_memory = AsyncMock()
     handler = CommandHandler(
-        agent_name="QwenPaw",
+        agent_name="Minions",
         agent=agent,
         memory_manager=memory_manager,
     )
@@ -212,7 +212,7 @@ async def test_memorize_rejects_invalid_count() -> None:
     memory_manager = MagicMock()
     memory_manager.auto_memory = AsyncMock()
     handler = CommandHandler(
-        agent_name="QwenPaw",
+        agent_name="Minions",
         agent=agent,
         memory_manager=memory_manager,
     )
@@ -254,7 +254,7 @@ async def test_compact_respects_disabled_config() -> None:
         summary="",
     )
     agent.compress_context = MagicMock()
-    handler = CommandHandler(agent_name="QwenPaw", agent=agent)
+    handler = CommandHandler(agent_name="Minions", agent=agent)
     # pylint: disable=protected-access
     handler._get_agent_config = lambda: _make_config(compact_enabled=False)
 
@@ -281,7 +281,7 @@ async def test_compact_uses_manual_force_context_config() -> None:
     """Under scroll, manual /compact clones the live agent's context_config,
     dropping the auto trigger but leaving the reserve tail untouched so it
     matches the same recent-tail budget as auto compaction."""
-    from qwenpaw.agents.command_handler import _FORCE_TRIGGER_RATIO
+    from minions.agents.command_handler import _FORCE_TRIGGER_RATIO
 
     captured = {}
 
@@ -296,7 +296,7 @@ async def test_compact_uses_manual_force_context_config() -> None:
     )
     agent.context_config = _FakeCtxConfig(trigger_ratio=0.8, reserve_ratio=0.2)
     agent.compress_context = _compress_context
-    handler = CommandHandler(agent_name="QwenPaw", agent=agent)
+    handler = CommandHandler(agent_name="Minions", agent=agent)
     # pylint: disable=protected-access
     handler._get_agent_config = lambda: _make_config(
         reserve_ratio=0.2,
@@ -320,7 +320,7 @@ async def test_compact_under_native_keeps_configured_reserve() -> None:
     reserve: native compaction is lossy (the non-reserved middle is summarized
     away), so it keeps the agent's configured reserve_ratio for the same
     recent-tail continuity as auto compaction."""
-    from qwenpaw.agents.command_handler import _FORCE_TRIGGER_RATIO
+    from minions.agents.command_handler import _FORCE_TRIGGER_RATIO
 
     captured = {}
 
@@ -335,7 +335,7 @@ async def test_compact_under_native_keeps_configured_reserve() -> None:
     )
     agent.context_config = _FakeCtxConfig(trigger_ratio=0.8, reserve_ratio=0.2)
     agent.compress_context = _compress_context
-    handler = CommandHandler(agent_name="QwenPaw", agent=agent)
+    handler = CommandHandler(agent_name="Minions", agent=agent)
     # pylint: disable=protected-access
     handler._get_agent_config = lambda: _make_config(
         reserve_ratio=0.2,

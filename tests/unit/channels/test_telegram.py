@@ -32,7 +32,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from qwenpaw.schemas import (
+from minions.schemas import (
     TextContent,
     ImageContent,
     VideoContent,
@@ -49,7 +49,7 @@ from qwenpaw.schemas import (
 
 def test_telegram_base_urls_derive_api_and_file_prefixes():
     """Custom root URL should derive Bot API and file API prefixes."""
-    from qwenpaw.app.channels.telegram.channel import _telegram_base_urls
+    from minions.app.channels.telegram.channel import _telegram_base_urls
 
     assert _telegram_base_urls("") == ("", "")
     assert _telegram_base_urls(" https://tg-api.example.com/ ") == (
@@ -78,7 +78,7 @@ def telegram_channel(
     tmp_path: Path,
 ) -> Generator:
     """Create a TelegramChannel instance for testing."""
-    from qwenpaw.app.channels.telegram.channel import TelegramChannel
+    from minions.app.channels.telegram.channel import TelegramChannel
 
     channel = TelegramChannel(
         process=mock_process_handler,
@@ -109,7 +109,7 @@ def disabled_telegram_channel(
     tmp_path: Path,
 ) -> Generator:
     """Create a disabled TelegramChannel instance."""
-    from qwenpaw.app.channels.telegram.channel import TelegramChannel
+    from minions.app.channels.telegram.channel import TelegramChannel
 
     channel = TelegramChannel(
         process=mock_process_handler,
@@ -163,7 +163,7 @@ class TestTelegramChannelInit:
         tmp_path: Path,
     ):
         """Constructor should store all basic configuration parameters."""
-        from qwenpaw.app.channels.telegram.channel import TelegramChannel
+        from minions.app.channels.telegram.channel import TelegramChannel
 
         channel = TelegramChannel(
             process=mock_process_handler,
@@ -190,7 +190,7 @@ class TestTelegramChannelInit:
         tmp_path: Path,
     ):
         """Constructor should store policy configuration."""
-        from qwenpaw.app.channels.telegram.channel import TelegramChannel
+        from minions.app.channels.telegram.channel import TelegramChannel
 
         channel = TelegramChannel(
             process=mock_process_handler,
@@ -217,7 +217,7 @@ class TestTelegramChannelInit:
         mock_process_handler,
     ):
         """Constructor should initialize required internal data structures."""
-        from qwenpaw.app.channels.telegram.channel import TelegramChannel
+        from minions.app.channels.telegram.channel import TelegramChannel
 
         channel = TelegramChannel(
             process=mock_process_handler,
@@ -251,7 +251,7 @@ class TestTelegramChannelInit:
     ):
         """Channel should log info when enabled but token is empty."""
         import logging
-        from qwenpaw.app.channels.telegram.channel import TelegramChannel
+        from minions.app.channels.telegram.channel import TelegramChannel
 
         with caplog.at_level(logging.INFO):
             channel = TelegramChannel(
@@ -287,7 +287,7 @@ class TestTelegramChannelFromEnv:
         monkeypatch,
     ):
         """from_env should read basic environment variables."""
-        from qwenpaw.app.channels.telegram.channel import TelegramChannel
+        from minions.app.channels.telegram.channel import TelegramChannel
 
         monkeypatch.setenv("TELEGRAM_CHANNEL_ENABLED", "1")
         monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "env_bot_token")
@@ -311,7 +311,7 @@ class TestTelegramChannelFromEnv:
         monkeypatch,
     ):
         """from_env should read policy environment variables."""
-        from qwenpaw.app.channels.telegram.channel import TelegramChannel
+        from minions.app.channels.telegram.channel import TelegramChannel
 
         monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "token")
         monkeypatch.setenv("TELEGRAM_DM_POLICY", "restricted")
@@ -334,7 +334,7 @@ class TestTelegramChannelFromEnv:
         monkeypatch,
     ):
         """from_env should parse TELEGRAM_ALLOW_FROM with whitespace."""
-        from qwenpaw.app.channels.telegram.channel import TelegramChannel
+        from minions.app.channels.telegram.channel import TelegramChannel
 
         monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "token")
         monkeypatch.setenv("TELEGRAM_ALLOW_FROM", " user1 , user2 , user3 ")
@@ -351,7 +351,7 @@ class TestTelegramChannelFromEnv:
         monkeypatch,
     ):
         """from_env should handle empty TELEGRAM_ALLOW_FROM."""
-        from qwenpaw.app.channels.telegram.channel import TelegramChannel
+        from minions.app.channels.telegram.channel import TelegramChannel
 
         monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "token")
         monkeypatch.setenv("TELEGRAM_ALLOW_FROM", "")
@@ -366,7 +366,7 @@ class TestTelegramChannelFromEnv:
         monkeypatch,
     ):
         """from_env should use sensible defaults."""
-        from qwenpaw.app.channels.telegram.channel import TelegramChannel
+        from minions.app.channels.telegram.channel import TelegramChannel
 
         monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "token")
         monkeypatch.delenv("TELEGRAM_CHANNEL_ENABLED", raising=False)
@@ -388,7 +388,7 @@ class TestTelegramChannelFromConfig:
         mock_process_handler,
     ):
         """from_config should use values from config dict."""
-        from qwenpaw.app.channels.telegram.channel import TelegramChannel
+        from minions.app.channels.telegram.channel import TelegramChannel
 
         config = {
             "enabled": True,
@@ -427,8 +427,8 @@ class TestTelegramChannelFromConfig:
         mock_process_handler,
     ):
         """from_config should work with TelegramConfig object."""
-        from qwenpaw.app.channels.telegram.channel import TelegramChannel
-        from qwenpaw.config.config import TelegramConfig
+        from minions.app.channels.telegram.channel import TelegramChannel
+        from minions.config.config import TelegramConfig
 
         config = TelegramConfig(
             enabled=True,
@@ -451,7 +451,7 @@ class TestTelegramChannelFromConfig:
         mock_process_handler,
     ):
         """from_config should pass custom Telegram API root URL."""
-        from qwenpaw.app.channels.telegram.channel import TelegramChannel
+        from minions.app.channels.telegram.channel import TelegramChannel
 
         channel = TelegramChannel.from_config(
             process=mock_process_handler,
@@ -468,7 +468,7 @@ class TestTelegramChannelFromConfig:
         mock_process_handler,
     ):
         """from_config should use defaults for missing values."""
-        from qwenpaw.app.channels.telegram.channel import TelegramChannel
+        from minions.app.channels.telegram.channel import TelegramChannel
 
         config = {
             "bot_token": "token_only",
@@ -979,7 +979,7 @@ class TestTelegramSendMediaValue:
         tmp_path: Path,
     ):
         """Should raise _MediaFileUnavailableError when file not found."""
-        from qwenpaw.app.channels.telegram.channel import (
+        from minions.app.channels.telegram.channel import (
             _MediaFileUnavailableError,
         )
 
@@ -1002,7 +1002,7 @@ class TestTelegramSendMediaValue:
         tmp_path: Path,
     ):
         """Should raise _FileTooLargeError when file exceeds limit."""
-        from qwenpaw.app.channels.telegram.channel import (
+        from minions.app.channels.telegram.channel import (
             _FileTooLargeError,
             TELEGRAM_MAX_FILE_SIZE_BYTES,
         )
@@ -1188,7 +1188,7 @@ class TestTelegramDownloadFile:
 
     async def test_download_file_success(self, tmp_path: Path):
         """Should download file and return local path."""
-        from qwenpaw.app.channels.telegram.channel import (
+        from minions.app.channels.telegram.channel import (
             _download_telegram_file,
         )
 
@@ -1211,7 +1211,7 @@ class TestTelegramDownloadFile:
 
     async def test_download_file_telegram_error(self, tmp_path: Path):
         """Should return None on TelegramError."""
-        from qwenpaw.app.channels.telegram.channel import (
+        from minions.app.channels.telegram.channel import (
             _download_telegram_file,
         )
         from telegram.error import TelegramError
@@ -1229,7 +1229,7 @@ class TestTelegramDownloadFile:
 
     async def test_download_file_with_suffix_from_hint(self, tmp_path: Path):
         """Should use file suffix from filename_hint when not in file_path."""
-        from qwenpaw.app.channels.telegram.channel import (
+        from minions.app.channels.telegram.channel import (
             _download_telegram_file,
         )
 
@@ -1252,7 +1252,7 @@ class TestTelegramDownloadFile:
 
     async def test_download_file_creates_directory(self, tmp_path: Path):
         """Should create media_dir if it doesn't exist."""
-        from qwenpaw.app.channels.telegram.channel import (
+        from minions.app.channels.telegram.channel import (
             _download_telegram_file,
         )
 
@@ -1281,7 +1281,7 @@ class TestTelegramResolveFileUrl:
 
     async def test_resolve_external_url(self):
         """Should return external URL as-is."""
-        from qwenpaw.app.channels.telegram.channel import (
+        from minions.app.channels.telegram.channel import (
             _resolve_telegram_file_url,
         )
 
@@ -1300,7 +1300,7 @@ class TestTelegramResolveFileUrl:
 
     async def test_resolve_api_url(self):
         """Should construct Telegram API URL for local file paths."""
-        from qwenpaw.app.channels.telegram.channel import (
+        from minions.app.channels.telegram.channel import (
             _resolve_telegram_file_url,
         )
 
@@ -1322,7 +1322,7 @@ class TestTelegramResolveFileUrl:
 
     async def test_resolve_api_url_with_custom_base_url(self):
         """Should construct custom Telegram file API URL."""
-        from qwenpaw.app.channels.telegram.channel import (
+        from minions.app.channels.telegram.channel import (
             _resolve_telegram_file_url,
         )
 
@@ -1346,7 +1346,7 @@ class TestTelegramResolveFileUrl:
 
     async def test_resolve_error_returns_empty(self):
         """Should return empty string on TelegramError."""
-        from qwenpaw.app.channels.telegram.channel import (
+        from minions.app.channels.telegram.channel import (
             _resolve_telegram_file_url,
         )
         from telegram.error import TelegramError
@@ -1373,7 +1373,7 @@ class TestTelegramMessageMeta:
 
     def test_message_meta_full(self):
         """Should extract all meta fields from update."""
-        from qwenpaw.app.channels.telegram.channel import _message_meta
+        from minions.app.channels.telegram.channel import _message_meta
 
         mock_update = MagicMock()
         mock_message = MagicMock()
@@ -1402,7 +1402,7 @@ class TestTelegramMessageMeta:
 
     def test_message_meta_edited_message(self):
         """Should handle edited_message."""
-        from qwenpaw.app.channels.telegram.channel import _message_meta
+        from minions.app.channels.telegram.channel import _message_meta
 
         mock_update = MagicMock()
         mock_message = MagicMock()
@@ -1428,7 +1428,7 @@ class TestTelegramMessageMeta:
 
     def test_message_meta_no_message(self):
         """Should return empty dict when no message."""
-        from qwenpaw.app.channels.telegram.channel import _message_meta
+        from minions.app.channels.telegram.channel import _message_meta
 
         mock_update = MagicMock()
         mock_update.message = None
@@ -1440,7 +1440,7 @@ class TestTelegramMessageMeta:
 
     def test_message_meta_supergroup_is_group(self):
         """Should treat supergroup as group."""
-        from qwenpaw.app.channels.telegram.channel import _message_meta
+        from minions.app.channels.telegram.channel import _message_meta
 
         mock_update = MagicMock()
         mock_message = MagicMock()
@@ -1473,7 +1473,7 @@ class TestTelegramBuildContentParts:
 
     async def test_text_only_message(self, tmp_path: Path):
         """Should extract text content from message."""
-        from qwenpaw.app.channels.telegram.channel import (
+        from minions.app.channels.telegram.channel import (
             _build_content_parts_from_message,
         )
 
@@ -1513,7 +1513,7 @@ class TestTelegramBuildContentParts:
 
     async def test_message_with_bot_command(self, tmp_path: Path):
         """Should detect bot command entities."""
-        from qwenpaw.app.channels.telegram.channel import (
+        from minions.app.channels.telegram.channel import (
             _build_content_parts_from_message,
         )
 
@@ -1555,7 +1555,7 @@ class TestTelegramBuildContentParts:
 
     async def test_message_with_mention(self, tmp_path: Path):
         """Should detect bot mention."""
-        from qwenpaw.app.channels.telegram.channel import (
+        from minions.app.channels.telegram.channel import (
             _build_content_parts_from_message,
         )
 
@@ -1600,7 +1600,7 @@ class TestTelegramBuildContentParts:
 
     async def test_message_no_content(self, tmp_path: Path):
         """Should return empty list when no content."""
-        from qwenpaw.app.channels.telegram.channel import (
+        from minions.app.channels.telegram.channel import (
             _build_content_parts_from_message,
         )
 
@@ -1683,7 +1683,7 @@ class TestTelegramExceptions:
 
     def test_file_too_large_error(self):
         """_FileTooLargeError should be catchable."""
-        from qwenpaw.app.channels.telegram.channel import _FileTooLargeError
+        from minions.app.channels.telegram.channel import _FileTooLargeError
 
         exc = _FileTooLargeError("File is too big")
         assert str(exc) == "File is too big"
@@ -1691,7 +1691,7 @@ class TestTelegramExceptions:
 
     def test_media_file_unavailable_error(self):
         """_MediaFileUnavailableError should be catchable."""
-        from qwenpaw.app.channels.telegram.channel import (
+        from minions.app.channels.telegram.channel import (
             _MediaFileUnavailableError,
         )
 
@@ -1710,7 +1710,7 @@ class TestTelegramConstants:
 
     def test_max_message_length(self):
         """TELEGRAM_MAX_MESSAGE_LENGTH should be 4096."""
-        from qwenpaw.app.channels.telegram.channel import (
+        from minions.app.channels.telegram.channel import (
             TELEGRAM_MAX_MESSAGE_LENGTH,
         )
 
@@ -1718,7 +1718,7 @@ class TestTelegramConstants:
 
     def test_send_chunk_size(self):
         """TELEGRAM_SEND_CHUNK_SIZE should be 4000."""
-        from qwenpaw.app.channels.telegram.channel import (
+        from minions.app.channels.telegram.channel import (
             TELEGRAM_SEND_CHUNK_SIZE,
         )
 
@@ -1726,7 +1726,7 @@ class TestTelegramConstants:
 
     def test_max_file_size(self):
         """TELEGRAM_MAX_FILE_SIZE_BYTES should be 50MB."""
-        from qwenpaw.app.channels.telegram.channel import (
+        from minions.app.channels.telegram.channel import (
             TELEGRAM_MAX_FILE_SIZE_BYTES,
         )
 

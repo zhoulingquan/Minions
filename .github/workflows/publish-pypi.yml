@@ -46,15 +46,15 @@ jobs:
 
       - name: Copy console build into package
         run: |
-          rm -rf src/qwenpaw/console/*
-          mkdir -p src/qwenpaw/console
-          cp -R console/dist/* src/qwenpaw/console/
+          rm -rf src/minions/console/*
+          mkdir -p src/minions/console
+          cp -R console/dist/* src/minions/console/
 
       - name: Bundle docs into package
         run: |
-          rm -rf src/qwenpaw/docs
-          mkdir -p src/qwenpaw/docs
-          cp website/public/docs/*.md src/qwenpaw/docs/
+          rm -rf src/minions/docs
+          mkdir -p src/minions/docs
+          cp website/public/docs/*.md src/minions/docs/
 
       - name: Install build dependencies
         run: |
@@ -67,15 +67,15 @@ jobs:
       - name: Upload dist artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: qwenpaw-dist
+          name: minions-dist
           path: dist/
           retention-days: 30
 
       - name: Upload version metadata
         uses: actions/upload-artifact@v4
         with:
-          name: qwenpaw-version
-          path: src/qwenpaw/__version__.py
+          name: minions-version
+          path: src/minions/__version__.py
           retention-days: 30
 
   # ── Stage 2: Verify installation ───────────────────────────────────────────
@@ -95,7 +95,7 @@ jobs:
       - name: Download dist artifacts
         uses: actions/download-artifact@v4
         with:
-          name: qwenpaw-dist
+          name: minions-dist
           path: dist
 
       - name: Publish package to PyPI

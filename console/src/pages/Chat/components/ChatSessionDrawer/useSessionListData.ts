@@ -41,7 +41,7 @@ function sessionsEqual(
   return true;
 }
 
-/** Sessions from QwenPaw backend include extra fields beyond the runtime UI type */
+/** Sessions from Minions backend include extra fields beyond the runtime UI type */
 export interface ExtendedChatSession extends IAgentScopeRuntimeWebUISession {
   realId?: string;
   sessionId?: string;
@@ -239,9 +239,9 @@ export function useSessionListData(
   // via DOM events and may not see currentSessionId change on errors.
   useEffect(() => {
     const onDone = () => setSwitchingSessionId(null);
-    window.addEventListener("qwenpaw:sidebar-switch-done", onDone);
+    window.addEventListener("minions:sidebar-switch-done", onDone);
     return () =>
-      window.removeEventListener("qwenpaw:sidebar-switch-done", onDone);
+      window.removeEventListener("minions:sidebar-switch-done", onDone);
   }, []);
 
   const handleDelete = useCallback(
@@ -269,7 +269,7 @@ export function useSessionListData(
             (s as ExtendedChatSession).realId === currentSessionId,
         );
         if (!stillExists) {
-          window.dispatchEvent(new CustomEvent("qwenpaw:sidebar-new-chat"));
+          window.dispatchEvent(new CustomEvent("minions:sidebar-new-chat"));
         }
       }
     },

@@ -2,7 +2,6 @@ import React, { useState, type ReactNode } from "react";
 import { Card } from "@agentscope-ai/design";
 import {
   ApiOutlined,
-  CodeOutlined,
   ThunderboltOutlined,
   ToolOutlined,
 } from "@ant-design/icons";
@@ -16,9 +15,6 @@ interface ACPCardIconSpec {
 }
 
 const BUILTIN_ACP_ICON_MAP: Record<string, ACPCardIconSpec> = {
-  opencode: {
-    icon: <CodeOutlined />,
-  },
   qwen_code: {
     icon: <ToolOutlined />,
   },

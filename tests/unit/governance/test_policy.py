@@ -10,7 +10,7 @@ import shutil
 
 import pytest
 
-from qwenpaw.governance.policy import (
+from minions.governance.policy import (
     DEFAULT_BUILTIN_RULES,
     DEFAULT_USER_RULES,
     GovernanceAction,
@@ -20,10 +20,10 @@ from qwenpaw.governance.policy import (
     load_governance_policy,
     save_governance_policy,
 )
-from qwenpaw.governance.resource_governor import ResourceGovernor
-from qwenpaw.governance.tool_registry import DEFAULT_REGISTRY
-from qwenpaw.governance.audit import AuditLog
-from qwenpaw.sandbox import SandboxCapability
+from minions.governance.resource_governor import ResourceGovernor
+from minions.governance.tool_registry import DEFAULT_REGISTRY
+from minions.governance.audit import AuditLog
+from minions.sandbox import SandboxCapability
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -42,7 +42,7 @@ def _tc(tool_name: str, target: str) -> ToolCallSpec:
 
 def _make_governor(tmp_path) -> ResourceGovernor:
     """Build a governor whose policy dir + audit DB live under tmp_path
-    (not the real ~/.qwenpaw), so tests never pollute the home dir."""
+    (not the real ~/.minions), so tests never pollute the home dir."""
     return ResourceGovernor(
         str(tmp_path),
         governance_dir=str(tmp_path / "governance"),
@@ -734,7 +734,7 @@ class _FakeModel:
 
 def _patch_model(monkeypatch, text: str, delay: float = 0.0) -> None:
     """Make ``create_model_and_formatter`` return a _FakeModel."""
-    import qwenpaw.agents.model_factory as factory
+    import minions.agents.model_factory as factory
 
     monkeypatch.setattr(
         factory,
@@ -745,7 +745,7 @@ def _patch_model(monkeypatch, text: str, delay: float = 0.0) -> None:
 
 def _patch_model_unavailable(monkeypatch) -> None:
     """Make model creation raise — simulates no configured provider."""
-    import qwenpaw.agents.model_factory as factory
+    import minions.agents.model_factory as factory
 
     def _raise(*a, **kw):
         raise RuntimeError("no active model")
@@ -758,7 +758,7 @@ class TestGeneralizeRuleMatch:
     with strict validation and an exact-match fallback."""
 
     async def test_shell_generalizes(self, monkeypatch):
-        from qwenpaw.governance.generalize import generalize_rule_match
+        from minions.governance.generalize import generalize_rule_match
 
         _patch_model(monkeypatch, "git *")
         assert (
@@ -766,7 +766,7 @@ class TestGeneralizeRuleMatch:
         )
 
     async def test_file_generalizes(self, monkeypatch):
-        from qwenpaw.governance.generalize import generalize_rule_match
+        from minions.governance.generalize import generalize_rule_match
 
         _patch_model(monkeypatch, "/ws/src/**")
         assert (
@@ -775,7 +775,7 @@ class TestGeneralizeRuleMatch:
         )
 
     async def test_unsafe_bare_wildcard_falls_back(self, monkeypatch):
-        from qwenpaw.governance.generalize import generalize_rule_match
+        from minions.governance.generalize import generalize_rule_match
 
         _patch_model(monkeypatch, "*")
         assert (
@@ -785,7 +785,7 @@ class TestGeneralizeRuleMatch:
 
     async def test_anchor_violation_falls_back(self, monkeypatch):
         """A pattern for a different command must not be trusted."""
-        from qwenpaw.governance.generalize import generalize_rule_match
+        from minions.governance.generalize import generalize_rule_match
 
         _patch_model(monkeypatch, "rm *")
         assert (
@@ -795,7 +795,7 @@ class TestGeneralizeRuleMatch:
 
     async def test_destructive_command_not_widened(self, monkeypatch):
         """rm/sudo/etc. stay exact even if the model proposes a glob."""
-        from qwenpaw.governance.generalize import generalize_rule_match
+        from minions.governance.generalize import generalize_rule_match
 
         _patch_model(monkeypatch, "rm *")
         assert (
@@ -805,7 +805,7 @@ class TestGeneralizeRuleMatch:
 
     async def test_pattern_not_covering_target_falls_back(self, monkeypatch):
         """A pattern that no longer matches the approved target is rejected."""
-        from qwenpaw.governance.generalize import generalize_rule_match
+        from minions.governance.generalize import generalize_rule_match
 
         _patch_model(monkeypatch, "/ws/out/**")
         assert (
@@ -814,7 +814,7 @@ class TestGeneralizeRuleMatch:
         )
 
     async def test_no_model_falls_back(self, monkeypatch):
-        from qwenpaw.governance.generalize import generalize_rule_match
+        from minions.governance.generalize import generalize_rule_match
 
         _patch_model_unavailable(monkeypatch)
         assert (
@@ -823,7 +823,7 @@ class TestGeneralizeRuleMatch:
         )
 
     async def test_timeout_falls_back(self, monkeypatch):
-        from qwenpaw.governance import generalize as policy_mod
+        from minions.governance import generalize as policy_mod
 
         monkeypatch.setattr(policy_mod, "GENERALIZE_TIMEOUT_SECONDS", 0.05)
         _patch_model(monkeypatch, "git *", delay=1.0)
@@ -834,11 +834,11 @@ class TestGeneralizeRuleMatch:
 
     async def test_non_generalizable_type_stays_exact(self, monkeypatch):
         """network/internal tools are not widened."""
-        from qwenpaw.governance.generalize import generalize_rule_match
+        from minions.governance.generalize import generalize_rule_match
 
         called = {"n": 0}
 
-        import qwenpaw.agents.model_factory as factory
+        import minions.agents.model_factory as factory
 
         def _spy(*_args, **_kwargs):
             called["n"] += 1
@@ -852,7 +852,7 @@ class TestGeneralizeRuleMatch:
         assert called["n"] == 0
 
     async def test_empty_target_stays_exact(self, monkeypatch):
-        from qwenpaw.governance.generalize import generalize_rule_match
+        from minions.governance.generalize import generalize_rule_match
 
         _patch_model(monkeypatch, "*")
         assert await generalize_rule_match("Bash", "") == "Bash()"
@@ -878,7 +878,7 @@ class TestAddApprovedRuleGeneralization:
     async def test_records_generalized_target(self, governor, monkeypatch):
         """A generalized target/pattern supplied by the caller is wrapped
         and persisted as ``ToolName(pattern)``."""
-        import qwenpaw.agents.model_factory as factory
+        import minions.agents.model_factory as factory
 
         calls = {"n": 0}
         monkeypatch.setattr(
@@ -950,13 +950,13 @@ class TestGeneralizeTargetForApproval:
     Returns the bare generalized target/pattern."""
 
     async def test_builtin_source_returns_exact_target(self, monkeypatch):
-        from qwenpaw.governance.generalize import (
+        from minions.governance.generalize import (
             generalize_target_for_approval,
         )
 
         # Even with a model that would generalize, builtin source must
         # return the exact target and skip the LLM.
-        import qwenpaw.agents.model_factory as factory
+        import minions.agents.model_factory as factory
 
         calls = {"n": 0}
         monkeypatch.setattr(
@@ -979,7 +979,7 @@ class TestGeneralizeTargetForApproval:
         ["user_rules", "sandbox", "No rule hit"],
     )
     async def test_non_builtin_source_generalizes(self, monkeypatch, source):
-        from qwenpaw.governance.generalize import (
+        from minions.governance.generalize import (
             generalize_target_for_approval,
         )
 
@@ -993,7 +993,7 @@ class TestGeneralizeTargetForApproval:
         assert result == "git *"
 
     async def test_exception_falls_back_to_exact_target(self, monkeypatch):
-        from qwenpaw.governance import generalize as g
+        from minions.governance import generalize as g
 
         # Force generalize_rule_match to blow up; helper must swallow it.
         async def _boom(tool_name, target):
@@ -1011,7 +1011,7 @@ class TestGeneralizeTargetForApproval:
         """When the LLM returns a match string whose pattern contains ')',
         the helper must unwrap correctly to the inner pattern (this is why
         it uses _parse_match rather than a naive split)."""
-        from qwenpaw.governance import generalize as g
+        from minions.governance import generalize as g
 
         async def _fake(_tool_name, _target):
             return "Bash(echo $(date))"
