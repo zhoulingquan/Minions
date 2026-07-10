@@ -174,7 +174,7 @@ minions cron create \
   --target-user "CHANGEME" \
   --target-session "CHANGEME" \
   --text "9 点开组会" \
-  --save-result-to-inbox
+  --save-result-to-msg
 ```
 
 ```bash
@@ -192,7 +192,7 @@ minions cron create \
   --target-user "CHANGEME" \
   --target-session "CHANGEME" \
   --text "9 点开组会" \
-  --save-result-to-inbox
+  --save-result-to-msg
 ```
 
 ### 从 JSON 创建
@@ -260,7 +260,7 @@ minions cron list --agent-id <agent_id>
 - 修改/暂停/删除前，先 `minions cron list --agent-id <agent_id>`
 - 排查问题时，用 `minions cron state <job_id> --agent-id <agent_id>`
 - 给用户展示命令时，提供完整、可直接复制的版本
-- 用户提到“结果进收件箱/不进收件箱”时，显式加 `--save-result-to-inbox` 或 `--no-save-result-to-inbox`，否则不要添加该项。
+- 用户提到“结果进消息/不进消息”时，显式加 `--save-result-to-msg` 或 `--no-save-result-to-msg`，否则不要添加该项。
 
 ---
 

@@ -174,7 +174,7 @@ minions cron create \
   --target-user "CHANGEME" \
   --target-session "CHANGEME" \
   --text "Standup starts at 9:00." \
-  --save-result-to-inbox
+  --save-result-to-msg
 ```
 
 ```bash
@@ -192,7 +192,7 @@ minions cron create \
   --target-user "CHANGEME" \
   --target-session "CHANGEME" \
   --text "Standup starts at 9:00." \
-  --save-result-to-inbox
+  --save-result-to-msg
 ```
 
 ### Create from JSON
@@ -260,7 +260,7 @@ to find the correct `job_id`.
 - Before modifying/pausing/deleting, run `minions cron list --agent-id <agent_id>` first
 - To troubleshoot issues, use `minions cron state <job_id> --agent-id <agent_id>`
 - When showing commands to the user, provide complete, copy-pasteable versions
-- If the user mentions "save to inbox" (or not), explicitly include `--save-result-to-inbox` or `--no-save-result-to-inbox`
+- If the user mentions "save to msg" (or not), explicitly include `--save-result-to-msg` or `--no-save-result-to-msg`
 - Before creating, you can run `minions chats list --agent-id <agent_id>` to get valid `target-user` and `target-session`
 
 ---

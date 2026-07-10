@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """Integration tests for memory, system-prompt-files, running-config,
-and inbox event lifecycle.
+and msg event lifecycle.
 
 Sprint 2.3 — Memory & Context.  All tests use the real ``minions app``
-subprocess.  A/B classes are pure HTTP; C class covers inbox event
+subprocess.  A/B classes are pure HTTP; C class covers msg event
 lifecycle driven entirely by Mock LLM heartbeat runs.
 
 Existing CRUD roundtrip coverage (not duplicated here):
@@ -23,7 +23,7 @@ import pytest
 from helpers import (
     MOCK_LLM_PROVIDER_ID,
     MockLLMHandler,
-    clean_inbox,
+    clean_msg,
     create_agent,
     default_http_timeout,
     delete_agent_quietly,
@@ -477,7 +477,7 @@ def test_running_config_extra_fields_ignored(
 
 
 # ================================================================== #
-#  C class — Inbox event lifecycle (5 tests)
+#  C class – Msg event lifecycle (5 tests)
 # ================================================================== #
 
 
@@ -489,16 +489,16 @@ def _unregister_mock_provider(app_server, provider_id):
     unregister_mock_provider(app_server, provider_id)
 
 
-def _poll_inbox_heartbeat(
+def _poll_msg_heartbeat(
     app_server,
     deadline,
     event_type=None,
 ):
-    """Poll inbox until a heartbeat event appears or deadline."""
+    """Poll msg until a heartbeat event appears or deadline."""
     while time.time() < deadline:
         resp = app_server.api_request(
             "GET",
-            "/api/console/inbox/events",
+            "/api/console/msg/events",
             params={"source_type": "heartbeat"},
             timeout=_HTTP_TIMEOUT,
         )
@@ -519,9 +519,9 @@ def _poll_inbox_heartbeat(
 
 
 def _setup_heartbeat(app_server, mock_url):
-    """Register provider + write HEARTBEAT.md + configure inbox."""
+    """Register provider + write HEARTBEAT.md + configure msg."""
     working_dir = app_server.working_dir
-    clean_inbox(working_dir)
+    clean_msg(working_dir)
     _unregister_mock_provider(app_server, "integ-mock-llm")
 
     provider_id = _register_mock_provider(app_server, mock_url)
@@ -547,7 +547,7 @@ def _setup_heartbeat(app_server, mock_url):
         scoped("default", "/config/heartbeat"),
         json={
             "enabled": True,
-            "target": "inbox",
+            "target": "msg",
             "every": "24h",
         },
         timeout=_HTTP_TIMEOUT,
@@ -563,8 +563,8 @@ def _setup_heartbeat(app_server, mock_url):
 
 
 def _teardown_heartbeat(app_server, ctx):
-    """Restore heartbeat config + HEARTBEAT.md + provider + inbox."""
-    clean_inbox(ctx["working_dir"])
+    """Restore heartbeat config + HEARTBEAT.md + provider + msg."""
+    clean_msg(ctx["working_dir"])
     hb_file = ctx["hb_file"]
     if ctx["hb_original"] is not None:
         hb_file.write_text(
@@ -584,11 +584,11 @@ def _teardown_heartbeat(app_server, ctx):
 
 @pytest.mark.integration
 @pytest.mark.p0
-def test_heartbeat_inbox_end_to_end(  # pylint: disable=redefined-outer-name
+def test_heartbeat_msg_end_to_end(  # pylint: disable=redefined-outer-name
     app_server,
     mock_llm,
 ) -> None:
-    """Mock LLM → heartbeat run → inbox event + trace created."""
+    """Mock LLM → heartbeat run → msg event + trace created."""
     srv, mock_url = mock_llm
     srv.force_error = False
     ctx = _setup_heartbeat(app_server, mock_url)
@@ -601,13 +601,13 @@ def test_heartbeat_inbox_end_to_end(  # pylint: disable=redefined-outer-name
         assert run_resp.status_code == 200
         assert run_resp.json().get("started") is True
 
-        events = _poll_inbox_heartbeat(
+        events = _poll_msg_heartbeat(
             app_server,
             time.time() + 30.0,
             event_type="heartbeat_result",
         )
         assert len(events) >= 1, (
-            "No heartbeat inbox event after 30s: " f"{app_server.logs_tail()}"
+            "No heartbeat msg event after 30s: " f"{app_server.logs_tail()}"
         )
 
         event = events[0]
@@ -635,7 +635,7 @@ def test_heartbeat_inbox_end_to_end(  # pylint: disable=redefined-outer-name
         run_id = event["payload"]["run_id"]
         trace_resp = app_server.api_request(
             "GET",
-            f"/api/console/inbox/traces/{run_id}",
+            f"/api/console/msg/traces/{run_id}",
             timeout=_HTTP_TIMEOUT,
         )
         assert trace_resp.status_code == 200
@@ -645,7 +645,7 @@ def test_heartbeat_inbox_end_to_end(  # pylint: disable=redefined-outer-name
 
 @pytest.mark.integration
 @pytest.mark.p1
-def test_heartbeat_inbox_event_body_contains_response(
+def test_heartbeat_msg_event_body_contains_response(
     app_server,
     mock_llm,  # pylint: disable=redefined-outer-name
 ) -> None:
@@ -661,7 +661,7 @@ def test_heartbeat_inbox_event_body_contains_response(
         )
         assert run_resp.status_code == 200
 
-        events = _poll_inbox_heartbeat(
+        events = _poll_msg_heartbeat(
             app_server,
             time.time() + 30.0,
             event_type="heartbeat_result",
@@ -680,7 +680,7 @@ def test_heartbeat_run_twice_creates_two_events(
     app_server,
     mock_llm,  # pylint: disable=redefined-outer-name
 ) -> None:
-    """Two heartbeat runs produce two distinct inbox events."""
+    """Two heartbeat runs produce two distinct msg events."""
     srv, mock_url = mock_llm
     srv.force_error = False
     ctx = _setup_heartbeat(app_server, mock_url)
@@ -694,7 +694,7 @@ def test_heartbeat_run_twice_creates_two_events(
             assert run_resp.status_code == 200
             time.sleep(3.0)
 
-        events = _poll_inbox_heartbeat(
+        events = _poll_msg_heartbeat(
             app_server,
             time.time() + 30.0,
             event_type="heartbeat_result",
@@ -718,7 +718,7 @@ def test_heartbeat_run_twice_creates_two_events(
 
 @pytest.mark.integration
 @pytest.mark.p1
-def test_heartbeat_inbox_mark_read_via_api(
+def test_heartbeat_msg_mark_read_via_api(
     app_server,
     mock_llm,  # pylint: disable=redefined-outer-name
 ) -> None:
@@ -734,7 +734,7 @@ def test_heartbeat_inbox_mark_read_via_api(
         )
         assert run_resp.status_code == 200
 
-        events = _poll_inbox_heartbeat(
+        events = _poll_msg_heartbeat(
             app_server,
             time.time() + 30.0,
             event_type="heartbeat_result",
@@ -744,7 +744,7 @@ def test_heartbeat_inbox_mark_read_via_api(
 
         mark_resp = app_server.api_request(
             "POST",
-            "/api/console/inbox/read",
+            "/api/console/msg/read",
             json={"event_ids": [event["id"]], "all": False},
             timeout=_HTTP_TIMEOUT,
         )
@@ -753,7 +753,7 @@ def test_heartbeat_inbox_mark_read_via_api(
 
         unread_resp = app_server.api_request(
             "GET",
-            "/api/console/inbox/events",
+            "/api/console/msg/events",
             params={
                 "unread_only": "true",
                 "source_type": "heartbeat",
@@ -774,7 +774,7 @@ def test_heartbeat_inbox_mark_read_via_api(
 
 @pytest.mark.integration
 @pytest.mark.p1
-def test_heartbeat_inbox_delete_cleans_trace(
+def test_heartbeat_msg_delete_cleans_trace(
     app_server,
     mock_llm,  # pylint: disable=redefined-outer-name
 ) -> None:
@@ -790,7 +790,7 @@ def test_heartbeat_inbox_delete_cleans_trace(
         )
         assert run_resp.status_code == 200
 
-        events = _poll_inbox_heartbeat(
+        events = _poll_msg_heartbeat(
             app_server,
             time.time() + 30.0,
             event_type="heartbeat_result",
@@ -801,7 +801,7 @@ def test_heartbeat_inbox_delete_cleans_trace(
 
         del_resp = app_server.api_request(
             "DELETE",
-            f"/api/console/inbox/events/{event['id']}",
+            f"/api/console/msg/events/{event['id']}",
             timeout=_HTTP_TIMEOUT,
         )
         assert del_resp.status_code == 200
@@ -811,7 +811,7 @@ def test_heartbeat_inbox_delete_cleans_trace(
 
         trace_resp = app_server.api_request(
             "GET",
-            f"/api/console/inbox/traces/{run_id}",
+            f"/api/console/msg/traces/{run_id}",
             timeout=_HTTP_TIMEOUT,
         )
         assert trace_resp.status_code == 404
@@ -827,12 +827,12 @@ def test_heartbeat_resilient_to_llm_error(
 ) -> None:
     """Test purpose:
     - Verify that a heartbeat run against a failing LLM (422) does
-      not deadlock and still writes a completion event to inbox.
+      not deadlock and still writes a completion event to msg.
 
       Since the agentscope 2.0 migration (PR #4846),
       ``Workspace.stream_query`` re-raises upstream exceptions instead
       of swallowing them, so a forced LLM 422 surfaces as a
-      ``heartbeat_error`` inbox event (vs. ``heartbeat_result`` on the
+      ``heartbeat_error`` msg event (vs. ``heartbeat_result`` on the
       success path). Either flavour proves the heartbeat coroutine
       completed and the scheduler is unblocked, which is the actual
       meaning of "resilient" here.
@@ -841,14 +841,14 @@ def test_heartbeat_resilient_to_llm_error(
     1. Set mock LLM to force 422 errors.
     2. Setup heartbeat with mock provider.
     3. POST heartbeat/run.
-    4. Poll inbox for ANY heartbeat completion event
+    4. Poll msg for ANY heartbeat completion event
        (heartbeat_result or heartbeat_error).
     5. Assert one was created (heartbeat did not deadlock).
     6. Restore mock LLM to normal.
 
     API endpoints:
     - POST /api/agents/{agentId}/config/heartbeat/run
-    - GET /api/console/inbox/events
+    - GET /api/console/msg/events
     """
     srv, mock_url = mock_llm
     srv.force_error = False
@@ -862,7 +862,7 @@ def test_heartbeat_resilient_to_llm_error(
         )
         assert run_resp.status_code == 200
 
-        events = _poll_inbox_heartbeat(
+        events = _poll_msg_heartbeat(
             app_server,
             time.time() + 30.0,
         )
@@ -895,17 +895,17 @@ def test_heartbeat_auto_schedule_fires(
     Test flow:
     1. Setup heartbeat with every=60s.
     2. Wait ~70s for the scheduler to fire.
-    3. Poll inbox for heartbeat_result event.
+    3. Poll msg for heartbeat_result event.
     4. Assert event was created by the scheduler.
 
     API endpoints:
     - PUT /api/agents/{agentId}/config/heartbeat
-    - GET /api/console/inbox/events
+    - GET /api/console/msg/events
     """
     srv, mock_url = mock_llm
     srv.force_error = False
     working_dir = app_server.working_dir
-    clean_inbox(working_dir)
+    clean_msg(working_dir)
     unregister_mock_provider(
         app_server,
         MOCK_LLM_PROVIDER_ID,
@@ -933,14 +933,14 @@ def test_heartbeat_auto_schedule_fires(
         scoped("default", "/config/heartbeat"),
         json={
             "enabled": True,
-            "target": "inbox",
+            "target": "msg",
             "every": "60s",
         },
         timeout=_HTTP_TIMEOUT,
     )
 
     try:
-        events = _poll_inbox_heartbeat(
+        events = _poll_msg_heartbeat(
             app_server,
             time.time() + 80.0,
             event_type="heartbeat_result",
@@ -953,7 +953,7 @@ def test_heartbeat_auto_schedule_fires(
         assert event["source_type"] == "heartbeat"
         assert event["event_type"] == "heartbeat_result"
     finally:
-        clean_inbox(working_dir)
+        clean_msg(working_dir)
         if hb_original is not None:
             hb_file.write_text(hb_original, encoding="utf-8")
         elif hb_file.exists():

@@ -6,7 +6,7 @@ import logging
 import uuid
 from typing import Any, Dict
 
-from ..inbox_trace_store import (
+from ..msg_trace_store import (
     append_trace_from_session_delta,
     create_trace,
     finalize_trace,
@@ -37,7 +37,7 @@ class CronExecutor:
         dispatch_meta: Dict[str, Any] = dict(job.dispatch.meta or {})
         if job.task_type == "agent":
             # Agent cron replies still print to the console channel, but
-            # should not raise frontend push bubbles (Inbox remains opt-in).
+            # should not raise frontend push bubbles (Msg remains opt-in).
             dispatch_meta["suppress_console_push"] = True
         logger.info(
             "cron execute: job_id=%s channel=%s task_type=%s "

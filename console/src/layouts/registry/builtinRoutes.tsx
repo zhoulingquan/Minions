@@ -24,13 +24,14 @@ import Chat from "../../pages/Chat";
 // Lazy pages
 const ChannelsPage = lazyImportWithRetry("../../pages/Control/Channels");
 const SessionsPage = lazyImportWithRetry("../../pages/Control/Sessions");
-const InboxPage = lazyImportWithRetry("../../pages/Inbox");
+const MsgPage = lazyImportWithRetry("../../pages/Msg");
 const CronJobsPage = lazyImportWithRetry("../../pages/Control/CronJobs");
 const HeartbeatPage = lazyImportWithRetry("../../pages/Control/Heartbeat");
 const AgentConfigPage = lazyImportWithRetry("../../pages/Agent/Config");
 const SkillsPage = lazyImportWithRetry("../../pages/Agent/Skills");
 const SkillPoolPage = lazyImportWithRetry("../../pages/Settings/SkillPool");
 const ToolsPage = lazyImportWithRetry("../../pages/Agent/Tools");
+const CustomToolsPage = lazyImportWithRetry("../../pages/Agent/CustomTools");
 const WorkspacePage = lazyImportWithRetry("../../pages/Agent/Workspace");
 const MCPPage = lazyImportWithRetry("../../pages/Agent/MCP");
 const ACPPage = lazyImportWithRetry("../../pages/Agent/ACP");
@@ -66,12 +67,13 @@ export const BUILTIN_ROUTES: Route[] = [
   { id: "core.chat", path: "/chat/*", component: Chat },
   { id: "core.channels", path: "/channels", component: ChannelsPage },
   { id: "core.sessions", path: "/sessions", component: SessionsPage },
-  { id: "core.inbox", path: "/inbox", component: InboxPage },
+  { id: "core.msg", path: "/msg", component: MsgPage },
   { id: "core.cron-jobs", path: "/cron-jobs", component: CronJobsPage },
   { id: "core.heartbeat", path: "/heartbeat", component: HeartbeatPage },
   { id: "core.skills", path: "/skills", component: SkillsPage },
   { id: "core.skill-pool", path: "/skill-pool", component: SkillPoolPage },
   { id: "core.tools", path: "/tools", component: ToolsPage },
+  { id: "core.custom-tools", path: "/custom-tools", component: CustomToolsPage },
   { id: "core.mcp", path: "/mcp", component: MCPPage },
   { id: "core.acp", path: "/acp", component: ACPPage },
   { id: "core.acp-alias", path: "/ACP", component: ACPRedirect },

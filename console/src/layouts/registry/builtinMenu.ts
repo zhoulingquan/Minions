@@ -56,11 +56,11 @@ const navLabel = (key: string, defaultValue?: string) => (): string =>
 export const BUILTIN_MENU: MenuItem[] = [
   // ── Agent-scoped (Sidebar Menu #1) ───────────────────────────────────────
   {
-    id: "core.inbox",
+    id: "core.msg",
     location: "primary.agentScoped",
-    label: navLabel("nav.inbox"),
+    label: navLabel("nav.msg"),
     icon: SparkEmailLine,
-    route: "core.inbox",
+    route: "core.msg",
     order: 10,
   },
 
@@ -143,6 +143,15 @@ export const BUILTIN_MENU: MenuItem[] = [
     icon: SparkToolLine,
     route: "core.tools",
     order: 30,
+  },
+  {
+    id: "core.custom-tools",
+    location: "primary.agentScoped",
+    parentId: "core.agent-group",
+    label: navLabel("nav.customTools"),
+    icon: SparkOtherLine,
+    route: "core.custom-tools",
+    order: 35,
   },
   {
     id: "core.mcp",

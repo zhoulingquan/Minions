@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import socket
 from typing import Any, Callable
-from urllib.parse import urlparse
 
 import httpx
 
@@ -19,15 +18,8 @@ from ..config.config import (
     Config,
     DingTalkConfig,
     FeishuConfig,
-    MatrixConfig,
-    MattermostConfig,
-    MQTTConfig,
-    OneBotConfig,
     QQConfig,
-    TelegramConfig,
-    VoiceChannelConfig,
     WecomConfig,
-    XiaoYiConfig,
     WeChatConfig,
 )
 from .doctor_checks import _effective_channels_mcp, _read_workspace_agent_json
@@ -52,86 +44,6 @@ def _http_get_ok(url: str, timeout: float) -> str | None:
     except httpx.RequestError as exc:
         return str(exc)
     return None
-
-
-def _probe_mqtt(agent_id: str, cfg: MQTTConfig, timeout: float) -> list[str]:
-    host = (cfg.host or "").strip()
-    if not host:
-        return []
-    port = int(cfg.port or 1883)
-    err = _tcp_check(host, port, timeout)
-    if err:
-        return [f"{agent_id}: mqtt: TCP {host}:{port} — {err}"]
-    return []
-
-
-def _probe_mattermost(
-    agent_id: str,
-    cfg: MattermostConfig,
-    timeout: float,
-) -> list[str]:
-    url = (cfg.url or "").strip().rstrip("/")
-    if not url:
-        return []
-    ping = f"{url}/api/v4/system/ping"
-    err = _http_get_ok(ping, timeout)
-    if err:
-        return [f"{agent_id}: mattermost: GET {ping!r} — {err}"]
-    return []
-
-
-def _probe_matrix(
-    agent_id: str,
-    cfg: MatrixConfig,
-    timeout: float,
-) -> list[str]:
-    hs = (cfg.homeserver or "").strip().rstrip("/")
-    if not hs:
-        return []
-    ver = f"{hs}/_matrix/client/versions"
-    err = _http_get_ok(ver, timeout)
-    if err:
-        return [f"{agent_id}: matrix: GET {ver!r} — {err}"]
-    return []
-
-
-def _probe_telegram(
-    agent_id: str,
-    cfg: TelegramConfig,
-    timeout: float,
-) -> list[str]:
-    url = (cfg.base_url or "").strip().rstrip(
-        "/",
-    ) or "https://api.telegram.org"
-    err = _http_get_ok(url, timeout)
-    if err:
-        return [f"{agent_id}: telegram: reach {url} — {err}"]
-    return []
-
-
-def _probe_discord(agent_id: str, _cfg: Any, timeout: float) -> list[str]:
-    err = _http_get_ok("https://discord.com/api/v10/gateway", timeout)
-    if err:
-        return [f"{agent_id}: discord: reach discord API — {err}"]
-    return []
-
-
-def _probe_onebot(
-    agent_id: str,
-    cfg: OneBotConfig,
-    timeout: float,
-) -> list[str]:
-    host = (cfg.ws_host or "127.0.0.1").strip()
-    port = int(cfg.ws_port or 6199)
-    if host in ("0.0.0.0", ""):
-        host = "127.0.0.1"
-    err = _tcp_check(host, port, timeout)
-    if err:
-        return [
-            f"{agent_id}: onebot: TCP {host}:{port} — {err} "
-            "(is the reverse WebSocket server running?)",
-        ]
-    return []
 
 
 def _probe_feishu(
@@ -179,51 +91,6 @@ def _probe_wecom(
     return []
 
 
-def _probe_voice(
-    agent_id: str,
-    _cfg: VoiceChannelConfig,
-    timeout: float,
-) -> list[str]:
-    err = _http_get_ok("https://api.twilio.com/", timeout)
-    if err:
-        return [f"{agent_id}: voice (Twilio): reach api.twilio.com — {err}"]
-    return []
-
-
-def _probe_xiaoyi(
-    agent_id: str,
-    _cfg: XiaoYiConfig,
-    timeout: float,
-) -> list[str]:
-    from minions.app.channels.xiaoyi.constants import (
-        DEFAULT_WS_URL,
-        DEFAULT_WS_URL_BACKUP,
-    )
-
-    notes: list[str] = []
-    for label, raw in (
-        ("primary", DEFAULT_WS_URL),
-        ("backup", DEFAULT_WS_URL_BACKUP),
-    ):
-        if not raw:
-            continue
-        parsed = urlparse(raw)
-        host = parsed.hostname
-        if not host:
-            continue
-        port = parsed.port or (
-            443 if parsed.scheme in ("wss", "https") else 80
-        )
-        err = _tcp_check(host, port, timeout)
-        if err:
-            notes.append(
-                f"{agent_id}: xiaoyi: "
-                f"TCP {host}:{port} ({label}) "
-                f"\u2014 {err}",
-            )
-    return notes
-
-
 def _probe_wechat(
     agent_id: str,
     cfg: WeChatConfig,
@@ -242,18 +109,10 @@ def _probe_wechat(
 
 
 _BUILTIN_PROBES: dict[str, ChannelProbe] = {
-    "mqtt": _probe_mqtt,
-    "mattermost": _probe_mattermost,
-    "matrix": _probe_matrix,
-    "telegram": _probe_telegram,
-    "discord": _probe_discord,
-    "onebot": _probe_onebot,
     "feishu": _probe_feishu,
     "dingtalk": _probe_dingtalk,
     "qq": _probe_qq,
     "wecom": _probe_wecom,
-    "voice": _probe_voice,
-    "xiaoyi": _probe_xiaoyi,
     "wechat": _probe_wechat,
 }
 
@@ -280,8 +139,6 @@ def collect_deep_channel_connectivity_notes(
             if sub is None or not _channel_enabled(sub):
                 continue
             if name == "console":
-                continue
-            if name == "imessage":
                 continue
 
             cls = reg.get(name)

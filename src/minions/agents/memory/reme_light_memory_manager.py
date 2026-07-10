@@ -18,7 +18,7 @@ from .base_memory_manager import BaseMemoryManager, memory_registry
 from .prompts import build_memory_guidance_prompt
 from .reme_config import get_reme_app_config
 from ..model_factory import create_model_and_formatter
-from ...app.inbox_store import append_event as append_inbox_event
+from ...app.msg_store import append_event as append_msg_event
 from ...config import load_config
 from ...config.config import load_agent_config, AgentProfileConfig
 
@@ -29,10 +29,10 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 NO_MEMORY_RESULTS = "(no memory results)"
-INBOX_RESULT_JOB_NAMES = {"auto_memory", "auto_dream", "auto_resource"}
-INBOX_RESULT_HOOK_KEY = "minions_memory_result_hook"
-INBOX_EMITTED_METADATA_KEY = "_minions_inbox_emitted"
-MAX_INBOX_BODY_CHARS = 4000
+MSG_RESULT_JOB_NAMES = {"auto_memory", "auto_dream", "auto_resource"}
+MSG_RESULT_HOOK_KEY = "minions_memory_result_hook"
+MSG_EMITTED_METADATA_KEY = "_minions_msg_emitted"
+MAX_MSG_BODY_CHARS = 4000
 
 
 def _tool_chunk(text: str, *, ok: bool = True) -> ToolChunk:
@@ -183,7 +183,7 @@ class ReMeLightMemoryManager(BaseMemoryManager):
             if needs_llm:
                 await self._update_minions_model()
             response = await self._reme.run_job(name, **kwargs)
-            await self._append_reme_job_result_to_inbox(
+            await self._append_reme_job_result_to_msg(
                 name,
                 response=response,
                 kwargs=kwargs,
@@ -194,7 +194,7 @@ class ReMeLightMemoryManager(BaseMemoryManager):
             return None
 
     def _install_reme_result_hook(self) -> None:
-        """Expose Minions inbox delivery to ReMe background steps."""
+        """Expose Minions msg delivery to ReMe background steps."""
         if self._reme is None:
             return
         context = getattr(self._reme, "context", None)
@@ -202,7 +202,7 @@ class ReMeLightMemoryManager(BaseMemoryManager):
         if not isinstance(metadata, dict):
             logger.debug("ReMe result hook skipped; metadata unavailable")
             return
-        metadata[INBOX_RESULT_HOOK_KEY] = self._handle_reme_result_hook
+        metadata[MSG_RESULT_HOOK_KEY] = self._handle_reme_result_hook
 
     async def _handle_reme_result_hook(
         self,
@@ -214,24 +214,24 @@ class ReMeLightMemoryManager(BaseMemoryManager):
     ) -> None:
         """Handle result notifications emitted from ReMe background steps."""
         del metadata
-        await self._append_reme_job_result_to_inbox(
+        await self._append_reme_job_result_to_msg(
             job_name,
             response=response,
             kwargs=kwargs or {},
         )
 
-    async def _append_reme_job_result_to_inbox(
+    async def _append_reme_job_result_to_msg(
         self,
         name: str,
         *,
         response: "Response",
         kwargs: dict[str, Any],
     ) -> bool:
-        if name not in INBOX_RESULT_JOB_NAMES:
+        if name not in MSG_RESULT_JOB_NAMES:
             return False
         response_metadata = getattr(response, "metadata", None)
         if isinstance(response_metadata, dict) and response_metadata.get(
-            INBOX_EMITTED_METADATA_KEY,
+            MSG_EMITTED_METADATA_KEY,
         ):
             return False
         if (
@@ -240,7 +240,7 @@ class ReMeLightMemoryManager(BaseMemoryManager):
             and response_metadata.get("modified") is False
         ):
             logger.info(
-                "ReMe job result inbox push skipped; no memory change: "
+                "ReMe job result msg push skipped; no memory change: "
                 "agent_id=%s job_name=%s modified=False",
                 self.agent_id,
                 name,
@@ -248,11 +248,11 @@ class ReMeLightMemoryManager(BaseMemoryManager):
             return False
 
         answer = str(getattr(response, "answer", "") or "").strip()
-        if len(answer) > MAX_INBOX_BODY_CHARS:
-            answer = f"{answer[:MAX_INBOX_BODY_CHARS].rstrip()}\n..."
+        if len(answer) > MAX_MSG_BODY_CHARS:
+            answer = f"{answer[:MAX_MSG_BODY_CHARS].rstrip()}\n..."
         success = bool(getattr(response, "success", False))
-        title = self._inbox_result_title(name)
-        body = answer or self._empty_inbox_result_body(name)
+        title = self._msg_result_title(name)
+        body = answer or self._empty_msg_result_body(name)
         payload: dict[str, Any] = {
             "job_name": name,
             "session_id": str(kwargs.get("session_id") or ""),
@@ -269,7 +269,7 @@ class ReMeLightMemoryManager(BaseMemoryManager):
                 payload["processed"] = response_metadata.get("processed")
 
         try:
-            event = await append_inbox_event(
+            event = await append_msg_event(
                 agent_id=self.agent_id,
                 source_type="memory",
                 source_id=name,
@@ -281,9 +281,9 @@ class ReMeLightMemoryManager(BaseMemoryManager):
                 payload=payload,
             )
             if isinstance(response_metadata, dict):
-                response_metadata[INBOX_EMITTED_METADATA_KEY] = True
+                response_metadata[MSG_EMITTED_METADATA_KEY] = True
             logger.info(
-                "ReMe job result pushed to inbox: "
+                "ReMe job result pushed to msg: "
                 "agent_id=%s job_name=%s event_id=%s status=%s modified=%s",
                 self.agent_id,
                 name,
@@ -296,7 +296,7 @@ class ReMeLightMemoryManager(BaseMemoryManager):
             return True
         except Exception:  # pylint: disable=broad-except
             logger.exception(
-                "failed to push ReMe job result to inbox: "
+                "failed to push ReMe job result to msg: "
                 "agent_id=%s job_name=%s success=%s",
                 self.agent_id,
                 name,
@@ -305,7 +305,7 @@ class ReMeLightMemoryManager(BaseMemoryManager):
             return False
 
     @staticmethod
-    def _inbox_result_title(name: str) -> str:
+    def _msg_result_title(name: str) -> str:
         return {
             "auto_memory": "Auto-memory result",
             "auto_dream": "Auto-dream result",
@@ -313,7 +313,7 @@ class ReMeLightMemoryManager(BaseMemoryManager):
         }.get(name, "Memory job result")
 
     @staticmethod
-    def _empty_inbox_result_body(name: str) -> str:
+    def _empty_msg_result_body(name: str) -> str:
         return {
             "auto_memory": "Auto-memory completed with no returned content.",
             "auto_dream": "Auto-dream completed with no returned content.",

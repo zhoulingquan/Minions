@@ -11,7 +11,6 @@ from pydantic import (
     BaseModel,
     Field,
     ConfigDict,
-    field_validator,
     model_validator,
 )
 import shortuuid
@@ -216,24 +215,6 @@ class BaseChannelConfig(BaseModel):
     group_disabled: bool = False
 
 
-class IMessageChannelConfig(BaseChannelConfig):
-    db_path: str = "~/Library/Messages/chat.db"
-    poll_sec: float = 1.0
-    media_dir: Optional[str] = None
-    max_decoded_size: int = (
-        10 * 1024 * 1024
-    )  # 10MB default limit for Base64 data
-
-
-class DiscordConfig(BaseChannelConfig):
-    bot_token: str = ""
-    http_proxy: str = ""
-    http_proxy_auth: str = ""
-    accept_bot_messages: bool = False
-    streaming_enabled: bool = False
-    media_dir: Optional[str] = None
-
-
 class DingTalkConfig(BaseChannelConfig):
     client_id: str = ""
     client_secret: str = ""
@@ -277,50 +258,6 @@ class QQConfig(BaseChannelConfig):
     ack_message: str = ""
 
 
-class OneBotConfig(BaseChannelConfig):
-    """OneBot v11 channel: reverse WebSocket for NapCat/go-cqhttp/Lagrange."""
-
-    ws_host: str = "0.0.0.0"
-    ws_port: int = 6199
-    access_token: str = ""
-    share_session_in_group: bool = False
-
-
-class TelegramConfig(BaseChannelConfig):
-    bot_token: str = ""
-    base_url: str = ""
-    http_proxy: str = ""
-    http_proxy_auth: str = ""
-    show_typing: Optional[bool] = None
-    streaming_enabled: bool = False
-
-
-class MQTTConfig(BaseChannelConfig):
-    host: str = ""
-    port: Optional[int] = None
-    transport: str = ""
-    clean_session: bool = True
-    qos: int = 2
-    username: Optional[str] = None
-    password: Optional[str] = None
-    subscribe_topic: str = ""
-    publish_topic: str = ""
-    tls_enabled: bool = False
-    tls_ca_certs: Optional[str] = None
-    tls_certfile: Optional[str] = None
-    tls_keyfile: Optional[str] = None
-
-
-class MattermostConfig(BaseChannelConfig):
-    """Mattermost channel: WebSocket polling and REST API."""
-
-    url: str = ""
-    bot_token: str = ""
-    media_dir: Optional[str] = None
-    show_typing: Optional[bool] = None
-    thread_follow_without_mention: bool = False
-
-
 class ConsoleConfig(BaseChannelConfig):
     """Console channel: prints agent responses to stdout."""
 
@@ -340,89 +277,6 @@ class WecomConfig(BaseChannelConfig):
     share_session_in_group: bool = True
     max_reconnect_attempts: int = -1
     streaming_enabled: bool = False
-
-
-class MatrixConfig(BaseChannelConfig):
-    """Matrix channel configuration."""
-
-    homeserver: str = ""
-
-    @field_validator("homeserver")
-    @classmethod
-    def strip_trailing_slash(cls, v: str) -> str:
-        return v.rstrip("/")
-
-    user_id: str = ""
-    access_token: str = ""
-
-    # Extended Matrix channel fields
-    group_allow_from: List[str] = Field(default_factory=list)
-    groups: Dict[str, Any] = Field(default_factory=dict)
-    encryption: bool = False
-    # When False, images are surfaced as text placeholders (no vision URL).
-    vision_enabled: bool = True
-    history_limit: int = 50
-    password: str = ""
-    device_name: str = "minions-worker"
-    # matrix-nio sync long-poll timeout (ms); typical 30s
-    sync_timeout_ms: int = Field(default=30000, ge=5000, le=300000)
-    # When True, prepend HTML pill to formatted_body for outbound mentions.
-    # Default False: m.mentions is always set for push, but pill is omitted.
-    mention_pill_in_body: bool = False
-    # When True, apply m.mentions + optional pill on outbound messages.
-    outbound_structured_mentions: bool = True
-    streaming_enabled: bool = False
-
-
-class VoiceChannelConfig(BaseChannelConfig):
-    """Voice channel: Twilio ConversationRelay + Cloudflare Tunnel."""
-
-    twilio_account_sid: str = ""
-    twilio_auth_token: str = ""
-    phone_number: str = ""
-    phone_number_sid: str = ""
-    tts_provider: str = "google"
-    tts_voice: str = "en-US-Journey-D"
-    stt_provider: str = "deepgram"
-    language: str = "en-US"
-    welcome_greeting: str = "Hi! This is Minions. How can I help you?"
-
-
-class SIPChannelConfig(BaseChannelConfig):
-    """SIP voice channel: dual-track (pyVoIP dev / LiveKit production)."""
-
-    sip_mode: str = "dev"
-    sip_host: str = "0.0.0.0"
-    sip_port: int = 5061
-    sip_username: str = ""
-    sip_password: str = ""
-    sip_server: str = ""
-    sip_transport: str = "UDP"
-    rtp_port_low: int = 10000
-    rtp_port_high: int = 20000
-    dashscope_api_key: str = ""
-    tts_provider: str = "aliyun"
-    tts_voice: str = ""
-    stt_provider: str = "aliyun"
-    language: str = "zh-CN"
-    welcome_greeting: str = "你好，我是Minions"
-    call_timeout: float = 120.0
-    livekit_url: str = ""
-    livekit_api_key: str = ""
-    livekit_api_secret: str = ""
-    livekit_sip_trunk_id: str = ""
-    livekit_room_name: str = "sip-inbound"
-    livekit_output_sample_rate: int = 24000
-    max_concurrent_calls: int = 5
-
-
-class XiaoYiConfig(BaseChannelConfig):
-    """XiaoYi channel: Huawei A2A protocol via WebSocket."""
-
-    ak: str = ""  # Access Key
-    sk: str = ""  # Secret Key
-    agent_id: str = ""  # Agent ID from XiaoYi platform
-    task_timeout_ms: int = 3600000  # 1 hour task timeout
 
 
 class YuanbaoConfig(BaseChannelConfig):
@@ -466,55 +320,18 @@ class WeChatConfig(BaseChannelConfig):
     message_merge_delay_ms: Optional[int] = 0
 
 
-class SlackConfig(BaseChannelConfig):
-    """Slack channel: Socket Mode connection with edit-in-place streaming.
-
-    Uses slack-bolt AsyncSocketModeHandler (aiohttp WebSocket) to connect
-    to a single Slack workspace. Supports incremental message rendering
-    via chat.postMessage + chat.update (edit-in-place) when streaming is
-    enabled.
-    """
-
-    bot_token: str = ""
-    app_token: str = ""
-    bot_prefix: str = ""
-    proxy: Optional[str] = None
-    streaming_enabled: bool = False
-    require_mention: bool = True
-    media_dir: Optional[str] = None
-    dm_policy: str = "open"
-    group_policy: str = "open"
-    allow_from: Optional[list] = None
-    deny_message: str = ""
-    access_control_dm: bool = False
-    access_control_group: bool = False
-    dm_disabled: bool = False
-    group_disabled: bool = False
-
-
 class ChannelConfig(BaseModel):
     """Built-in channel configs; extra keys allowed for plugin channels."""
 
     model_config = ConfigDict(extra="allow")
 
-    imessage: IMessageChannelConfig = IMessageChannelConfig()
-    discord: DiscordConfig = DiscordConfig()
     dingtalk: DingTalkConfig = DingTalkConfig()
     feishu: FeishuConfig = FeishuConfig()
     qq: QQConfig = QQConfig()
-    telegram: TelegramConfig = TelegramConfig()
-    mattermost: MattermostConfig = MattermostConfig()
-    mqtt: MQTTConfig = MQTTConfig()
     console: ConsoleConfig = ConsoleConfig()
-    matrix: MatrixConfig = MatrixConfig()
-    voice: VoiceChannelConfig = VoiceChannelConfig()
-    sip: SIPChannelConfig = SIPChannelConfig()
     wecom: WecomConfig = WecomConfig()
-    xiaoyi: XiaoYiConfig = XiaoYiConfig()
     yuanbao: YuanbaoConfig = YuanbaoConfig()
     wechat: WeChatConfig = WeChatConfig()
-    slack: SlackConfig = SlackConfig()
-    onebot: OneBotConfig = OneBotConfig()
 
     @model_validator(mode="before")
     @classmethod
@@ -565,6 +382,15 @@ class HeartbeatConfig(BaseModel):
         default=None,
         alias="activeHours",
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _migrate_legacy_inbox_target(cls, data: Any) -> Any:
+        """One-shot migration: legacy heartbeat target ``inbox`` -> ``msg``."""
+        if isinstance(data, dict) and data.get("target") == "inbox":
+            data = dict(data)
+            data["target"] = "msg"
+        return data
 
 
 class AgentsDefaultsConfig(BaseModel):
@@ -2069,21 +1895,12 @@ class Config(BaseModel):
 
 
 ChannelConfigUnion = Union[
-    IMessageChannelConfig,
-    DiscordConfig,
     DingTalkConfig,
     FeishuConfig,
     QQConfig,
-    TelegramConfig,
-    MattermostConfig,
-    MQTTConfig,
     ConsoleConfig,
-    MatrixConfig,
-    VoiceChannelConfig,
-    SIPChannelConfig,
-    SlackConfig,
     WecomConfig,
-    XiaoYiConfig,
+    YuanbaoConfig,
     WeChatConfig,
 ]
 

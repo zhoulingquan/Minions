@@ -689,6 +689,16 @@ def _do_ensure_default_agent() -> None:
             description=_DEFAULT_AGENT_DESCRIPTION,
         )
 
+        # Initialize workspace md files (SOUL/PROFILE/MEMORY/AGENTS/HEARTBEAT)
+        # and initial skills, mirroring the QA agent creation path.
+        from .routers.agents import _initialize_agent_workspace
+
+        _initialize_agent_workspace(
+            default_workspace,
+            skill_names=list(template_result.initial_skill_names),
+            md_template_id=template_result.md_template_id,
+        )
+
         # Add default agent reference to config
         config.agents.profiles["default"] = AgentProfileRef(
             id="default",

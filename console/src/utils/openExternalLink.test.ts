@@ -91,7 +91,7 @@ describe("openExternalLink", () => {
   });
 
   it("uses window.open for backend-hosted browser consoles", () => {
-    window.history.replaceState(null, "", "/console/inbox");
+    window.history.replaceState(null, "", "/console/msg");
 
     openExternalLink("https://github.com/agentscope-ai/Minions");
 

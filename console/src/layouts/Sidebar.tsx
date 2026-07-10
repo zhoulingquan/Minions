@@ -63,13 +63,13 @@ function isMobileSidebarViewport() {
     window.matchMedia(MOBILE_SIDEBAR_QUERY).matches
   );
 }
-const INBOX_BADGE_POLLING_MS = 6000;
+const MSG_BADGE_POLLING_MS = 6000;
 
 // ── Simple mode whitelist ─────────────────────────────────────────────────
 
 /** Menu item IDs that remain visible in simple sidebar mode (no groups). */
 const SIMPLE_MODE_WHITELIST = new Set([
-  "core.inbox",
+  "core.msg",
   "core.cron-jobs",
   "core.agent-config",
   "core.models",
@@ -123,7 +123,7 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(isMobileSidebarViewport);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(isMobileSidebarViewport);
-  const [hasInboxUnread, setHasInboxUnread] = useState(false);
+  const [hasMsgUnread, setHasMsgUnread] = useState(false);
 
   // Sidebar mode: "simple" (only core items) or "full" (everything)
   const { mode: sidebarMode } = useSidebarModeStore();
@@ -193,17 +193,17 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
   useEffect(() => {
     const loadUnreadState = async () => {
       try {
-        const [inboxRes, pushRes] = await Promise.all([
-          api.getInboxEvents({
+        const [msgRes, pushRes] = await Promise.all([
+          api.getMsgEvents({
             unread_only: true,
             limit: 1,
           }),
           api.getPushMessages(),
         ]);
-        const hasUnreadEvents = (inboxRes?.events?.length || 0) > 0;
+        const hasUnreadEvents = (msgRes?.events?.length || 0) > 0;
         const hasPendingApprovals =
           (pushRes?.pending_approvals?.length || 0) > 0;
-        setHasInboxUnread(hasUnreadEvents || hasPendingApprovals);
+        setHasMsgUnread(hasUnreadEvents || hasPendingApprovals);
       } catch {
         // Keep previous state when polling fails.
       }
@@ -211,7 +211,7 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
     void loadUnreadState();
     const timer = window.setInterval(() => {
       void loadUnreadState();
-    }, INBOX_BADGE_POLLING_MS);
+    }, MSG_BADGE_POLLING_MS);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -242,13 +242,13 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
     };
   }, []);
 
-  // ── Adapter: convert MenuItem trees to antd, with inbox badge decoration.
+  // ── Adapter: convert MenuItem trees to antd, with msg badge decoration.
 
-  /** Wrap the inbox label with the unread-Badge while keeping all other labels intact. */
+  /** Wrap the msg label with the unread-Badge while keeping all other labels intact. */
   const decorateLabel = (item: MenuItem, label: ReactNode): ReactNode => {
-    if (item.id !== "core.inbox" || label == null) return label;
+    if (item.id !== "core.msg" || label == null) return label;
     return (
-      <Badge dot={hasInboxUnread} color="rgba(255, 157, 77, 1)" offset={[5, 7]}>
+      <Badge dot={hasMsgUnread} color="rgba(255, 157, 77, 1)" offset={[5, 7]}>
         <span>{label}</span>
       </Badge>
     );
@@ -256,9 +256,9 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
 
   const agentMenuItems = useMemo(
     () => toAntdItems(agentMenu, { collapsed, decorateLabel }),
-    // hasInboxUnread closure inside decorateLabel — listed as dep explicitly.
+    // hasMsgUnread closure inside decorateLabel - listed as dep explicitly.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [agentMenu, collapsed, hasInboxUnread],
+    [agentMenu, collapsed, hasMsgUnread],
   );
 
   const settingsMenuItems = useMemo(
@@ -279,12 +279,12 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
       path: chatPath,
       label: t("nav.chat"),
     };
-    // Inbox in collapsed mode shows a dot overlay on its icon (kept Sidebar-local
+    // Msg in collapsed mode shows a dot overlay on its icon (kept Sidebar-local
     // for the same reason as decorateLabel: live state isn't menu data).
-    const decorateInboxIcon = (icon: ReactNode): ReactNode => (
+    const decorateMsgIcon = (icon: ReactNode): ReactNode => (
       <span style={{ position: "relative", display: "inline-flex" }}>
         {icon ?? <SparkEmailLine size={18} />}
-        {hasInboxUnread && (
+        {hasMsgUnread && (
           <span
             style={{
               position: "absolute",
@@ -305,11 +305,11 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
       ...flattenMenu(settingsMenu, routes, 18),
     ];
     return flat.map((entry) =>
-      entry.key === "core.inbox"
-        ? { ...entry, icon: decorateInboxIcon(entry.icon) }
+      entry.key === "core.msg"
+        ? { ...entry, icon: decorateMsgIcon(entry.icon) }
         : entry,
     );
-  }, [agentMenu, settingsMenu, routes, chatPath, t, hasInboxUnread]);
+  }, [agentMenu, settingsMenu, routes, chatPath, t, hasMsgUnread]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -468,7 +468,7 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
             {/* Flat nav items (no groups) */}
             <div className={styles.simpleNavItems}>
               {simpleFlatNav.map((entry) => {
-                const isInbox = entry.key === "core.inbox";
+                const isMsg = entry.key === "core.msg";
                 const isActive = selectedKey === entry.key;
                 return (
                   <button
@@ -486,7 +486,7 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
                         : navigate(entry.path)
                     }
                   >
-                    {isInbox ? (
+                    {isMsg ? (
                       <span
                         style={{
                           position: "relative",
@@ -494,7 +494,7 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
                         }}
                       >
                         {entry.icon ?? <SparkEmailLine size={16} />}
-                        {hasInboxUnread && (
+                        {hasMsgUnread && (
                           <span
                             style={{
                               position: "absolute",

@@ -39,7 +39,6 @@ from .routers.agent_scoped import AgentContextMiddleware
 from .routers.approval import router as approval_router
 from .routers.loops import router as loops_router
 from .routers.tool_calls import router as tool_calls_router
-from .routers.voice import voice_router
 from ..envs import load_envs_into_environ
 from ..providers.provider_manager import ProviderManager
 from ..local_models.manager import LocalModelManager
@@ -632,10 +631,10 @@ async def lifespan(  # pylint: disable=too-many-statements,too-many-branches
             # ---- Skill pool auto-update sync ----
             try:
                 from ..agents.skill_system import run_pool_auto_update_sync
-                from .routers.skills import post_auto_update_inbox
+                from .routers.skills import post_auto_update_msg
 
                 au_result = await asyncio.to_thread(run_pool_auto_update_sync)
-                await post_auto_update_inbox(au_result)
+                await post_auto_update_msg(au_result)
             except Exception:
                 logger.warning(
                     "Skill pool auto-update sync skipped on startup",
@@ -882,10 +881,6 @@ app.include_router(loops_router, prefix="/api")
 # Agent-scoped router: /api/agents/{agentId}/chats, etc.
 agent_scoped_router = create_agent_scoped_router()
 app.include_router(agent_scoped_router, prefix="/api")
-
-# Voice channel: Twilio-facing endpoints at root level (not under /api/).
-# POST /voice/incoming, WS /voice/ws, POST /voice/status-callback
-app.include_router(voice_router, tags=["voice"])
 
 
 # Console static files and SPA fallback

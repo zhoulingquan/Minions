@@ -23,12 +23,12 @@ from ...config import (
 )
 from ...constant import (
     HEARTBEAT_FILE,
-    HEARTBEAT_TARGET_INBOX,
+    HEARTBEAT_TARGET_MSG,
     HEARTBEAT_TARGET_LAST,
 )
 from ..channels.schema import DEFAULT_CHANNEL
-from ..inbox_store import append_event as append_inbox_event
-from ..inbox_trace_store import (
+from ..msg_store import append_event as append_msg_event
+from ..msg_trace_store import (
     append_trace_from_session_delta,
     create_trace,
     finalize_trace,
@@ -271,7 +271,7 @@ async def run_heartbeat_once(
                 )
             return
 
-    if target == HEARTBEAT_TARGET_INBOX:
+    if target == HEARTBEAT_TARGET_MSG:
         run_id = str(uuid.uuid4())
         baseline_messages = await read_session_messages(
             runner=workspace,
@@ -312,7 +312,7 @@ async def run_heartbeat_once(
             body = _last_preview_from_delta(delta) or (
                 "Heartbeat task finished successfully."
             )
-            await append_inbox_event(
+            await append_msg_event(
                 agent_id=agent_id,
                 source_type="heartbeat",
                 source_id=_HEARTBEAT_SOURCE_ID,
@@ -345,7 +345,7 @@ async def run_heartbeat_once(
                 status="timeout",
                 error=f"timed out after {timeout_seconds}s",
             )
-            await append_inbox_event(
+            await append_msg_event(
                 agent_id=agent_id,
                 source_type="heartbeat",
                 source_id=_HEARTBEAT_SOURCE_ID,
@@ -361,7 +361,7 @@ async def run_heartbeat_once(
                 },
             )
         except Exception as e:  # pylint: disable=broad-except
-            logger.exception("heartbeat run failed (inbox target)")
+            logger.exception("heartbeat run failed (msg target)")
             await append_trace_from_session_delta(
                 run_id=run_id,
                 runner=workspace,
@@ -371,7 +371,7 @@ async def run_heartbeat_once(
                 baseline_count=baseline_count,
             )
             await finalize_trace(run_id, status="error", error=repr(e))
-            await append_inbox_event(
+            await append_msg_event(
                 agent_id=agent_id,
                 source_type="heartbeat",
                 source_id=_HEARTBEAT_SOURCE_ID,

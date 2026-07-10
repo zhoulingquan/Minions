@@ -99,7 +99,7 @@ def _agent_spec(name):
             },
             "mode": "stream",
         },
-        "save_result_to_inbox": False,
+        "save_result_to_msg": False,
     }
 
 

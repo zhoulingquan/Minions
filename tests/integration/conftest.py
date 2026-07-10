@@ -232,7 +232,7 @@ class AppServer:
     logs: list[str]
     log_thread: threading.Thread
     # Working directory of the subprocess (= MINIONS_WORKING_DIR). Tests that
-    # need to seed file-backed stores (inbox_events.json, cron jobs_history/,
+    # need to seed file-backed stores (msg_events.json, cron jobs_history/,
     # backups, etc.) write directly under this path. The subprocess re-reads
     # these files on each HTTP request, so no restart is needed after seeding.
     working_dir: Path

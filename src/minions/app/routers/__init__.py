@@ -15,6 +15,7 @@ from .envs import router as envs_router
 from .mcp import router as mcp_router
 from .mcp_oauth import router as mcp_oauth_router
 from .tools import router as tools_router
+from .custom_tools import router as custom_tools_router
 from ..crons.api import router as cron_router
 from ..chats.api import router as runner_router
 from .console import router as console_router
@@ -48,6 +49,7 @@ router.include_router(market_router)
 router.include_router(skills_router)
 router.include_router(skills_stream_router)
 router.include_router(tools_router)
+router.include_router(custom_tools_router)
 router.include_router(workspace_router)
 router.include_router(envs_router)
 router.include_router(token_usage_router)

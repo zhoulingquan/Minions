@@ -186,7 +186,7 @@ HEARTBEAT_DEFAULT_TARGET = "main"
 HEARTBEAT_DEFAULT_TIMEOUT_SECONDS = 300
 HEARTBEAT_MAX_TIMEOUT_SECONDS = 3600
 HEARTBEAT_TARGET_LAST = "last"
-HEARTBEAT_TARGET_INBOX = "inbox"
+HEARTBEAT_TARGET_MSG = "msg"
 
 # Debug history file for /dump_history and /load_history commands
 DEBUG_HISTORY_FILE = EnvVarLoader.get_str(

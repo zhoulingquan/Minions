@@ -50,7 +50,7 @@ export function JobDrawer({
 }: JobDrawerProps) {
   const { t } = useTranslation();
   const timezoneOptions = useTimezoneOptions();
-  const [saveInboxTouched, setSaveInboxTouched] = useState(false);
+  const [saveMsgTouched, setSaveMsgTouched] = useState(false);
   const [channelSearch, setChannelSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
   const [sessionSearch, setSessionSearch] = useState("");
@@ -64,7 +64,7 @@ export function JobDrawer({
 
   useEffect(() => {
     if (open) {
-      setSaveInboxTouched(false);
+      setSaveMsgTouched(false);
       setChannelSearch("");
       setUserSearch("");
       setSessionSearch("");
@@ -181,18 +181,18 @@ export function JobDrawer({
           shouldUpdate={(prev, cur) =>
             prev.task_type !== cur.task_type ||
             prev.scheduleType !== cur.scheduleType ||
-            prev.save_result_to_inbox !== cur.save_result_to_inbox
+            prev.save_result_to_msg !== cur.save_result_to_msg
           }
         >
           {({ getFieldValue, setFieldValue }) => {
-            if (!isEdit && !saveInboxTouched) {
+            if (!isEdit && !saveMsgTouched) {
               const taskType = getFieldValue("task_type");
               const scheduleType = getFieldValue("scheduleType");
               const expectedDefault = !(
                 taskType === "text" && scheduleType === "cron"
               );
-              if (getFieldValue("save_result_to_inbox") !== expectedDefault) {
-                setFieldValue("save_result_to_inbox", expectedDefault);
+              if (getFieldValue("save_result_to_msg") !== expectedDefault) {
+                setFieldValue("save_result_to_msg", expectedDefault);
               }
             }
             return null;
@@ -200,12 +200,12 @@ export function JobDrawer({
         </Form.Item>
 
         <Form.Item
-          name="save_result_to_inbox"
-          label={t("cronJobs.saveResultToInbox")}
+          name="save_result_to_msg"
+          label={t("cronJobs.saveResultToMsg")}
           valuePropName="checked"
-          tooltip={t("cronJobs.saveResultToInboxTooltip")}
+          tooltip={t("cronJobs.saveResultToMsgTooltip")}
         >
-          <Switch onChange={() => setSaveInboxTouched(true)} />
+          <Switch onChange={() => setSaveMsgTouched(true)} />
         </Form.Item>
 
         <Form.Item

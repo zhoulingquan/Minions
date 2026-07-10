@@ -4,7 +4,7 @@
 Sprint 2.1/2.2 covered cron CRUD lifecycle (create, pause, resume,
 delete, history seeding).  This module covers the **execution** path:
 POST /run triggers real ``CronExecutor.execute()`` and we verify
-history records, inbox events, and channel delivery.
+history records, msg events, and channel delivery.
 
 Agent-type tests use the shared Mock LLM (``helpers.MockLLMHandler``)
 with tool_call support to validate the full pipeline:
@@ -22,7 +22,7 @@ import pytest
 from helpers import (
     MOCK_LLM_PROVIDER_ID,
     MockLLMHandler,
-    clean_inbox,
+    clean_msg,
     default_http_timeout,
     register_mock_provider,
     unregister_mock_provider,
@@ -94,7 +94,7 @@ def _agent_spec(
     name,
     *,
     input_text="What time is it?",
-    save_inbox=False,
+    save_msg=False,
 ):
     spec = {
         "name": name,
@@ -116,8 +116,8 @@ def _agent_spec(
             "mode": "stream",
         },
     }
-    if save_inbox:
-        spec["save_result_to_inbox"] = True
+    if save_msg:
+        spec["save_result_to_msg"] = True
     return spec
 
 
@@ -145,12 +145,12 @@ def _delete_job(app_server, job_id):
         pass
 
 
-def _poll_inbox_cron(app_server, deadline, *, event_type=None):
-    """Poll inbox for cron-sourced events."""
+def _poll_msg_cron(app_server, deadline, *, event_type=None):
+    """Poll msg for cron-sourced events."""
     while time.time() < deadline:
         resp = app_server.api_request(
             "GET",
-            "/api/console/inbox/events",
+            "/api/console/msg/events",
             params={"source_type": "cron"},
             timeout=_CRON_HTTP_TIMEOUT,
         )
@@ -301,29 +301,29 @@ def test_cron_agent_tool_call_execution(
 
     Test flow:
     1. Register mock LLM provider.
-    2. POST create agent-type cron job with save_result_to_inbox=true.
+    2. POST create agent-type cron job with save_result_to_msg=true.
     3. POST run.
     4. Poll history → status=success.
-    5. Poll inbox → cron_result event body contains time info.
+    5. Poll msg → cron_result event body contains time info.
     6. Cleanup.
 
     API endpoints:
     - POST /api/cron/jobs
     - POST /api/cron/jobs/{job_id}/run
     - GET /api/cron/jobs/{job_id}/history
-    - GET /api/console/inbox/events
+    - GET /api/console/msg/events
     - DELETE /api/cron/jobs/{job_id}
     """
     srv, mock_url = mock_llm
     srv.force_error = False
     srv.force_tool_call = True
-    clean_inbox(app_server.working_dir)
+    clean_msg(app_server.working_dir)
     unregister_mock_provider(app_server, MOCK_LLM_PROVIDER_ID)
     provider_id = register_mock_provider(app_server, mock_url)
     spec = _agent_spec(
         "integ_tool_call",
         input_text="What time is it?",
-        save_inbox=True,
+        save_msg=True,
     )
     job_id = _create_job(app_server, spec)
     try:
@@ -344,7 +344,7 @@ def test_cron_agent_tool_call_execution(
         ), f"No history after 30s: {app_server.logs_tail()}"
         assert records[0]["status"] == "success"
 
-        events = _poll_inbox_cron(
+        events = _poll_msg_cron(
             app_server,
             time.time() + 10.0,
             event_type="cron_result",
@@ -358,48 +358,48 @@ def test_cron_agent_tool_call_execution(
     finally:
         srv.force_tool_call = False
         _delete_job(app_server, job_id)
-        clean_inbox(app_server.working_dir)
+        clean_msg(app_server.working_dir)
         unregister_mock_provider(app_server, provider_id)
 
 
 # ------------------------------------------------------------------ #
-# A4: agent run → inbox event
+# A4: agent run → msg event
 # ------------------------------------------------------------------ #
 
 
 @pytest.mark.integration
 @pytest.mark.p1
-def test_cron_agent_run_creates_inbox_event(
+def test_cron_agent_run_creates_msg_event(
     app_server,
     mock_llm,  # pylint: disable=redefined-outer-name
 ) -> None:
     """Test purpose:
-    - Verify an agent-type cron run with save_result_to_inbox
-      creates a cron_result inbox event with correct metadata.
+    - Verify an agent-type cron run with save_result_to_msg
+      creates a cron_result msg event with correct metadata.
 
     Test flow:
     1. Register mock LLM provider.
-    2. POST create agent-type job with save_result_to_inbox=true.
+    2. POST create agent-type job with save_result_to_msg=true.
     3. POST run.
-    4. Poll inbox for cron_result event.
+    4. Poll msg for cron_result event.
     5. Assert event fields: source_type, event_type, agent_id.
     6. Cleanup.
 
     API endpoints:
     - POST /api/cron/jobs
     - POST /api/cron/jobs/{job_id}/run
-    - GET /api/console/inbox/events
+    - GET /api/console/msg/events
     - DELETE /api/cron/jobs/{job_id}
     """
     srv, mock_url = mock_llm
     srv.force_error = False
-    clean_inbox(app_server.working_dir)
+    clean_msg(app_server.working_dir)
     unregister_mock_provider(app_server, MOCK_LLM_PROVIDER_ID)
     provider_id = register_mock_provider(app_server, mock_url)
     spec = _agent_spec(
-        "integ_inbox_event",
+        "integ_msg_event",
         input_text="Say hello",
-        save_inbox=True,
+        save_msg=True,
     )
     job_id = _create_job(app_server, spec)
     try:
@@ -409,14 +409,14 @@ def test_cron_agent_run_creates_inbox_event(
             timeout=_CRON_HTTP_TIMEOUT,
         )
 
-        events = _poll_inbox_cron(
+        events = _poll_msg_cron(
             app_server,
             time.time() + 30.0,
             event_type="cron_result",
         )
         assert (
             len(events) >= 1
-        ), f"No cron_result inbox event: {app_server.logs_tail()}"
+        ), f"No cron_result msg event: {app_server.logs_tail()}"
 
         event = events[0]
         assert event["source_type"] == "cron"
@@ -426,7 +426,7 @@ def test_cron_agent_run_creates_inbox_event(
         assert event["severity"] == "info"
     finally:
         _delete_job(app_server, job_id)
-        clean_inbox(app_server.working_dir)
+        clean_msg(app_server.working_dir)
         unregister_mock_provider(app_server, provider_id)
 
 

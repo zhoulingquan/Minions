@@ -20,7 +20,7 @@ export interface ApprovalCardProps {
   timeoutSeconds: number;
   agentId: string;
   ownerAgentId?: string;
-  showInboxAgentContext?: boolean;
+  showMsgAgentContext?: boolean;
   sessionId?: string;
   rootSessionId?: string;
   // Approval-scope choice (console-only). When true the card renders
@@ -46,7 +46,7 @@ export function ApprovalCard({
   timeoutSeconds,
   agentId,
   ownerAgentId,
-  showInboxAgentContext = false,
+  showMsgAgentContext = false,
   sessionId,
   rootSessionId,
   isGeneralized,
@@ -82,7 +82,7 @@ export function ApprovalCard({
   // Check if this is a cross-session approval
   const isCrossSession =
     sessionId && rootSessionId && sessionId !== rootSessionId;
-  const isTimedOut = showInboxAgentContext && remaining <= 0;
+  const isTimedOut = showMsgAgentContext && remaining <= 0;
   const executionAgentDisplayName = useMemo(() => {
     const matched = agentsById.get(agentId);
     if (matched) return getAgentDisplayName(matched, t);
@@ -95,7 +95,7 @@ export function ApprovalCard({
     return ownerId || t("common.unknown", "Unknown");
   }, [agentsById, ownerAgentId, agentId, t]);
   const shouldShowExecutionAgent =
-    showInboxAgentContext && Boolean(isCrossSession);
+    showMsgAgentContext && Boolean(isCrossSession);
   const displayToolSource =
     toolSource && toolSource !== "builtin"
       ? toolSource
@@ -184,7 +184,7 @@ export function ApprovalCard({
       </div>
 
       <div className={styles.content}>
-        {showInboxAgentContext ? (
+        {showMsgAgentContext ? (
           <>
             <div className={styles.infoRow}>
               <Text className={styles.label}>
@@ -242,7 +242,7 @@ export function ApprovalCard({
           <Text className={styles.value}>{findingsCount}</Text>
         </div>
 
-        {isCrossSession && !showInboxAgentContext && (
+        {isCrossSession && !showMsgAgentContext && (
           <div className={styles.infoRow}>
             <Text className={styles.label}>
               {t("approval.source", "Source")}:

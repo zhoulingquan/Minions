@@ -181,19 +181,19 @@ def test_concurrent_workspace_file_writes(app_server) -> None:
 
 @pytest.mark.integration
 @pytest.mark.p2
-def test_concurrent_inbox_list_does_not_crash(app_server) -> None:
+def test_concurrent_msg_list_does_not_crash(app_server) -> None:
     """Test purpose:
-    - Verify N concurrent GET /api/console/inbox/events do not return
-      5xx — the inbox store's asyncio.Lock must serialize cleanly.
+    - Verify N concurrent GET /api/console/msg/events do not return
+      5xx – the msg store’s asyncio.Lock must serialize cleanly.
 
     API endpoints:
-    - GET /api/console/inbox/events
+    - GET /api/console/msg/events
     """
 
     def _get(_):
         return app_server.api_request(
             "GET",
-            "/api/console/inbox/events",
+            "/api/console/msg/events",
             timeout=_HTTP_TIMEOUT,
         )
 
@@ -203,7 +203,7 @@ def test_concurrent_inbox_list_does_not_crash(app_server) -> None:
     for resp in results:
         assert (
             resp.status_code == 200
-        ), f"inbox list crashed: {resp.status_code} {resp.text[:200]}"
+        ), f"msg list crashed: {resp.status_code} {resp.text[:200]}"
 
 
 # ------------------------------------------------------------------ #

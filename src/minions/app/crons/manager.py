@@ -21,7 +21,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from minions.exceptions import ConfigurationException
 
 from ...config import get_heartbeat_config, get_dream_cron
-from ..inbox_store import append_event as append_inbox_event
+from ..msg_store import append_event as append_msg_event
 
 from ..console_push_store import append as push_store_append
 from .executor import CronExecutor
@@ -722,7 +722,7 @@ class CronManager(ManagerBase):
                 if execution_succeeded:
                     if delivery_failed:
                         try:
-                            await append_inbox_event(
+                            await append_msg_event(
                                 agent_id=self._agent_id,
                                 source_type="cron",
                                 source_id=job.id,
@@ -749,13 +749,13 @@ class CronManager(ManagerBase):
                             logger.exception(
                                 "failed to append cron fallback event",
                             )
-                    elif job.save_result_to_inbox:
+                    elif job.save_result_to_msg:
                         if job.task_type == "text":
                             body = (job.text or "").strip()
                         else:
                             body = "Agent cron task finished successfully."
                         try:
-                            await append_inbox_event(
+                            await append_msg_event(
                                 agent_id=self._agent_id,
                                 source_type="cron",
                                 source_id=job.id,
@@ -770,12 +770,12 @@ class CronManager(ManagerBase):
                                     "task_type": job.task_type,
                                     "trigger": trigger,
                                     "run_id": execution_result.get("run_id"),
-                                    "save_result_to_inbox": (
-                                        job.save_result_to_inbox
+                                    "save_result_to_msg": (
+                                        job.save_result_to_msg
                                     ),
                                 },
                             )
                         except Exception:  # pylint: disable=broad-except
                             logger.exception(
-                                "failed to append cron result inbox event",
+                                "failed to append cron result msg event",
                             )

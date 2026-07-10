@@ -28,7 +28,7 @@ import pytest
 from helpers import (
     MOCK_LLM_PROVIDER_ID,
     MockLLMHandler,
-    clean_inbox,
+    clean_msg,
     default_http_timeout,
     register_mock_provider,
     scoped,
@@ -222,7 +222,7 @@ def test_tool_guard_blocks_dangerous_shell_via_agent_run(
     srv, mock_url = mock_llm
     unregister_mock_provider(app_server, MOCK_LLM_PROVIDER_ID)
     register_mock_provider(app_server, mock_url)
-    clean_inbox(app_server.working_dir)
+    clean_msg(app_server.working_dir)
 
     srv.force_tool_call = True
     srv.tool_call_name = "execute_shell_command"
@@ -260,7 +260,7 @@ def test_tool_guard_blocks_dangerous_shell_via_agent_run(
         "runtime": {
             "tool_safety": True,
         },
-        "save_result_to_inbox": False,
+        "save_result_to_msg": False,
     }
     job_resp = app_server.api_request(
         "POST",

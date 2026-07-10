@@ -23,20 +23,14 @@ from ...config.config import (
     AgentsLLMRoutingConfig,
     ConsoleConfig,
     DingTalkConfig,
-    DiscordConfig,
     FeishuConfig,
     HeartbeatConfig,
-    IMessageChannelConfig,
-    MatrixConfig,
-    MattermostConfig,
-    MQTTConfig,
     QQConfig,
-    SIPChannelConfig,
     SkillScannerConfig,
     SkillScannerWhitelistEntry,
-    TelegramConfig,
-    VoiceChannelConfig,
     WecomConfig,
+    WeChatConfig,
+    YuanbaoConfig,
 )
 from ...agents.acp.core import ACPConfig, ACPAgentConfig
 from ...agents.acp.node_runtime import (
@@ -59,19 +53,13 @@ router = APIRouter(prefix="/config", tags=["config"])
 
 
 _CHANNEL_CONFIG_CLASS_MAP = {
-    "telegram": TelegramConfig,
     "dingtalk": DingTalkConfig,
-    "discord": DiscordConfig,
     "feishu": FeishuConfig,
     "qq": QQConfig,
-    "imessage": IMessageChannelConfig,
     "console": ConsoleConfig,
-    "voice": VoiceChannelConfig,
-    "sip": SIPChannelConfig,
-    "mattermost": MattermostConfig,
-    "mqtt": MQTTConfig,
-    "matrix": MatrixConfig,
     "wecom": WecomConfig,
+    "yuanbao": YuanbaoConfig,
+    "wechat": WeChatConfig,
 }
 _ALLOWED_ACP_TOOL_PARSE_MODES = {
     "call_title",

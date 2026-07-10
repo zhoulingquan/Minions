@@ -231,7 +231,7 @@ def _build_spec_from_cli(
     timezone: str,
     enabled: bool,
     mode: str,
-    save_result_to_inbox: Optional[bool] = None,
+    save_result_to_msg: Optional[bool] = None,
     share_session: bool = True,
     timeout_seconds: int = 120,
     tool_safety: bool = False,
@@ -277,8 +277,8 @@ def _build_spec_from_cli(
             "runtime": runtime,
             "meta": {},
         }
-        if save_result_to_inbox is not None:
-            payload["save_result_to_inbox"] = save_result_to_inbox
+        if save_result_to_msg is not None:
+            payload["save_result_to_msg"] = save_result_to_msg
         return payload
     if task_type == "agent":
         if not (text and text.strip()):
@@ -305,8 +305,8 @@ def _build_spec_from_cli(
             "runtime": runtime,
             "meta": {},
         }
-        if save_result_to_inbox is not None:
-            payload["save_result_to_inbox"] = save_result_to_inbox
+        if save_result_to_msg is not None:
+            payload["save_result_to_msg"] = save_result_to_msg
         return payload
     raise click.UsageError(f"Unsupported task type: {task_type}")
 
@@ -460,10 +460,10 @@ def _build_spec_from_cli(
     ),
 )
 @click.option(
-    "--save-result-to-inbox/--no-save-result-to-inbox",
+    "--save-result-to-msg/--no-save-result-to-msg",
     default=None,
     help=(
-        "Whether to save execution results to Inbox. "
+        "Whether to save execution results to Msg. "
         "If omitted, server-side defaults are applied."
     ),
 )
@@ -527,7 +527,7 @@ def create_job(
     timezone: Optional[str],
     enabled: bool,
     mode: str,
-    save_result_to_inbox: Optional[bool],
+    save_result_to_msg: Optional[bool],
     share_session: bool,
     timeout_seconds: int,
     tool_safety: bool,
@@ -585,7 +585,7 @@ def create_job(
             timezone=timezone,
             enabled=enabled,
             mode=mode,
-            save_result_to_inbox=save_result_to_inbox,
+            save_result_to_msg=save_result_to_msg,
             share_session=share_session,
             timeout_seconds=timeout_seconds,
             tool_safety=tool_safety,
@@ -615,7 +615,7 @@ def _resolve_update_spec(
     timezone: Optional[str],
     enabled: Optional[bool],
     mode: Optional[str],
-    save_result_to_inbox: Optional[bool],
+    save_result_to_msg: Optional[bool],
     share_session: Optional[bool],
     timeout_seconds: Optional[int],
     tool_safety: Optional[bool] = None,
@@ -664,9 +664,9 @@ def _resolve_update_spec(
     t_enabled = enabled if enabled is not None else spec.get("enabled", True)
     t_mode = mode or spec.get("dispatch", {}).get("mode", "final")
     t_save = (
-        save_result_to_inbox
-        if save_result_to_inbox is not None
-        else spec.get("save_result_to_inbox")
+        save_result_to_msg
+        if save_result_to_msg is not None
+        else spec.get("save_result_to_msg")
     )
     t_share = (
         share_session
@@ -715,7 +715,7 @@ def _resolve_update_spec(
         timezone=tz,
         enabled=t_enabled,
         mode=t_mode,
-        save_result_to_inbox=t_save,
+        save_result_to_msg=t_save,
         share_session=t_share,
         timeout_seconds=t_timeout,
         tool_safety=t_tool_safety,
@@ -833,9 +833,9 @@ def _resolve_update_spec(
     help="Delivery mode: 'stream' or 'final'.",
 )
 @click.option(
-    "--save-result-to-inbox/--no-save-result-to-inbox",
+    "--save-result-to-msg/--no-save-result-to-msg",
     default=None,
-    help="Save execution results to Inbox.",
+    help="Save execution results to Msg.",
 )
 @click.option(
     "--share-session/--no-share-session",
@@ -888,7 +888,7 @@ def update_job(
     timezone: Optional[str],
     enabled: Optional[bool],
     mode: Optional[str],
-    save_result_to_inbox: Optional[bool],
+    save_result_to_msg: Optional[bool],
     share_session: Optional[bool],
     timeout_seconds: Optional[int],
     tool_safety: Optional[bool],
@@ -933,7 +933,7 @@ def update_job(
             timezone=timezone,
             enabled=enabled,
             mode=mode,
-            save_result_to_inbox=save_result_to_inbox,
+            save_result_to_msg=save_result_to_msg,
             share_session=share_session,
             timeout_seconds=timeout_seconds,
             tool_safety=tool_safety,

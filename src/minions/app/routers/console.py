@@ -57,7 +57,7 @@ _bg_tasks: Dict[str, _BackgroundTask] = {}
 _bg_lock = asyncio.Lock()
 
 
-class MarkInboxReadRequest(BaseModel):
+class MarkMsgReadRequest(BaseModel):
     event_ids: list[str] = []
     all: bool = False
 
@@ -441,8 +441,8 @@ async def get_push_messages(
     return {"messages": messages, "pending_approvals": approvals_data}
 
 
-@router.get("/inbox/events")
-async def get_inbox_events(
+@router.get("/msg/events")
+async def get_msg_events(
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
     source_type: str | None = Query(None),
@@ -450,7 +450,7 @@ async def get_inbox_events(
     agent_id: str | None = Query(None),
     unread_only: bool = Query(False),
 ):
-    from ..inbox_store import list_events
+    from ..msg_store import list_events
 
     events = await list_events(
         limit=limit,
@@ -463,9 +463,9 @@ async def get_inbox_events(
     return {"events": events}
 
 
-@router.post("/inbox/read")
-async def post_mark_inbox_read(payload: MarkInboxReadRequest):
-    from ..inbox_store import mark_all_read, mark_read
+@router.post("/msg/read")
+async def post_mark_msg_read(payload: MarkMsgReadRequest):
+    from ..msg_store import mark_all_read, mark_read
 
     if payload.all:
         updated = await mark_all_read()
@@ -474,10 +474,10 @@ async def post_mark_inbox_read(payload: MarkInboxReadRequest):
     return {"updated": updated}
 
 
-@router.delete("/inbox/events/{event_id}")
-async def delete_inbox_event(event_id: str):
-    from ..inbox_store import delete_event
-    from ..inbox_trace_store import delete_trace
+@router.delete("/msg/events/{event_id}")
+async def delete_msg_event(event_id: str):
+    from ..msg_store import delete_event
+    from ..msg_trace_store import delete_trace
 
     deleted, run_id, run_id_still_referenced = await delete_event(event_id)
     if not deleted:
@@ -492,9 +492,9 @@ async def delete_inbox_event(event_id: str):
     }
 
 
-@router.get("/inbox/traces/{run_id}")
-async def get_inbox_trace(run_id: str):
-    from ..inbox_trace_store import get_trace
+@router.get("/msg/traces/{run_id}")
+async def get_msg_trace(run_id: str):
+    from ..msg_trace_store import get_trace
 
     trace = await get_trace(run_id)
     if trace is None:

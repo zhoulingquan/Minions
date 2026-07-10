@@ -7,7 +7,7 @@ const { Header: AntHeader } = Layout;
 export default function Header() {
   return (
     <AntHeader className={styles.header}>
-      <Space size="middle">
+      <Space size="middle" className={styles.headerRight}>
         <ThemeToggleButton />
       </Space>
     </AntHeader>

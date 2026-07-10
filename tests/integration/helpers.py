@@ -168,24 +168,24 @@ def delete_plugin_quietly(
 
 
 # ------------------------------------------------------------------ #
-# inbox helpers
+# msg helpers
 # ------------------------------------------------------------------ #
 
 
-def inbox_path(working_dir: Path) -> Path:
-    return working_dir / "inbox_events.json"
+def msg_path(working_dir: Path) -> Path:
+    return working_dir / "msg_events.json"
 
 
 def trace_dir(working_dir: Path) -> Path:
-    return working_dir / "inbox_traces"
+    return working_dir / "msg_traces"
 
 
-def seed_inbox_events(
+def seed_msg_events(
     working_dir: Path,
     events: list[dict[str, Any]],
 ) -> None:
-    """Write the events list to inbox_events.json."""
-    path = inbox_path(working_dir)
+    """Write the events list to msg_events.json."""
+    path = msg_path(working_dir)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(
@@ -198,12 +198,12 @@ def seed_inbox_events(
     )
 
 
-def seed_inbox_trace(
+def seed_msg_trace(
     working_dir: Path,
     run_id: str,
     payload: dict[str, Any],
 ) -> None:
-    """Write one trace file under inbox_traces/<run_id>.json."""
+    """Write one trace file under msg_traces/<run_id>.json."""
     directory = trace_dir(working_dir)
     directory.mkdir(parents=True, exist_ok=True)
     (directory / f"{run_id}.json").write_text(
@@ -212,9 +212,9 @@ def seed_inbox_trace(
     )
 
 
-def clean_inbox(working_dir: Path) -> None:
-    """Remove inbox file + trace dir so the next test starts clean."""
-    path = inbox_path(working_dir)
+def clean_msg(working_dir: Path) -> None:
+    """Remove msg file + trace dir so the next test starts clean."""
+    path = msg_path(working_dir)
     if path.exists():
         path.unlink()
     directory = trace_dir(working_dir)
@@ -237,7 +237,7 @@ def make_event(
     read: bool = False,
     created_at: float | None = None,
 ) -> dict[str, Any]:
-    """Mirror the shape produced by ``inbox_store.append_event``."""
+    """Mirror the shape produced by ``msg_store.append_event``."""
     return {
         "id": event_id,
         "agent_id": agent_id,

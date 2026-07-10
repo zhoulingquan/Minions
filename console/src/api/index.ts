@@ -22,6 +22,7 @@ import { mcpApi } from "./modules/mcp";
 import { tokenUsageApi } from "./modules/tokenUsage";
 import { agentStatsApi } from "./modules/agentStats";
 import { toolsApi } from "./modules/tools";
+import { customToolsApi } from "./modules/customTools";
 import { securityApi } from "./modules/security";
 import { userTimezoneApi } from "./modules/userTimezone";
 import { languageApi } from "./modules/language";
@@ -104,4 +105,4 @@ export const api = {
 export default api;
 
 // Export individual APIs for direct access
-export { agentsApi };
+export { agentsApi, customToolsApi };

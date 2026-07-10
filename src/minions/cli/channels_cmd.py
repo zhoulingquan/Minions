@@ -13,13 +13,9 @@ from minions.exceptions import (
 from ..config.config import (
     Config,
     ConsoleConfig,
-    DiscordConfig,
-    TelegramConfig,
     DingTalkConfig,
     FeishuConfig,
-    IMessageChannelConfig,
     QQConfig,
-    VoiceChannelConfig,
     WeChatConfig,
     load_agent_config,
     save_agent_config,
@@ -40,16 +36,11 @@ _SECRET_FIELDS = {
 }
 
 _ALL_CHANNEL_NAMES = {
-    "imessage": "iMessage",
-    "discord": "Discord",
-    "telegram": "Telegram",
     "dingtalk": "DingTalk",
     "feishu": "Feishu",
     "qq": "QQ",
     "console": "Console",
-    "voice": "Twilio",
     "yuanbao": "Yuanbao",
-    "slack": "Slack",
 }
 # Public alias for tests and external use.
 CHANNEL_NAMES = _ALL_CHANNEL_NAMES
@@ -83,117 +74,6 @@ def _mask(value: str) -> str:
 
 
 # ── per-channel interactive configurators ──────────────────────────
-
-
-def configure_imessage(
-    current_config: IMessageChannelConfig,
-) -> IMessageChannelConfig:
-    """Configure iMessage channel interactively."""
-    click.echo("\n=== Configure iMessage Channel ===")
-
-    enabled = prompt_confirm(
-        "Enable iMessage channel?",
-        default=current_config.enabled,
-    )
-
-    if not enabled:
-        current_config.enabled = False
-        return current_config
-
-    current_config.enabled = True
-
-    bot_prefix = click.prompt(
-        "Bot prefix (e.g., @bot)",
-        default=current_config.bot_prefix or "",
-        type=str,
-    )
-    current_config.bot_prefix = bot_prefix
-
-    db_path = prompt_path(
-        "iMessage database path",
-        default=current_config.db_path or "~/Library/Messages/chat.db",
-    )
-    current_config.db_path = db_path
-
-    poll_sec = click.prompt(
-        "Poll interval (seconds)",
-        default=current_config.poll_sec,
-        type=float,
-    )
-    current_config.poll_sec = poll_sec
-
-    return current_config
-
-
-def configure_discord(current_config: DiscordConfig) -> DiscordConfig:
-    """Configure Discord channel interactively."""
-    click.echo("\n=== Configure Discord Channel ===")
-
-    enabled = prompt_confirm(
-        "Enable Discord channel?",
-        default=current_config.enabled,
-    )
-
-    if not enabled:
-        current_config.enabled = False
-        return current_config
-
-    current_config.enabled = True
-
-    bot_prefix = click.prompt(
-        "Bot prefix (e.g., @bot)",
-        default=current_config.bot_prefix or "",
-        type=str,
-    )
-    current_config.bot_prefix = bot_prefix
-
-    bot_token = click.prompt(
-        "Discord Bot Token",
-        default=current_config.bot_token or "",
-        hide_input=True,
-        type=str,
-    )
-    current_config.bot_token = bot_token
-
-    use_proxy = prompt_confirm(
-        "Use HTTP proxy?",
-        default=bool(current_config.http_proxy),
-    )
-
-    if use_proxy:
-        http_proxy = click.prompt(
-            "HTTP proxy address (e.g., http://127.0.0.1:7890)",
-            default=current_config.http_proxy or "",
-            type=str,
-        )
-        current_config.http_proxy = http_proxy
-
-        use_proxy_auth = prompt_confirm(
-            "Does proxy require authentication?",
-            default=bool(current_config.http_proxy_auth),
-        )
-
-        if use_proxy_auth:
-            http_proxy_auth = click.prompt(
-                "Proxy authentication (format: username:password)",
-                default=current_config.http_proxy_auth or "",
-                hide_input=True,
-                type=str,
-            )
-            current_config.http_proxy_auth = http_proxy_auth
-        else:
-            current_config.http_proxy_auth = ""
-    else:
-        current_config.http_proxy = ""
-        current_config.http_proxy_auth = ""
-
-    streaming_enabled = prompt_confirm(
-        "Enable streaming?",
-        default=current_config.streaming_enabled,
-    )
-    current_config.streaming_enabled = streaming_enabled
-
-    return current_config
 
 
 def configure_dingtalk(current_config: DingTalkConfig) -> DingTalkConfig:
@@ -395,195 +275,6 @@ def configure_qq(current_config: QQConfig) -> QQConfig:
     return current_config
 
 
-def configure_telegram(current_config: TelegramConfig) -> TelegramConfig:
-    """Configure Telegram channel interactively."""
-    click.echo("\n=== Configure Telegram Channel ===")
-
-    enabled = prompt_confirm(
-        "Enable Telegram channel?",
-        default=current_config.enabled,
-    )
-
-    if not enabled:
-        current_config.enabled = False
-        return current_config
-
-    current_config.enabled = True
-
-    bot_prefix = click.prompt(
-        "Bot prefix (e.g., @bot)",
-        default=current_config.bot_prefix or "",
-        type=str,
-    )
-    current_config.bot_prefix = bot_prefix
-
-    bot_token = click.prompt(
-        "Telegram Bot Token",
-        default=current_config.bot_token or "",
-        hide_input=True,
-        type=str,
-    )
-    token = bot_token.strip()
-    current_config.bot_token = token
-    if not token:
-        click.echo("Warning: Empty bot token provided.")
-        click.echo("Disabling Telegram channel.")
-        current_config.enabled = False
-        return current_config
-
-    base_url = click.prompt(
-        "Telegram API Base URL (blank for default)",
-        default=current_config.base_url or "",
-        type=str,
-    )
-    current_config.base_url = base_url.strip().rstrip("/")
-
-    show_typing = prompt_confirm(
-        "Show typing indicator?",
-        default=current_config.show_typing is not False,
-    )
-    current_config.show_typing = show_typing
-
-    use_proxy = prompt_confirm(
-        "Use HTTP proxy?",
-        default=bool(current_config.http_proxy),
-    )
-
-    if use_proxy:
-        http_proxy = click.prompt(
-            "HTTP proxy address (e.g., http://127.0.0.1:7890)",
-            default=current_config.http_proxy or "",
-            type=str,
-        )
-        current_config.http_proxy = http_proxy
-
-        use_proxy_auth = prompt_confirm(
-            "Does proxy require authentication?",
-            default=bool(current_config.http_proxy_auth),
-        )
-
-        if use_proxy_auth:
-            http_proxy_auth = click.prompt(
-                "Proxy authentication (format: username:password)",
-                default=current_config.http_proxy_auth or "",
-                hide_input=True,
-                type=str,
-            )
-            current_config.http_proxy_auth = http_proxy_auth
-        else:
-            current_config.http_proxy_auth = ""
-    else:
-        current_config.http_proxy = ""
-        current_config.http_proxy_auth = ""
-
-    streaming_enabled = prompt_confirm(
-        "Enable streaming?",
-        default=current_config.streaming_enabled,
-    )
-    current_config.streaming_enabled = streaming_enabled
-
-    return current_config
-
-
-def configure_voice(
-    current_config: VoiceChannelConfig,
-) -> VoiceChannelConfig:
-    """Configure Twilio voice channel interactively."""
-    click.echo("\n=== Configure Twilio Channel ===")
-
-    enabled = prompt_confirm(
-        "Enable Twilio channel?",
-        default=current_config.enabled,
-    )
-
-    if not enabled:
-        current_config.enabled = False
-        return current_config
-
-    current_config.enabled = True
-
-    # — Twilio credentials —
-
-    twilio_account_sid = click.prompt(
-        "Twilio Account SID",
-        default=current_config.twilio_account_sid or "",
-        type=str,
-    )
-    current_config.twilio_account_sid = twilio_account_sid
-
-    twilio_auth_token = click.prompt(
-        "Twilio Auth Token",
-        default=current_config.twilio_auth_token or "",
-        hide_input=True,
-        type=str,
-    )
-    current_config.twilio_auth_token = twilio_auth_token
-
-    # — Phone number (may be blank if provisioning later via API) —
-
-    phone_number = click.prompt(
-        "Phone number (e.g., +15551234567, blank to provision later)",
-        default=current_config.phone_number or "",
-        type=str,
-    )
-    current_config.phone_number = phone_number
-
-    phone_number_sid = click.prompt(
-        "Phone Number SID (e.g., PN..., blank to provision later)",
-        default=current_config.phone_number_sid or "",
-        type=str,
-    )
-    current_config.phone_number_sid = phone_number_sid
-
-    # — TTS / STT settings —
-
-    configure_tts = prompt_confirm(
-        "Configure TTS/STT settings? (default: Google TTS + Deepgram STT)",
-        default=False,
-    )
-
-    if configure_tts:
-        tts_provider = click.prompt(
-            "TTS provider",
-            default=current_config.tts_provider or "google",
-            type=str,
-        )
-        current_config.tts_provider = tts_provider
-
-        tts_voice = click.prompt(
-            "TTS voice",
-            default=current_config.tts_voice or "en-US-Journey-D",
-            type=str,
-        )
-        current_config.tts_voice = tts_voice
-
-        stt_provider = click.prompt(
-            "STT provider",
-            default=current_config.stt_provider or "deepgram",
-            type=str,
-        )
-        current_config.stt_provider = stt_provider
-
-        language = click.prompt(
-            "Language",
-            default=current_config.language or "en-US",
-            type=str,
-        )
-        current_config.language = language
-
-    # — Welcome greeting —
-
-    welcome_greeting = click.prompt(
-        "Welcome greeting",
-        default=current_config.welcome_greeting
-        or "Hi! This is Minions. How can I help you?",
-        type=str,
-    )
-    current_config.welcome_greeting = welcome_greeting
-
-    return current_config
-
-
 def configure_console(current_config: ConsoleConfig) -> ConsoleConfig:
     """Configure Console channel interactively."""
     click.echo("\n=== Configure Console Channel ===")
@@ -613,15 +304,11 @@ def configure_console(current_config: ConsoleConfig) -> ConsoleConfig:
 
 # Full registry — filtered at runtime by get_channel_configurators().
 _ALL_CHANNEL_CONFIGURATORS = {
-    "imessage": ("iMessage", configure_imessage),
-    "discord": ("Discord", configure_discord),
-    "telegram": ("Telegram", configure_telegram),
     "dingtalk": ("DingTalk", configure_dingtalk),
     "feishu": ("Feishu", configure_feishu),
     "wechat": ("WeChat (iLink Bot)", configure_wechat),
     "qq": ("QQ", configure_qq),
     "console": ("Console", configure_console),
-    "voice": ("Twilio", configure_voice),
 }
 
 
@@ -791,7 +478,7 @@ def configure_channels_interactive(config: Config) -> None:
 @click.group("channels")
 def channels_group() -> None:
     """Manage channel configuration
-    (iMessage/Discord/DingTalk/Feishu/QQ/Console)."""
+    (DingTalk/Feishu/QQ/Console/WeChat/WeCom/Yuanbao)."""
 
 
 def _channel_config_fields(ch):
@@ -913,8 +600,8 @@ def configure_cmd(agent_id: str) -> None:
     "--channel",
     required=True,
     help=(
-        "Target channel (e.g., console, dingtalk, feishu, discord, "
-        "imessage, qq)"
+        "Target channel (e.g., console, dingtalk, feishu, qq, "
+        "wechat, wecom, yuanbao)"
     ),
 )
 @click.option(

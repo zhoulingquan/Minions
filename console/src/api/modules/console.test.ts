@@ -34,34 +34,34 @@ describe("consoleApi", () => {
     expect(result).toEqual(data);
   });
 
-  it("getInboxEvents builds ordered query string with multiple params", async () => {
+  it("getMsgEvents builds ordered query string with multiple params", async () => {
     const data = { events: [] };
     vi.mocked(request).mockResolvedValue(data);
-    const result = await consoleApi.getInboxEvents({
+    const result = await consoleApi.getMsgEvents({
       limit: 200,
       offset: 10,
       source_type: "cron",
       unread_only: true,
     });
     expect(request).toHaveBeenCalledWith(
-      "/console/inbox/events?limit=200&offset=10&source_type=cron&unread_only=true",
+      "/console/msg/events?limit=200&offset=10&source_type=cron&unread_only=true",
     );
     expect(result).toEqual(data);
   });
 
-  it("getInboxEvents without params calls GET without query", async () => {
+  it("getMsgEvents without params calls GET without query", async () => {
     const data = { events: [] };
     vi.mocked(request).mockResolvedValue(data);
-    await consoleApi.getInboxEvents();
-    expect(request).toHaveBeenCalledWith("/console/inbox/events");
+    await consoleApi.getMsgEvents();
+    expect(request).toHaveBeenCalledWith("/console/msg/events");
   });
 
-  it("markInboxRead posts payload body (event_ids and all variants)", async () => {
+  it("markMsgRead posts payload body (event_ids and all variants)", async () => {
     // event_ids variant
     const resp1 = { updated: 1 };
     vi.mocked(request).mockResolvedValue(resp1);
-    const r1 = await consoleApi.markInboxRead({ event_ids: ["e1", "e2"] });
-    expect(request).toHaveBeenCalledWith("/console/inbox/read", {
+    const r1 = await consoleApi.markMsgRead({ event_ids: ["e1", "e2"] });
+    expect(request).toHaveBeenCalledWith("/console/msg/read", {
       method: "POST",
       body: JSON.stringify({ event_ids: ["e1", "e2"] }),
     });
@@ -70,25 +70,25 @@ describe("consoleApi", () => {
     // all variant
     const resp2 = { updated: 5 };
     vi.mocked(request).mockResolvedValue(resp2);
-    const r2 = await consoleApi.markInboxRead({ all: true });
-    expect(request).toHaveBeenCalledWith("/console/inbox/read", {
+    const r2 = await consoleApi.markMsgRead({ all: true });
+    expect(request).toHaveBeenCalledWith("/console/msg/read", {
       method: "POST",
       body: JSON.stringify({ all: true }),
     });
     expect(r2).toEqual(resp2);
   });
 
-  it("deleteInboxEvent URL-encodes eventId (slash handled)", async () => {
+  it("deleteMsgEvent URL-encodes eventId (slash handled)", async () => {
     const resp = { deleted: true, trace_deleted: false, run_id: null };
     vi.mocked(request).mockResolvedValue(resp);
-    const result = await consoleApi.deleteInboxEvent("a/b");
-    expect(request).toHaveBeenCalledWith("/console/inbox/events/a%2Fb", {
+    const result = await consoleApi.deleteMsgEvent("a/b");
+    expect(request).toHaveBeenCalledWith("/console/msg/events/a%2Fb", {
       method: "DELETE",
     });
     expect(result).toEqual(resp);
   });
 
-  it("getInboxTrace URL-encodes runId", async () => {
+  it("getMsgTrace URL-encodes runId", async () => {
     const trace = {
       run_id: "r/1",
       created_at: 0,
@@ -98,8 +98,8 @@ describe("consoleApi", () => {
       events: [],
     };
     vi.mocked(request).mockResolvedValue(trace);
-    const result = await consoleApi.getInboxTrace("r/1");
-    expect(request).toHaveBeenCalledWith("/console/inbox/traces/r%2F1");
+    const result = await consoleApi.getMsgTrace("r/1");
+    expect(request).toHaveBeenCalledWith("/console/msg/traces/r%2F1");
     expect(result).toEqual(trace);
   });
 });

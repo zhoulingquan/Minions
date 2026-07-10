@@ -48,10 +48,30 @@ def discover_builtin_tool_funcs() -> list[Callable]:
     ``@tool_descriptor``.
 
     The decorator registers each function at import time.  This function
-    simply returns the collected built-in tools — no ``pkgutil`` /
+    simply returns the collected built-in tools - no ``pkgutil`` /
     ``importlib`` scanning, no manual list.
+
+    Custom tools (user ``.py`` files in ``~/.minions/custom_tools/``) are
+    loaded here so their ``@tool_descriptor`` functions are collected
+    alongside the built-ins.
     """
     from ...runtime.tool_registry import get_builtin_tool_funcs
+
+    # Load user-defined custom tool files.  Each file's @tool_descriptor
+    # functions are auto-collected into the same global registry.  Errors
+    # are logged per-file and do not affect built-in tools.
+    try:
+        from .custom_loader import load_custom_tools
+
+        load_custom_tools()
+    except Exception:
+        # pylint: disable-next=import-outside-toplevel
+        import logging
+
+        logging.getLogger(__name__).debug(
+            "Custom tool loading skipped",
+            exc_info=True,
+        )
 
     return get_builtin_tool_funcs()
 

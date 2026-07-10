@@ -5,7 +5,7 @@ export interface PushMessage {
   text: string;
 }
 
-export interface InboxEvent {
+export interface MsgEvent {
   id: string;
   agent_id: string;
   source_type: string;
@@ -20,7 +20,7 @@ export interface InboxEvent {
   created_at: number;
 }
 
-export interface InboxTrace {
+export interface MsgTrace {
   run_id: string;
   created_at: number;
   completed_at: number | null;
@@ -63,7 +63,7 @@ export const consoleApi = {
         : "/console/push-messages",
     ),
 
-  getInboxEvents: (params?: {
+  getMsgEvents: (params?: {
     limit?: number;
     offset?: number;
     source_type?: string;
@@ -82,24 +82,24 @@ export const consoleApi = {
       query.set("unread_only", String(params.unread_only));
     }
     const suffix = query.toString() ? `?${query.toString()}` : "";
-    return request<{ events: InboxEvent[] }>(`/console/inbox/events${suffix}`);
+    return request<{ events: MsgEvent[] }>(`/console/msg/events${suffix}`);
   },
 
-  markInboxRead: (payload: { event_ids?: string[]; all?: boolean }) =>
-    request<{ updated: number }>("/console/inbox/read", {
+  markMsgRead: (payload: { event_ids?: string[]; all?: boolean }) =>
+    request<{ updated: number }>("/console/msg/read", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
 
-  deleteInboxEvent: (eventId: string) =>
+  deleteMsgEvent: (eventId: string) =>
     request<{
       deleted: boolean;
       trace_deleted?: boolean;
       run_id?: string | null;
-    }>(`/console/inbox/events/${encodeURIComponent(eventId)}`, {
+    }>(`/console/msg/events/${encodeURIComponent(eventId)}`, {
       method: "DELETE",
     }),
 
-  getInboxTrace: (runId: string) =>
-    request<InboxTrace>(`/console/inbox/traces/${encodeURIComponent(runId)}`),
+  getMsgTrace: (runId: string) =>
+    request<MsgTrace>(`/console/msg/traces/${encodeURIComponent(runId)}`),
 };

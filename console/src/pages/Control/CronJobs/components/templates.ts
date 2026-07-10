@@ -131,7 +131,7 @@ const createScheduledTemplate = (
     return {
       name: "",
       enabled: true,
-      save_result_to_inbox: true,
+      save_result_to_msg: true,
       scheduleType: "once",
       onceRunAt,
       onceRepeatEnabled: options.repeatEnabled,

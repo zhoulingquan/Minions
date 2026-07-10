@@ -208,6 +208,7 @@ export default function ToolsPage() {
     tools,
     loading,
     batchLoading,
+    customToolNames,
     toggleEnabled,
     toggleAsyncExecution,
     enableAll,
@@ -230,10 +231,15 @@ export default function ToolsPage() {
   };
 
   const { enabledTools, disabledTools } = useMemo(() => {
-    const enabled = tools.filter((tool) => tool.enabled);
-    const disabled = tools.filter((tool) => !tool.enabled);
+    // Custom tools have their own page (Agent/CustomTools); only show
+    // built-in tools here so the two lists never overlap.
+    const builtin = tools.filter(
+      (tool) => !customToolNames.includes(tool.name),
+    );
+    const enabled = builtin.filter((tool) => tool.enabled);
+    const disabled = builtin.filter((tool) => !tool.enabled);
     return { enabledTools: enabled, disabledTools: disabled };
-  }, [tools]);
+  }, [tools, customToolNames]);
 
   const isToolConfigured = (tool: ToolInfo) =>
     !tool.requires_config ||

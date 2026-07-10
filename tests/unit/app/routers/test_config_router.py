@@ -33,7 +33,7 @@ from minions.config.config import (
 )
 from minions.constant import (
     HEARTBEAT_FILE,
-    HEARTBEAT_TARGET_INBOX,
+    HEARTBEAT_TARGET_MSG,
     HEARTBEAT_TARGET_LAST,
 )
 
@@ -179,7 +179,7 @@ def test_get_heartbeat_returns_timeout_seconds(
     fake_agent_workspace.config.heartbeat = HeartbeatConfig(
         enabled=True,
         every="2h",
-        target="inbox",
+        target="msg",
         timeoutSeconds=240,
     )
 
@@ -202,7 +202,7 @@ def test_put_heartbeat_preserves_timeout_seconds(
             json={
                 "enabled": True,
                 "every": "2h",
-                "target": "inbox",
+                "target": "msg",
                 "timeoutSeconds": 360,
             },
         )
@@ -231,7 +231,7 @@ def test_put_heartbeat_rejects_timeout_above_max(
         json={
             "enabled": True,
             "every": "2h",
-            "target": "inbox",
+            "target": "msg",
             "timeoutSeconds": 3601,
         },
     )
@@ -252,7 +252,7 @@ def test_put_heartbeat_rejects_timeout_above_max(
                 session_id="session-1",
             ),
         ),
-        (HEARTBEAT_TARGET_INBOX, None),
+        (HEARTBEAT_TARGET_MSG, None),
     ],
 )
 async def test_run_heartbeat_once_uses_configured_timeout(
@@ -294,7 +294,7 @@ async def test_run_heartbeat_once_uses_configured_timeout(
         AsyncMock(return_value=[]),
     )
     monkeypatch.setattr(heartbeat, "finalize_trace", AsyncMock())
-    monkeypatch.setattr(heartbeat, "append_inbox_event", AsyncMock())
+    monkeypatch.setattr(heartbeat, "append_msg_event", AsyncMock())
 
     await heartbeat.run_heartbeat_once(
         workspace=_HeartbeatWorkspace(),

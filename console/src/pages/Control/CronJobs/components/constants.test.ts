@@ -5,7 +5,7 @@ describe("DEFAULT_FORM_VALUES", () => {
   it("has all required top-level keys", () => {
     const keys = [
       "enabled",
-      "save_result_to_inbox",
+      "save_result_to_msg",
       "scheduleType",
       "schedule",
       "onceRunAt",

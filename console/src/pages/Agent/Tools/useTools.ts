@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAppMessage } from "../../../hooks/useAppMessage";
 import api from "../../../api";
 import type { ToolInfo } from "../../../api/modules/tools";
+import { customToolsApi } from "../../../api/modules/customTools";
 import { useTranslation } from "react-i18next";
 import { useAgentStore } from "../../../stores/agentStore";
 
@@ -11,6 +12,7 @@ export function useTools() {
   const [tools, setTools] = useState<ToolInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [batchLoading, setBatchLoading] = useState(false);
+  const [customToolNames, setCustomToolNames] = useState<string[]>([]);
   const { message } = useAppMessage();
 
   const loadTools = useCallback(async () => {
@@ -26,9 +28,19 @@ export function useTools() {
     }
   }, [t]);
 
+  const loadCustomTools = useCallback(async () => {
+    try {
+      const files = await customToolsApi.list();
+      setCustomToolNames(files.map((f) => f.name));
+    } catch (error) {
+      console.error("Failed to load custom tools:", error);
+    }
+  }, []);
+
   useEffect(() => {
     loadTools();
-  }, [loadTools, selectedAgent]);
+    loadCustomTools();
+  }, [loadTools, loadCustomTools, selectedAgent]);
 
   const toggleEnabled = useCallback(
     async (tool: ToolInfo) => {
@@ -180,15 +192,85 @@ export function useTools() {
     [t],
   );
 
+  const createCustomTool = useCallback(
+    async (name: string, content: string) => {
+      try {
+        await customToolsApi.create(name, content);
+        message.success(t("tools.createSuccess"));
+        await loadCustomTools();
+        await loadTools();
+      } catch (error) {
+        console.error("Failed to create custom tool:", error);
+        message.error(t("tools.createFailed"));
+        throw error;
+      }
+    },
+    [t, loadCustomTools, loadTools],
+  );
+
+  const getCustomTool = useCallback(async (name: string) => {
+    return customToolsApi.get(name);
+  }, []);
+
+  const updateCustomTool = useCallback(
+    async (name: string, content: string) => {
+      try {
+        await customToolsApi.update(name, content);
+        message.success(t("tools.updateSuccess"));
+      } catch (error) {
+        console.error("Failed to update custom tool:", error);
+        message.error(t("tools.createFailed"));
+        throw error;
+      }
+    },
+    [t],
+  );
+
+  const deleteCustomTool = useCallback(
+    async (name: string) => {
+      try {
+        await customToolsApi.delete(name);
+        message.success(t("tools.deleteSuccess"));
+        await loadCustomTools();
+        await loadTools();
+      } catch (error) {
+        console.error("Failed to delete custom tool:", error);
+        message.error(t("tools.createFailed"));
+        throw error;
+      }
+    },
+    [t, loadCustomTools, loadTools],
+  );
+
+  const reloadCustomTool = useCallback(
+    async (name: string) => {
+      try {
+        await customToolsApi.reload(name);
+        message.success(t("tools.reloadSuccess"));
+      } catch (error) {
+        console.error("Failed to reload custom tool:", error);
+        message.error(t("tools.createFailed"));
+        throw error;
+      }
+    },
+    [t],
+  );
+
   return {
     tools,
     loading,
     batchLoading,
+    customToolNames,
     toggleEnabled,
     toggleAsyncExecution,
     enableAll,
     disableAll,
     loadTools,
     saveToolConfig,
+    createCustomTool,
+    getCustomTool,
+    updateCustomTool,
+    deleteCustomTool,
+    reloadCustomTool,
   };
 }

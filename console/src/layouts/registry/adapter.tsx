@@ -6,7 +6,7 @@
  *   - resolve labels/icons into ReactNodes for antd
  *   - look up the URL path from route id (router-driven, no constants table)
  *   - flatten the tree for collapsed mode
- *   - apply Sidebar-local decorations (e.g. inbox unread Badge)
+ *   - apply Sidebar-local decorations (e.g. msg unread Badge)
  */
 import type { CSSProperties, ReactNode } from "react";
 import { createElement, isValidElement } from "react";
@@ -67,7 +67,7 @@ export function routeIdToPath(
 interface ToAntdOpts {
   collapsed: boolean;
   iconSize?: number;
-  /** Optional Sidebar-local decoration. e.g. wrap inbox label with unread Badge. */
+  /** Optional Sidebar-local decoration. e.g. wrap msg label with unread Badge. */
   decorateLabel?: (item: MenuItem, label: ReactNode) => ReactNode;
 }
 
