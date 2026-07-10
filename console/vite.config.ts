@@ -76,14 +76,6 @@ export default defineConfig(({ mode }) => {
           __dirname,
           "src/test/icons-mock.ts",
         ),
-        "@tauri-apps/api/core": path.resolve(
-          __dirname,
-          "src/test/tauri-mock.ts",
-        ),
-        "@tauri-apps/plugin-dialog": path.resolve(
-          __dirname,
-          "src/test/tauri-mock.ts",
-        ),
       },
       exclude: [
         "**/node_modules/**",
@@ -92,8 +84,6 @@ export default defineConfig(({ mode }) => {
         "**/testConnectionMessage.test.ts",
         // ChatPage test causes worker crash - pre-existing issue, needs more mock setup
         "**/pages/Chat/ChatPage.test.tsx",
-        // Tauri modules require @tauri-apps/api which only exists in desktop builds
-        "**/src/tauri/**",
       ],
       coverage: {
         provider: "v8",
@@ -101,7 +91,6 @@ export default defineConfig(({ mode }) => {
         include: ["src/**/*.{ts,tsx}"],
         exclude: [
           "src/test/**",
-          "src/tauri/**",
           "src/**/*.d.ts",
           "src/main.tsx",
           "src/vite-env.d.ts",
@@ -113,9 +102,6 @@ export default defineConfig(({ mode }) => {
           lines: 5,
         },
       },
-    },
-    optimizeDeps: {
-      include: ["diff"],
     },
     build: {
       // Output to Minions's console directory,
@@ -137,24 +123,21 @@ export default defineConfig(({ mode }) => {
             ) {
               return "react-vendor";
             }
-            // Ant Design + AgentScope design system (merged to avoid circular deps)
+            // Ant Design + AgentScope design system + markdown rendering.
+            // Merged into a single chunk: antd/design (via @ant-design/x-markdown
+            // and antd-style/@emotion) and the react-markdown/remark/micromark
+            // family reference each other cyclically. Splitting them into
+            // separate chunks causes a cross-chunk ES-module evaluation cycle
+            // where a markdown module calls into stylis (serialize/cna) at
+            // module-eval time before the ui chunk's CJS `exports` object is
+            // initialized, throwing "Object.defineProperty called on non-object"
+            // and leaving #root empty (blank page). Keeping them together lets
+            // rollup order the evaluation correctly within one chunk.
             if (
               id.includes("node_modules/antd/") ||
               id.includes("node_modules/antd-style/") ||
               id.includes("node_modules/@ant-design/") ||
-              id.includes("node_modules/@agentscope-ai/")
-            ) {
-              return "ui-vendor";
-            }
-            // i18n
-            if (
-              id.includes("node_modules/i18next/") ||
-              id.includes("node_modules/react-i18next/")
-            ) {
-              return "i18n-vendor";
-            }
-            // Markdown rendering
-            if (
+              id.includes("node_modules/@agentscope-ai/") ||
               id.includes("node_modules/react-markdown/") ||
               id.includes("node_modules/remark-gfm/") ||
               id.includes("node_modules/rehype") ||
@@ -164,7 +147,14 @@ export default defineConfig(({ mode }) => {
               id.includes("node_modules/hast") ||
               id.includes("node_modules/micromark")
             ) {
-              return "markdown-vendor";
+              return "ui-vendor";
+            }
+            // i18n
+            if (
+              id.includes("node_modules/i18next/") ||
+              id.includes("node_modules/react-i18next/")
+            ) {
+              return "i18n-vendor";
             }
             // Drag and drop
             if (id.includes("node_modules/@dnd-kit/")) {

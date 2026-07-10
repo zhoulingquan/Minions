@@ -714,14 +714,13 @@ cp -r ~/.minions/workspaces ~/backups/workspaces-$(date +%Y%m%d)
 
 - **临时性（Ephemeral）**：子 Agent 不可恢复。每次调用创建一个新 session，完成后即丢弃。
 - **同一 Agent**：子 Agent 使用相同的 Agent 配置（persona、tools），只是在独立 session 中运行。
-- **无需额外配置**：`fork=True` 始终可用，无论是否开启 Coding Mode。
+- **无需额外配置**：`fork=True` 始终可用。
 
 ### fork=True 在不同环境下的行为
 
 | 环境                                       | 行为                                                                                                |
 | ------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| 开启 Coding Mode + project_dir 是 git 仓库 | 在 `<project_dir>/.minions/worktrees/` 下创建 **git worktree**，子 Agent 在隔离的 worktree 中工作   |
-| 未开启 Coding Mode + workspace 是 git 仓库 | 在 `<workspace_dir>/.minions/worktrees/` 下创建 **git worktree**，子 Agent 在隔离的 worktree 中工作 |
+| workspace 是 git 仓库 | 在 `<workspace_dir>/.minions/worktrees/` 下创建 **git worktree**，子 Agent 在隔离的 worktree 中工作 |
 | 没有可用的 git 仓库                        | **原地 fork**：继承对话上下文，在与 parent 相同的目录中工作。无文件隔离                             |
 
 `fork=True` 的核心保证是**对话上下文继承**。Git worktree 隔离是项目为 git 仓库时的自动附加能力。
@@ -833,13 +832,6 @@ Minions 在创建 worktree 时会自动将这些文件复制过去，确保子�
 
 - `spawn_subagent` 在当前项目内执行文件操作类子任务（同 Agent，临时 session）
 - `chat_with_agent` 调用其他专长 Agent
-
-**Q：fork=True 需要开启 Coding Mode 吗？**
-
-不需要。`fork=True` 始终可用：
-
-- 有 git 仓库时（无论是 Coding Mode 的 project_dir 还是 workspace）：获得 worktree 隔离 + 上下文继承
-- 没有 git 仓库时：仅获得上下文继承（原地工作，无文件隔离）
 
 **Q：worktree 会自动清理吗？**
 

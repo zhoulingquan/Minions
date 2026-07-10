@@ -95,7 +95,7 @@ class BaseChannel(ABC):
         *,
         timeout: float,
     ) -> list[str]:
-        """Optional ``copaw doctor --deep`` reachability checks.
+        """Optional ``minions doctor --deep`` reachability checks.
 
         Override in custom channels. Default: no extra checks
         (built-in channels use shared probes in ``doctor_connectivity``

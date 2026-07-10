@@ -1,14 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// The vite.config.ts aliases @tauri-apps/api/core and @tauri-apps/plugin-dialog
-// to src/test/tauri-mock.ts, which exports vi.fn() instances we can control directly.
-import { invoke, isTauri, save } from "../test/tauri-mock";
-
-import {
-  DownloadCancelledError,
-  downloadFileFromUrl,
-} from "./downloadFileFromUrl";
+import { downloadFileFromUrl } from "./downloadFileFromUrl";
 import { openExternalLink } from "./openExternalLink";
 
 describe("openExternalLink", () => {
@@ -16,10 +9,6 @@ describe("openExternalLink", () => {
   const fetchMock = vi.fn();
 
   beforeEach(() => {
-    invoke.mockReset();
-    isTauri.mockReturnValue(false);
-    invoke.mockResolvedValue(undefined);
-    save.mockReset();
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     Object.defineProperty(URL, "createObjectURL", {
@@ -33,7 +22,6 @@ describe("openExternalLink", () => {
     windowOpen.mockReset();
     vi.spyOn(window, "open").mockImplementation(windowOpen);
     delete (window as any).pywebview;
-    delete (window as any).__TAURI_INTERNALS__;
     localStorage.clear();
     (globalThis as any).VITE_API_BASE_URL = "";
     (globalThis as any).TOKEN = "";
@@ -52,14 +40,12 @@ describe("openExternalLink", () => {
         open_external_link: openExternal,
       },
     };
-    isTauri.mockReturnValue(true);
 
     openExternalLink("https://github.com/agentscope-ai/Minions");
 
     expect(openExternal).toHaveBeenCalledWith(
       "https://github.com/agentscope-ai/Minions",
     );
-    expect(invoke).not.toHaveBeenCalled();
     expect(windowOpen).not.toHaveBeenCalled();
   });
 
@@ -85,65 +71,13 @@ describe("openExternalLink", () => {
     openExternalLink("javascript:alert(1)");
     openExternalLink("#");
 
-    expect(invoke).not.toHaveBeenCalled();
     expect(windowOpen).not.toHaveBeenCalled();
   });
 
   it("rejects ambiguous HTTP links without slashes before opening", () => {
-    isTauri.mockReturnValue(true);
-
     openExternalLink("http:example.com");
 
-    expect(invoke).not.toHaveBeenCalled();
     expect(windowOpen).not.toHaveBeenCalled();
-  });
-
-  it("uses the Tauri external link command for supported non-HTTP schemes", () => {
-    isTauri.mockReturnValue(true);
-
-    openExternalLink("mailto:support@example.com");
-
-    expect(invoke).toHaveBeenCalledWith("open_external_link", {
-      url: "mailto:support@example.com",
-    });
-    expect(windowOpen).not.toHaveBeenCalled();
-  });
-
-  it("uses the Tauri external link command in the Tauri desktop app", () => {
-    isTauri.mockReturnValue(true);
-
-    openExternalLink("https://minions.agentscope.io/docs/intro?lang=zh");
-
-    expect(invoke).toHaveBeenCalledWith("open_external_link", {
-      url: "https://minions.agentscope.io/docs/intro?lang=zh",
-    });
-    expect(windowOpen).not.toHaveBeenCalled();
-  });
-
-  it("uses injected Tauri internals when isTauri is false", () => {
-    (window as any).__TAURI_INTERNALS__ = {
-      invoke: vi.fn(),
-    };
-
-    openExternalLink("https://github.com/agentscope-ai/Minions");
-
-    expect(invoke).toHaveBeenCalledWith("open_external_link", {
-      url: "https://github.com/agentscope-ai/Minions",
-    });
-    expect(windowOpen).not.toHaveBeenCalled();
-  });
-
-  it("logs Tauri external link failures without falling back to window.open", async () => {
-    isTauri.mockReturnValue(true);
-    invoke.mockRejectedValue(new Error("permission denied"));
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-
-    openExternalLink("https://github.com/agentscope-ai/Minions");
-    await Promise.resolve();
-    await Promise.resolve();
-
-    expect(windowOpen).not.toHaveBeenCalled();
-    expect(warnSpy).toHaveBeenCalled();
   });
 
   it("falls back to window.open in the web console", () => {
@@ -154,21 +88,6 @@ describe("openExternalLink", () => {
       "_blank",
       "noopener,noreferrer",
     );
-  });
-
-  it("uses the Tauri command from backend-hosted Tauri consoles", () => {
-    (window as any).__TAURI_INTERNALS__ = {
-      invoke: vi.fn(),
-    };
-    window.history.replaceState(null, "", "/console/inbox");
-
-    openExternalLink("https://github.com/agentscope-ai/Minions");
-
-    expect(invoke).toHaveBeenCalledWith("open_external_link", {
-      url: "https://github.com/agentscope-ai/Minions",
-    });
-    expect(fetchMock).not.toHaveBeenCalled();
-    expect(windowOpen).not.toHaveBeenCalled();
   });
 
   it("uses window.open for backend-hosted browser consoles", () => {
@@ -197,44 +116,18 @@ describe("openExternalLink", () => {
   });
 
   it("resolves relative links before passing them to desktop bridges", () => {
-    isTauri.mockReturnValue(true);
+    const openExternal = vi.fn();
+    (window as any).pywebview = {
+      api: {
+        open_external_link: openExternal,
+      },
+    };
 
     openExternalLink("/docs/faq");
 
-    expect(invoke).toHaveBeenCalledWith("open_external_link", {
-      url: "http://localhost:3000/docs/faq",
-    });
-  });
-
-  it("downloads Tauri files with headers through the native backend command", async () => {
-    isTauri.mockReturnValue(true);
-    save.mockResolvedValue("C:\\Downloads\\server.zip");
-    localStorage.setItem("minions_auth_token", "tok");
-
-    await expect(
-      downloadFileFromUrl("/api/workspace/download", "workspace.zip", {
-        headers: { "X-Agent-Id": "agent-a" },
-        preferResponseFilename: true,
-      }),
-    ).resolves.toBeUndefined();
-
-    expect(save).toHaveBeenCalledWith({
-      defaultPath: "workspace.zip",
-    });
-    expect(invoke).toHaveBeenCalledWith("download_backend_file", {
-      request: {
-        url: "http://localhost:3000/api/workspace/download",
-        filePath: "C:\\Downloads\\server.zip",
-        headers: { "X-Agent-Id": "agent-a" },
-      },
-    });
-    expect(save.mock.invocationCallOrder[0]).toBeLessThan(
-      invoke.mock.invocationCallOrder[0],
+    expect(openExternal).toHaveBeenCalledWith(
+      "http://localhost:3000/docs/faq",
     );
-    expect(fetchMock).not.toHaveBeenCalled();
-    expect(
-      invoke.mock.calls.some(([command]) => command === "open_external_link"),
-    ).toBe(false);
   });
 
   it("uses the pywebview save bridge for legacy desktop downloads", async () => {
@@ -262,7 +155,6 @@ describe("openExternalLink", () => {
       { Authorization: "Bearer tok" },
     );
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(save).not.toHaveBeenCalled();
   });
 
   it("keeps legacy pywebview downloads backward-compatible without headers", async () => {
@@ -283,63 +175,6 @@ describe("openExternalLink", () => {
     );
   });
 
-  it("sanitizes Tauri save dialog filenames for Windows", async () => {
-    isTauri.mockReturnValue(true);
-    save.mockResolvedValue("C:\\Downloads\\backup.zip");
-
-    await expect(
-      downloadFileFromUrl(
-        "/api/backups/abc/export",
-        "Backup 2026-05-22 14:13.zip",
-      ),
-    ).resolves.toBeUndefined();
-
-    expect(save).toHaveBeenCalledWith({
-      defaultPath: "Backup 2026-05-22 14_13.zip",
-    });
-    expect(invoke).toHaveBeenCalledWith(
-      "download_backend_file",
-      expect.objectContaining({
-        request: expect.objectContaining({
-          filePath: "C:\\Downloads\\backup.zip",
-        }),
-      }),
-    );
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
-
-  it("reports Tauri download cancellation before starting the native download", async () => {
-    isTauri.mockReturnValue(true);
-    save.mockResolvedValue(null);
-    fetchMock.mockResolvedValue(new Response("zip"));
-
-    await expect(
-      downloadFileFromUrl("/api/workspace/download", "workspace.zip", {
-        headers: { "X-Agent-Id": "agent-a" },
-      }),
-    ).rejects.toBeInstanceOf(DownloadCancelledError);
-
-    expect(fetchMock).not.toHaveBeenCalled();
-    expect(invoke).not.toHaveBeenCalledWith(
-      "download_backend_file",
-      expect.anything(),
-    );
-  });
-
-  it("surfaces Tauri native download failures with the caller's message", async () => {
-    isTauri.mockReturnValue(true);
-    save.mockResolvedValue("C:\\Downloads\\server.zip");
-    invoke.mockRejectedValue(new Error("HTTP 500"));
-
-    await expect(
-      downloadFileFromUrl("/api/workspace/download", "workspace.zip", {
-        errorMessage: "Export failed",
-      }),
-    ).rejects.toThrow("Export failed");
-
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
-
   it("does not add auth query parameters to external API-shaped downloads", async () => {
     localStorage.setItem("minions_auth_token", "tok");
     fetchMock.mockResolvedValue(new Response("zip"));
@@ -356,18 +191,10 @@ describe("openExternalLink", () => {
   });
 
   it("rejects non-HTTP URLs before selecting a download runtime", async () => {
-    isTauri.mockReturnValue(true);
-    save.mockResolvedValue("C:\\Downloads\\mail.zip");
-
     await expect(
       downloadFileFromUrl("mailto:support@example.com", "mail.zip"),
     ).rejects.toThrow("Download URL is invalid");
 
-    expect(save).not.toHaveBeenCalled();
-    expect(invoke).not.toHaveBeenCalledWith(
-      "download_backend_file",
-      expect.anything(),
-    );
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -377,13 +204,9 @@ describe("openExternalLink", () => {
     ).rejects.toThrow("Download URL is invalid");
 
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(invoke).not.toHaveBeenCalledWith(
-      "download_backend_file",
-      expect.anything(),
-    );
   });
 
-  it("uses browser downloads outside Tauri", async () => {
+  it("uses browser downloads outside the desktop bridge", async () => {
     fetchMock.mockResolvedValue(
       new Response("zip", {
         headers: {

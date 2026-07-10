@@ -914,22 +914,16 @@ async def _spawn_forked_subagent(
         timeout,
     )
 
-    # Resolve project_dir for cleanup (coding_mode or workspace)
+    # Resolve project_dir for cleanup (workspace)
     from ...config.config import load_agent_config
 
     _project_dir = ""
     if worktree_path:
         try:
             _cfg = load_agent_config(current_agent_id)
-            _cm = _cfg.coding_mode
-            if _cm and _cm.enabled and _cm.project_dir:
-                _project_dir = str(
-                    Path(_cm.project_dir).resolve(),
-                )
-            else:
-                _project_dir = str(
-                    Path(_cfg.workspace_dir).resolve(),
-                )
+            _project_dir = str(
+                Path(_cfg.workspace_dir).resolve(),
+            )
         except Exception:  # noqa: BLE001
             _project_dir = ""
 

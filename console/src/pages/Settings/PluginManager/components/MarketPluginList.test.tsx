@@ -3,7 +3,6 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { MarketPluginEntry } from "@/api/modules/pluginMarket";
-import { invoke, isTauri } from "@/test/tauri-mock";
 import { MarketPluginList } from "./MarketPluginList";
 
 const hoisted = vi.hoisted(() => ({
@@ -64,13 +63,9 @@ describe("MarketPluginList", () => {
   beforeEach(() => {
     hoisted.plugins.length = 0;
     hoisted.handleInstall.mockReset();
-    invoke.mockReset();
-    invoke.mockResolvedValue(undefined);
-    isTauri.mockReturnValue(false);
     windowOpen.mockReset();
     vi.spyOn(window, "open").mockImplementation(windowOpen);
     window.history.replaceState(null, "", "/");
-    delete (window as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__;
   });
 
   it("opens plugin details through the shared external-link guard", () => {
@@ -95,6 +90,5 @@ describe("MarketPluginList", () => {
     fireEvent.click(screen.getByText("pluginManager.marketDetails"));
 
     expect(windowOpen).not.toHaveBeenCalled();
-    expect(invoke).not.toHaveBeenCalled();
   });
 });

@@ -11,9 +11,7 @@ from typing import Any
 
 def minions_working_dir() -> Path:
     """Match ``minions_pet_desktop.runtime.minions_working_dir`` precedence."""
-    explicit = os.environ.get("MINIONS_WORKING_DIR") or os.environ.get(
-        "COPAW_WORKING_DIR",
-    )
+    explicit = os.environ.get("MINIONS_WORKING_DIR")
     if explicit:
         return Path(explicit).expanduser().resolve()
     try:
@@ -21,9 +19,6 @@ def minions_working_dir() -> Path:
 
         return Path(WORKING_DIR).expanduser().resolve()
     except Exception:
-        legacy = Path("~/.copaw").expanduser()
-        if legacy.exists():
-            return legacy.resolve()
         return Path("~/.minions").expanduser().resolve()
 
 

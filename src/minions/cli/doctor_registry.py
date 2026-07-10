@@ -7,8 +7,6 @@ Plugins can expose a setuptools entry point in group ``minions.doctor``::
     [project.entry-points."minions.doctor"]
     my_pkg = "my_pkg.doctor:doctor_notes"
 
-The group ``copaw.doctor`` is still discovered when present (legacy plugins).
-
 The callable must accept :class:`DoctorRunContext` and return a list of
 informational strings (empty if nothing to report).
 
@@ -67,7 +65,7 @@ def _entry_points_for_group(group: str):
 def _load_entry_point_functions() -> list[tuple[str, DoctorNotesFn]]:
     out: list[tuple[str, DoctorNotesFn]] = []
     seen: set[str] = set()
-    for group in ("minions.doctor", "copaw.doctor"):
+    for group in ("minions.doctor",):
         for ep in _entry_points_for_group(group):
             if ep.name in seen:
                 continue

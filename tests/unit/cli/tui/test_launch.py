@@ -39,7 +39,6 @@ def test_default_transport_targets_current_interpreter(tmp_path, monkeypatch):
     ]
     project_dir = str(tmp_path.resolve())
     assert transport._cwd == project_dir
-    assert transport._project_dir == project_dir
     assert "minions acp" in description
     assert "--local-diagnostics" in description
     assert f"cwd={project_dir}" in description
@@ -72,7 +71,6 @@ def test_project_path_threads_into_transport(tmp_path):
     )
     project_dir = str(tmp_path.resolve())
     assert transport._cwd == project_dir
-    assert transport._project_dir == project_dir
     assert f"cwd={project_dir}" in description
 
 

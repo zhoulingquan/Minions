@@ -35,10 +35,6 @@ excerpt: "Minions团队召开开发者日会，为每一位 Minions 开发者与
 
 会议链接：https://shanji.dingtalk.com/app/transcribes/76327569643332353835303430355f323034353035363233375f30
 
-**06-09 Minions 开发者日会：Minions Coding 模式**
-
-会议链接：https://shanji.dingtalk.com/app/transcribes/76327569643332323838383539345f323034353035363233375f30
-
 **06-04 Minions 开发者日会：ReMe 升级**
 
 会议链接：https://shanji.dingtalk.com/app/transcribes/76327569643331373333363833335f323034353035363233375f30
@@ -91,62 +87,62 @@ excerpt: "Minions团队召开开发者日会，为每一位 Minions 开发者与
 
 会议链接：https://shanji.dingtalk.com/app/transcribes/76327569643236313434363337385f323034353035363233375f30
 
-**04-09 CoPaw 开发者日会：AgentScope & CoPaw 记忆和上下文管理系统升级**
+**04-09 Minions 开发者日会：AgentScope & Minions 记忆和上下文管理系统升级**
 
 会议链接：https://shanji.dingtalk.com/app/transcribes/76327569643235363338303637335f323034353035363233375f30
 
-**04-07 CoPaw 开发者日会：Open Tasks 更新**
+**04-07 Minions 开发者日会：Open Tasks 更新**
 
 会议链接：https://shanji.dingtalk.com/app/transcribes/76327569643235333834343132365f323034353035363233375f30
 
-**04-02 CoPaw 开发者日会：专为 CoPaw 定制的小模型 CoPaw-Flash**
+**04-02 Minions 开发者日会：专为 Minions 定制的小模型 Minions-Flash**
 
 会议链接：https://shanji.dingtalk.com/app/transcribes/76327569643235303333303132395f323034353035363233375f30
 
-**03-31 CoPaw 开发者日会：CoPaw 1.0 版本发布**
+**03-31 Minions 开发者日会：Minions 1.0 版本发布**
 
 会议链接：https://shanji.dingtalk.com/app/transcribes/76327569643234373632373334315f323034353035363233375f30
 
-**03-26 CoPaw 开发者日会：多智能体**
+**03-26 Minions 开发者日会：多智能体**
 
 会议链接：https://shanji.dingtalk.com/app/transcribes/76327569643234323932343730315f323034353035363233375f30
 
-**03-24 CoPaw 开发者日会：安全机制升级**
+**03-24 Minions 开发者日会：安全机制升级**
 
 会议链接：https://shanji.dingtalk.com/app/transcribes/76327569643234303532393639385f323034353035363233375f30
 
-**03-20 CoPaw 开发者日会：0.1.0 版本更新**
+**03-20 Minions 开发者日会：0.1.0 版本更新**
 
 会议链接：https://shanji.dingtalk.com/app/transcribes/76327569643233353633393630395f323034353035363233375f30
 
-**03-19 CoPaw 开发者日会：CoPaw Memory & ReMe 记忆系统解读 + 交流群分流**
+**03-19 Minions 开发者日会：Minions Memory & ReMe 记忆系统解读 + 交流群分流**
 
 会议链接：https://shanji.dingtalk.com/app/transcribes/76327569643233343536363335355f323034353035363233375f30
 
-**03-18 CoPaw 开发者日会：需求汇总 & 版本迭代**
+**03-18 Minions 开发者日会：需求汇总 & 版本迭代**
 
 会议链接：https://shanji.dingtalk.com/app/transcribes/76327569643233333339353233355f323034353035363233375f30
 
-**03-17 CoPaw 开发者日会：单测相关**
+**03-17 Minions 开发者日会：单测相关**
 
 会议链接：https://shanji.dingtalk.com/app/transcribes/76327569643233323231373438385f323034353035363233375f30
 
-**03-16 CoPaw 开发者日会：多智能体 Workspace**
+**03-16 Minions 开发者日会：多智能体 Workspace**
 
 会议链接：https://shanji.dingtalk.com/app/transcribes/76327569643233313136333431365f323034353035363233375f30
 
-**03-13 CoPaw 开发者日会：CoPaw 安全机制**
+**03-13 Minions 开发者日会：Minions 安全机制**
 
 会议链接：https://shanji.dingtalk.com/app/transcribes/76327569643232383938333431365f323034353035363233375f30
 
-**03-11 CoPaw 开发者日会：CoPaw Provider 重构**
+**03-11 Minions 开发者日会：Minions Provider 重构**
 
 会议链接：https://shanji.dingtalk.com/app/transcribes/76327569643232363639333732345f323034353035363233375f30
 
-**03-10 CoPaw 开发者日会：CoPaw 版本更新 & 出版行业开发者分享**
+**03-10 Minions 开发者日会：Minions 版本更新 & 出版行业开发者分享**
 
 会议链接：https://shanji.dingtalk.com/app/transcribes/76327569643232353739353035315f323034353035363233375f30
 
-**03-09 CoPaw 开发者日会：CoPaw Roadmap 介绍**
+**03-09 Minions 开发者日会：Minions Roadmap 介绍**
 
 会议链接：https://shanji.dingtalk.com/app/transcribes/76327569643232343332383030385f323034353035363233375f39

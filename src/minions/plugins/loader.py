@@ -43,7 +43,7 @@ def _is_frozen() -> bool:
 
 def _desktop_python() -> Optional[str]:
     """Bundled standalone CPython used to install plugin deps in the frozen
-    desktop build. Its absolute path is injected by the Tauri shell."""
+    desktop build. Its absolute path is injected by the desktop shell."""
     path = os.environ.get("MINIONS_DESKTOP_PY_RUNTIME", "").strip()
     return path if path and Path(path).is_file() else None
 

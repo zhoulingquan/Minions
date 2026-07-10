@@ -1,7 +1,7 @@
-export type SessionRouteMode = "chat" | "coding";
+export type SessionRouteMode = "chat";
 
 export function getSessionIdFromPath(pathname: string): string | undefined {
-  const match = pathname.match(/^\/(?:chat|coding)\/(.+)$/);
+  const match = pathname.match(/^\/chat\/(.+)$/);
   return match?.[1];
 }
 

@@ -263,55 +263,6 @@ class MultimodalHintContributor(SyncPromptContributor):
         return hint or None
 
 
-class CodingModeContributor(SyncPromptContributor):
-    """Inject Coding Mode persona block when coding mode is active."""
-
-    name = "coding_mode"
-    priority = 85
-
-    def contribute_sync(self, ctx: "HookContext") -> str | None:
-        extras = getattr(ctx, "extras", {}) or {}
-        agent_config = extras.get("agent_config")
-        if agent_config is None:
-            return None
-        cm = getattr(agent_config, "coding_mode", None)
-        if not cm or not getattr(cm, "enabled", False):
-            return None
-        from ..modes.coding import _CODING_SYSTEM_PROMPT_TEMPLATE
-
-        workspace_dir = str(getattr(ctx, "workspace_dir", "") or "(unknown)")
-        project_dir = self._resolve_project_dir(agent_config) or workspace_dir
-        return _CODING_SYSTEM_PROMPT_TEMPLATE.format(
-            project_dir=project_dir,
-            workspace_dir=workspace_dir,
-        )
-
-    @staticmethod
-    def _resolve_project_dir(agent_config: Any) -> str | None:
-        """Prefer request config, then reload disk config for API switches."""
-        cm_obj = getattr(agent_config, "coding_mode", None)
-        project_dir = getattr(cm_obj, "project_dir", None)
-        if project_dir:
-            return project_dir
-
-        from ..config.config import load_agent_config
-
-        agent_id = getattr(agent_config, "id", None)
-        if not agent_id:
-            return None
-        try:
-            fresh = load_agent_config(agent_id)
-            cm = fresh.coding_mode
-            if cm and cm.project_dir:
-                return cm.project_dir
-        except Exception:
-            logger.debug(
-                "Failed to reload agent config for Coding Mode prompt",
-                exc_info=True,
-            )
-        return None
-
-
 class ScrollContextContributor(SyncPromptContributor):
     """Inject memory/recall guidance when the scroll context strategy is on."""
 
@@ -367,7 +318,6 @@ _ALL_CONTRIBUTORS = (
     AgentIdentityContributor,
     WorkspacePromptFilesContributor,
     MultimodalHintContributor,
-    CodingModeContributor,
     ScrollContextContributor,
     DriverPolicyHintContributor,
     EnvContextContributor,
@@ -389,7 +339,6 @@ __all__ = [
     "ProfileMdContributor",
     "WorkspacePromptFilesContributor",
     "MultimodalHintContributor",
-    "CodingModeContributor",
     "ScrollContextContributor",
     "DriverPolicyHintContributor",
     "EnvContextContributor",

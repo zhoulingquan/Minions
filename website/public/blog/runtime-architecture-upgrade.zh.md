@@ -29,7 +29,7 @@ excerpt: "Minions Runtime 从 650 行 god method 重构为 8 阶段编排引擎�
 
 ### 核心痛点
 
-在 Runtime 架构升级之前，Minions 的请求处理集中在一个 `AgentRunner.query_handler()` 方法中——这是一个超过 **650 行的 god method**。每个新功能（任务模式、编程模式、计划模式、定时任务隔离、Skill 注入……）都需要**侵入式修改**这个核心函数，不断增加 if/else 分支和交叉的状态管理。
+在 Runtime 架构升级之前，Minions 的请求处理集中在一个 `AgentRunner.query_handler()` 方法中——这是一个超过 **650 行的 god method**。每个新功能（任务模式、计划模式、定时任务隔离、Skill 注入……）都需要**侵入式修改**这个核心函数，不断增加 if/else 分支和交叉的状态管理。
 
 一个具体的例子：当时要加一个 `/mission` 功能，需要改动 **8 个文件**，其中 2 个是核心文件的侵入式修改。每次新增功能，runner.py 都要多出 ~40 行。这样的开发模式带来了严重的维护负担和合并冲突。
 
@@ -214,7 +214,7 @@ class HookAction(str, Enum):
 | 基类                | 定义位置        | 执行时机             | 用途                                                              |
 | ------------------- | --------------- | -------------------- | ----------------------------------------------------------------- |
 | **`LifecycleHook`** | `hooks/base.py` | 每个到达该阶段的请求 | 基础设施：session load/save, bootstrap, skill env, error handling |
-| **`ModeGatedHook`** | `modes/base.py` | 仅当所属 mode 激活时 | 行为模式：mission state, coding mode context, goal persistence    |
+| **`ModeGatedHook`** | `modes/base.py` | 仅当所属 mode 激活时 | 行为模式：mission state, goal persistence    |
 
 两者都继承自 `runtime/hooks.py` 中的 `HookBase`。`ModeGatedHook` 自动在 `run()` 中检查 `self.owner_mode.is_active(ctx)`，不满足则直接跳过。这个设计消除了旧代码中反复出现的 bug：**每个 hook 忘记添加 mode 激活检查。**
 
@@ -345,7 +345,6 @@ class PromptManager:
 | `SoulMdContributor`           | 20       | SOUL.md 人格文件               |
 | `ProfileMdContributor`        | 30       | PROFILE.md 配置文件            |
 | `MultimodalHintContributor`   | 80       | 多模态能力提示                 |
-| `CodingModeContributor`       | 85       | Coding Mode 人格块             |
 | `ScrollContextContributor`    | 86       | Scroll 上下文策略提示          |
 | `DriverPolicyHintContributor` | 88       | Driver 策略指引                |
 | `EnvContextContributor`       | 90       | 环境上下文（时间 / 会话 / OS） |

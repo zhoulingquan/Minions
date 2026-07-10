@@ -283,7 +283,6 @@
     "acpServer": "ACP 集成",
     "memory": "记忆",
     "memoryEvolvingAndProactive": "记忆进化与主动交互",
-    "codingMode": "Coding 模式",
     "context": "上下文",
     "loopEngineering": "循环工程",
     "commands": "魔法命令",
@@ -367,7 +366,7 @@
         "li5bLink": "GitHub Releases",
         "li5bSuffix": "。",
         "li5c": "重新安装。",
-        "p2": "原 CoPaw 用户升级 Minions，下载最新的 Minions 即可，无需做额外适配即可继续使用 CoPaw 时期的所有配置、记忆、技能等。"
+        "p2": "升级 Minions 后，已有的配置、记忆、技能等数据会保留在原工作目录中，重启服务即可继续使用。"
       },
       "initialize": {
         "q": "如何初始化并启动 Minions 服务",

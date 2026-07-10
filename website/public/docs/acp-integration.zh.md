@@ -199,7 +199,7 @@ minions acp --debug
 ACP 智能体按以下优先级解析配置：
 
 1. **CLI 参数**：`--agent` 和 `--workspace` 优先级最高
-2. **WORKING_DIR 配置**：从 `WORKING_DIR` 内的 `config.json` 中读取 `agents.active_agent`（默认 `~/.minions`，旧版安装为 `~/.copaw`；可通过 `MINIONS_WORKING_DIR` 环境变量覆盖）
+2. **WORKING_DIR 配置**：从 `WORKING_DIR` 内的 `config.json` 中读取 `agents.active_agent`（默认 `~/.minions`；可通过 `MINIONS_WORKING_DIR` 环境变量覆盖）
 3. **默认值**：回退到智能体 ID `"default"` 和工作区目录 `WORKING_DIR/workspaces/default/`
 
 ---

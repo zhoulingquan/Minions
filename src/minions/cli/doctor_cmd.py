@@ -219,7 +219,7 @@ def _check_web_auth(base: str) -> tuple[bool, str]:
             "        2) Complete registration (single user) on the login "
             "page.\n"
             "        For automation, set MINIONS_AUTH_USERNAME and "
-            "MINIONS_AUTH_PASSWORD (legacy COPAW_* names still work) — the "
+            "MINIONS_AUTH_PASSWORD - the "
             "server creates the user on startup.",
         )
     return (
@@ -285,7 +285,7 @@ async def _check_active_llm(
 
     deep_notes: list[str] = []
     pid = (slot.provider_id or "").strip()
-    if deep and pid in ("minions-local", "copaw-local"):
+    if deep and pid in ("minions-local",):
         deep_notes = minions_local_llm_deep_notes()
 
     if not getattr(provider, "support_connection_check", True):
@@ -306,7 +306,6 @@ async def _check_active_llm(
             "ollama",
             "lmstudio",
             "minions-local",
-            "copaw-local",
         ):
             hint = active_llm_local_failure_hint(provider, slot.provider_id)
             if hint:
@@ -522,9 +521,8 @@ def run_doctor_checks(
         if not ext_nonempty:
             click.echo(
                 click.style("OK", fg="green")
-                + " — no extension notes (register via minions.doctor entry "
-                "points or register_doctor_contribution; legacy "
-                "copaw.doctor is still loaded)",
+                + " - no extension notes (register via minions.doctor entry "
+                "points or register_doctor_contribution)",
             )
         else:
             for contrib_id, lines in ext_nonempty:
@@ -676,7 +674,7 @@ def run_doctor_checks(
         failed = True
         click.echo(click.style("FAIL", fg="red") + f" — {detail}", err=True)
         _doctor_fix_hint(
-            "Fix: set `MINIONS_WORKING_DIR` (or legacy `COPAW_WORKING_DIR`) "
+            "Fix: set `MINIONS_WORKING_DIR` "
             "or run `minions init`. "
             "Preview the plan (no writes): `minions doctor fix --dry-run "
             "--only ensure-working-dir` if the parent path exists and is "

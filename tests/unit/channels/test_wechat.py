@@ -59,7 +59,7 @@ def mock_process_handler() -> AsyncMock:
 @pytest.fixture
 def temp_media_dir(tmp_path) -> Path:
     """Temporary directory for media files."""
-    media_dir = tmp_path / ".copaw" / "media"
+    media_dir = tmp_path / ".minions" / "media"
     media_dir.mkdir(parents=True, exist_ok=True)
     return media_dir
 
@@ -67,7 +67,7 @@ def temp_media_dir(tmp_path) -> Path:
 @pytest.fixture
 def temp_token_dir(tmp_path) -> Path:
     """Temporary directory for token files."""
-    token_dir = tmp_path / ".copaw"
+    token_dir = tmp_path / ".minions"
     token_dir.mkdir(parents=True, exist_ok=True)
     return token_dir
 

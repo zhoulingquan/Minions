@@ -147,7 +147,7 @@ cd frontend && npm install && npm run build
 > from outside Alibaba's intranet.
 
 Reinstall the plugin, or copy `dist/index.js` into your
-`~/.copaw/plugins/minions-pet/dist/index.js` and refresh the console.
+`~/.minions/plugins/minions-pet/dist/index.js` and refresh the console.
 
 ### Console host API compatibility
 
@@ -295,7 +295,7 @@ will take precedence over the cache and the network fetch.
 | `MINIONS_PET_STOP_ON_SHUTDOWN` | `0` ⇒ leave the pet desktop running after Minions exits. Default: terminate any pet desktop Minions has adopted (either by autostarting it or by seeing it healthy at startup / explicit `desktop/start`). | `1` |
 | `MINIONS_PET_HOME` | Runtime dir (PID file, log, **cache**, token) | `~/.minions-pet/` |
 | `MINIONS_PET_SNOWPAW_URL` | CDN URL for snowpaw's `spritesheet.webp` (downloaded once on first install) | Alicdn-hosted default |
-| `MINIONS_WORKING_DIR` / `COPAW_WORKING_DIR` | Where `pets/` lives | falls back to `~/.copaw` then `~/.minions` |
+| `MINIONS_WORKING_DIR` | Where `pets/` lives | defaults to `~/.minions` |
 
 ### Pet desktop log / common errors
 

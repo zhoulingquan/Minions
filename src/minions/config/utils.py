@@ -49,42 +49,6 @@ _agent_config_cache: dict[str, tuple[Any, float]] = {}
 _agent_config_lock = threading.Lock()
 
 
-def _normalize_working_dir_bound_paths(data: object) -> object:
-    """Normalize legacy ~/.copaw-bound paths to current WORKING_DIR.
-
-    This keeps MINIONS_WORKING_DIR effective even if user config files contain
-    older hard-coded paths like "~/.copaw/media" or
-    "/Users/x/.copaw/workspaces/...".
-    Only rewrites known working-dir-bound keys.
-    """
-    legacy_root_tilde = "~/.copaw"
-    legacy_root_abs = str(Path(legacy_root_tilde).expanduser().resolve())
-    new_root_abs = str(WORKING_DIR)
-
-    def _rewrite_path_value(v: object) -> object:
-        if not isinstance(v, str) or not v:
-            return v
-        if v.startswith(legacy_root_tilde):
-            return new_root_abs + v[len(legacy_root_tilde) :]
-        if v.startswith(legacy_root_abs):
-            return new_root_abs + v[len(legacy_root_abs) :]
-        return v
-
-    def _walk(obj: object, key: str | None = None) -> object:
-        if isinstance(obj, dict):
-            out: dict = {}
-            for k, v in obj.items():
-                out[k] = _walk(v, str(k))
-            return out
-        if isinstance(obj, list):
-            return [_walk(x, key) for x in obj]
-        if key in {"workspace_dir", "media_dir"}:
-            return _rewrite_path_value(obj)
-        return obj
-
-    return _walk(data, None)
-
-
 def _discover_system_chromium_path() -> Optional[str]:
     """Scan common locations for Chrome/Chromium/Edge so we can use existing
     browser instead of downloading via Playwright. Returns first found path.
@@ -550,7 +514,6 @@ def _load_and_validate_config(
     data: dict,
 ) -> Config:
     """Load and validate config data, handling validation errors."""
-    data = _normalize_working_dir_bound_paths(data)
     # Backward compat: top-level last_api_host / last_api_port -> last_api
     if "last_api_host" in data or "last_api_port" in data:
         la = data.setdefault("last_api", {})
@@ -642,9 +605,8 @@ def strict_validate_config_file(
 
     data = _read_config_data(config_path)
     if data is None:
-        return False, f"unreadable or invalid JSON — {config_path}"
+        return False, f"unreadable or invalid JSON - {config_path}"
 
-    data = _normalize_working_dir_bound_paths(data)
     if "last_api_host" in data or "last_api_port" in data:
         la = data.setdefault("last_api", {})
         if "host" not in la and "last_api_host" in data:

@@ -37,7 +37,6 @@ from ..config.config import (
     load_agent_config,
 )
 from ..config.utils import (
-    _normalize_working_dir_bound_paths,
     _read_config_data,
     get_config_path,
     get_jobs_path,
@@ -62,9 +61,8 @@ from ..providers.provider import Provider
 # Log file opened on app startup (see ``minions.app._app`` lifespan).
 APP_LOG_BASENAME = LOG_FILE_BASENAME
 
-# Built-in local llama.cpp provider id; legacy configs may still use
-# copaw-local.
-_MINIONS_LOCAL_PROVIDER_IDS = frozenset({"minions-local", "copaw-local"})
+# Built-in local llama.cpp provider id.
+_MINIONS_LOCAL_PROVIDER_IDS = frozenset({"minions-local"})
 
 
 def _resolve_existing_path_anchor(path: Path) -> Path | None:
@@ -214,11 +212,8 @@ def environment_summary_lines(
         )
     lines.append(f"working_dir: {WORKING_DIR}")
     wd_qp = os.getenv("MINIONS_WORKING_DIR")
-    wd_legacy = os.getenv("COPAW_WORKING_DIR")
     if wd_qp:
         lines.append(f"MINIONS_WORKING_DIR (env): {wd_qp}")
-    elif wd_legacy:
-        lines.append(f"COPAW_WORKING_DIR (env, legacy): {wd_legacy}")
     lines.append(f"sqlite library: {sqlite3.sqlite_version}")
     try:
         ver_tuple = tuple(
@@ -763,10 +758,6 @@ def _read_workspace_agent_json(ref: AgentProfileRef) -> dict[str, Any] | None:
         return None
     if not isinstance(data, dict):
         return None
-    try:
-        data = _normalize_working_dir_bound_paths(data)
-    except Exception:  # pylint: disable=broad-exception-caught
-        pass
     return data
 
 

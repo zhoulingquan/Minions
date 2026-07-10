@@ -29,7 +29,7 @@ excerpt: "Minions Runtime was refactored from a 650-line god method into an 8-ph
 
 ### Core Pain Points
 
-Before the Runtime architecture upgrade, Minions's request handling was concentrated in a single `AgentRunner.query_handler()` method — a **god method exceeding 650 lines**. Every new feature (mission mode, coding mode, plan mode, cron isolation, skill injection, etc.) required **invasive modifications** to this core function, continuously adding if/else branches and cross-cutting state management.
+Before the Runtime architecture upgrade, Minions's request handling was concentrated in a single `AgentRunner.query_handler()` method — a **god method exceeding 650 lines**. Every new feature (mission mode, plan mode, cron isolation, skill injection, etc.) required **invasive modifications** to this core function, continuously adding if/else branches and cross-cutting state management.
 
 A concrete example: adding a `/mission` feature at the time required changes across **8 files**, 2 of which were invasive modifications to core files. Each new feature added ~40 lines to runner.py. This development pattern created severe maintenance burden and merge conflicts.
 
@@ -214,7 +214,7 @@ The upgraded architecture provides two hook base classes for different scenarios
 | Base Class          | Definition Location | Execution Timing                    | Purpose                                                                 |
 | ------------------- | ------------------- | ----------------------------------- | ----------------------------------------------------------------------- |
 | **`LifecycleHook`** | `hooks/base.py`     | Every request reaching that phase   | Infrastructure: session load/save, bootstrap, skill env, error handling |
-| **`ModeGatedHook`** | `modes/base.py`     | Only when the owning mode is active | Behavior modes: mission state, coding mode context, goal persistence    |
+| **`ModeGatedHook`** | `modes/base.py`     | Only when the owning mode is active | Behavior modes: mission state, goal persistence    |
 
 Both inherit from `HookBase` in `runtime/hooks.py`. `ModeGatedHook` automatically checks `self.owner_mode.is_active(ctx)` in `run()`, skipping execution if the condition is not met. This design eliminates a recurring bug in the old code: **every hook forgetting to add a mode activation check.**
 
@@ -345,7 +345,6 @@ The project includes 9 built-in contributors:
 | `SoulMdContributor`           | 20       | SOUL.md personality file                          |
 | `ProfileMdContributor`        | 30       | PROFILE.md configuration file                     |
 | `MultimodalHintContributor`   | 80       | Multimodal capability hints                       |
-| `CodingModeContributor`       | 85       | Coding Mode personality block                     |
 | `ScrollContextContributor`    | 86       | Scroll context strategy hints                     |
 | `DriverPolicyHintContributor` | 88       | Driver policy guidance                            |
 | `EnvContextContributor`       | 90       | Environment context (time / session / OS)         |

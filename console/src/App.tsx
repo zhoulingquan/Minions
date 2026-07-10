@@ -17,8 +17,6 @@ import MainLayout from "./layouts/MainLayout";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import { PluginProvider, usePlugins } from "./plugins/PluginContext";
 import { ApprovalProvider } from "./contexts/ApprovalContext";
-import { DesktopUpdateProvider } from "./contexts/DesktopUpdateContext";
-import { UpdateTakeoverGate } from "./components/UpdateTakeoverPage";
 import { Suspense } from "react";
 import { lazyImportWithRetry } from "./utils/lazyWithRetry";
 
@@ -26,8 +24,6 @@ const LoginPage = lazyImportWithRetry("./pages/Login/index");
 import { authApi } from "./api/modules/auth";
 import { useUploadLimitStore } from "./stores/uploadLimitStore";
 import { getApiUrl, getApiToken, clearAuthToken } from "./api/config";
-import CloseWindowPrompt from "./tauri/CloseWindowPrompt";
-import { isTauri } from "@tauri-apps/api/core";
 import "./styles/layout.css";
 import "./styles/form-override.css";
 
@@ -110,16 +106,6 @@ function AppInner() {
     useUploadLimitStore.getState().fetch();
   }, []);
 
-  // Disable the default browser context menu in the Tauri desktop build so
-  // users cannot open DevTools via right-click. DevTools is still available
-  // through the hidden 8-click logo gesture handled in Header.tsx.
-  useEffect(() => {
-    if (!isTauri()) return;
-    const preventContextMenu = (e: MouseEvent) => e.preventDefault();
-    window.addEventListener("contextmenu", preventContextMenu);
-    return () => window.removeEventListener("contextmenu", preventContextMenu);
-  }, []);
-
   // Wait for plugins to load before rendering routes that might be patched
   if (pluginsLoading) {
     return null;
@@ -144,31 +130,26 @@ function AppInner() {
         }}
       >
         <AntdApp>
-          <CloseWindowPrompt />
-          <DesktopUpdateProvider>
-            <UpdateTakeoverGate>
-              <ApprovalProvider>
-                <Routes>
-                  <Route
-                    path="/login"
-                    element={
-                      <Suspense fallback={null}>
-                        <LoginPage />
-                      </Suspense>
-                    }
-                  />
-                  <Route
-                    path="/*"
-                    element={
-                      <AuthGuard>
-                        <MainLayout />
-                      </AuthGuard>
-                    }
-                  />
-                </Routes>
-              </ApprovalProvider>
-            </UpdateTakeoverGate>
-          </DesktopUpdateProvider>
+          <ApprovalProvider>
+            <Routes>
+              <Route
+                path="/login"
+                element={
+                  <Suspense fallback={null}>
+                    <LoginPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/*"
+                element={
+                  <AuthGuard>
+                    <MainLayout />
+                  </AuthGuard>
+                }
+              />
+            </Routes>
+          </ApprovalProvider>
         </AntdApp>
       </ConfigProvider>
     </BrowserRouter>

@@ -123,8 +123,7 @@ function ModelsPage() {
     };
 
     // Minions Local is always "configured" (embedded)
-    const isEmbedded = (p: ProviderInfo) =>
-      p.id === "minions-local" || p.id === "copaw-local";
+    const isEmbedded = (p: ProviderInfo) => p.id === "minions-local";
 
     // Separate local vs cloud first
     const allCloud: ProviderInfo[] = [];

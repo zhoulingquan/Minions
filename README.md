@@ -48,7 +48,7 @@
 <br>
 
 - **自动化与定时任务**：设置定时任务 — 新闻摘要、报告生成、多频道广播 — 全部按你的时间表自动运行。
-- **代码与开发**：在项目中阅读、编辑、审查与测试代码；Coding 模式帮你快速定位和理解代码。
+- **代码与开发**：在项目中阅读、编辑、审查与测试代码。
 - **文档处理**：读取、写入与转换 PDF、Word、Excel、PowerPoint 文件。
 - **信息收集**：搜索网页、关注资讯订阅、总结视频内容，并从个人知识库中检索所需信息。
 - **多频道运营**：向钉钉、飞书、Discord、Telegram 等推送告警、摘要或 AI 生成内容 — 可同时或按频道分发。
@@ -331,7 +331,6 @@ docker run -p 127.0.0.1:8088:8088 \
 - [添加 Skills](https://minions.agentscope.io/docs/skills) 扩展能力（PDF、Office、浏览器、新闻等）
 - [配置频道](https://minions.agentscope.io/docs/channels) 连接钉钉、飞书、Discord 等
 - [配置 Cron](https://minions.agentscope.io/docs/cron) 实现定时任务与自动化
-- [体验 Coding 模式](https://minions.agentscope.io/docs/coding-mode) 进行 IDE 式代码协作
 - 查看完整 [快速开始指南](https://minions.agentscope.io/docs/quickstart) 了解所有选项与验证步骤
 
 ---
@@ -343,7 +342,7 @@ docker run -p 127.0.0.1:8088:8088 \
 ```bash
 minions                     # 与当前激活的智能体开启对话
 minions tui --resume <id>   # 恢复之前的某个会话
-minions .                   # 在当前代码仓库中启动（Coding 模式）
+minions .                   # 在当前代码仓库中启动
 ```
 
 支持流式回复、斜杠命令（`/help`、`/resume`、`/theme`，以及智能体自身的 `/model`、`/clear` 等）、把文件 / 长文本作为附件粘贴，以及行内工具授权提示。详见 [终端界面指南](https://minions.agentscope.io/docs/tui)。
@@ -405,7 +404,6 @@ Minions 内置四层核心安全防护：
 | [桌面应用](https://minions.agentscope.io/docs/desktop)               | 桌面应用安装与使用                               |
 | [模型](https://minions.agentscope.io/docs/models)                    | 配置云端、本地与自定义提供商                     |
 | [频道配置](https://minions.agentscope.io/docs/channels)              | 钉钉、飞书、QQ、Discord、iMessage 等             |
-| [Coding 模式](https://minions.agentscope.io/docs/coding-mode)        | 面向代码任务的三面板 Web IDE                     |
 | [Skills](https://minions.agentscope.io/docs/skills)                  | 扩展与自定义能力                                 |
 | [插件系统](https://minions.agentscope.io/docs/plugins)               | 插件体系与 Plugin Market                         |
 | [MCP 和工具](https://minions.agentscope.io/docs/mcp)                 | 管理 MCP 客户端                                  |

@@ -12,7 +12,6 @@ import sys
 
 import pytest
 
-from minions.agents.acp.meta import ACP_CODING_PROJECT_META_KEY
 from minions.cli.tui.events import (
     BackendWarmed,
     Connected,
@@ -33,16 +32,6 @@ FAKE = os.path.join(os.path.dirname(__file__), "_fake_acp_agent.py")
 
 def _transport() -> AcpTransport:
     return AcpTransport(command=[sys.executable, FAKE])
-
-
-def test_session_kwargs_include_project_dir():
-    transport = AcpTransport(
-        command=[sys.executable, FAKE],
-        project_dir="/tmp/project",
-    )
-    assert transport._session_kwargs() == {
-        ACP_CODING_PROJECT_META_KEY: "/tmp/project",
-    }
 
 
 async def _collect_turn(transport: AcpTransport, *, timeout: float = 10.0):

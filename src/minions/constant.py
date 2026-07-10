@@ -10,25 +10,15 @@ if _env_path.exists():
 
 
 def _get_env(key: str, default: str = "") -> str:
-    """Look up an env var with automatic COPAW_ legacy fallback.
-
-    Primary key is always used as-is.  When the primary key starts with
-    ``MINIONS_``, the corresponding ``COPAW_`` variant is transparently
-    checked as a fallback so that existing deployments keep working.
-    """
+    """Look up an env var, returning the default when unset."""
     if key in os.environ:
         return os.environ[key]
-    if key.startswith("MINIONS_"):
-        legacy_key = "COPAW_" + key[len("MINIONS_") :]
-        if legacy_key in os.environ:
-            return os.environ[legacy_key]
     return default
 
 
 class EnvVarLoader:
     """Utility to load and parse environment variables with type safety
-    and defaults.  Pass MINIONS_* keys; COPAW_* legacy variants are
-    checked automatically as a fallback inside _get_env.
+    and defaults.
     """
 
     @staticmethod
@@ -87,18 +77,13 @@ class EnvVarLoader:
 
 
 # WORKING_DIR priority:
-# 1. MINIONS_WORKING_DIR / COPAW_WORKING_DIR env var is set → use it
-# 2. ~/.copaw exists (legacy installation) → use it as-is
-# 3. Default → ~/.minions
+# 1. MINIONS_WORKING_DIR env var is set -> use it
+# 2. Default -> ~/.minions
 _explicit_working_dir = _get_env("MINIONS_WORKING_DIR")
 if _explicit_working_dir:
     WORKING_DIR = Path(_explicit_working_dir).expanduser().resolve()
 else:
-    _legacy_copaw_dir = Path("~/.copaw").expanduser()
-    if _legacy_copaw_dir.exists():
-        WORKING_DIR = _legacy_copaw_dir.resolve()
-    else:
-        WORKING_DIR = Path("~/.minions").expanduser().resolve()
+    WORKING_DIR = Path("~/.minions").expanduser().resolve()
 SECRET_DIR = (
     Path(
         EnvVarLoader.get_str(
@@ -133,11 +118,6 @@ AUTO_MEMORY_SEARCH_TEXT = (
 AUTO_MEMORY_SEARCH_THINKING_PREFIX = (
     "I should search long-term memory before answering."
 )
-
-# Subdirectory name inside each agent's workspace that holds cloned / imported
-# coding projects.
-# Full path = <workspace_dir> / CODING_PROJECT_SUBDIR / <name>
-CODING_PROJECT_SUBDIR = "coding_projects"
 
 
 def _resolve_docs_dir() -> Path | None:
@@ -192,11 +172,6 @@ BUILTIN_QA_AGENT_SKILL_NAMES: tuple[str, ...] = (
     "guidance",
     "QA_source_index",
 )
-
-# CoPaw-era builtin QA; may remain in config.json — disabled when the current
-# ``BUILTIN_QA_AGENT_ID`` profile is first created (see ``migration``), not
-# every startup, so users can re-enable this id if they want.
-LEGACY_QA_AGENT_ID = "CoPaw_QA_Agent_0.1beta1"
 
 TOKEN_USAGE_FILE = EnvVarLoader.get_str(
     "MINIONS_TOKEN_USAGE_FILE",

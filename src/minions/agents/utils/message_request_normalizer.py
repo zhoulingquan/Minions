@@ -200,7 +200,7 @@ def _collapse_consecutive_user_messages(msgs: list[Msg]) -> list[Msg]:
 
     Why this exists: virtually every LLM API (Anthropic, OpenAI, DashScope's
     anthropic-compat, ...) requires strict ``user``/``assistant``
-    alternation.  CoPaw's state can drift into broken shapes when a prior
+    alternation.  Minions' state can drift into broken shapes when a prior
     reply failed mid-stream (the user input was already appended to
     ``state.context`` but no assistant message followed); the next user
     message then sits next to the orphan, and the request 400s with

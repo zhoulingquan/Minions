@@ -108,8 +108,6 @@ docker run -p 127.0.0.1:8088:8088 \
 
 升级后重启服务 minions app。
 
-原 CoPaw 用户升级 Minions，下载最新的 Minions 即可，无需做额外适配即可继续使用 CoPaw 时期的所有配置、记忆、技能等。
-
 ### Minions服务如何启动及初始化
 
 推荐使用默认配置快速初始化：

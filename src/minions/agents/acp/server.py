@@ -77,7 +77,6 @@ from ...config.config import ModelSlotConfig
 from ...exceptions import AppBaseException
 from ...providers.provider_manager import ProviderManager
 from ...agents.command_handler import SYSTEM_COMMAND_DESCRIPTIONS
-from .meta import ACP_CODING_PROJECT_META_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -314,11 +313,6 @@ class MinionsACPAgent(Agent):
             "user_id": f"acp_{session_id[:8]}",
             "mode": MinionsACPAgent.MODE_DEFAULT,
         }
-        project_dir = meta.get(ACP_CODING_PROJECT_META_KEY)
-        if isinstance(project_dir, str):
-            project_dir = project_dir.strip()
-            if project_dir:
-                info[ACP_CODING_PROJECT_META_KEY] = project_dir
         return info
 
     async def _ensure_app_services(self) -> Any:
@@ -428,12 +422,10 @@ class MinionsACPAgent(Agent):
             )
 
         try:
-            from ...modes.coding import CodingMode
             from ...modes.mission import MissionMode
             from ...modes.goal import GoalMode
 
             kwargs["builtin_mode_clses"] = [
-                CodingMode,
                 MissionMode,
                 GoalMode,
             ]
@@ -608,11 +600,6 @@ class MinionsACPAgent(Agent):
         request_context: dict[str, str] = {}
         if session_mode == self.MODE_BYPASS:
             request_context["_headless_tool_guard"] = "false"
-        project_dir = session_info.get(ACP_CODING_PROJECT_META_KEY)
-        if isinstance(project_dir, str):
-            project_dir = project_dir.strip()
-            if project_dir:
-                request_context[ACP_CODING_PROJECT_META_KEY] = project_dir
 
         request = AgentRequest(
             input=[
@@ -715,13 +702,6 @@ class MinionsACPAgent(Agent):
             )
         else:
             self._sessions[session_id]["cwd"] = cwd
-            project_dir = kwargs.get(ACP_CODING_PROJECT_META_KEY)
-            if isinstance(project_dir, str):
-                project_dir = project_dir.strip()
-                if project_dir:
-                    self._sessions[session_id][
-                        ACP_CODING_PROJECT_META_KEY
-                    ] = project_dir
         return ResumeSessionResponse()
 
     async def set_session_model(  # pylint: disable=unused-argument

@@ -25,9 +25,7 @@ def home_dir() -> Path:
 
 def minions_working_dir() -> Path:
     """Return Minions's working directory using Minions's precedence."""
-    explicit = os.environ.get("MINIONS_WORKING_DIR") or os.environ.get(
-        "COPAW_WORKING_DIR",
-    )
+    explicit = os.environ.get("MINIONS_WORKING_DIR")
     if explicit:
         return Path(explicit).expanduser().resolve()
     try:
@@ -35,9 +33,6 @@ def minions_working_dir() -> Path:
 
         return Path(WORKING_DIR).expanduser().resolve()
     except Exception:
-        legacy_copaw = Path("~/.copaw").expanduser()
-        if legacy_copaw.exists():
-            return legacy_copaw.resolve()
         return Path("~/.minions").expanduser().resolve()
 
 

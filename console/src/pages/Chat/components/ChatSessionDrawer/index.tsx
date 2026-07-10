@@ -26,7 +26,6 @@ import {
 } from "../../../../components/ContextMenu";
 import type { ContextMenuItem } from "../../../../components/ContextMenu";
 import { useIsMobile } from "../../../../hooks/useIsMobile";
-import { useCodingMode } from "../../../../stores/codingModeStore";
 import { useCreateNewSession } from "../../hooks/useCreateNewSession";
 import SessionItem from "../../../../components/SessionItem";
 import { getChannelLabel } from "../../../Control/Channels/components";
@@ -230,7 +229,6 @@ const ChatSessionDrawer: React.FC<ChatSessionDrawerProps> = (props) => {
   const navigate = useNavigate();
   const location = useLocation();
   const sdkState = useChatAnywhereSessionsState();
-  const { codingMode } = useCodingMode();
 
   const createNewSession = useCreateNewSession();
 
@@ -414,12 +412,11 @@ const ChatSessionDrawer: React.FC<ChatSessionDrawerProps> = (props) => {
       // This avoids the preload / isSessionSwitching complexity that caused
       // the "flash to new chat" issue.
       setSwitchingSessionId(sessionId);
-      const mode = codingMode ? "coding" : "chat";
       const effectiveId = sessionApi.getEffectiveSessionId(sessionId);
-      const targetPath = buildSessionPath(mode, effectiveId);
+      const targetPath = buildSessionPath("chat", effectiveId);
       navigate(targetPath);
     },
-    [currentSessionId, navigate, codingMode],
+    [currentSessionId, navigate],
   );
 
   // Listen for embedded switch completion so we can clear switchingSessionId.

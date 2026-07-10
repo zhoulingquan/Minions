@@ -152,13 +152,11 @@ def _build_transport(
         description = f"{description} cwd={project_dir}"
 
     return (
-        # Project-bound TUI sessions start ACP in the project root and also
-        # send explicit metadata so Coding Mode can apply a request overlay.
+        # Project-bound TUI sessions start ACP in the project root.
         AcpTransport(
             agent=agent,
             cwd=project_dir,
             command=None,
-            project_dir=project_dir,
             resume_session_id=resume,
         ),
         description,

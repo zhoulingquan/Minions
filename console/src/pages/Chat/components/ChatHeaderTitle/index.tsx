@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Dropdown } from "antd";
 import { useChatAnywhereSessionsState } from "@agentscope-ai/chat";
-import { useCodingMode } from "../../../../stores/codingModeStore";
 import styles from "./index.module.less";
 
 const MOBILE_BREAKPOINT_PX = 480;
@@ -9,7 +8,6 @@ const MOBILE_BREAKPOINT_PX = 480;
 const ChatHeaderTitle: React.FC = () => {
   const { sessions, currentSessionId, setCurrentSessionId } =
     useChatAnywhereSessionsState();
-  const { codingMode } = useCodingMode();
   const currentSession = sessions.find((s) => s.id === currentSessionId);
   const chatName = currentSession?.name || "New Chat";
 
@@ -40,7 +38,7 @@ const ChatHeaderTitle: React.FC = () => {
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
-  }, [chatName, codingMode]);
+  }, [chatName]);
 
   const handleSessionClick = (sessionId: string) => {
     setCurrentSessionId(sessionId);
@@ -62,9 +60,7 @@ const ChatHeaderTitle: React.FC = () => {
     onClick: () => handleSessionClick(session.id),
   }));
 
-  const className = codingMode
-    ? `${styles.chatName} ${styles.chatNameCoding}`
-    : styles.chatName;
+  const className = styles.chatName;
 
   const titleContent = (
     <span className={className} ref={containerRef}>

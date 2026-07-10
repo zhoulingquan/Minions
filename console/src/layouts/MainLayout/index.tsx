@@ -6,7 +6,6 @@ import Sidebar from "../Sidebar";
 import Header from "../Header";
 import ConsolePollService from "../../components/ConsolePollService";
 import { ChunkErrorBoundary } from "../../components/ChunkErrorBoundary";
-import { useSyncCodingMode } from "../../stores/useSyncCodingMode";
 import styles from "../index.module.less";
 import { useRoutes } from "../../plugins/registry/hooks";
 import { Slot } from "../../plugins/registry/Slot";
@@ -35,10 +34,6 @@ export default function MainLayout() {
   const location = useLocation();
   const currentPath = location.pathname;
   const routes = useRoutes();
-
-  // Backend is the source of truth for Coding Mode state — refill the
-  // in-memory store every time the selected agent changes.
-  useSyncCodingMode();
 
   const selectedKey = useMemo(
     () => pickSelectedKey(currentPath, routes),

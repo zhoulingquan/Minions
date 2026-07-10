@@ -29,7 +29,6 @@ logger = logging.getLogger(__name__)
 
 _ENC_PREFIX = "ENC:"
 _KEYRING_SERVICE = "minions"
-_KEYRING_SERVICE_LEGACY = "copaw"
 _KEYRING_ACCOUNT = "master_key"
 
 
@@ -187,11 +186,7 @@ def _try_keyring_get() -> Optional[str]:
             )
             if value:
                 return value
-            # Backward compatibility: read legacy CoPaw keyring entry.
-            return keyring.get_password(
-                _KEYRING_SERVICE_LEGACY,
-                account,
-            )
+            return None
 
         result, timed_out = _call_with_timeout(_get, _KEYRING_TIMEOUT)
         if timed_out:

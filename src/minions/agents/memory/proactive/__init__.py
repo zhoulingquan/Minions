@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Proactive memory submodule for CoPaw agents."""
+"""Proactive memory submodule for Minions agents."""
 
 from .proactive_types import (
     ProactiveConfig,

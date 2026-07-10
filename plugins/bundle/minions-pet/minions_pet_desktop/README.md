@@ -46,10 +46,8 @@ Pet **packages** live in a separate location resolved by
 `runtime.minions_working_dir()`, with this precedence:
 
 1. `MINIONS_WORKING_DIR`
-2. `COPAW_WORKING_DIR`
-3. `from minions.constant import WORKING_DIR` (if Minions is installed)
-4. `~/.copaw` if it already exists
-5. `~/.minions`
+2. `from minions.constant import WORKING_DIR` (if Minions is installed)
+3. `~/.minions`
 
 Each installed pet ends up at `<WORKING_DIR>/pets/<pet-id>/`.
 

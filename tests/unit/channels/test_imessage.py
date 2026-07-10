@@ -45,7 +45,7 @@ def mock_enqueue() -> MagicMock:
 @pytest.fixture
 def temp_media_dir(tmp_path) -> str:
     """Temporary directory for media files."""
-    media_dir = tmp_path / ".copaw" / "media"
+    media_dir = tmp_path / ".minions" / "media"
     media_dir.mkdir(parents=True, exist_ok=True)
     return str(media_dir)
 

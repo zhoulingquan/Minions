@@ -64,8 +64,8 @@ def mqtt_channel(mock_process):
         transport="tcp",
         username="test_user",
         password="test_pass",
-        subscribe_topic="copaw/in/{client_id}",
-        publish_topic="copaw/out/{client_id}",
+        subscribe_topic="minions/in/{client_id}",
+        publish_topic="minions/out/{client_id}",
         bot_prefix="[BOT] ",
         clean_session=True,
         qos=2,
@@ -585,7 +585,7 @@ class TestMQTTChannelMessageHandling:
     ):
         """_on_message should use client_id from JSON payload if present."""
         mock_msg = MagicMock()
-        mock_msg.topic = "copaw/in/ignored-topic-client"
+        mock_msg.topic = "minions/in/ignored-topic-client"
         mock_msg.payload = json.dumps(
             {
                 "text": "Hello MQTT",
@@ -606,7 +606,7 @@ class TestMQTTChannelMessageHandling:
     def test_on_message_plaintext_payload(self, mqtt_channel):
         """_on_message should handle non-JSON payload."""
         mock_msg = MagicMock()
-        mock_msg.topic = "copaw/in/test-client"
+        mock_msg.topic = "minions/in/test-client"
         mock_msg.payload = b"Plain text message"
 
         mock_enqueue = Mock()
@@ -620,7 +620,7 @@ class TestMQTTChannelMessageHandling:
     def test_on_message_extracts_client_id_from_topic(self, mqtt_channel):
         """_on_message extracts client_id from topic path."""
         mock_msg = MagicMock()
-        mock_msg.topic = "copaw/in/my-device-001"
+        mock_msg.topic = "minions/in/my-device-001"
         mock_msg.payload = b"Hello"  # No redirect_client_id in payload
 
         mock_enqueue = Mock()
@@ -629,7 +629,7 @@ class TestMQTTChannelMessageHandling:
         mqtt_channel._on_message(None, None, mock_msg)
 
         call_args = mock_enqueue.call_args[0][0]
-        # Topic "copaw/in/my-device-001"
+        # Topic "minions/in/my-device-001"
         # parts[1] = "in"
         assert call_args["sender_id"] == "in"
 
@@ -649,7 +649,7 @@ class TestMQTTChannelMessageHandling:
     def test_on_message_no_enqueue_handles_gracefully(self, mqtt_channel):
         """_on_message should handle missing _enqueue gracefully."""
         mock_msg = MagicMock()
-        mock_msg.topic = "copaw/in/test-client"
+        mock_msg.topic = "minions/in/test-client"
         mock_msg.payload = b"Test message"
 
         mqtt_channel._enqueue = None
@@ -687,7 +687,7 @@ class TestMQTTChannelSend:
         await mqtt_channel.send("device-001", "Hello device", meta={})
 
         mock_mqtt_client.publish.assert_called_once_with(
-            "copaw/out/device-001",
+            "minions/out/device-001",
             "Hello device",
             qos=2,
         )
@@ -708,7 +708,7 @@ class TestMQTTChannelSend:
         )
 
         mock_mqtt_client.publish.assert_called_once_with(
-            "copaw/out/real-device",
+            "minions/out/real-device",
             "Hello",
             qos=mqtt_channel.qos,
         )
@@ -768,7 +768,7 @@ class TestMQTTChannelSend:
         await mqtt_channel.send_media("device-001", mock_part, meta={})
 
         mock_mqtt_client.publish.assert_called_once_with(
-            "copaw/out/device-001",
+            "minions/out/device-001",
             "[Image] http://img.jpg",
             qos=mqtt_channel.qos,
         )
@@ -788,7 +788,7 @@ class TestMQTTChannelSend:
         await mqtt_channel.send_media("device-001", mock_part, meta={})
 
         mock_mqtt_client.publish.assert_called_once_with(
-            "copaw/out/device-001",
+            "minions/out/device-001",
             "[Video] http://vid.mp4",
             qos=mqtt_channel.qos,
         )
@@ -808,7 +808,7 @@ class TestMQTTChannelSend:
         await mqtt_channel.send_media("device-001", mock_part, meta={})
 
         mock_mqtt_client.publish.assert_called_once_with(
-            "copaw/out/device-001",
+            "minions/out/device-001",
             "[File] http://doc.pdf",
             qos=mqtt_channel.qos,
         )
@@ -828,7 +828,7 @@ class TestMQTTChannelSend:
         await mqtt_channel.send_media("device-001", mock_part, meta={})
 
         mock_mqtt_client.publish.assert_called_once_with(
-            "copaw/out/device-001",
+            "minions/out/device-001",
             "[Audio]",
             qos=mqtt_channel.qos,
         )

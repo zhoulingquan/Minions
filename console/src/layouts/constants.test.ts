@@ -5,7 +5,6 @@
  * - URL constants
  * - ONE_HOUR_MS value
  * - getWebsiteLang()
- * - getDocsUrl(), getFaqUrl(), getReleaseNotesUrl()
  * - isStableVersion()
  * - compareVersions()
  * - UPDATE_MD structure
@@ -13,12 +12,8 @@
 import { describe, it, expect } from "vitest";
 import {
   PYPI_URL,
-  GITHUB_URL,
   ONE_HOUR_MS,
   getWebsiteLang,
-  getDocsUrl,
-  getFaqUrl,
-  getReleaseNotesUrl,
   isStableVersion,
   compareVersions,
   UPDATE_MD,
@@ -27,11 +22,6 @@ import {
 describe("URL constants", () => {
   it("PYPI_URL points to minions json endpoint", () => {
     expect(PYPI_URL).toBe("https://pypi.org/pypi/minions/json");
-  });
-
-  it("GITHUB_URL points to Minions repo", () => {
-    expect(GITHUB_URL).toContain("github.com");
-    expect(GITHUB_URL).toContain("Minions");
   });
 });
 
@@ -52,30 +42,6 @@ describe("getWebsiteLang", () => {
     ["ru", "en"],
   ])("returns %s for input %s", (input, expected) => {
     expect(getWebsiteLang(input)).toBe(expected);
-  });
-});
-
-describe("getDocsUrl", () => {
-  it("includes lang param", () => {
-    const url = getDocsUrl("zh");
-    expect(url).toContain("lang=zh");
-    expect(url).toContain("/docs/intro");
-  });
-});
-
-describe("getFaqUrl", () => {
-  it("includes lang param", () => {
-    const url = getFaqUrl("en");
-    expect(url).toContain("lang=en");
-    expect(url).toContain("/docs/faq");
-  });
-});
-
-describe("getReleaseNotesUrl", () => {
-  it("includes lang param", () => {
-    const url = getReleaseNotesUrl("zh");
-    expect(url).toContain("lang=zh");
-    expect(url).toContain("/release-notes");
   });
 });
 

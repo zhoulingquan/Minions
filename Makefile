@@ -1,4 +1,4 @@
-# CoPaw Test & Coverage Makefile
+# Minions Test & Coverage Makefile
 
 .PHONY: test test-unit test-contract test-integration test-channel test-channel-contract coverage-full clean
 

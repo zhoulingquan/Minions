@@ -179,12 +179,7 @@ class ProviderManager:  # pylint: disable=too-many-public-methods
 
     @staticmethod
     def _normalize_provider_id(provider_id: str) -> str:
-        """Normalize provider ID for backward compatibility.
-
-        Maps legacy 'copaw-local' to 'minions-local'.
-        """
-        if provider_id == "copaw-local":
-            return "minions-local"
+        """Normalize provider ID (passthrough)."""
         return provider_id
 
     def get_provider(self, provider_id: str) -> Provider | None:
@@ -787,58 +782,6 @@ class ProviderManager:  # pylint: disable=too-many-public-methods
         except Exception:
             return None
 
-    def _migrate_copaw_config(self) -> None:
-        """Migrate copaw-local provider config to minions-local."""
-        # 1. Migrate active model configuration (only provider_id)
-        if (
-            self.active_model
-            and self.active_model.provider_id == "copaw-local"
-        ):
-            self.active_model.provider_id = "minions-local"
-            self.save_active_model(self.active_model)
-            logger.info(
-                "Migrated active model provider from "
-                "'copaw-local' to 'minions-local'",
-            )
-
-        # 2. Migrate stored provider config file
-        copaw_config_path = self.builtin_path / "copaw-local.json"
-        if not copaw_config_path.exists():
-            return
-
-        try:
-            # Load old config and apply to new provider instance
-            with open(copaw_config_path, "r", encoding="utf-8") as f:
-                old_config = json.load(f)
-
-            # Get the new built-in provider instance
-            provider = self.builtin_providers.get("minions-local")
-            if not provider:
-                return
-
-            # Apply migrated configuration (preserve extra_models as-is)
-            if "extra_models" in old_config:
-                provider.extra_models = [
-                    ModelInfo.model_validate(model)
-                    for model in old_config["extra_models"]
-                ]
-            if "base_url" in old_config:
-                provider.base_url = old_config["base_url"]
-            if "generate_kwargs" in old_config:
-                provider.generate_kwargs = old_config["generate_kwargs"]
-
-            # Save using standard persistence logic (with encryption)
-            self._save_provider(provider, is_builtin=True)
-
-            # Remove old config file
-            copaw_config_path.unlink()
-            logger.info(
-                "Migrated provider config from "
-                "'copaw-local.json' to 'minions-local.json'",
-            )
-        except Exception as exc:
-            logger.warning("Failed to migrate copaw-local config: %s", exc)
-
     # pylint: disable=too-many-branches
     def _migrate_legacy_providers(self):
         """Migrate from legacy providers.json format to the new structure."""
@@ -890,9 +833,6 @@ class ProviderManager:  # pylint: disable=too-many-public-methods
             # Migrate active model (only provider_id, not model)
             if active_model:
                 try:
-                    # Convert legacy copaw-local provider_id
-                    if active_model.get("provider_id") == "copaw-local":
-                        active_model["provider_id"] = "minions-local"
                     self.active_model = ModelSlotConfig.model_validate(
                         active_model,
                     )
@@ -996,9 +936,6 @@ class ProviderManager:  # pylint: disable=too-many-public-methods
         active_model = self.load_active_model()
         if active_model:
             self.active_model = active_model
-
-        # Migrate copaw-local to minions-local for backwards compatibility
-        self._migrate_copaw_config()
 
     def _apply_default_annotations(self):
         """Apply doc-based default annotations for unprobed models.

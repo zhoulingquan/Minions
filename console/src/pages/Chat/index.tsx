@@ -25,7 +25,6 @@ import type { ProviderInfo, ModelInfo, SkillSpec } from "../../api/types";
 import ModelSelector from "./ModelSelector";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAgentStore } from "../../stores/agentStore";
-import { useCodingMode } from "../../stores/codingModeStore";
 import { useLoopStore, fetchAvailableLoopSkills } from "../../stores/loopStore";
 import { LoopCommandChip } from "../../components/LoopInput";
 import { useChatAnywhereInput } from "@agentscope-ai/chat";
@@ -99,10 +98,8 @@ import {
   getSessionIdFromPath,
   buildBasePath,
   buildSessionPath,
-  type SessionRouteMode,
 } from "../../utils/sessionRoute";
 import { openExternalLink } from "../../utils/openExternalLink";
-import { getLastEditorCopy } from "../Coding/lastEditorCopy";
 import { useUploadLimitStore } from "../../stores/uploadLimitStore";
 import MessageQueuePanel from "./components/MessageQueuePanel";
 import ApprovalLevelToggle, {
@@ -977,57 +974,6 @@ function useChatInputDraft(isChatActive: () => boolean, agentId?: string) {
   }, [isChatActive, storageKey]);
 }
 
-/**
- * When the user pastes into the chat textarea text that was just copied
- * from the Coding-mode editor, swap the raw paste for the formatted
- * `path:line[-line]` version (plus optional fenced code). Cmd/Ctrl+C in
- * the editor stays as a plain-text copy for paste-anywhere; only Chat
- * pastes get the editor-context format.
- *
- * Not gated by route: the Chat composer is also embedded in Coding
- * mode (side-by-side with the editor), and that's the primary place
- * users do an editor→chat copy. The handler is already selective (it
- * checks the paste target is a sender textarea AND the pasted text
- * matches the last editor copy), so a global listener is safe.
- */
-function useChatPasteFromEditor() {
-  useEffect(() => {
-    // Anything older than this is treated as stale (different copy session).
-    const STALE_MS = 60_000;
-
-    const handlePaste = (e: ClipboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (!target || target.tagName !== "TEXTAREA") return;
-      if (!target.closest('[class*="sender"]')) return;
-
-      const last = getLastEditorCopy();
-      if (!last) return;
-      if (Date.now() - last.ts > STALE_MS) return;
-
-      const pasted = e.clipboardData?.getData("text/plain");
-      if (pasted == null || pasted !== last.text) return;
-
-      e.preventDefault();
-      const textarea = target as HTMLTextAreaElement;
-      const start = textarea.selectionStart ?? textarea.value.length;
-      const end = textarea.selectionEnd ?? textarea.value.length;
-      const before = textarea.value.slice(0, start);
-      const after = textarea.value.slice(end);
-      const next = before + last.formatted + after;
-      setTextareaValue(textarea, next);
-      const caret = before.length + last.formatted.length;
-      requestAnimationFrame(() => {
-        textarea.selectionStart = textarea.selectionEnd = caret;
-      });
-    };
-
-    document.addEventListener("paste", handlePaste, true);
-    return () => {
-      document.removeEventListener("paste", handlePaste, true);
-    };
-  }, []);
-}
-
 function RuntimeLoadingBridge({
   bridgeRef,
   onLoadingChange,
@@ -1082,9 +1028,6 @@ export default function ChatPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isDark } = useTheme();
-  const { codingMode, initialized } = useCodingMode();
-  const codingModeRef = useRef(codingMode);
-  codingModeRef.current = codingMode;
   const loopSelectedSkill = useLoopStore((s) => s.selectedSkill);
 
   // Wide mode toggle: expand chat content to full available width
@@ -1110,18 +1053,6 @@ export default function ChatPage() {
       return next;
     });
   }, []);
-
-  // Redirect to /coding when coding mode is active, preserving sessionId.
-  useEffect(() => {
-    if (initialized && codingMode && !location.pathname.startsWith("/coding")) {
-      // Issue #5142: Carry over the current chatId so the session survives
-      // the redirect from /chat/<id> to /coding/<id>.
-      const currentChatId = getSessionIdFromPath(location.pathname);
-      navigate(buildSessionPath("coding", currentChatId), {
-        replace: true,
-      });
-    }
-  }, [initialized, codingMode, navigate, location.pathname]);
 
   const chatId = useMemo(
     () => getSessionIdFromPath(location.pathname),
@@ -1404,12 +1335,9 @@ export default function ChatPage() {
   }, [selectedAgent]);
 
   const isChatActiveRef = useRef(false);
-  // Issue #5142: In Coding mode the Chat component is embedded under /coding/*,
-  // so session callbacks must also fire on /coding paths.
   isChatActiveRef.current =
     location.pathname === "/" ||
-    location.pathname.startsWith("/chat") ||
-    location.pathname.startsWith("/coding");
+    location.pathname.startsWith("/chat");
 
   const isChatActive = useCallback(() => isChatActiveRef.current, []);
 
@@ -1651,7 +1579,6 @@ export default function ChatPage() {
 
   useMessageHistoryNavigation(chatRef, isChatActive, isComposingRef);
   useChatInputDraft(isChatActive, selectedAgent);
-  useChatPasteFromEditor();
 
   // ── Loop chip intercept: detect __loop__ prefix from suggestion selection ──
   useEffect(() => {
@@ -2036,13 +1963,10 @@ export default function ChatPage() {
   // Register session API event callbacks for URL synchronization
 
   useEffect(() => {
-    const getCurrentRouteMode = (): SessionRouteMode =>
-      codingModeRef.current ? "coding" : "chat";
-
     const buildCurrentSessionPath = (sessionId: string) =>
-      buildSessionPath(getCurrentRouteMode(), sessionId);
+      buildSessionPath("chat", sessionId);
 
-    const buildCurrentBasePath = () => buildBasePath(getCurrentRouteMode());
+    const buildCurrentBasePath = () => buildBasePath("chat");
 
     sessionApi.onSessionIdResolved = (_tempId, realId) => {
       if (!isChatActiveRef.current) return;

@@ -40,9 +40,9 @@ class TestDingTalkChannelContract(ChannelContractTest):
     """
 
     @pytest.fixture(autouse=True)
-    def _setup_dingtalk_env(self, temp_copaw_home):
+    def _setup_dingtalk_env(self, temp_minions_home):
         """Setup isolated environment for DingTalk tests."""
-        self._media_dir = temp_copaw_home / ".copaw" / "media"
+        self._media_dir = temp_minions_home / ".minions" / "media"
         self._media_dir.mkdir(parents=True, exist_ok=True)
 
     def create_instance(self) -> "BaseChannel":

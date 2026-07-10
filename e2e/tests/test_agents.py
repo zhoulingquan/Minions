@@ -761,7 +761,7 @@ class TestAgentProtection:
         for agent in agents:
             agent_id = agent.get("id", "").lower()
             agent_name = agent.get("name", "").lower()
-            if agent_id == "default" or "default" in agent_id or agent_name in ("默认智能体", "copaw"):
+            if agent_id == "default" or "default" in agent_id or agent_name in ("默认智能体",):
                 default_agent = agent["element"]
                 logger.info(f"Found default agent: name={agent.get('name')}, id={agent.get('id')}")
                 break

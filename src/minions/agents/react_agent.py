@@ -27,7 +27,6 @@ from agentscope.state import AgentState
 from agentscope.tool import Toolkit
 
 from .skill_system import get_workspace_skills_dir
-from ..modes.coding import CodingModeMixin
 from ..constant import (
     LOOP_CONTINUATION_MESSAGE_TAG,
     MEDIA_UNSUPPORTED_PLACEHOLDER,
@@ -44,7 +43,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class MinionsAgent(CodingModeMixin, Agent):
+class MinionsAgent(Agent):
     """Minions Agent with integrated tools, skills, and memory management.
 
     This agent extends agentscope 2.0 ``Agent`` with:
@@ -53,7 +52,6 @@ class MinionsAgent(CodingModeMixin, Agent):
     - Memory management with auto-compaction
     - Bootstrap guidance for first-time setup
     - Tool-guard security (via ``PolicyGuardedTool.check_permissions``)
-    - Coding Mode features: Inline Diff (via CodingModeMixin)
     """
 
     def __init__(
@@ -619,19 +617,10 @@ class MinionsAgent(CodingModeMixin, Agent):
         mgr.hooks.register("check_agent_task", default_timeout_secs=30.0)
         mgr.hooks.register("grep_search", default_timeout_secs=30.0)
         mgr.hooks.register("glob_search", default_timeout_secs=15.0)
-        mgr.hooks.register("ast_search", default_timeout_secs=35.0)
         mgr.hooks.register(
             "desktop_screenshot",
             default_timeout_secs=30.0,
         )
-        for name in (
-            "lsp_definition",
-            "lsp_references",
-            "lsp_rename",
-            "lsp_hover",
-            "lsp_diagnostics",
-        ):
-            mgr.hooks.register(name, default_timeout_secs=20.0)
         mgr.hooks.register(
             "browser_use",
             max_internal_timeout_secs=3600.0,

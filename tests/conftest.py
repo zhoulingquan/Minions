@@ -2,9 +2,9 @@
 # pylint: disable=redefined-outer-name
 # pylint: disable=reimported,unused-argument,unnecessary-pass
 """
-Global pytest fixtures for CoPaw test suite.
+Global pytest fixtures for Minions test suite.
 
-This module provides shared fixtures for testing CoPaw components.
+This module provides shared fixtures for testing Minions components.
 All fixtures are designed to be isolated, safe, and easy to use.
 """
 
@@ -64,7 +64,7 @@ def temp_workspace() -> Generator[Path, None, None]:
             file_path.write_text("content")
             assert file_path.read_text() == "content"
     """
-    temp_dir = tempfile.mkdtemp(prefix="copaw_test_")
+    temp_dir = tempfile.mkdtemp(prefix="minions_test_")
     try:
         yield Path(temp_dir)
     finally:
@@ -72,39 +72,38 @@ def temp_workspace() -> Generator[Path, None, None]:
 
 
 @pytest.fixture
-def temp_copaw_home(
+def temp_minions_home(
     monkeypatch: pytest.MonkeyPatch,
 ) -> Generator[Path, None, None]:
-    """Provide an isolated CoPaw HOME environment.
+    """Provide an isolated Minions HOME environment.
 
-    Creates a temporary directory and sets it as both HOME and COPAW_HOME
+    Creates a temporary directory and sets it as both HOME and MINIONS_HOME
     environment variables. Also clears any sensitive environment variables
     that could interfere with tests.
 
     Yields:
-        Path to the temporary CoPaw home directory.
+        Path to the temporary Minions home directory.
 
     Example:
-        def test_config_loading(temp_copaw_home):
+        def test_config_loading(temp_minions_home):
             # This test runs in an isolated environment
-            config_path = temp_copaw_home / ".copaw" / "config.yaml"
+            config_path = temp_minions_home / ".minions" / "config.yaml"
             # ... test config operations
     """
-    temp_dir = tempfile.mkdtemp(prefix="copaw_home_")
+    temp_dir = tempfile.mkdtemp(prefix="minions_home_")
     temp_path = Path(temp_dir)
 
     # Create standard subdirectories
-    (temp_path / ".copaw").mkdir(exist_ok=True)
-    (temp_path / ".copaw" / "skills").mkdir(exist_ok=True)
-    (temp_path / ".copaw" / "logs").mkdir(exist_ok=True)
+    (temp_path / ".minions").mkdir(exist_ok=True)
+    (temp_path / ".minions" / "skills").mkdir(exist_ok=True)
+    (temp_path / ".minions" / "logs").mkdir(exist_ok=True)
 
     # Store original values (for potential future use)
     _ = os.environ.get("HOME")  # noqa: F841
-    _ = os.environ.get("COPAW_HOME")  # noqa: F841
 
     # Set isolated environment
     monkeypatch.setenv("HOME", temp_dir)
-    monkeypatch.setenv("COPAW_HOME", str(temp_path / ".copaw"))
+    monkeypatch.setenv("MINIONS_HOME", str(temp_path / ".minions"))
 
     # Clear sensitive tokens to prevent accidental API calls
     sensitive_vars = [
@@ -256,7 +255,7 @@ def mock_channel() -> MagicMock:
 
 @pytest.fixture
 def minimal_config() -> dict[str, Any]:
-    """Provide a minimal valid CoPaw configuration.
+    """Provide a minimal valid Minions configuration.
 
     Returns a dictionary with the minimum required configuration
     for starting the application in test mode.
@@ -304,15 +303,15 @@ def clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
     Example:
         def test_env_loading(clean_env, monkeypatch):
-            monkeypatch.setenv("COPAW_CONFIG", "/tmp/config.yaml")
+            monkeypatch.setenv("MINIONS_CONFIG_FILE", "/tmp/config.yaml")
             # Test config loading from env
     """
-    # Clear CoPaw-specific environment variables
+    # Clear Minions-specific environment variables
     vars_to_clear = [
-        "COPAW_HOME",
-        "COPAW_CONFIG",
-        "COPAW_LOG_LEVEL",
-        "COPAW_DEBUG",
+        "MINIONS_HOME",
+        "MINIONS_CONFIG_FILE",
+        "MINIONS_LOG_LEVEL",
+        "MINIONS_DEBUG",
     ]
     for var in vars_to_clear:
         monkeypatch.delenv(var, raising=False)
