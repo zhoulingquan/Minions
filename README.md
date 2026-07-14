@@ -49,121 +49,121 @@
 ## 架构分层
 
 <div align="center" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;">
-<table border="0" cellspacing="0" cellpadding="0" width="640" align="center" style="margin:0 auto;">
+<table border="0" cellspacing="0" cellpadding="0" align="center" style="margin:0 auto; width:520px; max-width:100%;">
 
 <!-- L1 -->
 <tr><td style="border:1px solid #333; padding:0;">
-<table border="0" cellspacing="0" cellpadding="0" width="100%">
-<tr><td style="background:#333; color:#fff; padding:4px 10px; font-size:12px; font-weight:600; letter-spacing:0.5px;">L1 &nbsp;CHANNELS &nbsp;·&nbsp; 渠道 / 接入层</td></tr>
-<tr><td style="padding:6px;">
-<table border="0" cellspacing="0" cellpadding="0" width="100%">
+<table border="0" cellspacing="0" cellpadding="0" align="center" style="margin:0 auto; width:100%;">
+<tr><td style="background:#333; color:#fff; padding:3px 8px; font-size:11px; font-weight:600; letter-spacing:0.5px;" align="center">L1 &nbsp;CHANNELS &nbsp;·&nbsp; 渠道 / 接入层</td></tr>
+<tr><td style="padding:4px;">
+<table border="0" cellspacing="0" cellpadding="0" align="center" style="margin:0 auto; width:100%;">
 <tr>
-<td style="border:1px solid #333; padding:3px 4px; font-size:11px; color:#333;" align="center">Web 控制台</td>
-<td style="border:1px solid #333; padding:3px 4px; font-size:11px; color:#333;" align="center">TUI 终端</td>
-<td style="border:1px solid #333; padding:3px 4px; font-size:11px; color:#333;" align="center">钉钉</td>
-<td style="border:1px solid #333; padding:3px 4px; font-size:11px; color:#333;" align="center">飞书</td>
-<td style="border:1px solid #333; padding:3px 4px; font-size:11px; color:#333;" align="center">QQ</td>
+<td style="border:1px solid #333; padding:2px 3px; font-size:10px; color:#333;" align="center">Web 控制台</td>
+<td style="border:1px solid #333; padding:2px 3px; font-size:10px; color:#333;" align="center">TUI 终端</td>
+<td style="border:1px solid #333; padding:2px 3px; font-size:10px; color:#333;" align="center">钉钉</td>
+<td style="border:1px solid #333; padding:2px 3px; font-size:10px; color:#333;" align="center">飞书</td>
+<td style="border:1px solid #333; padding:2px 3px; font-size:10px; color:#333;" align="center">QQ</td>
 </tr>
 <tr>
-<td style="border:1px solid #333; padding:3px 4px; font-size:11px; color:#333;" align="center">企业微信</td>
-<td style="border:1px solid #333; padding:3px 4px; font-size:11px; color:#333;" align="center">微信</td>
-<td style="border:1px solid #333; padding:3px 4px; font-size:11px; color:#333;" align="center">腾讯元宝</td>
-<td style="border:1px solid #333; padding:3px 4px; font-size:11px; color:#333;" align="center">REST API / SSE</td>
-<td style="border:1px solid #333; padding:3px 4px; font-size:11px; color:#333;" align="center">ACP</td>
+<td style="border:1px solid #333; padding:2px 3px; font-size:10px; color:#333;" align="center">企业微信</td>
+<td style="border:1px solid #333; padding:2px 3px; font-size:10px; color:#333;" align="center">微信</td>
+<td style="border:1px solid #333; padding:2px 3px; font-size:10px; color:#333;" align="center">腾讯元宝</td>
+<td style="border:1px solid #333; padding:2px 3px; font-size:10px; color:#333;" align="center">REST API</td>
+<td style="border:1px solid #333; padding:2px 3px; font-size:10px; color:#333;" align="center">ACP</td>
 </tr>
 </table>
 </td></tr>
 </table>
 </td></tr>
-<tr><td align="center" style="font-size:14px; color:#333; line-height:1; padding:2px 0;">|<br>v</td></tr>
+<tr><td align="center" style="font-size:12px; color:#333; line-height:1; padding:1px 0;">|<br>v</td></tr>
 
 <!-- L2 -->
 <tr><td style="border:1px solid #333; padding:0;">
-<table border="0" cellspacing="0" cellpadding="0" width="100%">
-<tr><td style="background:#333; color:#fff; padding:4px 10px; font-size:12px; font-weight:600; letter-spacing:0.5px;">L2 &nbsp;RUNTIME &nbsp;·&nbsp; 会话管理层</td></tr>
-<tr><td style="padding:6px;">
-<table border="0" cellspacing="0" cellpadding="0" width="100%">
+<table border="0" cellspacing="0" cellpadding="0" align="center" style="margin:0 auto; width:100%;">
+<tr><td style="background:#333; color:#fff; padding:3px 8px; font-size:11px; font-weight:600; letter-spacing:0.5px;" align="center">L2 &nbsp;RUNTIME &nbsp;·&nbsp; 会话管理层</td></tr>
+<tr><td style="padding:4px;">
+<table border="0" cellspacing="0" cellpadding="0" align="center" style="margin:0 auto; width:100%;">
 <tr>
-<td style="border:1px solid #333; padding:5px;" width="50%">
-<span style="font-size:11px; font-weight:600; color:#333;">Scroll 上下文管理</span><br>
-<span style="font-size:10px; color:#666;">Working Context &middot; Memory Scroll &middot; History (SQLite+FTS5)</span>
+<td style="border:1px solid #333; padding:3px;" width="50%" align="center">
+<span style="font-size:10px; font-weight:600; color:#333;">Scroll 上下文管理</span><br>
+<span style="font-size:9px; color:#666;">Working &middot; Memory &middot; History</span>
 </td>
-<td style="border:1px solid #333; padding:5px;" width="50%">
-<span style="font-size:11px; font-weight:600; color:#333;">ReAct 循环引擎</span><br>
-<span style="font-size:10px; color:#666;">模型→工具→回写 &middot; 8 Phase Hook 拓扑排序</span>
+<td style="border:1px solid #333; padding:3px;" width="50%" align="center">
+<span style="font-size:10px; font-weight:600; color:#333;">ReAct 循环引擎</span><br>
+<span style="font-size:9px; color:#666;">8 Phase Hook 拓扑排序</span>
 </td>
 </tr>
 </table>
 </td></tr>
 </table>
 </td></tr>
-<tr><td align="center" style="font-size:14px; color:#333; line-height:1; padding:2px 0;">|<br>v</td></tr>
+<tr><td align="center" style="font-size:12px; color:#333; line-height:1; padding:1px 0;">|<br>v</td></tr>
 
 <!-- L3 -->
 <tr><td style="border:1px solid #333; padding:0;">
-<table border="0" cellspacing="0" cellpadding="0" width="100%">
-<tr><td style="background:#333; color:#fff; padding:4px 10px; font-size:12px; font-weight:600; letter-spacing:0.5px;">L3 &nbsp;AGENT ENGINE &nbsp;·&nbsp; Agent 引擎层</td></tr>
-<tr><td style="padding:6px;">
-<table border="0" cellspacing="0" cellpadding="0" width="100%">
+<table border="0" cellspacing="0" cellpadding="0" align="center" style="margin:0 auto; width:100%;">
+<tr><td style="background:#333; color:#fff; padding:3px 8px; font-size:11px; font-weight:600; letter-spacing:0.5px;" align="center">L3 &nbsp;AGENT ENGINE &nbsp;·&nbsp; Agent 引擎层</td></tr>
+<tr><td style="padding:4px;">
+<table border="0" cellspacing="0" cellpadding="0" align="center" style="margin:0 auto; width:100%;">
 <tr>
-<td style="border:1px solid #333; padding:5px;" width="33%">
-<span style="font-size:11px; font-weight:600; color:#333;">Agent 管理器</span><br>
-<span style="font-size:10px; color:#666;">多智能体 &middot; 子 Agent 委派 &middot; ACP</span>
+<td style="border:1px solid #333; padding:3px;" width="33%" align="center">
+<span style="font-size:10px; font-weight:600; color:#333;">Agent 管理器</span><br>
+<span style="font-size:9px; color:#666;">委派 &middot; ACP</span>
 </td>
-<td style="border:1px solid #333; padding:5px;" width="34%">
-<span style="font-size:11px; font-weight:600; color:#333;">StopGate / Mode</span><br>
-<span style="font-size:10px; color:#666;">Iteration &middot; DoomLoop &middot; Budget &middot; Rubric</span>
+<td style="border:1px solid #333; padding:3px;" width="34%" align="center">
+<span style="font-size:10px; font-weight:600; color:#333;">StopGate / Mode</span><br>
+<span style="font-size:9px; color:#666;">DoomLoop &middot; Rubric</span>
 </td>
-<td style="border:1px solid #333; padding:5px;" width="33%">
-<span style="font-size:11px; font-weight:600; color:#333;">执行引擎</span><br>
-<span style="font-size:10px; color:#666;">Shell &middot; MCP Driver &middot; Plugin Driver</span>
+<td style="border:1px solid #333; padding:3px;" width="33%" align="center">
+<span style="font-size:10px; font-weight:600; color:#333;">执行引擎</span><br>
+<span style="font-size:9px; color:#666;">Shell &middot; MCP &middot; Plugin</span>
 </td>
 </tr>
 </table>
 </td></tr>
 </table>
 </td></tr>
-<tr><td align="center" style="font-size:14px; color:#333; line-height:1; padding:2px 0;">|<br>v</td></tr>
+<tr><td align="center" style="font-size:12px; color:#333; line-height:1; padding:1px 0;">|<br>v</td></tr>
 
 <!-- L4 -->
 <tr><td style="border:1px solid #333; padding:0;">
-<table border="0" cellspacing="0" cellpadding="0" width="100%">
-<tr><td style="background:#333; color:#fff; padding:4px 10px; font-size:12px; font-weight:600; letter-spacing:0.5px;">L4 &nbsp;SECURITY &nbsp;·&nbsp; 安全层（默认开启）</td></tr>
-<tr><td style="padding:6px;">
-<table border="0" cellspacing="0" cellpadding="0" width="100%">
+<table border="0" cellspacing="0" cellpadding="0" align="center" style="margin:0 auto; width:100%;">
+<tr><td style="background:#333; color:#fff; padding:3px 8px; font-size:11px; font-weight:600; letter-spacing:0.5px;" align="center">L4 &nbsp;SECURITY &nbsp;·&nbsp; 安全层（默认开启）</td></tr>
+<tr><td style="padding:4px;">
+<table border="0" cellspacing="0" cellpadding="0" align="center" style="margin:0 auto; width:100%;">
 <tr>
-<td style="border:1px solid #333; padding:4px;" width="33%"><span style="font-size:11px; font-weight:600; color:#333;">Sandbox</span><br><span style="font-size:10px; color:#666;">Seatbelt / bwrap / Landlock</span></td>
-<td style="border:1px solid #333; padding:4px;" width="33%"><span style="font-size:11px; font-weight:600; color:#333;">Tool Guard</span><br><span style="font-size:10px; color:#666;">三层 Guardian 协调</span></td>
-<td style="border:1px solid #333; padding:4px;" width="34%"><span style="font-size:11px; font-weight:600; color:#333;">File Guard</span><br><span style="font-size:10px; color:#666;">敏感文件路径保护</span></td>
+<td style="border:1px solid #333; padding:2px;" width="33%" align="center"><span style="font-size:10px; font-weight:600; color:#333;">Sandbox</span><br><span style="font-size:9px; color:#666;">Seatbelt/bwrap</span></td>
+<td style="border:1px solid #333; padding:2px;" width="33%" align="center"><span style="font-size:10px; font-weight:600; color:#333;">Tool Guard</span><br><span style="font-size:9px; color:#666;">三层 Guardian</span></td>
+<td style="border:1px solid #333; padding:2px;" width="34%" align="center"><span style="font-size:10px; font-weight:600; color:#333;">File Guard</span><br><span style="font-size:9px; color:#666;">敏感路径保护</span></td>
 </tr>
 <tr>
-<td style="border:1px solid #333; padding:4px;"><span style="font-size:11px; font-weight:600; color:#333;">Skill Scanner</span><br><span style="font-size:10px; color:#666;">8 类威胁签名检测</span></td>
-<td style="border:1px solid #333; padding:4px;"><span style="font-size:11px; font-weight:600; color:#333;">Tenancy</span><br><span style="font-size:10px; color:#666;">多租户 / RLS 隔离</span></td>
-<td style="border:1px solid #333; padding:4px;"><span style="font-size:11px; font-weight:600; color:#333;">Governance</span><br><span style="font-size:10px; color:#666;">审计日志 / 审批工作流</span></td>
+<td style="border:1px solid #333; padding:2px;" align="center"><span style="font-size:10px; font-weight:600; color:#333;">Skill Scanner</span><br><span style="font-size:9px; color:#666;">8 类威胁检测</span></td>
+<td style="border:1px solid #333; padding:2px;" align="center"><span style="font-size:10px; font-weight:600; color:#333;">Tenancy</span><br><span style="font-size:9px; color:#666;">多租户/RLS</span></td>
+<td style="border:1px solid #333; padding:2px;" align="center"><span style="font-size:10px; font-weight:600; color:#333;">Governance</span><br><span style="font-size:9px; color:#666;">审计/审批</span></td>
 </tr>
 </table>
 </td></tr>
 </table>
 </td></tr>
-<tr><td align="center" style="font-size:14px; color:#333; line-height:1; padding:2px 0;">|<br>v</td></tr>
+<tr><td align="center" style="font-size:12px; color:#333; line-height:1; padding:1px 0;">|<br>v</td></tr>
 
 <!-- L5 -->
 <tr><td style="border:1px solid #333; padding:0;">
-<table border="0" cellspacing="0" cellpadding="0" width="100%">
-<tr><td style="background:#333; color:#fff; padding:4px 10px; font-size:12px; font-weight:600; letter-spacing:0.5px;">L5 &nbsp;EXTENSIONS &nbsp;·&nbsp; 扩展层</td></tr>
-<tr><td style="padding:6px;">
-<table border="0" cellspacing="0" cellpadding="0" width="100%">
+<table border="0" cellspacing="0" cellpadding="0" align="center" style="margin:0 auto; width:100%;">
+<tr><td style="background:#333; color:#fff; padding:3px 8px; font-size:11px; font-weight:600; letter-spacing:0.5px;" align="center">L5 &nbsp;EXTENSIONS &nbsp;·&nbsp; 扩展层</td></tr>
+<tr><td style="padding:4px;">
+<table border="0" cellspacing="0" cellpadding="0" align="center" style="margin:0 auto; width:100%;">
 <tr>
-<td style="border:1px solid #333; padding:4px;" width="20%" align="center"><span style="font-size:11px; font-weight:600; color:#333;">Skills</span><br><span style="font-size:10px; color:#666;">脚本 / 可安装</span></td>
-<td style="border:1px solid #333; padding:4px;" width="20%" align="center"><span style="font-size:11px; font-weight:600; color:#333;">插件</span><br><span style="font-size:10px; color:#666;">Python 集成</span></td>
-<td style="border:1px solid #333; padding:4px;" width="20%" align="center"><span style="font-size:11px; font-weight:600; color:#333;">MCP</span><br><span style="font-size:10px; color:#666;">模型 → 工具</span></td>
-<td style="border:1px solid #333; padding:4px;" width="20%" align="center"><span style="font-size:11px; font-weight:600; color:#333;">Cron</span><br><span style="font-size:10px; color:#666;">定时任务</span></td>
-<td style="border:1px solid #333; padding:4px;" width="20%" align="center"><span style="font-size:11px; font-weight:600; color:#333;">SAGE</span><br><span style="font-size:10px; color:#666;">跨会话经验</span></td>
+<td style="border:1px solid #333; padding:2px;" width="20%" align="center"><span style="font-size:10px; font-weight:600; color:#333;">Skills</span><br><span style="font-size:9px; color:#666;">脚本</span></td>
+<td style="border:1px solid #333; padding:2px;" width="20%" align="center"><span style="font-size:10px; font-weight:600; color:#333;">插件</span><br><span style="font-size:9px; color:#666;">Python</span></td>
+<td style="border:1px solid #333; padding:2px;" width="20%" align="center"><span style="font-size:10px; font-weight:600; color:#333;">MCP</span><br><span style="font-size:9px; color:#666;">模型→工具</span></td>
+<td style="border:1px solid #333; padding:2px;" width="20%" align="center"><span style="font-size:10px; font-weight:600; color:#333;">Cron</span><br><span style="font-size:9px; color:#666;">定时</span></td>
+<td style="border:1px solid #333; padding:2px;" width="20%" align="center"><span style="font-size:10px; font-weight:600; color:#333;">SAGE</span><br><span style="font-size:9px; color:#666;">经验</span></td>
 </tr>
 <tr>
-<td colspan="5" style="border:1px solid #333; padding:5px;">
-<span style="font-size:11px; font-weight:600; color:#333;">Providers &nbsp;·&nbsp; 模型提供商层</span><br>
-<span style="font-size:10px; color:#666;"><b>内置:</b> DeepSeek &middot; Minions Local (llama.cpp) &middot; Ollama &middot; LM Studio &nbsp;|&nbsp; <b>自定义:</b> OpenAI / Anthropic / Gemini / DashScope / vLLM</span>
+<td colspan="5" style="border:1px solid #333; padding:3px;" align="center">
+<span style="font-size:10px; font-weight:600; color:#333;">Providers &middot; 模型提供商层</span><br>
+<span style="font-size:9px; color:#666;">内置: DeepSeek &middot; Ollama &middot; LM Studio &nbsp;|&nbsp; 自定义: OpenAI-compat</span>
 </td>
 </tr>
 </table>
