@@ -49,7 +49,7 @@
 ## 架构分层
 
 <div align="center" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;">
-<table border="0" cellspacing="0" cellpadding="0" width="100%">
+<table border="0" cellspacing="0" cellpadding="0" width="640" align="center" style="margin:0 auto;">
 
 <!-- L1 -->
 <tr><td style="border:1px solid #333; padding:0;">
