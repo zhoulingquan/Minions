@@ -23,20 +23,23 @@ import threading
 from pathlib import Path
 from typing import Optional
 
-from ..constant import EnvVarLoader, KEYRING_ACCOUNT_ENV
+from .._bootstrap_paths import get_bootstrap_secret_dir
 
 logger = logging.getLogger(__name__)
 
 _ENC_PREFIX = "ENC:"
 _KEYRING_SERVICE = "minions"
 _KEYRING_ACCOUNT = "master_key"
+_KEYRING_ACCOUNT_ENV = "MINIONS_KEYRING_ACCOUNT"
 
 
 def _get_secret_dir() -> Path:
-    """Lazy import to avoid circular dependency with ``constant.py``."""
-    from ..constant import SECRET_DIR
+    """Resolve the protected secret dir without importing runtime constants."""
+    return get_bootstrap_secret_dir()
 
-    return SECRET_DIR
+
+def _env_bool(name: str) -> bool:
+    return os.environ.get(name, "false").lower() in ("true", "1", "yes")
 
 
 def _keyring_account() -> str:
@@ -64,13 +67,13 @@ def _keyring_account() -> str:
        Distinct secret dirs get distinct, stable keychain items and never
        collide.
     """
-    explicit = EnvVarLoader.get_str(KEYRING_ACCOUNT_ENV)
+    explicit = os.environ.get(_KEYRING_ACCOUNT_ENV, "")
     if explicit:
         return explicit
 
     relocated = bool(
-        EnvVarLoader.get_str("MINIONS_WORKING_DIR")
-        or EnvVarLoader.get_str("MINIONS_SECRET_DIR"),
+        os.environ.get("MINIONS_WORKING_DIR")
+        or os.environ.get("MINIONS_SECRET_DIR"),
     )
     if not relocated:
         return _KEYRING_ACCOUNT
@@ -110,10 +113,10 @@ def _should_skip_keyring() -> bool:
     """
     # Explicit escape hatch for CI, containers, and remote/headless hosts
     # where OS keyring access is unavailable or may block.
-    if EnvVarLoader.get_bool("MINIONS_DISABLE_KEYRING"):
+    if _env_bool("MINIONS_DISABLE_KEYRING"):
         return True
 
-    if EnvVarLoader.get_bool("MINIONS_RUNNING_IN_CONTAINER"):
+    if _env_bool("MINIONS_RUNNING_IN_CONTAINER"):
         return True
 
     import sys

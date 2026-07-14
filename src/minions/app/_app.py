@@ -2,6 +2,7 @@
 # pylint: disable=redefined-outer-name,unused-argument
 import inspect
 import asyncio
+import logging
 import mimetypes
 import os
 import sys
@@ -10,6 +11,10 @@ import uuid
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 from typing import Any
+
+from ..bootstrap import bootstrap_minions
+
+bootstrap_minions()
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,7 +33,6 @@ from ..constant import (
 from ..__version__ import __version__
 from ..backup._utils.safe_swap import cleanup_startup_restore_artifacts
 from ..utils.logging import (
-    setup_logger,
     add_project_file_handler,
     LOG_FILE_PATH,
 )
@@ -39,7 +43,6 @@ from .routers.agent_scoped import AgentContextMiddleware
 from .routers.approval import router as approval_router
 from .routers.loops import router as loops_router
 from .routers.tool_calls import router as tool_calls_router
-from ..envs import load_envs_into_environ
 from ..providers.provider_manager import ProviderManager
 from ..local_models.manager import LocalModelManager
 from .migration import (
@@ -50,8 +53,8 @@ from .migration import (
     ensure_qa_agent_exists,
 )
 
-# Apply log level on load so reload child process gets same level as CLI.
-logger = setup_logger(os.environ.get(LOG_LEVEL_ENV, "info"))
+# Explicit application bootstrap configured the project logger above.
+logger = logging.getLogger(__name__)
 
 # Ensure static assets are served with browser-compatible MIME types across
 # platforms (notably Windows may miss .js/.mjs mappings).
@@ -61,11 +64,6 @@ mimetypes.add_type("application/javascript", ".mjs")
 mimetypes.add_type("text/css", ".css")
 mimetypes.add_type("application/wasm", ".wasm")
 mimetypes.add_type("image/svg+xml", ".svg")
-
-# Load persisted env vars into os.environ at module import time
-# so they are available before the lifespan starts.
-load_envs_into_environ()
-
 
 # Dynamic runner that selects the correct workspace based on request
 class DynamicMultiAgentRunner:

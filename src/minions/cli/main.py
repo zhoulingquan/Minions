@@ -6,6 +6,10 @@ from pathlib import Path
 import sys
 import time
 
+from ..bootstrap import bootstrap_minions
+
+bootstrap_minions()
+
 import click
 
 from ..utils.stdio import ensure_standard_streams

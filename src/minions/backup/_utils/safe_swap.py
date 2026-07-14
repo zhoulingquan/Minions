@@ -82,9 +82,9 @@ def _lock_for(dst: Path) -> threading.Lock:
 @contextmanager
 def restore_process_lock() -> Iterator[None]:
     """Serialise restore and restore-cleanup work across processes."""
-    from ...constant import WORKING_DIR
+    from ..._bootstrap_paths import get_bootstrap_working_dir
 
-    lock_path = WORKING_DIR / _RESTORE_LOCK_FILE
+    lock_path = get_bootstrap_working_dir() / _RESTORE_LOCK_FILE
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with open(lock_path, "a+b") as handle:
         _acquire_file_lock(handle, lock_path)

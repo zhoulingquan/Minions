@@ -17,14 +17,17 @@ import shutil
 from pathlib import Path
 from typing import Optional
 
-from minions.constant import SECRET_DIR, WORKING_DIR
+from minions._bootstrap_paths import (
+    get_bootstrap_secret_dir,
+    get_bootstrap_working_dir,
+)
 from minions.security.secret_store import decrypt, encrypt, is_encrypted
 
 logger = logging.getLogger(__name__)
 
 
-_BOOTSTRAP_WORKING_DIR = WORKING_DIR
-_BOOTSTRAP_SECRET_DIR = SECRET_DIR
+_BOOTSTRAP_WORKING_DIR = get_bootstrap_working_dir()
+_BOOTSTRAP_SECRET_DIR = get_bootstrap_secret_dir()
 
 _ENVS_JSON = _BOOTSTRAP_SECRET_DIR / "envs.json"
 _LEGACY_ENVS_JSON_CANDIDATES = (
@@ -251,14 +254,7 @@ def load_envs_into_environ() -> dict[str, str]:
         Full persisted mapping from envs.json, including protected keys
         that are intentionally not injected into ``os.environ``.
     """
-    from minions.backup._utils.safe_swap import (
-        cleanup_stale_restore_artifacts,
-        restore_process_lock,
-    )
-
-    with restore_process_lock():
-        cleanup_stale_restore_artifacts(_BOOTSTRAP_SECRET_DIR)
-        envs = load_envs()
+    envs = load_envs()
     bootstrap_envs = {
         key: value
         for key, value in envs.items()
