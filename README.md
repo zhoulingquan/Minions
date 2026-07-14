@@ -48,111 +48,67 @@
 
 ## 架构分层
 
-<div align="center">
-<table border="0" cellspacing="0" cellpadding="0" width="100%">
+```mermaid
+flowchart TD
 
-<!-- L1 -->
-<tr><td bgcolor="#3B82F6" style="padding:5px 10px; color:#FFFFFF; font-size:12px; font-weight:bold;">📡 L1 · 渠道 / 接入层 (Channels)</td></tr>
-<tr><td bgcolor="#DBEAFE" style="padding:6px; border:1px solid #3B82F6;">
-<table border="0" cellspacing="2" cellpadding="0" width="100%">
-<tr>
-<td bgcolor="#FFFFFF" style="border:1px solid #60A5FA; padding:3px 5px; font-size:11px; color:#1E3A8A;" align="center">Web 控制台</td>
-<td bgcolor="#FFFFFF" style="border:1px solid #60A5FA; padding:3px 5px; font-size:11px; color:#1E3A8A;" align="center">TUI 终端</td>
-<td bgcolor="#FFFFFF" style="border:1px solid #60A5FA; padding:3px 5px; font-size:11px; color:#1E3A8A;" align="center">钉钉</td>
-<td bgcolor="#FFFFFF" style="border:1px solid #60A5FA; padding:3px 5px; font-size:11px; color:#1E3A8A;" align="center">飞书</td>
-<td bgcolor="#FFFFFF" style="border:1px solid #60A5FA; padding:3px 5px; font-size:11px; color:#1E3A8A;" align="center">QQ</td>
-</tr>
-<tr>
-<td bgcolor="#FFFFFF" style="border:1px solid #60A5FA; padding:3px 5px; font-size:11px; color:#1E3A8A;" align="center">企业微信</td>
-<td bgcolor="#FFFFFF" style="border:1px solid #60A5FA; padding:3px 5px; font-size:11px; color:#1E3A8A;" align="center">微信</td>
-<td bgcolor="#FFFFFF" style="border:1px solid #60A5FA; padding:3px 5px; font-size:11px; color:#1E3A8A;" align="center">腾讯元宝</td>
-<td bgcolor="#FFFFFF" style="border:1px solid #60A5FA; padding:3px 5px; font-size:11px; color:#1E3A8A;" align="center">REST API / SSE</td>
-<td bgcolor="#FFFFFF" style="border:1px solid #60A5FA; padding:3px 5px; font-size:11px; color:#1E3A8A;" align="center">ACP</td>
-</tr>
-</table>
-</td></tr>
-<tr><td align="center" style="font-size:11px; color:#3B82F6; padding:1px;">▼</td></tr>
+    subgraph L1["L1 · 渠道 / 接入层 (Channels)"]
+        direction LR
+        L1A["Web 控制台"]
+        L1B["TUI 终端"]
+        L1C["钉钉"]
+        L1D["飞书"]
+        L1E["QQ"]
+        L1F["企业微信"]
+        L1G["微信"]
+        L1H["腾讯元宝"]
+        L1I["REST API / SSE"]
+        L1J["ACP"]
+    end
 
-<!-- L2 -->
-<tr><td bgcolor="#10B981" style="padding:5px 10px; color:#FFFFFF; font-size:12px; font-weight:bold;">🔄 L2 · 会话管理层 (Runtime)</td></tr>
-<tr><td bgcolor="#D1FAE5" style="padding:6px; border:1px solid #10B981;">
-<table border="0" cellspacing="2" cellpadding="0" width="100%">
-<tr>
-<td bgcolor="#FFFFFF" style="border:1px solid #34D399; padding:5px;" width="50%">
-<b style="font-size:11px; color:#064E3B;">📜 Scroll 上下文管理</b><br>
-<span style="font-size:10px; color:#047857;">Working Context · Memory Scroll · History (SQLite+FTS5)</span>
-</td>
-<td bgcolor="#FFFFFF" style="border:1px solid #34D399; padding:5px;" width="50%">
-<b style="font-size:11px; color:#064E3B;">⚙️ ReAct 循环引擎</b><br>
-<span style="font-size:10px; color:#047857;">模型→工具→回写 · 8 Phase Hook 拓扑排序</span>
-</td>
-</tr>
-</table>
-</td></tr>
-<tr><td align="center" style="font-size:11px; color:#10B981; padding:1px;">▼</td></tr>
+    subgraph L2["L2 · 会话管理层 (Runtime)"]
+        direction LR
+        L2A["Scroll 上下文管理<br/>Working · Memory · History (SQLite+FTS5)"]
+        L2B["ReAct 循环引擎<br/>8 Phase Hook 拓扑排序"]
+    end
 
-<!-- L3 -->
-<tr><td bgcolor="#F59E0B" style="padding:5px 10px; color:#FFFFFF; font-size:12px; font-weight:bold;">🤖 L3 · Agent 引擎层</td></tr>
-<tr><td bgcolor="#FEF3C7" style="padding:6px; border:1px solid #F59E0B;">
-<table border="0" cellspacing="2" cellpadding="0" width="100%">
-<tr>
-<td bgcolor="#FFFFFF" style="border:1px solid #FBBF24; padding:5px;" width="33%">
-<b style="font-size:11px; color:#78350F;">📋 Agent 管理器</b><br>
-<span style="font-size:10px; color:#92400E;">多智能体 · 子 Agent 委派 · ACP</span>
-</td>
-<td bgcolor="#FFFFFF" style="border:1px solid #FBBF24; padding:5px;" width="34%">
-<b style="font-size:11px; color:#78350F;">🚦 StopGate / Mode</b><br>
-<span style="font-size:10px; color:#92400E;">Iteration · DoomLoop · Budget · Rubric</span>
-</td>
-<td bgcolor="#FFFFFF" style="border:1px solid #FBBF24; padding:5px;" width="33%">
-<b style="font-size:11px; color:#78350F;">⚡ 执行引擎</b><br>
-<span style="font-size:10px; color:#92400E;">Shell · MCP Driver · Plugin Driver</span>
-</td>
-</tr>
-</table>
-</td></tr>
-<tr><td align="center" style="font-size:11px; color:#F59E0B; padding:1px;">▼</td></tr>
+    subgraph L3["L3 · Agent 引擎层"]
+        direction LR
+        L3A["Agent 管理器<br/>多智能体 · 子 Agent 委派 · ACP"]
+        L3B["StopGate / Mode<br/>Iteration · DoomLoop · Budget · Rubric"]
+        L3C["执行引擎<br/>Shell · MCP Driver · Plugin Driver"]
+    end
 
-<!-- L4 -->
-<tr><td bgcolor="#EF4444" style="padding:5px 10px; color:#FFFFFF; font-size:12px; font-weight:bold;">🛡️ L4 · 安全层 (Security) — 默认开启</td></tr>
-<tr><td bgcolor="#FEE2E2" style="padding:6px; border:1px solid #EF4444;">
-<table border="0" cellspacing="2" cellpadding="0" width="100%">
-<tr>
-<td bgcolor="#FFFFFF" style="border:1px solid #F87171; padding:4px;" width="33%"><b style="font-size:11px; color:#7F1D1D;">🔒 Sandbox</b><br><span style="font-size:10px; color:#991B1B;">Seatbelt / bwrap / Landlock</span></td>
-<td bgcolor="#FFFFFF" style="border:1px solid #F87171; padding:4px;" width="33%"><b style="font-size:11px; color:#7F1D1D;">🔍 Tool Guard</b><br><span style="font-size:10px; color:#991B1B;">三层 Guardian 协调</span></td>
-<td bgcolor="#FFFFFF" style="border:1px solid #F87171; padding:4px;" width="34%"><b style="font-size:11px; color:#7F1D1D;">📁 File Guard</b><br><span style="font-size:10px; color:#991B1B;">敏感文件路径保护</span></td>
-</tr>
-<tr>
-<td bgcolor="#FFFFFF" style="border:1px solid #F87171; padding:4px;"><b style="font-size:11px; color:#7F1D1D;">🔬 Skill Scanner</b><br><span style="font-size:10px; color:#991B1B;">8 类威胁签名检测</span></td>
-<td bgcolor="#FFFFFF" style="border:1px solid #F87171; padding:4px;"><b style="font-size:11px; color:#7F1D1D;">🏢 Tenancy</b><br><span style="font-size:10px; color:#991B1B;">多租户 / RLS 隔离</span></td>
-<td bgcolor="#FFFFFF" style="border:1px solid #F87171; padding:4px;"><b style="font-size:11px; color:#7F1D1D;">📊 Governance</b><br><span style="font-size:10px; color:#991B1B;">审计日志 / 审批工作流</span></td>
-</tr>
-</table>
-</td></tr>
-<tr><td align="center" style="font-size:11px; color:#EF4444; padding:1px;">▼</td></tr>
+    subgraph L4["L4 · 安全层 (Security) — 默认开启"]
+        direction LR
+        L4A["Sandbox<br/>Seatbelt / bwrap / Landlock"]
+        L4B["Tool Guard<br/>三层 Guardian 协调"]
+        L4C["File Guard<br/>敏感文件路径保护"]
+        L4D["Skill Scanner<br/>8 类威胁签名检测"]
+        L4E["Tenancy<br/>多租户 / RLS 隔离"]
+        L4F["Governance<br/>审计日志 / 审批工作流"]
+    end
 
-<!-- L5 -->
-<tr><td bgcolor="#8B5CF6" style="padding:5px 10px; color:#FFFFFF; font-size:12px; font-weight:bold;">🧩 L5 · 扩展层 (Extensions)</td></tr>
-<tr><td bgcolor="#EDE9FE" style="padding:6px; border:1px solid #8B5CF6;">
-<table border="0" cellspacing="2" cellpadding="0" width="100%">
-<tr>
-<td bgcolor="#FFFFFF" style="border:1px solid #A78BFA; padding:4px;" width="20%" align="center"><b style="font-size:11px; color:#4C1D95;">🎯 Skills</b><br><span style="font-size:10px; color:#5B21B6;">脚本 / 可安装</span></td>
-<td bgcolor="#FFFFFF" style="border:1px solid #A78BFA; padding:4px;" width="20%" align="center"><b style="font-size:11px; color:#4C1D95;">🔌 插件</b><br><span style="font-size:10px; color:#5B21B6;">Python 集成</span></td>
-<td bgcolor="#FFFFFF" style="border:1px solid #A78BFA; padding:4px;" width="20%" align="center"><b style="font-size:11px; color:#4C1D95;">🔗 MCP</b><br><span style="font-size:10px; color:#5B21B6;">模型 → 工具</span></td>
-<td bgcolor="#FFFFFF" style="border:1px solid #A78BFA; padding:4px;" width="20%" align="center"><b style="font-size:11px; color:#4C1D95;">⏰ Cron</b><br><span style="font-size:10px; color:#5B21B6;">定时任务</span></td>
-<td bgcolor="#FFFFFF" style="border:1px solid #A78BFA; padding:4px;" width="20%" align="center"><b style="font-size:11px; color:#4C1D95;">📚 SAGE</b><br><span style="font-size:10px; color:#5B21B6;">跨会话经验</span></td>
-</tr>
-<tr>
-<td colspan="5" bgcolor="#FFFFFF" style="border:1px solid #A78BFA; padding:5px;">
-<b style="font-size:11px; color:#4C1D95;">🤖 模型提供商层 (Providers)</b><br>
-<span style="font-size:10px; color:#5B21B6;"><b>内置:</b> DeepSeek · Minions Local (llama.cpp) · Ollama · LM Studio &nbsp;|&nbsp; <b>自定义:</b> OpenAI / Anthropic / Gemini / DashScope / vLLM</span>
-</td>
-</tr>
-</table>
-</td></tr>
+    subgraph L5["L5 · 扩展层 (Extensions)"]
+        direction LR
+        L5A["Skills<br/>脚本 / 可安装"]
+        L5B["插件<br/>Python 深度集成"]
+        L5C["MCP<br/>模型 → 工具"]
+        L5D["Cron<br/>定时任务"]
+        L5E["SAGE<br/>跨会话经验"]
+    end
 
-</table>
-</div>
+    subgraph L6["L6 · 模型提供商层 (Providers)"]
+        direction LR
+        L6A["内置<br/>DeepSeek · Minions Local · Ollama · LM Studio"]
+        L6B["自定义<br/>OpenAI / Anthropic / Gemini / DashScope / vLLM"]
+    end
+
+    L1 --> L2
+    L2 --> L3
+    L3 --> L4
+    L4 --> L5
+    L5 -.-> L6
+```
 
 <details>
 <summary>查看纯文本版本（适合终端阅读）</summary>
