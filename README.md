@@ -341,12 +341,66 @@ LLM 调用不是一次性的，而是在 ReAct Loop 中反复执行，由 **Stop
 
 ### 7. 多频道接入 — 一个实例，多个渠道
 
-```
-  Web 控制台   终端 TUI    钉钉    飞书    QQ
-    企业微信   微信    腾讯元宝    REST API / SSE    ACP
-```
+<div align="center">
+<table border="0" cellspacing="6" cellpadding="0">
+<tr>
+<td align="center" bgcolor="#E3F2FD" style="border:1px solid #1976D2; border-radius:8px; padding:12px 16px; min-width:110px;">
+<div style="font-size:28px;">🌐</div>
+<b style="font-size:13px; color:#0D47A1;">Web 控制台</b>
+<div style="font-size:11px; color:#555;">REST API / SSE</div>
+</td>
+<td align="center" bgcolor="#E8F5E9" style="border:1px solid #388E3C; border-radius:8px; padding:12px 16px; min-width:110px;">
+<div style="font-size:28px;">💻</div>
+<b style="font-size:13px; color:#1B5E20;">终端 TUI</b>
+<div style="font-size:11px; color:#555;">交互式终端</div>
+</td>
+<td align="center" bgcolor="#FFF3E0" style="border:1px solid #F57C00; border-radius:8px; padding:12px 16px; min-width:110px;">
+<div style="font-size:28px;">💬</div>
+<b style="font-size:13px; color:#E65100;">钉钉</b>
+<div style="font-size:11px; color:#555;">DingTalk</div>
+</td>
+<td align="center" bgcolor="#F3E5F5" style="border:1px solid #7B1FA2; border-radius:8px; padding:12px 16px; min-width:110px;">
+<div style="font-size:28px;">🐦</div>
+<b style="font-size:13px; color:#4A148C;">飞书</b>
+<div style="font-size:11px; color:#555;">Feishu</div>
+</td>
+<td align="center" bgcolor="#E0F7FA" style="border:1px solid #00838F; border-radius:8px; padding:12px 16px; min-width:110px;">
+<div style="font-size:28px;">🐧</div>
+<b style="font-size:13px; color:#006064;">QQ</b>
+<div style="font-size:11px; color:#555;">腾讯 QQ</div>
+</td>
+</tr>
+<tr>
+<td align="center" bgcolor="#ECEFF1" style="border:1px solid #455A64; border-radius:8px; padding:12px 16px; min-width:110px;">
+<div style="font-size:28px;">💼</div>
+<b style="font-size:13px; color:#263238;">企业微信</b>
+<div style="font-size:11px; color:#555;">WeCom</div>
+</td>
+<td align="center" bgcolor="#E8F5E9" style="border:1px solid #2E7D32; border-radius:8px; padding:12px 16px; min-width:110px;">
+<div style="font-size:28px;">💚</div>
+<b style="font-size:13px; color:#1B5E20;">微信</b>
+<div style="font-size:11px; color:#555;">WeChat</div>
+</td>
+<td align="center" bgcolor="#E3F2FD" style="border:1px solid #1565C0; border-radius:8px; padding:12px 16px; min-width:110px;">
+<div style="font-size:28px;">💎</div>
+<b style="font-size:13px; color:#0D47A1;">腾讯元宝</b>
+<div style="font-size:11px; color:#555;">Yuanbao</div>
+</td>
+<td align="center" bgcolor="#FFF8E1" style="border:1px solid #FF8F00; border-radius:8px; padding:12px 16px; min-width:110px;">
+<div style="font-size:28px;">🔌</div>
+<b style="font-size:13px; color:#E65100;">ACP</b>
+<div style="font-size:11px; color:#555;">Agent → Agent</div>
+</td>
+<td align="center" bgcolor="#FCE4EC" style="border:1px solid #C2185B; border-radius:8px; padding:12px 16px; min-width:110px; border-style:dashed;">
+<div style="font-size:28px;">➕</div>
+<b style="font-size:13px; color:#880E4F;">插件自定义</b>
+<div style="font-size:11px; color:#555;">Plugin Channel</div>
+</td>
+</tr>
+</table>
+</div>
 
-内置 7 个频道（console + 6 个 IM），一个实例所有渠道共享 Agent、记忆、Skills。控制台 / TUI 中看到的历史在钉钉上同样可访问。插件系统可注册自定义频道。
+内置 **7 个频道**（console + 6 个 IM），一个实例所有渠道共享 Agent、记忆、Skills。控制台 / TUI 中看到的历史在钉钉上同样可访问。插件系统可注册自定义频道。
 
 ### 8. 代码模式 — 内置三面板 Web IDE
 
