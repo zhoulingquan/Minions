@@ -109,8 +109,10 @@
 │  └──────────┴──────────┴──────────┴──────────┴──────────┘       │
 │  ┌──────────────────────────────────────────────────────────┐    │
 │  │  模型提供商层 (Providers)                                 │    │
-│  │  OpenAI / Anthropic / DeepSeek / Qwen / Gemini / DashScope│    │
-│  │  Ollama / vLLM / llama.cpp (本地) / 自定义 14+ 提供商     │    │
+│  │  内置: DeepSeek / Minions Local (llama.cpp) / Ollama /   │    │
+│  │        LM Studio                                         │    │
+│  │  自定义: 任意 OpenAI-compatible 端点 (OpenAI / Anthropic  │    │
+│  │         / Gemini / DashScope / vLLM / ...)               │    │
 │  │  统一接口: /v1/chat/completions → 每个 go Provider        │    │
 │  └──────────────────────────────────────────────────────────┘    │
 └──────────────────────────────────────────────────────────────────┘
@@ -218,8 +220,8 @@ LLM 调用不是一次性的，而是在 **Loop** 中反复执行，直到满足
 
 | 类型 | 提供商 |
 |------|--------|
-| 云端 | OpenAI、Anthropic、DeepSeek、通义千问、Gemini、DashScope、月之暗面、零一万物、智谱、MiniMax、百度千帆、SiliconFlow、Together AI 等 14+ |
-| 本地 | llama.cpp（内置 Minions Local 运行时，零配置）、Ollama、vLLM、自定义 OpenAI-compatible |
+| 内置 | DeepSeek（云端）、Minions Local（本地，基于 llama.cpp，零配置）、Ollama、LM Studio |
+| 自定义 | 任意 OpenAI-compatible 端点 — OpenAI、Anthropic、Gemini、DashScope、vLLM 等 |
 | 嵌入 | 支持多种 Embedding 模型 |
 
 所有模型通过统一的 `Provider` 接口调用 — `go` 方法接收 Messages + Tools，返回 Response。
