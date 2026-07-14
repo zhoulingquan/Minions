@@ -151,6 +151,47 @@ assert cleaned == [secret_dir]
     _run_isolated_python(code, env=env)
 
 
+def test_keyring_account_identity_uses_frozen_relocation_snapshot(
+    tmp_path: Path,
+) -> None:
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(SRC_ROOT)
+    for name in (
+        "MINIONS_KEYRING_ACCOUNT",
+        "MINIONS_WORKING_DIR",
+        "MINIONS_SECRET_DIR",
+    ):
+        env.pop(name, None)
+
+    code = f"""
+import os
+from minions.security import secret_store
+
+account = secret_store._keyring_account()
+assert account == "master_key"
+
+os.environ["MINIONS_WORKING_DIR"] = {str(tmp_path / "changed")!r}
+os.environ["MINIONS_SECRET_DIR"] = {str(tmp_path / "changed-secret")!r}
+
+assert secret_store._keyring_account() == account
+"""
+    _run_isolated_python(code, env=env)
+
+
+def test_keyring_account_override_is_frozen(tmp_path: Path) -> None:
+    env = _isolated_env(tmp_path)
+    env["MINIONS_KEYRING_ACCOUNT"] = "initial-account"
+    code = """
+import os
+from minions.security import secret_store
+
+assert secret_store._keyring_account() == "initial-account"
+os.environ["MINIONS_KEYRING_ACCOUNT"] = "changed-account"
+assert secret_store._keyring_account() == "initial-account"
+"""
+    _run_isolated_python(code, env=env)
+
+
 def _composition_env(tmp_path: Path) -> dict[str, str]:
     env = _isolated_env(tmp_path)
     secret_dir = Path(env["MINIONS_SECRET_DIR"])
@@ -216,11 +257,6 @@ def test_bootstrap_runs_env_then_logging_once(monkeypatch) -> None:
 
     monkeypatch.setenv("MINIONS_LOG_LEVEL", "debug")
     monkeypatch.setattr(
-        bootstrap.time,
-        "perf_counter",
-        lambda: calls.append("clock") or 1.0,
-    )
-    monkeypatch.setattr(
         bootstrap_env,
         "load_bootstrap_env",
         lambda: calls.append("env"),
@@ -234,7 +270,40 @@ def test_bootstrap_runs_env_then_logging_once(monkeypatch) -> None:
     bootstrap.bootstrap_minions()
     bootstrap.bootstrap_minions()
 
-    assert calls == ["env", "clock", "logging:debug", "clock"]
+    assert calls == ["env", "logging:debug"]
+
+
+def test_package_init_timer_starts_after_compat_and_logging_imports(
+    tmp_path: Path,
+) -> None:
+    env = _isolated_env(tmp_path)
+    env["MINIONS_DISABLE_KEYRING"] = "1"
+    code = """
+import sys
+from minions import bootstrap
+
+assert "minions._compat" not in sys.modules
+assert "minions.utils.logging" not in sys.modules
+
+real_perf_counter = bootstrap.time.perf_counter
+observations = []
+
+def observe_import_boundary():
+    observations.append(
+        (
+            "minions._compat" in sys.modules,
+            "minions.utils.logging" in sys.modules,
+        ),
+    )
+    return real_perf_counter()
+
+bootstrap.time.perf_counter = observe_import_boundary
+bootstrap.bootstrap_minions()
+
+assert observations
+assert all(compat and logging for compat, logging in observations)
+"""
+    _run_isolated_python(code, env=env)
 
 
 def test_bootstrap_failure_propagates_and_remains_retryable(monkeypatch) -> None:

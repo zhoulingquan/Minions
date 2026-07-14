@@ -23,14 +23,17 @@ import threading
 from pathlib import Path
 from typing import Optional
 
-from .._bootstrap_paths import get_bootstrap_secret_dir
+from .._bootstrap_paths import (
+    bootstrap_paths_are_relocated,
+    get_bootstrap_keyring_account_override,
+    get_bootstrap_secret_dir,
+)
 
 logger = logging.getLogger(__name__)
 
 _ENC_PREFIX = "ENC:"
 _KEYRING_SERVICE = "minions"
 _KEYRING_ACCOUNT = "master_key"
-_KEYRING_ACCOUNT_ENV = "MINIONS_KEYRING_ACCOUNT"
 
 
 def _get_secret_dir() -> Path:
@@ -56,8 +59,8 @@ def _keyring_account() -> str:
 
     Resolution:
 
-    1. Explicit ``MINIONS_KEYRING_ACCOUNT`` override always wins (useful for
-       CI or for naming a dev profile deterministically).
+    1. Explicit ``MINIONS_KEYRING_ACCOUNT`` from the initial bootstrap env
+       snapshot always wins (useful for CI or deterministic dev profiles).
     2. If the install has *not* relocated its config/secrets via env
        override, keep the historical ``master_key`` account verbatim so that
        existing default and auto-detected legacy installs are completely
@@ -67,15 +70,11 @@ def _keyring_account() -> str:
        Distinct secret dirs get distinct, stable keychain items and never
        collide.
     """
-    explicit = os.environ.get(_KEYRING_ACCOUNT_ENV, "")
+    explicit = get_bootstrap_keyring_account_override()
     if explicit:
         return explicit
 
-    relocated = bool(
-        os.environ.get("MINIONS_WORKING_DIR")
-        or os.environ.get("MINIONS_SECRET_DIR"),
-    )
-    if not relocated:
+    if not bootstrap_paths_are_relocated():
         return _KEYRING_ACCOUNT
 
     digest = hashlib.sha256(

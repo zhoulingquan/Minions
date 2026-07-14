@@ -34,14 +34,12 @@ def bootstrap_minions() -> None:
 
         load_bootstrap_env()
         # Preserve the legacy package-init timing boundary: persisted env
-        # loading completes before the timed compatibility/logging phase.
-        started_at = time.perf_counter()
-
-        # Importing the compatibility package installs the legacy AgentScope
-        # message shims.  Keep that initialization behind this explicit gate.
+        # loading and bootstrap-only imports complete before logger setup is
+        # timed. Importing compatibility installs the legacy AgentScope shims.
         from minions import _compat as _compat_bootstrap  # noqa: F401
         from minions.utils.logging import setup_logger
 
+        started_at = time.perf_counter()
         setup_logger(os.environ.get(_LOG_LEVEL_ENV, "info"))
         logging.getLogger(__name__).debug(
             "%.3fs package init",

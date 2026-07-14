@@ -180,13 +180,25 @@ class TestKeyringAccountIsolation:
     default install so they cannot overwrite each other's master key."""
 
     @pytest.fixture(autouse=True)
-    def _clear_relocation_env(self, monkeypatch):
+    def _default_bootstrap_identity(self, monkeypatch):
+        import minions.security.secret_store as mod
+
         for var in (
             "MINIONS_KEYRING_ACCOUNT",
             "MINIONS_WORKING_DIR",
             "MINIONS_SECRET_DIR",
         ):
             monkeypatch.delenv(var, raising=False)
+        monkeypatch.setattr(
+            mod,
+            "get_bootstrap_keyring_account_override",
+            lambda: "",
+        )
+        monkeypatch.setattr(
+            mod,
+            "bootstrap_paths_are_relocated",
+            lambda: False,
+        )
 
     def test_default_install_uses_legacy_account(self, monkeypatch):
         import minions.security.secret_store as mod
@@ -203,14 +215,21 @@ class TestKeyringAccountIsolation:
     def test_explicit_override_wins(self, monkeypatch):
         import minions.security.secret_store as mod
 
-        monkeypatch.setenv("MINIONS_KEYRING_ACCOUNT", "dev-profile")
-        monkeypatch.setenv("MINIONS_WORKING_DIR", "/tmp/whatever")
+        monkeypatch.setattr(
+            mod,
+            "get_bootstrap_keyring_account_override",
+            lambda: "dev-profile",
+        )
         assert mod._keyring_account() == "dev-profile"
 
     def test_relocated_install_is_namespaced(self, monkeypatch, tmp_path):
         import minions.security.secret_store as mod
 
-        monkeypatch.setenv("MINIONS_WORKING_DIR", str(tmp_path / ".devdata"))
+        monkeypatch.setattr(
+            mod,
+            "bootstrap_paths_are_relocated",
+            lambda: True,
+        )
         monkeypatch.setattr(
             mod,
             "_get_secret_dir",
@@ -227,7 +246,11 @@ class TestKeyringAccountIsolation:
     ):
         import minions.security.secret_store as mod
 
-        monkeypatch.setenv("MINIONS_SECRET_DIR", "set-to-mark-relocated")
+        monkeypatch.setattr(
+            mod,
+            "bootstrap_paths_are_relocated",
+            lambda: True,
+        )
 
         monkeypatch.setattr(mod, "_get_secret_dir", lambda: tmp_path / "a")
         account_a = mod._keyring_account()
@@ -243,6 +266,10 @@ class TestKeyringAccountIsolation:
     ):
         import minions.security.secret_store as mod
 
-        monkeypatch.setenv("MINIONS_SECRET_DIR", "set-to-mark-relocated")
+        monkeypatch.setattr(
+            mod,
+            "bootstrap_paths_are_relocated",
+            lambda: True,
+        )
         monkeypatch.setattr(mod, "_get_secret_dir", lambda: tmp_path / "x")
         assert mod._keyring_account() == mod._keyring_account()
