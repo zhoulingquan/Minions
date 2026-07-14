@@ -31,9 +31,10 @@
 |------|------------|---------|
 | **上下文** | 单一消息数组 / 向量检索 | 三层记忆系统（Working + Scroll + History）|
 | **记忆** | 摘要压缩后永久丢失 | 早期对话完整逐字保留，可随时精确召回 |
-| **执行** | 单轮调用 | Loop 闭环引擎（Plan→Build→Review）|
+| **执行** | 单轮调用 | StopGate 闭环引擎（迭代/死循环检测/预算控制）|
 | **多 Agent** | 单实例单 Agent | AgentManager + ACP 跨实例编排 |
 | **安全** | 用户自行把关 | Sandbox + Tool Guard + File Guard 默认开启 |
+| **多租户** | 单用户 | 多租户控制面 + PostgreSQL RLS 隔离 |
 | **频道** | 单一 Web/API | 7 个内置频道 + 插件自定义 |
 | **部署** | 云端 SaaS | 本机私有部署，数据不离开你的机器 |
 
@@ -76,10 +77,10 @@
 │  │   子 Agent 运行时生成 / 委派 / ACP 跨实例通信               │    │
 │  └──────────────────────────────────────────────────────────┘    │
 │  ┌──────────────────────────────────────────────────────────┐    │
-│  │   Loop / Mode 系统                                       │    │
-│  │   PlanLoop → BuildLoop → ReviewLoop (代码开发闭环)       │    │
-│  │   AgentLoop (通用对话), CronLoop (定时), API (无状态)    │    │
-│  │   Hook 系统: 所有阶段均可插拔拦截                          │    │
+│  │   StopGate / Mode 系统                                    │    │
+│  │   IterationGate / DoomLoopGate / BudgetGate / RubricGate │    │
+│  │   GoalMode / MissionMode (Mode 激活时才运行的 Hook)       │    │
+│  │   Hook 系统: 8 阶段均可插拔拦截                             │    │
 │  └──────────────────────────────────────────────────────────┘    │
 │  ┌──────────────────────────────────────────────────────────┐    │
 │  │   执行引擎 (executors / drivers)                          │    │
@@ -91,11 +92,11 @@
 ┌───────────────────────────────▼──────────────────────────────────┐
 │                        安全层 (Security)                          │
 │  ┌──────────────────────────────────────────────────────────┐    │
-│  │   Sandbox (内核级隔离, cgroups / seccomp)                   │    │
+│  │   Sandbox (内核级隔离: Seatbelt / bwrap / Landlock)        │    │
 │  │   Tool Guard (工具调用规则引擎 / 白名单联网策略)            │    │
 │  │   File Guard (文件操作边界守卫, 多级权限策略)               │    │
 │  │   Skill Scanner (安装前自动检测注入 / 权限 / 恶意模式)      │    │
-│  │   Access Policy / Firewall (来源访问控制)                   │    │
+│  │   Tenancy (多租户控制面 / PostgreSQL RLS 隔离)             │    │
 │  │   Governance (审计日志 / 审批工作流)                        │    │
 │  └──────────────────────────────────────────────────────────┘    │
 └───────────────────────────────┬──────────────────────────────────┘
@@ -153,26 +154,33 @@ Agent 不是单例，而是一个可管理、可生成、可协作的系统：
 - **子 Agent 委派**：运行中实时生成子 Agent，委托子任务（子文件搜索、子代码生成），结果返回主 Agent
 - **ACP（Agent Communication Protocol）**：跨实例 Agent 通信协议，实现多个 Minions 实例之间的编排协作
 
-### 4. Loop / Mode 系统 — 执行闭环引擎
+### 4. StopGate / Mode 系统 — 执行闭环引擎
 
-LLM 调用不是一次性的，而是在 **Loop** 中反复执行，直到满足终止条件：
+LLM 调用不是一次性的，而是在 ReAct Loop 中反复执行，由 **StopGate** 组合控制终止条件：
 
-- **AgentLoop**：通用对话 → 模型调用 → 工具执行 → 模型调用 → 终止
-- **PlanLoop → BuildLoop → ReviewLoop**：代码开发的完整闭环（计划→构建→审查）
-- **CronLoop**：定时触发执行（新闻摘要、报告生成、多频道广播）
-- **Mode** 控制 Agent 的行为模式 — 代码模式、对话模式、自动执行模式等
+- **IterationGate**：硬性迭代上限，防止无限循环
+- **DoomLoopGate**：滑动窗口相似度检测，两阶段（注入警告 → 强制终止），防止死循环
+- **BudgetGate**：token 预算限制
+- **FileLoopGate**：文件状态 + 迭代次数联合判定
+- **RubricGate**：rubric 完成度评估
 
-每个 Loop 阶段都插入了 **Hook 系统**：前置钩子、后置钩子、工具钩子、授权钩子、流式钩子，所有阶段均可插拔拦截。
+**Mode 系统**控制 Agent 行为模式，Mode 激活时才运行对应的 Hook 和 Gate：
+- **GoalMode**：目标导向执行（含 GoalTurnGate / GoalBudgetGate / RubricGate）
+- **MissionMode**：任务模式（含 MissionGate + 状态加载/保存 Hook）
+
+**Cron 执行器**：定时触发执行（新闻摘要、报告生成、多频道广播），支持会话隔离和并发限流。
+
+整个 Runtime 编排分 **8 个 Phase**（PRE_DISPATCH → POST_DISPATCH → PRE_AGENT_BUILD → POST_AGENT_BUILD → PRE_EXECUTE → POST_RESPONSE → ON_ERROR → FINALLY），每个 Phase 均可插入 Hook，按拓扑排序执行。
 
 ### 5. 安全闸门体系 — 默认开启，非可选
 
 所有危险操作在执行前即被拦截，不需要用户主动开启：
 
-- **Sandbox**：内核级隔离（cgroups / seccomp），代码在沙箱中执行，无法访问宿主机
-- **Tool Guard**：工具调用前检查规则引擎，白名单联网策略
-- **File Guard**：文件操作边界守卫（读/写/执行），多级权限策略
-- **Skill Scanner**：安装 Skills 前自动扫描 — 检测注入、权限滥用、恶意模式
-- **Governance**：审计日志 + 审批工作流，所有操作可追溯
+- **Sandbox**：内核级隔离，按平台选择机制 — macOS 用 Seatbelt（`sandbox-exec`）、Linux 用 Bubblewrap（`bwrap` mount namespace）或 Landlock（LSM）、Windows 用 AppContainer。每次工具调用创建独立 sandbox
+- **Tool Guard**：三层 Guardian 协调 — FilePathToolGuardian（敏感文件路径检测）+ RuleBasedToolGuardian（YAML 规则匹配）+ ShellEvasionGuardian（7 类 shell 混淆检测）
+- **File Guard**：文件操作边界守卫，默认保护 `.env` / `.ssh` / `*.pem` / `*.key` / `.aws` / `.gnupg` 等
+- **Skill Scanner**：安装 Skills 前自动扫描 — 8 类威胁签名（命令注入 / 数据外泄 / 硬编码密钥 / 混淆 / 提示注入 / 社工 / 供应链 / 未授权工具使用）
+- **Governance**：三阶段策略评估（深度扫描 → 规则匹配 → fallback）+ 审计日志（SQLite WAL，100K 记录自动清理）+ 审批工作流（批准后动态添加 session 级 ALLOW 规则）
 
 ### 6. Skills / MCP / 插件 — 三层扩展机制
 
@@ -197,7 +205,7 @@ LLM 调用不是一次性的，而是在 **Loop** 中反复执行，直到满足
 - **Diff 预览**：每次修改前后对比
 - **对话区**：与 Agent 交互
 
-支持代码搜索、跳转定义、查找引用。PlanLoop → BuildLoop → ReviewLoop 完整闭环。
+支持代码搜索、跳转定义、查找引用。GoalMode / MissionMode 行为模式切换。
 
 ### 9. 定时任务（Cron）— 自然语言编排
 
@@ -208,11 +216,25 @@ LLM 调用不是一次性的，而是在 **Loop** 中反复执行，直到满足
 
 ### 10. SAGE 经验系统（企业版）— 知识沉淀引擎
 
-多租户业务经验沉淀引擎：
+跨会话业务经验生命周期系统，与多租户控制面共享同一份可信身份：
 
-- 自动从交互中提取可复用的业务经验
-- 经验可控成长（人工审核 + 自动学习）
-- 团队级别的知识传承
+- **7 种 Scope**：TENANT / TEAM / USER / AGENT / PROJECT / CASE / SESSION，二维隔离（tenant_id + scope）
+- **分层模型**：Trace → Case → KnowledgeItem → InsightDraft → Playbook
+- **渐进式激活**：OFF / SHADOW / APPROVAL / AUTO，Insight 必须经过 GrowthCycle + PolicyCenter 审批才能 active
+- **混合召回**：SemanticIndexer 基于 embeddings 的语义检索 + FTS 关键词搜索，按 RecallBudget 分配 prompt 预算
+- **Fail-closed 存储**：production/tenant 模式必须用 PostgreSQL，SQLite fallback 被拒绝
+
+### 11. 多租户系统（企业版）— 控制面隔离
+
+完整的多租户控制面（tenancy 2.1），支持多团队协作和资源隔离：
+
+- **5 级角色**：OWNER / ADMIN / OPERATOR / MEMBER / VIEWER，权限嵌套累加
+- **Agent 授权**：每个 Agent 归属一个 tenant，支持 PRIVATE（仅 owner）和 TENANT（团队可见）两种访问级别
+- **PostgreSQL RLS 双边界**：应用层 `ScopePolicy.require_tenant` + 数据库层 RLS（`app.tenant_id` / `sage.tenant_id` 两套独立上下文），RLS 是第二道防线
+- **配额管理**：max_members / max_agents / max_concurrent_tasks / max_storage_mb，任务租约（10min TTL，60s 续约）防资源耗尽
+- **可信身份**：`TenantPrincipal` 由认证层构造（不接受客户端 claim），单向流动到 SAGE 的 `TrustedSageIdentity`
+- **Fail-closed**：tenant/production 模式拒绝 SQLite，PRIVATE Agent 对无权者返回 404（不泄露存在性）
+- **多空间切换**：一个用户可加入多个 tenant，切换时撤销旧 session
 
 ---
 
