@@ -48,76 +48,225 @@
 
 ## 架构分层
 
-```
+<div align="center">
+<table border="0" cellspacing="0" cellpadding="0">
+<tr><td align="center">
+
+<!-- ====== 渠道 / 接入层 ====== -->
+<table border="0" cellspacing="0" cellpadding="0" width="780">
+<tr><td bgcolor="#E8F4FD" style="border:1px solid #4A90D9; border-radius:8px; padding:14px 18px;">
+<div align="center">
+<b style="font-size:16px; color:#1A3A5C;">📡 渠道 / 接入层 (Channels)</b>
+<hr style="border:0; border-top:1px dashed #4A90D9; margin:8px 0;">
+<table border="0" cellspacing="6" cellpadding="0">
+<tr>
+<td bgcolor="#BBDDF5" style="border:1px solid #4A90D9; border-radius:4px; padding:5px 12px; font-size:12px;">🌐 Web 控制台</td>
+<td bgcolor="#BBDDF5" style="border:1px solid #4A90D9; border-radius:4px; padding:5px 12px; font-size:12px;">💻 TUI 终端</td>
+<td bgcolor="#BBDDF5" style="border:1px solid #4A90D9; border-radius:4px; padding:5px 12px; font-size:12px;">💬 钉钉</td>
+<td bgcolor="#BBDDF5" style="border:1px solid #4A90D9; border-radius:4px; padding:5px 12px; font-size:12px;">🐦 飞书</td>
+</tr>
+<tr>
+<td bgcolor="#BBDDF5" style="border:1px solid #4A90D9; border-radius:4px; padding:5px 12px; font-size:12px;">🐧 QQ</td>
+<td bgcolor="#BBDDF5" style="border:1px solid #4A90D9; border-radius:4px; padding:5px 12px; font-size:12px;">💼 企业微信</td>
+<td bgcolor="#BBDDF5" style="border:1px solid #4A90D9; border-radius:4px; padding:5px 12px; font-size:12px;">💚 微信</td>
+<td bgcolor="#BBDDF5" style="border:1px solid #4A90D9; border-radius:4px; padding:5px 12px; font-size:12px;">💎 腾讯元宝</td>
+</tr>
+<tr>
+<td colspan="2" bgcolor="#F0E8FF" style="border:1px solid #7B61FF; border-radius:4px; padding:5px 12px; font-size:12px;">🔌 REST API / SSE</td>
+<td colspan="2" bgcolor="#FFF0E8" style="border:1px solid #D9701B; border-radius:4px; padding:5px 12px; font-size:12px;">🔗 ACP (Agent → Agent)</td>
+</tr>
+</table>
+</div>
+</td></tr>
+</table>
+
+</td></tr>
+<tr><td align="center" height="28" style="font-size:18px; color:#4A90D9;">⬇</td></tr>
+<tr><td align="center">
+
+<!-- ====== 会话管理层 ====== -->
+<table border="0" cellspacing="0" cellpadding="0" width="780">
+<tr><td bgcolor="#E8F8E8" style="border:1px solid #4CAF50; border-radius:8px; padding:14px 18px;">
+<div align="center">
+<b style="font-size:16px; color:#1B5E20;">🔄 会话管理层 (Runtime)</b>
+<hr style="border:0; border-top:1px dashed #4CAF50; margin:8px 0;">
+
+<table border="0" cellspacing="0" cellpadding="0" width="100%">
+<tr>
+<td bgcolor="#C8E6C9" style="border:1px solid #4CAF50; border-radius:4px; padding:10px;" width="50%">
+<div align="center"><b style="font-size:13px; color:#1B5E20;">📜 Scroll 上下文管理</b></div>
+<table border="0" cellspacing="4" cellpadding="0" width="100%">
+<tr>
+<td align="center" bgcolor="#FFFFFF" style="border:1px solid #4CAF50; border-radius:3px; padding:4px; font-size:11px;"><b>Working Context</b><br>当前活跃轮次</td>
+<td align="center" bgcolor="#FFFFFF" style="border:1px solid #4CAF50; border-radius:3px; padding:4px; font-size:11px;"><b>Memory Scroll</b><br>EvictionIndex 折叠</td>
+<td align="center" bgcolor="#FFFFFF" style="border:1px solid #4CAF50; border-radius:3px; padding:4px; font-size:11px;"><b>History</b><br>完整逐字 (SQLite + FTS5)</td>
+</tr>
+</table>
+</td>
+<td width="8"></td>
+<td bgcolor="#C8E6C9" style="border:1px solid #4CAF50; border-radius:4px; padding:10px;" width="50%">
+<div align="center"><b style="font-size:13px; color:#1B5E20;">⚙️ ReAct 循环引擎</b></div>
+<div style="font-size:11px; color:#333; line-height:1.6; padding:4px;">
+模型调用 → 工具执行 → 结果回写<br>
+8 Phase Hook 拓扑排序拦截<br>
+PRE_DISPATCH → ... → FINALLY
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td></tr>
+</table>
+
+</td></tr>
+<tr><td align="center" height="28" style="font-size:18px; color:#4CAF50;">⬇</td></tr>
+<tr><td align="center">
+
+<!-- ====== Agent 引擎层 ====== -->
+<table border="0" cellspacing="0" cellpadding="0" width="780">
+<tr><td bgcolor="#FFF8E1" style="border:1px solid #FF9800; border-radius:8px; padding:14px 18px;">
+<div align="center">
+<b style="font-size:16px; color:#E65100;">🤖 Agent 引擎层</b>
+<hr style="border:0; border-top:1px dashed #FF9800; margin:8px 0;">
+
+<table border="0" cellspacing="6" cellpadding="0" width="100%">
+<tr>
+<td bgcolor="#FFE0B2" style="border:1px solid #FF9800; border-radius:4px; padding:8px;" width="33%">
+<div align="center"><b style="font-size:12px;">📋 Agent 管理器</b></div>
+<div style="font-size:11px; color:#444; line-height:1.5; padding:2px;">
+多智能体创建 / 调度<br>
+子 Agent 委派 / fork<br>
+ACP 跨实例通信
+</div>
+</td>
+<td bgcolor="#FFE0B2" style="border:1px solid #FF9800; border-radius:4px; padding:8px;" width="33%">
+<div align="center"><b style="font-size:12px;">🚦 StopGate / Mode 系统</b></div>
+<div style="font-size:11px; color:#444; line-height:1.5; padding:2px;">
+Iteration / DoomLoop<br>
+Budget / FileLoop / Rubric<br>
+GoalMode / MissionMode
+</div>
+</td>
+<td bgcolor="#FFE0B2" style="border:1px solid #FF9800; border-radius:4px; padding:8px;" width="33%">
+<div align="center"><b style="font-size:12px;">⚡ 执行引擎</b></div>
+<div style="font-size:11px; color:#444; line-height:1.5; padding:2px;">
+Shell Executor<br>
+MCP Driver / Plugin Driver<br>
+沙箱执行 → 结果返回
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td></tr>
+</table>
+
+</td></tr>
+<tr><td align="center" height="28" style="font-size:18px; color:#FF9800;">⬇</td></tr>
+<tr><td align="center">
+
+<!-- ====== 安全层 ====== -->
+<table border="0" cellspacing="0" cellpadding="0" width="780">
+<tr><td bgcolor="#FFEBEE" style="border:1px solid #E53935; border-radius:8px; padding:14px 18px;">
+<div align="center">
+<b style="font-size:16px; color:#B71C1C;">🛡️ 安全层 (Security) — 默认开启</b>
+<hr style="border:0; border-top:1px dashed #E53935; margin:8px 0;">
+
+<table border="0" cellspacing="4" cellpadding="0" width="100%">
+<tr>
+<td bgcolor="#FFCDD2" style="border:1px solid #E53935; border-radius:4px; padding:6px 4px; font-size:11px;" width="33%"><b>🔒 Sandbox</b><br>Seatbelt / bwrap / Landlock</td>
+<td bgcolor="#FFCDD2" style="border:1px solid #E53935; border-radius:4px; padding:6px 4px; font-size:11px;" width="33%"><b>🔍 Tool Guard</b><br>三层 Guardian 协调</td>
+<td bgcolor="#FFCDD2" style="border:1px solid #E53935; border-radius:4px; padding:6px 4px; font-size:11px;" width="33%"><b>📁 File Guard</b><br>敏感文件路径保护</td>
+</tr>
+<tr>
+<td bgcolor="#FFCDD2" style="border:1px solid #E53935; border-radius:4px; padding:6px 4px; font-size:11px;"><b>🔬 Skill Scanner</b><br>8 类威胁签名检测</td>
+<td bgcolor="#FFCDD2" style="border:1px solid #E53935; border-radius:4px; padding:6px 4px; font-size:11px;"><b>🏢 Tenancy</b><br>多租户 / RLS 隔离</td>
+<td bgcolor="#FFCDD2" style="border:1px solid #E53935; border-radius:4px; padding:6px 4px; font-size:11px;"><b>📊 Governance</b><br>审计日志 / 审批工作流</td>
+</tr>
+</table>
+</div>
+</td></tr>
+</table>
+
+</td></tr>
+<tr><td align="center" height="28" style="font-size:18px; color:#E53935;">⬇</td></tr>
+<tr><td align="center">
+
+<!-- ====== 扩展层 ====== -->
+<table border="0" cellspacing="0" cellpadding="0" width="780">
+<tr><td bgcolor="#F3E5F5" style="border:1px solid #8E24AA; border-radius:8px; padding:14px 18px;">
+<div align="center">
+<b style="font-size:16px; color:#4A148C;">🧩 扩展层 (Extensions)</b>
+<hr style="border:0; border-top:1px dashed #8E24AA; margin:8px 0;">
+
+<table border="0" cellspacing="6" cellpadding="0" width="100%">
+<tr>
+<td bgcolor="#E1BEE7" style="border:1px solid #8E24AA; border-radius:4px; padding:6px; font-size:11px;" width="20%" align="center"><b>🎯 Skills</b><br>脚本 / 可安装</td>
+<td bgcolor="#E1BEE7" style="border:1px solid #8E24AA; border-radius:4px; padding:6px; font-size:11px;" width="20%" align="center"><b>🔌 插件</b><br>Python 深度集成</td>
+<td bgcolor="#E1BEE7" style="border:1px solid #8E24AA; border-radius:4px; padding:6px; font-size:11px;" width="20%" align="center"><b>🔗 MCP</b><br>模型 → 工具</td>
+<td bgcolor="#E1BEE7" style="border:1px solid #8E24AA; border-radius:4px; padding:6px; font-size:11px;" width="20%" align="center"><b>⏰ Cron</b><br>定时任务</td>
+<td bgcolor="#E1BEE7" style="border:1px solid #8E24AA; border-radius:4px; padding:6px; font-size:11px;" width="20%" align="center"><b>📚 SAGE</b><br>跨会话经验</td>
+</tr>
+</table>
+
+<table border="0" cellspacing="0" cellpadding="0" width="100%" style="margin-top:8px;">
+<tr><td bgcolor="#E1BEE7" style="border:1px solid #8E24AA; border-radius:4px; padding:8px;">
+<div align="center"><b style="font-size:13px; color:#4A148C;">🤖 模型提供商层 (Providers)</b></div>
+<table border="0" cellspacing="4" cellpadding="0" width="100%">
+<tr>
+<td align="center" bgcolor="#FFFFFF" style="border:1px solid #8E24AA; border-radius:3px; padding:4px; font-size:11px;"><b>内置</b> DeepSeek / Minions Local (llama.cpp) / Ollama / LM Studio</td>
+</tr>
+<tr>
+<td align="center" bgcolor="#FFFFFF" style="border:1px solid #8E24AA; border-radius:3px; padding:4px; font-size:11px;"><b>自定义</b> 任意 OpenAI-compatible 端点 (OpenAI / Anthropic / Gemini / DashScope / vLLM)</td>
+</tr>
+</table>
+</td></tr>
+</table>
+</div>
+</td></tr>
+</table>
+
+</td></tr>
+</table>
+</div>
+
+<details>
+<summary>📁 查看纯文本版本（适合终端阅读）</summary>
+
+```text
 ┌──────────────────────────────────────────────────────────────────┐
-│                        渠道 / 接入层 (Channels)                    │
-│  Web 控制台  │  TUI (终端)  │  钉钉  │  飞书  │  QQ  │  企业微信  │
-│  微信  │  腾讯元宝  │  REST API / SSE  │  ACP (Agent→Agent)  │
+│  渠道 / 接入层 (Channels)                                          │
+│  Web 控制台 │ TUI │ 钉钉 │ 飞书 │ QQ │ 企业微信 │ 微信 │ 腾讯元宝  │
+│  REST API / SSE │ ACP (Agent→Agent)                               │
 └───────────────────────────────┬──────────────────────────────────┘
-                                │
-┌───────────────────────────────▼──────────────────────────────────┐
-│                        会话管理层 (Runtime)                       │
-│  ┌──────────────────────────────────────────────────────────┐    │
-│  │  Scroll 上下文管理系统                                    │    │
-│  │  ┌──────────┬──────────┬──────────────────────┐         │    │
-│  │  │ Working  │ Memory   │  History (完整逐字)   │         │    │
-│  │  │ Context  │ Scroll   │  支持 Lazy Load /    │         │    │
-│  │  │ (当前轮) │ (知识蒸馏│  Streaming / 分页)    │         │    │
-│  │  └──────────┴──────────┴──────────────────────┘         │    │
-│  └──────────────────────────────────────────────────────────┘    │
-│  模型调用 → 模型调用 → 输出拦截 → 工具执行 → 输出拦截 → 上下文更新  │
-│  (完整的循环引擎: pre_process → call → post_process → 回写)      │
+                                ⬇
+┌──────────────────────────────────────────────────────────────────┐
+│  会话管理层 (Runtime)                                              │
+│  ┌─────────────────────────────┐ ┌─────────────────────────────┐ │
+│  │ Scroll 上下文管理            │ │ ReAct 循环引擎              │ │
+│  │ Working / Memory / History   │ │ 8 Phase Hook 拓扑排序       │ │
+│  └─────────────────────────────┘ └─────────────────────────────┘ │
 └───────────────────────────────┬──────────────────────────────────┘
-                                │
-┌───────────────────────────────▼──────────────────────────────────┐
-│                        Agent 引擎层                               │
-│  ┌──────────────────────────────────────────────────────────┐    │
-│  │   Agent 管理器 (AgentManager)                             │    │
-│  │   多智能体创建 / 调度 / 生命周期管理                        │    │
-│  │   子 Agent 运行时生成 / 委派 / ACP 跨实例通信               │    │
-│  └──────────────────────────────────────────────────────────┘    │
-│  ┌──────────────────────────────────────────────────────────┐    │
-│  │   StopGate / Mode 系统                                    │    │
-│  │   IterationGate / DoomLoopGate / BudgetGate / RubricGate │    │
-│  │   GoalMode / MissionMode (Mode 激活时才运行的 Hook)       │    │
-│  │   Hook 系统: 8 阶段均可插拔拦截                             │    │
-│  └──────────────────────────────────────────────────────────┘    │
-│  ┌──────────────────────────────────────────────────────────┐    │
-│  │   执行引擎 (executors / drivers)                          │    │
-│  │   Shell Executor, MCP Driver, Plugin Driver              │    │
-│  │   命令构建 → 安全拦截 → 沙箱执行 → 结果返回               │    │
-│  └──────────────────────────────────────────────────────────┘    │
+                                ⬇
+┌──────────────────────────────────────────────────────────────────┐
+│  Agent 引擎层                                                     │
+│  AgentManager │ StopGate/Mode 系统 │ 执行引擎 (Shell/MCP/Plugin)  │
 └───────────────────────────────┬──────────────────────────────────┘
-                                │
-┌───────────────────────────────▼──────────────────────────────────┐
-│                        安全层 (Security)                          │
-│  ┌──────────────────────────────────────────────────────────┐    │
-│  │   Sandbox (内核级隔离: Seatbelt / bwrap / Landlock)        │    │
-│  │   Tool Guard (工具调用规则引擎 / 白名单联网策略)            │    │
-│  │   File Guard (文件操作边界守卫, 多级权限策略)               │    │
-│  │   Skill Scanner (安装前自动检测注入 / 权限 / 恶意模式)      │    │
-│  │   Tenancy (多租户控制面 / PostgreSQL RLS 隔离)             │    │
-│  │   Governance (审计日志 / 审批工作流)                        │    │
-│  └──────────────────────────────────────────────────────────┘    │
+                                ⬇
+┌──────────────────────────────────────────────────────────────────┐
+│  安全层 (Security) — 默认开启                                      │
+│  Sandbox │ Tool Guard │ File Guard │ Skill Scanner              │
+│  Tenancy │ Governance (审计/审批)                                 │
 └───────────────────────────────┬──────────────────────────────────┘
-                                │
-┌───────────────────────────────▼──────────────────────────────────┐
-│                        扩展层                                     │
-│  ┌──────────┬──────────┬──────────┬──────────┬──────────┐       │
-│  │  Skills  │  插件    │  MCP     │  Cron    │  SAGE    │       │
-│  │  (脚本 / │ (Python) │ (模型→   │ (定时    │ (多租户  │       │
-│  │  可安装) │          │  工具)   │  任务)   │  经验库) │       │
-│  └──────────┴──────────┴──────────┴──────────┴──────────┘       │
-│  ┌──────────────────────────────────────────────────────────┐    │
-│  │  模型提供商层 (Providers)                                 │    │
-│  │  内置: DeepSeek / Minions Local (llama.cpp) / Ollama /   │    │
-│  │        LM Studio                                         │    │
-│  │  自定义: 任意 OpenAI-compatible 端点 (OpenAI / Anthropic  │    │
-│  │         / Gemini / DashScope / vLLM / ...)               │    │
-│  │  统一接口: /v1/chat/completions → 每个 go Provider        │    │
-│  └──────────────────────────────────────────────────────────┘    │
+                                ⬇
+┌──────────────────────────────────────────────────────────────────┐
+│  扩展层                                                           │
+│  Skills │ 插件 │ MCP │ Cron │ SAGE                                 │
+│  Providers: 内置 4 个 + 自定义 OpenAI-compatible                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
+
+</details>
 
 ---
 
