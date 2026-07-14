@@ -35,6 +35,7 @@ from ..backup._utils.safe_swap import cleanup_startup_restore_artifacts
 from ..utils.logging import (
     add_project_file_handler,
     LOG_FILE_PATH,
+    LOG_NAMESPACE,
 )
 from ..utils.system_info import summarize_python_environment
 from .auth import AuthMiddleware, auto_register_from_env
@@ -54,7 +55,7 @@ from .migration import (
 )
 
 # Explicit application bootstrap configured the project logger above.
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(LOG_NAMESPACE)
 
 # Ensure static assets are served with browser-compatible MIME types across
 # platforms (notably Windows may miss .js/.mjs mappings).

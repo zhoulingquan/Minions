@@ -28,13 +28,14 @@ def bootstrap_minions() -> None:
         if _bootstrap_complete:
             return
 
-        started_at = time.perf_counter()
-
         # These imports are intentionally local: importing the PEP 420
         # ``minions`` namespace must not initialize application state.
         from minions.app.bootstrap_env import load_bootstrap_env
 
         load_bootstrap_env()
+        # Preserve the legacy package-init timing boundary: persisted env
+        # loading completes before the timed compatibility/logging phase.
+        started_at = time.perf_counter()
 
         # Importing the compatibility package installs the legacy AgentScope
         # message shims.  Keep that initialization behind this explicit gate.

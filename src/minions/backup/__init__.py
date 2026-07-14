@@ -13,6 +13,11 @@ __all__ = [
 ]
 
 
+def __dir__() -> list[str]:
+    """Expose lazy public operations to dir() and inspection tools."""
+    return sorted(set(globals()) | set(__all__))
+
+
 def __getattr__(name: str):
     """Load public backup operations without eager startup dependencies."""
     if name == "create_stream":
