@@ -93,6 +93,10 @@ class MinionsAgent(Agent):
         self._gate_pending_stop = None
         self._gate_pending_continue = None
 
+        # Plan phase: tracks whether a planning prompt has already been
+        # injected during the current turn to avoid re-injection.
+        self._plan_injected = False
+
         init_kwargs: dict[str, Any] = {
             "name": name,
             "model": model,
@@ -571,9 +575,66 @@ class MinionsAgent(Agent):
         for hint in hints:
             self.state.context.append(hint)
 
+    @property
+    def _is_first_iteration(self) -> bool:
+        """Check if this is the first iteration of the current turn."""
+        return getattr(self, '_plan_injected', False) is False
+
+    def _plan_enabled(self) -> bool:
+        """Check if the plan phase is enabled for this agent."""
+        try:
+            return getattr(
+                self._agent_config.running, 'plan_phase_enabled', False
+            )
+        except Exception:
+            return False
+
+    def _build_plan_prompt(self) -> str:
+        """Build the planning prompt for the first iteration.
+
+        Asks the agent to decompose the task into a structured plan
+        before starting tool-based execution.
+        """
+        return (
+            "Before starting, create a brief plan:\n"
+            "1. Break down the task into 3-7 concrete steps\n"
+            "2. Identify which tools you'll need for each step\n"
+            "3. Note any dependencies between steps\n"
+            "Then begin executing step by step."
+        )
+
     async def _reply(self, **kwargs: Any) -> Any:
-        """Override to inject pending background-tool hints before reply."""
+        """Override to inject pending background-tool hints and plan phase."""
         await self._inject_pending_hints()
+
+        # Plan phase: inject a planning prompt on the first iteration
+        # to encourage structured task decomposition before acting.
+        # The flag is set before calling super()._reply() so that
+        # continuation calls do not re-inject the prompt.
+        try:
+            if self._is_first_iteration and self._plan_enabled():
+                self._plan_injected = True
+                plan_prompt = self._build_plan_prompt()
+                if plan_prompt:
+                    self.state.context.append(
+                        Msg(
+                            name="user",
+                            role="user",
+                            content=[
+                                TextBlock(
+                                    type="text",
+                                    text=plan_prompt,
+                                ),
+                            ],
+                            metadata={
+                                MINIONS_MESSAGE_TAG_KEY: "plan_phase",
+                            },
+                        )
+                    )
+                    logger.debug("Plan phase: injected planning prompt")
+        except Exception:
+            logger.exception("Plan phase: failed to inject planning prompt")
+
         async for evt in super()._reply(**kwargs):
             yield evt
 

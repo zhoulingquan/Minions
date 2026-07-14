@@ -455,6 +455,51 @@ class ToolCoordinator:
 
         return _NextEvent(type="deadline_reached")
 
+    @staticmethod
+    def _classify_error(exc: Exception) -> str:
+        """Classify an exception to decide retry eligibility.
+
+        Returns one of ``"transient"``, ``"permanent"`` or ``"unknown"``.
+        Permanent error types are checked first because ``FileNotFoundError``
+        and ``PermissionError`` are subclasses of ``OSError`` (transient).
+        """
+        # Permanent error types (checked first due to OSError subclassing).
+        if isinstance(
+            exc,
+            (PermissionError, ValueError, FileNotFoundError, KeyError),
+        ):
+            return "permanent"
+        # Transient error types: timeouts, connection issues, OS-level.
+        if isinstance(exc, (asyncio.TimeoutError, ConnectionError, OSError)):
+            return "transient"
+        # Fall back to inspecting the error message.
+        msg = str(exc).lower()
+        permanent_markers = (
+            "permission",
+            "not found",
+            "invalid",
+            "unauthorized",
+            "forbidden",
+            "403",
+            "404",
+            "400",
+        )
+        if any(marker in msg for marker in permanent_markers):
+            return "permanent"
+        transient_markers = (
+            "timeout",
+            "connection",
+            "temporarily",
+            "503",
+            "502",
+            "500",
+            "rate limit",
+            "overloaded",
+        )
+        if any(marker in msg for marker in transient_markers):
+            return "transient"
+        return "unknown"
+
     async def _drain(
         self,
         next_handler: Callable[..., AsyncGenerator[Any, None]],
@@ -462,28 +507,70 @@ class ToolCoordinator:
         entry: ToolCallEntry,
     ) -> None:
         try:
-            async for item in next_handler(tool_call=tool_call):
-                if isinstance(item, ToolResponse):
-                    entry.final_response = item
-                    await entry.stream.close()
+            while True:
+                try:
+                    async for item in next_handler(tool_call=tool_call):
+                        if isinstance(item, ToolResponse):
+                            entry.final_response = item
+                            await entry.stream.close()
+                            return
+
+                        if isinstance(item, ToolChunk):
+                            entry.final_response.append_chunk(item)
+                            await entry.stream.append(item)
+
+                            if item.state in (
+                                ToolResultState.ERROR,
+                                ToolResultState.INTERRUPTED,
+                            ):
+                                entry.end_state = (
+                                    "error"
+                                    if item.state == ToolResultState.ERROR
+                                    else "interrupted"
+                                )
+                                await entry.stream.close()
+                                return
+                    # Generator exhausted without a terminal response.
                     return
-
-                if isinstance(item, ToolChunk):
-                    entry.final_response.append_chunk(item)
-                    await entry.stream.append(item)
-
-                    if item.state in (
-                        ToolResultState.ERROR,
-                        ToolResultState.INTERRUPTED,
+                except Exception as exc:
+                    error_class = self._classify_error(exc)
+                    if (
+                        error_class == "transient"
+                        and entry.ctx.max_retries > 0
+                        and entry.ctx.retry_count < entry.ctx.max_retries
                     ):
-                        entry.end_state = (
-                            "error"
-                            if item.state == ToolResultState.ERROR
-                            else "interrupted"
+                        entry.ctx.retry_count += 1
+                        backoff = min(
+                            10.0,
+                            0.5 * (2 ** entry.ctx.retry_count),
                         )
-                        await entry.stream.close()
-                        return
-
+                        logger.info(
+                            "Retrying transient tool error (%s) for %s: "
+                            "attempt %d/%d after %.2fs backoff: %s",
+                            error_class,
+                            entry.ctx.tool_name,
+                            entry.ctx.retry_count,
+                            entry.ctx.max_retries,
+                            backoff,
+                            exc,
+                        )
+                        await asyncio.sleep(backoff)
+                        # Re-run the drain by continuing the outer loop;
+                        # final_response / end_state are intentionally left
+                        # untouched so the next attempt can populate them.
+                        continue
+                    entry.final_response = ToolResponse(
+                        content=[
+                            TextBlock(
+                                type="text",
+                                text=f"Tool error ({error_class}): {exc}",
+                            ),
+                        ],
+                        id=entry.ctx.tool_call_id,
+                        state=ToolResultState.ERROR,
+                    )
+                    entry.end_state = "error"
+                    return
         except asyncio.CancelledError:
             entry.final_response = ToolResponse(
                 content=[
@@ -496,15 +583,6 @@ class ToolCoordinator:
                 state=ToolResultState.INTERRUPTED,
             )
             entry.end_state = "interrupted"
-        except Exception as exc:
-            entry.final_response = ToolResponse(
-                content=[
-                    TextBlock(type="text", text=f"Tool error: {exc}"),
-                ],
-                id=entry.ctx.tool_call_id,
-                state=ToolResultState.ERROR,
-            )
-            entry.end_state = "error"
         finally:
             await entry.stream.close()
 

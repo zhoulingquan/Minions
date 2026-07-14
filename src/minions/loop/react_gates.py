@@ -12,8 +12,10 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from .gates import StopHandler
+from .gates.budget import BudgetGate
 from .gates.doom_loop import DoomLoopGate
 from .gates.iteration import IterationGate
+from .gates.reflection import ReflectionGate
 from .gates.rubric import StandaloneRubricGate
 from .handler_registry import (
     get_or_create_stop_handler,
@@ -85,18 +87,44 @@ def register_react_gates(
         scope="default",
     )
 
-    # 1. Iteration Gate
+    # 1. Iteration Gate (with adaptive budget support)
     if loop_cfg.iteration.enabled:
         effective_max = resolve_max_iterations(running_config)
-        gate = IterationGate(max_iterations=effective_max)
+        adaptive = getattr(loop_cfg.iteration, 'adaptive', False)
+        min_iters = getattr(loop_cfg.iteration, 'min_iterations', 5)
+        max_allowed = getattr(loop_cfg.iteration, 'max_allowed_iterations', 100)
+        gate = IterationGate(
+            max_iterations=effective_max,
+            adaptive=adaptive,
+            min_iterations=min_iters,
+            max_allowed_iterations=max_allowed,
+        )
         gate.activate()
         handler.register(gate)
         logger.debug(
-            "ReactGates: IterationGate (max=%d)",
+            "ReactGates: IterationGate (max=%d, adaptive=%s)",
             effective_max,
+            adaptive,
         )
 
-    # 2. DoomLoop Gate
+    # 2. Budget Gate (token cost awareness)
+    budget_enabled = getattr(loop_cfg, 'budget', None)
+    if budget_enabled and getattr(budget_enabled, 'enabled', False):
+        max_tokens = getattr(budget_enabled, 'max_tokens', 300_000)
+        warn_ratio = getattr(budget_enabled, 'warn_ratio', 0.7)
+        gate = BudgetGate(
+            max_tokens=max_tokens,
+            warn_ratio=warn_ratio,
+        )
+        gate.activate()
+        handler.register(gate)
+        logger.debug(
+            "ReactGates: BudgetGate (max_tokens=%d, warn_ratio=%.1f)",
+            max_tokens,
+            warn_ratio,
+        )
+
+    # 3. DoomLoop Gate
     if loop_cfg.doom_loop.enabled:
         gate = DoomLoopGate(
             window_size=loop_cfg.doom_loop.window_size,
@@ -107,7 +135,21 @@ def register_react_gates(
         handler.register(gate)
         logger.debug("ReactGates: DoomLoopGate registered")
 
-    # 3. Rubric Gate (completion check)
+    # 4. Reflection Gate (periodic self-reflection)
+    reflection_cfg = getattr(loop_cfg, 'reflection', None)
+    if reflection_cfg and getattr(reflection_cfg, 'enabled', False):
+        gate = ReflectionGate(
+            interval=getattr(reflection_cfg, 'interval', 5),
+            max_interventions=getattr(reflection_cfg, 'max_interventions', 3),
+            prompt=getattr(reflection_cfg, 'prompt', ''),
+        )
+        handler.register(gate)
+        logger.debug(
+            "ReactGates: ReflectionGate (interval=%d)",
+            getattr(reflection_cfg, 'interval', 5),
+        )
+
+    # 5. Rubric Gate (completion check)
     if loop_cfg.rubric.enabled:
         gate = StandaloneRubricGate(
             prompt=loop_cfg.rubric.prompt,

@@ -22,6 +22,7 @@ from .handler import StopHandler
 from .iteration import IterationGate
 from .runner import run_stop_handlers
 from .loop_gate import LoopGate
+from .reflection import ReflectionGate
 from .rubric import (
     StandaloneRubricGate,
     DefaultRubric,
@@ -41,6 +42,7 @@ __all__ = [
     "GoalStatusRubric",
     "IterationGate",
     "LoopGate",
+    "ReflectionGate",
     "RubricEvaluation",
     "RubricStrategy",
     "RubricVerdict",

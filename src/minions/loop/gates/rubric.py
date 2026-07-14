@@ -120,23 +120,49 @@ class GoalStatusRubric(RubricStrategy):
 
 
 class SubAgentRubric(RubricStrategy):
-    """Placeholder for subagent-based verification.
+    """Subagent-based rubric verification (the "ralph" pattern).
 
-    Concrete implementation should follow the
-    oh-my-claudecode/ralph pattern: spawn a subagent
-    to verify, then check state file key-values for
-    the verdict (not LLM output parsing).
+    Instead of parsing the agent's free-text output to decide whether a
+    goal is complete, this rubric relies on concrete state checks.
+    Evaluation proceeds through three modes, tried in priority order:
 
-    TODO: implement file-based state verification.
+    1. **check_fn** (programmatic state check): a synchronous predicate
+       ``check_fn(agent_output) -> bool`` supplied by the caller.  This is
+       the preferred "file-based state verification" mode -- the agent or
+       its tools write structured state (e.g. key/values to a state file)
+       and ``check_fn`` inspects that state directly.  Yields
+       ``SATISFIED`` when truthy, ``NEEDS_REVISION`` otherwise.
+
+    2. **spawn_fn** (LLM-based verification): an async callable
+       ``spawn_fn(prompt, context_snapshot) -> str`` that spawns a
+       subagent to judge completion.  The subagent must return one of the
+       literal strings ``"satisfied"``, ``"needs_revision"`` or
+       ``"failed"``, which are mapped to the matching
+       :class:`RubricVerdict`.  Exceptions are retried up to
+       ``max_retries`` times before yielding ``GRADER_ERROR`` with the
+       underlying error message.
+
+    3. **heuristic** (keyword fallback): when neither callable is
+       supplied, a naive substring scan of ``agent_output`` is used.
+       This is intentionally not robust and exists only so the rubric
+       degrades gracefully instead of always erroring.
+
+    The ``fork`` flag is reserved for future use (forking the agent
+    context for the spawned verifier) and is currently a no-op kept for
+    API compatibility.
     """
 
     def __init__(
         self,
-        spawn_fn: Any = None,
+        spawn_fn: Optional[Callable[[str, str], Awaitable[str]]] = None,
         fork: bool = False,
+        check_fn: Optional[Callable[[Any], bool]] = None,
+        max_retries: int = 1,
     ) -> None:
         self._spawn_fn = spawn_fn
         self._fork = fork
+        self._check_fn = check_fn
+        self._max_retries = max_retries
 
     async def evaluate(
         self,
@@ -144,11 +170,107 @@ class SubAgentRubric(RubricStrategy):
         agent_output: str,
         iteration: int,
     ) -> RubricEvaluation:
-        """Placeholder — returns GRADER_ERROR."""
+        """Evaluate ``goal`` against ``agent_output``.
+
+        Dispatches to one of the three modes documented on the class
+        (``check_fn`` -> ``spawn_fn`` -> heuristic) and always embeds
+        ``iteration`` in the returned :class:`RubricEvaluation`.
+        """
+        # ---- Mode 1: programmatic state check -------------------------
+        if self._check_fn is not None:
+            try:
+                ok = bool(self._check_fn(agent_output))
+            except Exception as exc:  # noqa: BLE001 - surface grader faults
+                return RubricEvaluation(
+                    iteration=iteration,
+                    verdict=RubricVerdict.GRADER_ERROR,
+                    explanation=f"check_fn raised: {exc}",
+                )
+            if ok:
+                return RubricEvaluation(
+                    iteration=iteration,
+                    verdict=RubricVerdict.SATISFIED,
+                    explanation="check_fn returned True",
+                )
+            return RubricEvaluation(
+                iteration=iteration,
+                verdict=RubricVerdict.NEEDS_REVISION,
+                explanation="check_fn returned False",
+            )
+
+        # ---- Mode 2: subagent (LLM) verification ----------------------
+        if self._spawn_fn is not None:
+            verdict_map = {
+                "satisfied": RubricVerdict.SATISFIED,
+                "needs_revision": RubricVerdict.NEEDS_REVISION,
+                "failed": RubricVerdict.FAILED,
+            }
+            attempts = self._max_retries + 1
+            last_exc: Optional[Exception] = None
+            for attempt in range(attempts):
+                try:
+                    raw = await self._spawn_fn(goal, agent_output)
+                except Exception as exc:  # noqa: BLE001 - transient grader faults
+                    last_exc = exc
+                    logger.warning(
+                        "SubAgentRubric spawn_fn attempt %d/%d raised: %s",
+                        attempt + 1,
+                        attempts,
+                        exc,
+                    )
+                    continue
+                verdict_str = (raw or "").strip().lower()
+                verdict = verdict_map.get(verdict_str)
+                if verdict is None:
+                    return RubricEvaluation(
+                        iteration=iteration,
+                        verdict=RubricVerdict.GRADER_ERROR,
+                        explanation=(
+                            f"spawn_fn returned unrecognized verdict: {raw!r}"
+                        ),
+                    )
+                return RubricEvaluation(
+                    iteration=iteration,
+                    verdict=verdict,
+                    explanation=f"spawn_fn verdict: {verdict_str}",
+                )
+            return RubricEvaluation(
+                iteration=iteration,
+                verdict=RubricVerdict.GRADER_ERROR,
+                explanation=(
+                    f"spawn_fn failed after {attempts} attempts: {last_exc}"
+                ),
+            )
+
+        # ---- Mode 3: heuristic keyword fallback -----------------------
+        completion_phrases = (
+            "task complete",
+            "task completed",
+            "task is complete",
+            "task is done",
+            "all steps completed",
+            "all steps done",
+            "successfully completed",
+            "successfully finished",
+            "finished",
+            "done",
+            "complete",
+        )
+        lowered = (agent_output or "").lower()
+        matched = next(
+            (phrase for phrase in completion_phrases if phrase in lowered),
+            None,
+        )
+        if matched is not None:
+            return RubricEvaluation(
+                iteration=iteration,
+                verdict=RubricVerdict.SATISFIED,
+                explanation=f"heuristic match: {matched!r}",
+            )
         return RubricEvaluation(
             iteration=iteration,
-            verdict=RubricVerdict.GRADER_ERROR,
-            explanation=("SubAgentRubric not yet implemented"),
+            verdict=RubricVerdict.NEEDS_REVISION,
+            explanation="heuristic: no completion phrase found",
         )
 
 

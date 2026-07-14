@@ -82,6 +82,19 @@ class TokenRecordingModelWrapper(ChatModelBase):
     def pop_usage_for_session(cls, session_id: str) -> dict[str, Any] | None:
         return cls._usage_by_session.pop(session_id, None)
 
+    @classmethod
+    def get_usage_for_session(
+        cls,
+        session_id: str,
+    ) -> dict[str, Any] | None:
+        """Return recorded usage for a session without removing it.
+
+        Non-destructive counterpart to ``pop_usage_for_session``.
+        Used by gates (e.g. BudgetGate) that need to read the
+        latest recorded usage on every iteration without clearing it.
+        """
+        return cls._usage_by_session.get(session_id)
+
     def _store_usage(self, usage: dict[str, Any] | None) -> None:
         from ..app.agent_context import get_current_session_id
 

@@ -729,6 +729,82 @@ class IterationGateConfig(BaseModel):
             "when not set (legacy compat)."
         ),
     )
+    adaptive: bool = Field(
+        default=False,
+        description=(
+            "Enable adaptive iteration budget. "
+            "Adjusts max_iterations based on task complexity."
+        ),
+    )
+    min_iterations: int = Field(
+        default=5,
+        ge=1,
+        le=100,
+        description="Minimum iterations when adaptive budget is active.",
+    )
+    max_allowed_iterations: int = Field(
+        default=100,
+        ge=1,
+        le=500,
+        description="Maximum allowed iterations when adaptive budget is active.",
+    )
+
+
+class BudgetGateConfig(BaseModel):
+    """Token budget gate configuration.
+
+    Monitors token usage during the loop and warns
+    before the budget is exhausted, then hard-stops
+    when exceeded.
+    """
+
+    enabled: bool = Field(
+        default=False,
+        description="Enable token budget monitoring",
+    )
+    max_tokens: int = Field(
+        default=300_000,
+        ge=1000,
+        description="Maximum tokens per session before hard stop.",
+    )
+    warn_ratio: float = Field(
+        default=0.7,
+        ge=0.1,
+        le=1.0,
+        description=(
+            "Ratio of max_tokens at which to warn "
+            "the agent to wrap up (0.7 = 70%)."
+        ),
+    )
+
+
+class ReflectionGateConfig(BaseModel):
+    """Periodic self-reflection gate configuration.
+
+    Every ``interval`` iterations, injects a reflection
+    prompt asking the agent to assess its progress.
+    """
+
+    enabled: bool = Field(
+        default=False,
+        description="Enable periodic self-reflection",
+    )
+    interval: int = Field(
+        default=5,
+        ge=1,
+        le=50,
+        description="Iterations between reflection checkpoints.",
+    )
+    max_interventions: int = Field(
+        default=3,
+        ge=1,
+        le=20,
+        description="Max reflection interventions per turn.",
+    )
+    prompt: str = Field(
+        default="",
+        description="Custom reflection prompt (empty = use default).",
+    )
 
 
 class RubricGateConfig(BaseModel):
@@ -777,9 +853,17 @@ class LoopConfig(BaseModel):
         default_factory=IterationGateConfig,
         description="Iteration limit settings",
     )
+    budget: BudgetGateConfig = Field(
+        default_factory=BudgetGateConfig,
+        description="Token budget monitoring settings",
+    )
     doom_loop: DoomLoopConfig = Field(
         default_factory=DoomLoopConfig,
         description="Repetition protection settings",
+    )
+    reflection: ReflectionGateConfig = Field(
+        default_factory=ReflectionGateConfig,
+        description="Periodic self-reflection settings",
     )
     rubric: RubricGateConfig = Field(
         default_factory=RubricGateConfig,
@@ -803,6 +887,15 @@ class AgentsRunningConfig(BaseModel):
     loop: LoopConfig = Field(
         default_factory=LoopConfig,
         description="Loop engineering configuration",
+    )
+
+    plan_phase_enabled: bool = Field(
+        default=False,
+        description=(
+            "Enable Plan phase: inject a planning prompt "
+            "before the first ReAct iteration to encourage "
+            "structured task decomposition."
+        ),
     )
 
     llm_retry_enabled: bool = Field(

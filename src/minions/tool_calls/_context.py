@@ -42,6 +42,8 @@ class ToolCallContext:
 
     offload_reason: OffloadReason | None = None
     extra: dict[str, Any] = field(default_factory=dict)
+    retry_count: int = 0
+    max_retries: int = 0
     governance_metadata: dict[str, Any] = field(default_factory=dict)
 
     @property

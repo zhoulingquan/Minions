@@ -25,10 +25,20 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class _ToolCallRecord:
-    """One recorded tool call for pattern analysis."""
+    """One recorded tool call for pattern analysis.
+
+    ``args_hash`` drives the fast exact-match path, while
+    ``args_text`` (a truncated string view of the call args)
+    feeds the semantic Jaccard fallback for detecting
+    "same purpose, different parameters" patterns.
+    """
 
     tool_name: str
     args_hash: str
+    # Defaults to "" so the plain record() helper (which only
+    # receives a hash) keeps working; empty text simply yields a
+    # 0.0 Jaccard score and never triggers semantic false positives.
+    args_text: str = ""
 
 
 @dataclass
@@ -215,39 +225,55 @@ class DoomLoopGate(LoopGate):
                     if isinstance(block, dict)
                     else getattr(block, "input", "")
                 )
-                args_hash = self._hash_args(raw_input)
+                args_hash, args_text = self._extract_args_info(raw_input)
                 state.history.append(
                     _ToolCallRecord(
                         tool_name=name,
                         args_hash=args_hash,
+                        args_text=args_text,
                     ),
                 )
                 return
 
     @staticmethod
-    def _hash_args(raw_input: Any) -> str:
-        """Hash tool call args with truncation for large inputs.
+    def _extract_args_info(raw_input: Any) -> tuple[str, str]:
+        """Extract a hash and a truncated text view of tool call args.
 
-        Only the first 2048 bytes are hashed — enough
-        for repetition detection without serializing
-        potentially large file contents.
+        Returns ``(args_hash, args_text)``:
+        - ``args_hash``: short md5 prefix used by the exact-match
+          fast path. Only the first 2048 bytes are hashed — enough
+          for repetition detection without serializing potentially
+          large file contents.
+        - ``args_text``: truncated string representation (max 512
+          chars) of the same input, used as the token source for
+          the semantic Jaccard fallback.
         """
         _MAX_HASH_INPUT = 2048
+        _MAX_TEXT = 512
         if isinstance(raw_input, str):
-            data = raw_input[:_MAX_HASH_INPUT].encode()
+            text = raw_input
         else:
-            data = json.dumps(
+            text = json.dumps(
                 raw_input,
                 sort_keys=True,
                 default=str,
-            ).encode()[:_MAX_HASH_INPUT]
-        return hashlib.md5(data).hexdigest()[:8]
+            )
+        data = text[:_MAX_HASH_INPUT].encode()
+        args_hash = hashlib.md5(data).hexdigest()[:8]
+        args_text = text[:_MAX_TEXT]
+        return args_hash, args_text
 
     def _detect_repetition(
         self,
         state: _DoomState,
     ) -> bool:
-        """Check sliding window for repetition."""
+        """Check sliding window for repetition.
+
+        Delegates to the dual-mode ``_compute_similarity`` (exact
+        signature fast path, with a semantic Jaccard fallback when
+        the threshold has been lowered). A single threshold applies
+        to both modes.
+        """
         if len(state.history) < self._window_size:
             return False
 
@@ -263,13 +289,28 @@ class DoomLoopGate(LoopGate):
             return True
         return False
 
-    @staticmethod
     def _compute_similarity(
+        self,
         window: list[_ToolCallRecord],
     ) -> float:
-        """Compute action pattern similarity.
+        """Compute action pattern similarity (dual-mode).
 
-        Formula: 1 - (unique - 1) / (total - 1)
+        Mode 1 — exact match (fast path): uses the formula
+        ``1 - (unique - 1) / (total - 1)`` over the
+        ``tool_name:args_hash`` signatures. When this already meets
+        the configured threshold it is returned directly and the
+        costlier semantic step is skipped.
+
+        Mode 2 — semantic fuzzy match: activated only when the exact
+        similarity falls below the threshold AND the threshold has
+        been lowered below the strict-exact default (1.0). Computes a
+        token-based Jaccard similarity between the ``args_text`` of
+        consecutive records in the window and returns the average.
+        This lets the gate flag "same purpose, different parameters"
+        patterns that exact hashing misses.
+
+        At the default threshold of 1.0 the gate stays in
+        exact-match-only mode, preserving prior behaviour.
 
         Precondition: ``len(window) >= 2``.
         Callers must ensure this; ``_detect_repetition``
@@ -279,10 +320,51 @@ class DoomLoopGate(LoopGate):
         if not window or len(window) <= 1:
             return 0.0
 
+        # --- Mode 1: exact signature similarity (fast path) ---
         sigs = [f"{r.tool_name}:{r.args_hash}" for r in window]
         unique = len(set(sigs))
         total = len(sigs)
-        return 1.0 - (unique - 1) / (total - 1)
+        exact_similarity = 1.0 - (unique - 1) / (total - 1)
+
+        # Fast path: exact match already meets the threshold, so the
+        # more expensive semantic analysis is unnecessary.
+        if exact_similarity >= self._threshold:
+            return exact_similarity
+
+        # Semantic matching only activates when the user has lowered
+        # the threshold below the strict-exact default. At 1.0 the
+        # gate remains exact-match-only.
+        if self._threshold >= 1.0:
+            return exact_similarity
+
+        # --- Mode 2: semantic fuzzy similarity (Jaccard) ---
+        jaccard_scores: list[float] = []
+        for i in range(1, len(window)):
+            prev_tokens = set(window[i - 1].args_text.split())
+            cur_tokens = set(window[i].args_text.split())
+            jaccard_scores.append(
+                self._jaccard(prev_tokens, cur_tokens),
+            )
+
+        if not jaccard_scores:
+            return exact_similarity
+
+        return sum(jaccard_scores) / len(jaccard_scores)
+
+    @staticmethod
+    def _jaccard(a: set[str], b: set[str]) -> float:
+        """Token-set Jaccard similarity.
+
+        Returns ``0.0`` when either token set is empty, so records
+        without ``args_text`` (e.g. created via the plain
+        ``record()`` helper) never produce semantic false positives.
+        """
+        if not a or not b:
+            return 0.0
+        union = len(a | b)
+        if union == 0:
+            return 0.0
+        return len(a & b) / union
 
 
 __all__ = ["DoomLoopGate"]
