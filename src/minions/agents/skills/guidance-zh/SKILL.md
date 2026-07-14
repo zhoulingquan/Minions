@@ -33,17 +33,6 @@ DOCS_DIR=$(python3 -c "from minions.constant import DOCS_DIR; print(DOCS_DIR or 
 
 如果获取失败（例如旧版本未包含 DOCS_DIR），按以下顺序 fallback：
 
-**查找记忆中的文档目录**
-
-首先你可以查看memory中是否有文档目录，如果有则直接使用，如果没有则继续执行下一步。
-
-```bash
-# 获取memory中的文档目录
-DOCS_DIR=$(find ~/.minions/memory/ -type d -name "docs")
-```
-
-如果 memory 中没有文档目录，则继续执行下面的逻辑。
-
 **检查项目源码中的文档目录**
 
 执行以下脚本逻辑来获取变量 $MINIONS_ROOT：

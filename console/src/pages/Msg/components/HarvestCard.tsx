@@ -1,6 +1,5 @@
 import { Card, Button, Badge, Progress } from "antd";
 import { Zap, BookOpen, Settings, Clock, Trophy } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import type { HarvestInstance } from "../types";
 import { useHarvestCountdown } from "../hooks/useHarvestCountdown";
 import styles from "./HarvestCard.module.less";
@@ -18,10 +17,9 @@ export function HarvestCard({
   onViewAll,
   onSettings,
 }: HarvestCardProps) {
-  const { t } = useTranslation();
-  const countdown = useHarvestCountdown(harvest.schedule.nextRun);
+    const countdown = useHarvestCountdown(harvest.schedule.nextRun);
   const timeText = countdown.isOverdue
-    ? t("msg.ready")
+    ? "已就绪"
     : `${String(countdown.hours).padStart(2, "0")}:${String(
         countdown.minutes,
       ).padStart(2, "0")}:${String(countdown.seconds).padStart(2, "0")}`;
@@ -57,8 +55,8 @@ export function HarvestCard({
             <div className={styles.statusText}>
               <Clock size={14} />{" "}
               {countdown.isOverdue
-                ? t("msg.statusReadyToHarvest")
-                : t("msg.statusGrowing")}
+                ? "可立即收获"
+                : "生成中"}
             </div>
           </div>
         </div>
@@ -66,17 +64,13 @@ export function HarvestCard({
           <div className={styles.statItem}>
             <Zap size={14} />
             <span>
-              {t("msg.harvestedTimes", {
-                count: harvest.stats.totalGenerated,
-              })}
+              {`已生成 ${harvest.stats.totalGenerated} 次`}
             </span>
           </div>
           <div className={styles.statItem}>
             <Trophy size={14} />
             <span>
-              {t("msg.harvestSuccessRate", {
-                rate: harvest.stats.successRate,
-              })}
+              {`成功率 ${harvest.stats.successRate}%`}
             </span>
           </div>
         </div>
@@ -87,13 +81,13 @@ export function HarvestCard({
           icon={<Zap size={15} />}
           onClick={() => onTrigger(harvest.id)}
         >
-          {t("msg.harvestNow")}
+          {"立即收获"}
         </Button>
         <Button
           icon={<BookOpen size={15} />}
           onClick={() => onViewAll(harvest.id)}
         >
-          {t("msg.viewAll")}
+          {"查看全部"}
         </Button>
         <Button
           icon={<Settings size={15} />}

@@ -2,6 +2,7 @@
 """Tests for persisted agent ordering."""
 
 from types import SimpleNamespace
+from uuid import uuid4
 
 import pytest
 from fastapi import HTTPException
@@ -12,6 +13,7 @@ from minions.config.config import (
     Config,
 )
 from minions.app.routers import agents as agents_router
+from minions.tenancy.models import TenantPrincipal, TenantRole
 
 
 def _build_config(
@@ -38,6 +40,63 @@ def _agent_config(agent_id: str) -> AgentProfileConfig:
         description=f"{agent_id} description",
         workspace_dir=f"/tmp/{agent_id}",
     )
+
+
+def _tenant_principal() -> TenantPrincipal:
+    return TenantPrincipal(
+        tenant_id=uuid4(),
+        user_id=uuid4(),
+        username="operator",
+        role=TenantRole.OPERATOR,
+        source="test",
+    )
+
+
+def test_tenant_agent_workspace_rejects_paths_outside_agent_root(
+    monkeypatch,
+    tmp_path,
+):
+    principal = _tenant_principal()
+    working_dir = tmp_path / "minions"
+    monkeypatch.setattr(agents_router, "WORKING_DIR", working_dir)
+
+    request = agents_router.CreateAgentRequest(
+        name="Beta",
+        workspace_dir=str(tmp_path / "outside"),
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        agents_router._resolve_agent_workspace(
+            request,
+            "beta",
+            principal,
+        )
+
+    assert exc_info.value.status_code == 400
+
+
+def test_tenant_agent_workspace_allows_nested_path_under_own_root(
+    monkeypatch,
+    tmp_path,
+):
+    principal = _tenant_principal()
+    working_dir = tmp_path / "minions"
+    monkeypatch.setattr(agents_router, "WORKING_DIR", working_dir)
+    expected_root = (
+        working_dir / "tenants" / str(principal.tenant_id) / "workspaces" / "beta"
+    )
+    request = agents_router.CreateAgentRequest(
+        name="Beta",
+        workspace_dir=str(expected_root / "custom"),
+    )
+
+    resolved = agents_router._resolve_agent_workspace(
+        request,
+        "beta",
+        principal,
+    )
+
+    assert resolved == (expected_root / "custom").resolve()
 
 
 @pytest.mark.asyncio
@@ -154,7 +213,10 @@ async def test_create_agent_appends_new_id_to_order(monkeypatch, tmp_path):
     monkeypatch.setattr(
         agents_router,
         "_initialize_agent_workspace",
-        lambda workspace_dir, skill_names=None, md_template_id=None, language=None: None,  # noqa: E501  # pylint: disable=line-too-long
+        lambda workspace_dir,
+        skill_names=None,
+        md_template_id=None,
+        language=None: None,  # noqa: E501  # pylint: disable=line-too-long
     )
     monkeypatch.setattr(
         agents_router,

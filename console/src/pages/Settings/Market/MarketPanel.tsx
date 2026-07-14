@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, Input, Select, Tooltip } from "@agentscope-ai/design";
+import { AppstoreOutlined, UnorderedListOutlined } from "@ant-design/icons";
 import { Check } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import { useAgentStore } from "../../../stores/agentStore";
 import { useMarketSearch } from "./useMarketSearch";
 import {
@@ -10,7 +10,13 @@ import {
   type InstallQueueItem,
 } from "./useMarketInstall";
 import type { MarketResult } from "../../../api/modules/market";
-import { ResultCard, DetailDrawer, QueueItem, EmptyState } from "./components";
+import {
+  ResultCard,
+  ResultListItem,
+  DetailDrawer,
+  QueueItem,
+  EmptyState,
+} from "./components";
 import styles from "./index.module.less";
 
 function getCardKey(item: MarketResult) {
@@ -29,13 +35,12 @@ const InstallQueuePanel = memo(function InstallQueuePanel({
   onCancel: (id: string) => void;
   onRetry: (id: string) => void;
 }) {
-  const { t } = useTranslation();
-  return (
+    return (
     <div className={styles.queueDrawer}>
       <div className={styles.queueHeader}>
-        <span>{t("market.installQueue")}</span>
+        <span>{"安装队列"}</span>
         <Button size="small" onClick={onClearCompleted}>
-          {t("market.clearCompleted")}
+          {"清空"}
         </Button>
       </div>
       <div className={styles.queueList}>
@@ -67,8 +72,7 @@ const ProviderChips = memo(function ProviderChips({
   selectedKeys: Set<string>;
   onToggle: (key: string) => void;
 }) {
-  const { t } = useTranslation();
-  return (
+    return (
     <div className={styles.providerChips}>
       {providers.map((p) => {
         const active = selectedKeys.has(p.key);
@@ -85,7 +89,7 @@ const ProviderChips = memo(function ProviderChips({
             title={
               p.available
                 ? undefined
-                : p.reason ?? t("market.providerUnavailable")
+                : p.reason ?? "数据源不可用"
             }
           >
             <span
@@ -125,13 +129,12 @@ const CategorySelect = memo(function CategorySelect({
   active: string;
   onSelect: (id: string) => void;
 }) {
-  const { t } = useTranslation();
-  const options = useMemo(
+    const options = useMemo(
     () => [
-      { value: "", label: t("market.categoryAll") },
+      { value: "", label: "全部" },
       ...categories.map((c) => ({ value: c.id, label: c.label })),
     ],
-    [categories, t],
+    [categories],
   );
   return (
     <Select
@@ -139,19 +142,18 @@ const CategorySelect = memo(function CategorySelect({
       value={active || undefined}
       onChange={(v) => onSelect(v ?? "")}
       options={options}
-      placeholder={t("market.categoryPlaceholder")}
+      placeholder={"搜索分类"}
       showSearch
       allowClear
       optionFilterProp="label"
       popupMatchSelectWidth={false}
-      aria-label={t("market.categoryPlaceholder")}
+      aria-label={"搜索分类"}
     />
   );
 });
 
 function LoadMoreSentinel({ onVisible }: { onVisible: () => void }) {
-  const { t } = useTranslation();
-  const nodeRef = useRef<HTMLDivElement | null>(null);
+    const nodeRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const node = nodeRef.current;
     if (!node) return;
@@ -166,7 +168,7 @@ function LoadMoreSentinel({ onVisible }: { onVisible: () => void }) {
   }, [onVisible]);
   return (
     <div ref={nodeRef} className={styles.sentinel}>
-      {t("common.loading")}
+      {"加载中..."}
     </div>
   );
 }
@@ -181,10 +183,10 @@ export function MarketPanel({
 }: {
   installTarget: InstallTarget;
 }) {
-  const { t } = useTranslation();
-  const selectedAgent = useAgentStore((s) => s.selectedAgent);
+    const selectedAgent = useAgentStore((s) => s.selectedAgent);
   const market = useMarketSearch();
   const [detailItem, setDetailItem] = useState<MarketResult | null>(null);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const install = useMarketInstall({ selectedAgent });
 
@@ -246,27 +248,50 @@ export function MarketPanel({
             />
             <Input.Search
               className={styles.searchInput}
-              placeholder={t("market.searchPlaceholder")}
+              placeholder={"在多平台中搜索技能"}
               allowClear
               value={market.query}
               onChange={(e) => market.setQuery(e.target.value)}
-              aria-label={t("market.searchPlaceholder")}
+              aria-label={"在多平台中搜索技能"}
             />
+            <div className={styles.viewToggle} aria-label="排列方式">
+              <Tooltip title="列表排列">
+                <button
+                  className={`${styles.viewToggleButton} ${
+                    viewMode === "list" ? styles.viewToggleButtonActive : ""
+                  }`}
+                  aria-label="列表排列"
+                  aria-pressed={viewMode === "list"}
+                  onClick={() => setViewMode("list")}
+                >
+                  <UnorderedListOutlined />
+                </button>
+              </Tooltip>
+              <Tooltip title="网格排列">
+                <button
+                  className={`${styles.viewToggleButton} ${
+                    viewMode === "grid" ? styles.viewToggleButtonActive : ""
+                  }`}
+                  aria-label="网格排列"
+                  aria-pressed={viewMode === "grid"}
+                  onClick={() => setViewMode("grid")}
+                >
+                  <AppstoreOutlined />
+                </button>
+              </Tooltip>
+            </div>
           </div>
         </div>
 
         {market.query.trim() && !market.loading && !market.globalError && (
           <div className={styles.searchHint}>
-            {t("market.searchResult", {
-              keyword: market.query.trim(),
-              count: market.totalCount,
-            })}
+            {`"${market.query.trim()}" 相关技能共搜索到 ${market.totalCount} 个结果`}
           </div>
         )}
 
         {browseHintLabel && (
           <div className={styles.browseHint}>
-            {t("market.browseHint", { providers: browseHintLabel })}
+            {`选择分类或输入关键词以浏览 ${browseHintLabel} 中的技能`}
           </div>
         )}
 
@@ -284,32 +309,45 @@ export function MarketPanel({
         })}
 
         {market.loading && market.results.length === 0 ? (
-          <EmptyState text={t("common.loading")} />
+          <EmptyState text={"加载中..."} />
         ) : market.results.length === 0 &&
           (market.globalError || market.errors.length > 0) ? (
-          <EmptyState text={t("market.noResults")}>
+          <EmptyState text={"没有找到结果"}>
             <Button onClick={market.retry} loading={market.loading}>
-              {t("market.retry")}
+              {"重试"}
             </Button>
           </EmptyState>
         ) : market.results.length === 0 ? (
-          <EmptyState text={t("market.noResults")} />
+          <EmptyState text={"没有找到结果"} />
         ) : (
           <>
-            <div className={styles.resultsGrid}>
-              {market.results.map((item) => (
-                <ResultCard
-                  key={getCardKey(item)}
-                  item={item}
-                  onInstall={() => onInstall(item)}
-                  onOpenDetail={() => setDetailItem(item)}
-                />
-              ))}
+            <div
+              className={
+                viewMode === "grid" ? styles.resultsGrid : styles.resultsList
+              }
+            >
+              {market.results.map((item) =>
+                viewMode === "grid" ? (
+                  <ResultCard
+                    key={getCardKey(item)}
+                    item={item}
+                    onInstall={() => onInstall(item)}
+                    onOpenDetail={() => setDetailItem(item)}
+                  />
+                ) : (
+                  <ResultListItem
+                    key={getCardKey(item)}
+                    item={item}
+                    onInstall={() => onInstall(item)}
+                    onOpenDetail={() => setDetailItem(item)}
+                  />
+                ),
+              )}
             </div>
             <div className={styles.loadMoreRow}>
               {market.hasMore && market.autoLoadBlocked ? (
                 <Button onClick={market.loadMore} loading={market.loading}>
-                  {t("market.loadMore")}
+                  {"加载更多"}
                 </Button>
               ) : market.hasMore ? (
                 <LoadMoreSentinel
@@ -318,7 +356,7 @@ export function MarketPanel({
                 />
               ) : (
                 <span className={styles.noMoreText}>
-                  {t("market.noMoreResults")}
+                  {"没有更多了"}
                 </span>
               )}
             </div>

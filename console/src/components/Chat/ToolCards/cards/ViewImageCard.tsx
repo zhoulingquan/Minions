@@ -1,5 +1,4 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { PictureOutlined } from "@ant-design/icons";
 import type { ToolCallContent } from "../shared/types";
 import { ToolCardShell, MediaPreview } from "../shared";
@@ -14,13 +13,12 @@ const ViewImageCard: React.FC<ViewImageCardProps> = ({
   content,
   isStreaming,
 }) => {
-  const { t } = useTranslation();
-  const params = content.params || {};
+    const params = content.params || {};
   const imgPath = (params.image_path || "") as string;
   const file = shortFileName(imgPath);
   const title = file
-    ? t("tool.viewImage", { file })
-    : t("tool.viewImageDefault");
+    ? `查看图片 ${file}`
+    : "查看图片";
 
   const media = getMediaInfo(content);
 

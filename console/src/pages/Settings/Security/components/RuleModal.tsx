@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Modal, Form, Input, Select } from "@agentscope-ai/design";
-import { useTranslation } from "react-i18next";
+import type { FormInstance } from "antd";
 import type { ToolGuardRule } from "../../../../api/modules/security";
 
 const SEVERITY_OPTIONS = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"];
@@ -37,7 +37,7 @@ interface RuleModalProps {
   existingRuleIds: string[];
   onOk: () => void;
   onCancel: () => void;
-  form: any;
+  form: FormInstance;
 }
 
 export function RuleModal({
@@ -48,7 +48,6 @@ export function RuleModal({
   onCancel,
   form,
 }: RuleModalProps) {
-  const { t } = useTranslation();
 
   useEffect(() => {
     if (open) {
@@ -81,29 +80,29 @@ export function RuleModal({
     <Modal
       title={
         editingRule
-          ? t("security.rules.editTitle")
-          : t("security.rules.addTitle")
+          ? "编辑自定义规则"
+          : "添加自定义规则"
       }
       open={open}
       onOk={onOk}
       onCancel={onCancel}
-      okText={t("common.confirm")}
-      cancelText={t("common.cancel")}
+      okText={"确认"}
+      cancelText={"取消"}
       width={640}
       destroyOnHidden
     >
       <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
         <Form.Item
-          label={t("security.rules.ruleId")}
+          label={"规则 ID"}
           name="id"
           rules={[
-            { required: true, message: t("security.rules.ruleIdRequired") },
+            { required: true, message: "规则 ID 不能为空" },
             {
               validator: (_, value) => {
                 if (!value || editingRule) return Promise.resolve();
                 if (existingRuleIds.includes(value)) {
                   return Promise.reject(
-                    new Error(t("security.rules.duplicateId")),
+                    new Error("已存在相同 ID 的规则"),
                   );
                 }
                 return Promise.resolve();
@@ -113,41 +112,41 @@ export function RuleModal({
         >
           <Input placeholder="TOOL_CMD_CUSTOM_RULE" disabled={!!editingRule} />
         </Form.Item>
-        <Form.Item label={t("security.rules.tools")} name="tools">
+        <Form.Item label={"目标工具"} name="tools">
           <Select
             mode="tags"
             options={toolOptions}
-            placeholder={t("security.rules.toolsPlaceholder")}
+            placeholder={"留空匹配所有工具"}
             allowClear
           />
         </Form.Item>
-        <Form.Item label={t("security.rules.params")} name="params">
+        <Form.Item label={"目标参数"} name="params">
           <Select
             mode="tags"
-            placeholder={t("security.rules.paramsPlaceholder")}
+            placeholder={"留空匹配所有参数"}
             allowClear
           />
         </Form.Item>
-        <Form.Item label={t("security.rules.severityLabel")} name="severity">
+        <Form.Item label={"严重程度"} name="severity">
           <Select
             options={SEVERITY_OPTIONS.map((s) => ({ label: s, value: s }))}
           />
         </Form.Item>
-        <Form.Item label={t("security.rules.categoryLabel")} name="category">
+        <Form.Item label={"分类"} name="category">
           <Select
             options={CATEGORY_OPTIONS.map((c) => ({
-              label: t(`security.rules.categories.${c}`, { defaultValue: c }),
+              label: c === "command_injection" ? "命令注入" : c === "code_execution" ? "代码执行" : c === "data_exfiltration" ? "数据外泄" : c === "path_traversal" ? "路径穿越" : c === "sensitive_file_access" ? "敏感文件访问" : c === "network_abuse" ? "网络滥用" : c === "credential_exposure" ? "凭证泄露" : c === "resource_abuse" ? "资源滥用" : c === "privilege_escalation" ? "权限提升" : c === "prompt_injection" ? "提示注入" : c,
               value: c,
             }))}
           />
         </Form.Item>
         <Form.Item
-          label={t("security.rules.patterns")}
+          label={"正则模式"}
           name="patterns"
           rules={[
-            { required: true, message: t("security.rules.patternsRequired") },
+            { required: true, message: "至少需要一个正则模式" },
           ]}
-          tooltip={t("security.rules.patternsTooltip")}
+          tooltip={"每行一个正则表达式，匹配工具参数值（不区分大小写）。"}
         >
           <Input.TextArea
             rows={3}
@@ -156,9 +155,9 @@ export function RuleModal({
           />
         </Form.Item>
         <Form.Item
-          label={t("security.rules.excludePatterns")}
+          label={"排除模式"}
           name="exclude_patterns"
-          tooltip={t("security.rules.excludePatternsTooltip")}
+          tooltip={"每行一个正则表达式。如果匹配，则跳过该规则。"}
         >
           <Input.TextArea
             rows={2}
@@ -167,16 +166,16 @@ export function RuleModal({
           />
         </Form.Item>
         <Form.Item
-          label={t("security.rules.descriptionLabel")}
+          label={"描述"}
           name="description"
         >
-          <Input placeholder={t("security.rules.descriptionPlaceholder")} />
+          <Input placeholder={"该规则检测什么？"} />
         </Form.Item>
         <Form.Item
-          label={t("security.rules.remediationLabel")}
+          label={"修复建议"}
           name="remediation"
         >
-          <Input placeholder={t("security.rules.remediationPlaceholder")} />
+          <Input placeholder={"触发规则时建议的操作"} />
         </Form.Item>
       </Form>
     </Modal>

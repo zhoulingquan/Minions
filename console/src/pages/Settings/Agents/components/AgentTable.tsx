@@ -1,6 +1,5 @@
 import { Table, Button, Space, Popconfirm, Tag, Tooltip } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { useTranslation } from "react-i18next";
 import {
   DndContext,
   PointerSensor,
@@ -41,8 +40,7 @@ export function AgentTable({
   onToggle,
   onReorder,
 }: AgentTableProps) {
-  const { t } = useTranslation();
-  const { isDark } = useTheme();
+    const { isDark } = useTheme();
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -75,7 +73,7 @@ export function AgentTable({
       width: 56,
       align: "center",
       render: () => (
-        <Tooltip title={t("agent.dragHandleTooltip")}>
+        <Tooltip title={"拖拽调整智能体顺序"}>
           <span>
             <DragHandle disabled={reordering || loading} />
           </span>
@@ -83,7 +81,7 @@ export function AgentTable({
       ),
     },
     {
-      title: t("agent.name"),
+      title: "名称",
       dataIndex: "name",
       key: "name",
       width: 300,
@@ -96,38 +94,38 @@ export function AgentTable({
             }}
           />
           <span style={{ opacity: record.enabled ? 1 : 0.5 }}>
-            {getAgentDisplayName(record, t)}
+            {getAgentDisplayName(record)}
           </span>
-          {!record.enabled && <Tag color="error">{t("agent.disabled")}</Tag>}
+          {!record.enabled && <Tag color="error">{"已禁用"}</Tag>}
         </Space>
       ),
     },
     {
-      title: t("agent.id"),
+      title: "ID",
       dataIndex: "id",
       key: "id",
     },
     {
-      title: t("agent.description"),
+      title: "描述",
       dataIndex: "description",
       key: "description",
       ellipsis: true,
     },
     {
-      title: t("agent.workspace"),
+      title: "工作区路径",
       dataIndex: "workspace_dir",
       key: "workspace_dir",
       ellipsis: true,
     },
     {
-      title: t("agent.modelColumn"),
+      title: "模型",
       key: "active_model",
       width: 260,
       ellipsis: true,
-      render: (_: any, record: AgentSummary) => {
+      render: (_value: unknown, record: AgentSummary) => {
         if (!record.active_model) {
           return (
-            <span style={{ opacity: 0.45 }}>{t("agent.modelPlaceholder")}</span>
+            <span style={{ opacity: 0.45 }}>{"使用全局默认"}</span>
           );
         }
         return (
@@ -145,9 +143,9 @@ export function AgentTable({
       },
     },
     {
-      title: t("common.actions"),
+      title: "操作",
       key: "actions",
-      render: (_: any, record: AgentSummary) => (
+      render: (_value: unknown, record: AgentSummary) => (
         <Space>
           <Button
             type="text"
@@ -158,25 +156,25 @@ export function AgentTable({
             style={record.id === "default" ? disabledStyle : iconStyle}
             title={
               record.id === "default"
-                ? t("agent.defaultNotEditable")
+                ? "默认智能体不允许编辑"
                 : undefined
             }
           />
           <Popconfirm
             title={
               record.enabled
-                ? t("agent.disableConfirm")
-                : t("agent.enableConfirm")
+                ? "确认禁用智能体"
+                : "确认启用智能体"
             }
             description={
               record.enabled
-                ? t("agent.disableConfirmDesc")
-                : t("agent.enableConfirmDesc")
+                ? "禁用后该智能体不会启动运行实例，但仍可在列表中查看"
+                : "启用后该智能体将可以正常切换使用"
             }
             onConfirm={() => onToggle(record.id, record.enabled)}
             disabled={record.id === "default"}
-            okText={t("common.confirm")}
-            cancelText={t("common.cancel")}
+            okText={"确认"}
+            cancelText={"取消"}
           >
             <Button
               type="text"
@@ -186,18 +184,18 @@ export function AgentTable({
               style={record.id === "default" ? disabledStyle : iconStyle}
               title={
                 record.id === "default"
-                  ? t("agent.defaultNotDisablable")
+                  ? "默认智能体不允许禁用"
                   : undefined
               }
             />
           </Popconfirm>
           <Popconfirm
-            title={t("agent.deleteConfirm")}
-            description={t("agent.deleteConfirmDesc")}
+            title={"确认删除智能体"}
+            description={"删除后智能体将不可用，但工作区文件会保留"}
             onConfirm={() => onDelete(record.id)}
             disabled={record.id === "default"}
-            okText={t("common.confirm")}
-            cancelText={t("common.cancel")}
+            okText={"确认"}
+            cancelText={"取消"}
           >
             <Button
               type="link"
@@ -208,7 +206,7 @@ export function AgentTable({
               style={record.id === "default" ? disabledStyle : undefined}
               title={
                 record.id === "default"
-                  ? t("agent.defaultNotDeletable")
+                  ? "默认智能体不允许删除"
                   : undefined
               }
             />

@@ -6,7 +6,6 @@
  */
 import { Checkbox, Select } from "antd";
 import type { BaseOptionType } from "antd/es/select";
-import { useTranslation } from "react-i18next";
 import type { AgentSummary } from "@/api/types/agents";
 
 interface Props {
@@ -20,7 +19,6 @@ interface Props {
  * toggles all agents at once. Uses virtual scrolling for large lists.
  */
 export default function AgentMultiSelect({ agents, value, onChange }: Props) {
-  const { t } = useTranslation();
 
   const allSelected = agents.length > 0 && value.length === agents.length;
 
@@ -39,7 +37,7 @@ export default function AgentMultiSelect({ agents, value, onChange }: Props) {
   const options = [
     {
       value: "__all__",
-      label: allSelected ? t("backup.deselectAll") : t("backup.selectAll"),
+      label: allSelected ? "取消全选" : "全选",
     },
     ...agents.map((a) => ({ value: a.id, label: `${a.name} (${a.id})` })),
   ];
@@ -63,7 +61,7 @@ export default function AgentMultiSelect({ agents, value, onChange }: Props) {
     <Select
       mode="multiple"
       style={{ width: "100%" }}
-      placeholder={t("backup.agentsPlaceholder")}
+      placeholder={"请选择智能体工作区（留空表示全部）"}
       value={value}
       onChange={handleChange}
       options={options}

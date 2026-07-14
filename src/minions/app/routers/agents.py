@@ -29,9 +29,10 @@ from ...config.config import (
 )
 from ...config.utils import load_config, save_config
 from ...agents.utils import copy_workspace_md_files, normalize_agent_language
-from ...agents.skill_system import SkillPoolService, get_workspace_skills_dir
+from ...agents.skill_system import GlobalSkillService, get_workspace_skills_dir
 from ..multi_agent_manager import MultiAgentManager
 from ...constant import WORKING_DIR
+from ...tenancy.models import AgentAccess, TenantPrincipal
 
 logger = logging.getLogger(__name__)
 
@@ -110,6 +111,38 @@ def _get_multi_agent_manager(request: Request) -> MultiAgentManager:
     return request.app.state.multi_agent_manager
 
 
+def _tenant_principal(request: Request | None) -> TenantPrincipal | None:
+    if request is None:
+        return None
+    state = getattr(request, "state", None)
+    value = getattr(state, "tenant_principal", None)
+    return value if isinstance(value, TenantPrincipal) else None
+
+
+def _authorize_agent(
+    request: Request | None,
+    agent_id: str,
+    *,
+    write: bool = False,
+) -> None:
+    principal = _tenant_principal(request)
+    if principal is None:
+        return
+    from ...tenancy.errors import AccessDenied, ResourceNotFound
+    from ...tenancy.factory import get_tenancy_service
+
+    try:
+        get_tenancy_service().assert_agent_access(
+            principal,
+            agent_id,
+            write=write,
+        )
+    except AccessDenied as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ResourceNotFound as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
 def _normalized_agent_order(config) -> list[str]:
     """Return a deduplicated agent order covering every configured agent."""
     profile_ids = list(config.agents.profiles.keys())
@@ -160,13 +193,27 @@ def _read_profile_description(workspace_dir: str) -> str:
     summary="List all agents",
     description="Get list of all configured agents",
 )
-async def list_agents() -> AgentListResponse:
+async def list_agents(request: Request = None) -> AgentListResponse:
     """List all configured agents."""
     config = load_config()
     ordered_agent_ids = _normalized_agent_order(config)
 
+    principal = _tenant_principal(request)
+    allowed_ids = None
+    if principal is not None:
+        from ...tenancy.errors import AccessDenied
+        from ...tenancy.factory import get_tenancy_service
+
+        try:
+            grants = get_tenancy_service().list_agent_grants(principal)
+        except AccessDenied as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        allowed_ids = {grant.agent_id for grant in grants}
+
     agents = []
     for agent_id in ordered_agent_ids:
+        if allowed_ids is not None and agent_id not in allowed_ids:
+            continue
         agent_ref = config.agents.profiles[agent_id]
         try:
             agent_config = load_agent_config(agent_id)
@@ -212,10 +259,20 @@ async def list_agents() -> AgentListResponse:
 )
 async def reorder_agents(
     reorder_request: ReorderAgentsRequest = Body(...),
+    request: Request = None,
 ) -> dict:
     """Persist the full ordered list of agent IDs."""
     config = load_config()
     configured_ids = list(config.agents.profiles.keys())
+    principal = _tenant_principal(request)
+    if principal is not None:
+        from ...tenancy.factory import get_tenancy_service
+
+        configured_ids = [
+            value.agent_id
+            for value in get_tenancy_service().list_agent_grants(principal)
+            if value.agent_id in config.agents.profiles
+        ]
 
     if len(reorder_request.agent_ids) != len(set(reorder_request.agent_ids)):
         raise HTTPException(
@@ -229,7 +286,16 @@ async def reorder_agents(
             detail="Each configured agent ID must appear exactly once.",
         )
 
-    config.agents.agent_order = list(reorder_request.agent_ids)
+    if principal is None:
+        config.agents.agent_order = list(reorder_request.agent_ids)
+    else:
+        tenant_ids = set(configured_ids)
+        incoming = iter(reorder_request.agent_ids)
+        merged = [
+            next(incoming) if agent_id in tenant_ids else agent_id
+            for agent_id in _normalized_agent_order(config)
+        ]
+        config.agents.agent_order = merged
     save_config(config)
 
     return {"success": True, "agent_ids": config.agents.agent_order}
@@ -241,8 +307,12 @@ async def reorder_agents(
     summary="Get agent details",
     description="Get complete configuration for a specific agent",
 )
-async def get_agent(agentId: str = PathParam(...)) -> AgentProfileConfig:
+async def get_agent(
+    agentId: str = PathParam(...),
+    request: Request = None,
+) -> AgentProfileConfig:
     """Get agent configuration."""
+    _authorize_agent(request, agentId)
     try:
         agent_config = load_agent_config(agentId)
         return agent_config
@@ -269,6 +339,98 @@ def _generate_unique_id(existing_ids: set[str]) -> str:
     )
 
 
+def _resolve_agent_workspace(
+    create_request: CreateAgentRequest,
+    new_id: str,
+    principal: TenantPrincipal | None,
+) -> Path:
+    """Resolve a workspace without allowing tenant paths to escape their Agent."""
+    default_workspace = (
+        Path(WORKING_DIR) / "tenants" / str(principal.tenant_id) / "workspaces" / new_id
+        if principal is not None
+        else Path(WORKING_DIR) / "workspaces" / new_id
+    )
+    if principal is None:
+        return Path(
+            create_request.workspace_dir or default_workspace,
+        ).expanduser()
+
+    agent_root = default_workspace.expanduser().resolve()
+    if not create_request.workspace_dir:
+        return agent_root
+
+    requested = Path(create_request.workspace_dir).expanduser()
+    if not requested.is_absolute():
+        requested = agent_root / requested
+    resolved = requested.resolve()
+    if not resolved.is_relative_to(agent_root):
+        raise HTTPException(
+            status_code=400,
+            detail="Tenant agent workspace must stay inside its assigned root",
+        )
+    return resolved
+
+
+def _materialize_agent(
+    create_request: CreateAgentRequest,
+    config,
+    new_id: str,
+    principal: TenantPrincipal | None,
+) -> AgentProfileRef:
+    """Write one Agent only after its control-plane reservation succeeds."""
+    workspace_dir = _resolve_agent_workspace(create_request, new_id, principal)
+    workspace_dir.mkdir(parents=True, exist_ok=True)
+
+    from ...config.config import (
+        ChannelConfig,
+        HeartbeatConfig,
+        MCPConfig,
+        ToolsConfig,
+    )
+
+    language = normalize_agent_language(
+        create_request.language or config.agents.language or "en",
+    )
+    active_model = create_request.active_model
+    if not active_model or not active_model.provider_id:
+        try:
+            from ...providers import ProviderManager
+
+            global_model = ProviderManager.get_instance().get_active_model()
+            if global_model and global_model.provider_id:
+                active_model = global_model
+        except Exception:
+            pass
+
+    agent_config = AgentProfileConfig(
+        id=new_id,
+        name=create_request.name,
+        description=create_request.description,
+        workspace_dir=str(workspace_dir),
+        language=language,
+        channels=ChannelConfig(),
+        mcp=MCPConfig(),
+        heartbeat=HeartbeatConfig(),
+        tools=ToolsConfig(),
+        active_model=active_model,
+    )
+    _initialize_agent_workspace(
+        workspace_dir,
+        skill_names=create_request.skill_names or [],
+        language=language,
+    )
+    agent_ref = AgentProfileRef(
+        id=new_id,
+        workspace_dir=str(workspace_dir),
+        enabled=True,
+    )
+    config.agents.profiles[new_id] = agent_ref
+    config.agents.agent_order = _normalized_agent_order(config)
+    save_config(config)
+    save_agent_config(new_id, agent_config)
+    return agent_ref
+
+
 @router.post(
     "",
     response_model=AgentProfileRef,
@@ -278,6 +440,7 @@ def _generate_unique_id(existing_ids: set[str]) -> str:
 )
 async def create_agent(
     request: CreateAgentRequest = Body(...),
+    http_request: Request = None,
 ) -> AgentProfileRef:
     """Create a new agent.
 
@@ -300,67 +463,48 @@ async def create_agent(
     else:
         new_id = _generate_unique_id(existing_ids)
 
-    workspace_dir = Path(
-        request.workspace_dir or f"{WORKING_DIR}/workspaces/{new_id}",
-    ).expanduser()
-    workspace_dir.mkdir(parents=True, exist_ok=True)
+    principal = _tenant_principal(http_request)
+    if principal is not None:
+        from ...tenancy.errors import AccessDenied, Conflict, QuotaExceeded
+        from ...tenancy.factory import get_tenancy_service
 
-    from ...config.config import (
-        ChannelConfig,
-        MCPConfig,
-        HeartbeatConfig,
-        ToolsConfig,
-    )
-
-    language = normalize_agent_language(
-        request.language or config.agents.language or "en",
-    )
-
-    active_model = request.active_model
-    if not active_model or not active_model.provider_id:
         try:
-            from ...providers import ProviderManager
+            get_tenancy_service().register_agent(
+                principal,
+                agent_id=new_id,
+                access=AgentAccess.TENANT,
+            )
+        except AccessDenied as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except (Conflict, QuotaExceeded) as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
 
-            global_model = ProviderManager.get_instance().get_active_model()
-            if global_model and global_model.provider_id:
-                active_model = global_model
+    try:
+        agent_ref = _materialize_agent(request, config, new_id, principal)
+    except Exception:
+        # Keep the global config and the tenant quota consistent even when
+        # workspace initialization or config persistence fails midway.
+        try:
+            latest = load_config()
+            if new_id in latest.agents.profiles:
+                del latest.agents.profiles[new_id]
+                latest.agents.agent_order = _normalized_agent_order(latest)
+                save_config(latest)
         except Exception:
-            pass
+            logger.exception("Failed to compensate Agent config creation")
+        if principal is not None:
+            try:
+                from ...tenancy.factory import get_tenancy_service
 
-    agent_config = AgentProfileConfig(
-        id=new_id,
-        name=request.name,
-        description=request.description,
-        workspace_dir=str(workspace_dir),
-        language=language,
-        channels=ChannelConfig(),
-        mcp=MCPConfig(),
-        heartbeat=HeartbeatConfig(),
-        tools=ToolsConfig(),
-        active_model=active_model,
-    )
+                get_tenancy_service().rollback_agent_registration(
+                    principal,
+                    new_id,
+                )
+            except Exception:
+                logger.exception("Failed to compensate tenant Agent reservation")
+        raise
 
-    _initialize_agent_workspace(
-        workspace_dir,
-        skill_names=(
-            request.skill_names if request.skill_names is not None else []
-        ),
-        language=language,
-    )
-
-    agent_ref = AgentProfileRef(
-        id=new_id,
-        workspace_dir=str(workspace_dir),
-        enabled=True,
-    )
-
-    config.agents.profiles[new_id] = agent_ref
-    config.agents.agent_order = _normalized_agent_order(config)
-    save_config(config)
-    save_agent_config(new_id, agent_config)
-
-    logger.info(f"Created new agent: {new_id} (name={request.name})")
-
+    logger.info("Created new agent: %s (name=%s)", new_id, request.name)
     return agent_ref
 
 
@@ -376,6 +520,7 @@ async def update_agent(
     request: Request = None,
 ) -> AgentProfileConfig:
     """Update agent configuration."""
+    _authorize_agent(request, agentId, write=True)
     config = load_config()
 
     if agentId not in config.agents.profiles:
@@ -408,6 +553,7 @@ async def delete_agent(
     request: Request = None,
 ) -> dict:
     """Delete an agent."""
+    _authorize_agent(request, agentId, write=True)
     config = load_config()
 
     if agentId not in config.agents.profiles:
@@ -429,6 +575,12 @@ async def delete_agent(
     config.agents.agent_order = _normalized_agent_order(config)
     save_config(config)
 
+    principal = _tenant_principal(request)
+    if principal is not None:
+        from ...tenancy.factory import get_tenancy_service
+
+        get_tenancy_service().archive_agent(principal, agentId)
+
     return {"success": True, "agent_id": agentId}
 
 
@@ -443,6 +595,7 @@ async def toggle_agent_enabled(
     request: Request = None,
 ) -> dict:
     """Toggle agent enabled state."""
+    _authorize_agent(request, agentId, write=True)
     config = load_config()
 
     if agentId not in config.agents.profiles:
@@ -536,14 +689,14 @@ def _install_initial_skills(
     workspace_dir: Path,
     skill_names: list[str] | None,
 ) -> None:
-    """Install requested initial skills from the skill pool."""
+    """Install requested initial skills from global skills."""
     if not skill_names:
         return
 
-    pool_service = SkillPoolService()
+    global_svc = GlobalSkillService()
     for skill_name in skill_names:
         try:
-            result = pool_service.download_to_workspace(
+            result = global_svc.download_to_workspace(
                 skill_name=skill_name,
                 workspace_dir=workspace_dir,
                 overwrite=False,
@@ -575,7 +728,6 @@ def _initialize_agent_workspace(
     from ...config import load_config as load_global_config
 
     (workspace_dir / "sessions").mkdir(exist_ok=True)
-    (workspace_dir / "memory").mkdir(exist_ok=True)
     get_workspace_skills_dir(workspace_dir).mkdir(exist_ok=True)
 
     config = load_global_config()

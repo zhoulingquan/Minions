@@ -49,7 +49,7 @@ class DaemonContext:
 
     working_dir: Path = WORKING_DIR
     load_config_fn: Callable[[], Any] = load_config
-    memory_manager: Optional[Any] = None
+    sage_runtime: Optional[Any] = None
     # For /daemon restart: manager and agent_id for zero-downtime reload
     manager: Optional["MultiAgentManager"] = None
     agent_id: Optional[str] = None
@@ -94,7 +94,7 @@ def _get_last_lines(
 
 
 def run_daemon_status(context: DaemonContext) -> str:
-    """Return status text (health, config, memory_manager)."""
+    """Return status text for runtime health and SAGE availability."""
     parts = ["**Daemon Status**", ""]
     try:
         cfg = context.load_config_fn()
@@ -133,10 +133,11 @@ def run_daemon_status(context: DaemonContext) -> str:
         parts.append(f"- Config loaded: no ({e})")
 
     parts.append(f"- Working dir: {context.working_dir}")
-    if context.memory_manager is not None:
-        parts.append("- Memory manager: running")
+    if context.sage_runtime is not None:
+        store_name = type(context.sage_runtime.store).__name__
+        parts.append(f"- SAGE experience store: {store_name}")
     else:
-        parts.append("- Memory manager: not attached")
+        parts.append("- SAGE experience store: not attached")
     return "\n".join(parts)
 
 

@@ -14,10 +14,7 @@ const hoisted = vi.hoisted(() => {
     toggleMCPClient: vi.fn(),
     deleteMCPClient: vi.fn(),
   };
-  // A stable translation function so useCallback dependencies don't change on
-  // every render and trigger an infinite loadClients loop via useEffect.
-  const stableT = (k: string) => k;
-  return { messageMock, apiMocks, stableT };
+  return { messageMock, apiMocks };
 });
 
 vi.mock("../../../api", () => ({
@@ -31,10 +28,6 @@ vi.mock("../../../stores/agentStore", () => ({
 
 vi.mock("../../../hooks/useAppMessage", () => ({
   useAppMessage: () => ({ message: hoisted.messageMock }),
-}));
-
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: hoisted.stableT }),
 }));
 
 import { useMCP } from "./useMCP";
@@ -88,7 +81,7 @@ describe("useMCP", () => {
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
-    expect(messageMock.error).toHaveBeenCalledWith("mcp.loadError");
+    expect(messageMock.error).toHaveBeenCalledWith("加载 MCP 客户端失败");
   });
 
   it("createClient success: calls createMCPClient with client_key + client, message.success, returns true", async () => {
@@ -110,7 +103,7 @@ describe("useMCP", () => {
       client_key: "my-key",
       client: { name: "My", command: "run" },
     });
-    expect(messageMock.success).toHaveBeenCalledWith("mcp.createSuccess");
+    expect(messageMock.success).toHaveBeenCalledWith("MCP 客户端创建成功");
     expect(ret).toBe(true);
   });
 
@@ -148,7 +141,7 @@ describe("useMCP", () => {
       });
     });
 
-    expect(messageMock.error).toHaveBeenCalledWith("mcp.createError");
+    expect(messageMock.error).toHaveBeenCalledWith("MCP 客户端创建失败");
     expect(ret).toBe(false);
   });
 
@@ -167,7 +160,7 @@ describe("useMCP", () => {
     expect(apiMocks.updateMCPClient).toHaveBeenCalledWith("client-1", {
       name: "Renamed",
     });
-    expect(messageMock.success).toHaveBeenCalledWith("mcp.updateSuccess");
+    expect(messageMock.success).toHaveBeenCalledWith("MCP 客户端更新成功");
     expect(ret).toBe(true);
   });
 
@@ -183,7 +176,7 @@ describe("useMCP", () => {
     });
 
     expect(apiMocks.toggleMCPClient).toHaveBeenCalledWith("client-1");
-    expect(messageMock.success).toHaveBeenCalledWith("mcp.disableSuccess");
+    expect(messageMock.success).toHaveBeenCalledWith("MCP 客户端禁用成功");
   });
 
   it("deleteClient success: message.success('mcp.deleteSuccess')", async () => {
@@ -198,6 +191,6 @@ describe("useMCP", () => {
     });
 
     expect(apiMocks.deleteMCPClient).toHaveBeenCalledWith("client-1");
-    expect(messageMock.success).toHaveBeenCalledWith("mcp.deleteSuccess");
+    expect(messageMock.success).toHaveBeenCalledWith("MCP 客户端删除成功");
   });
 });

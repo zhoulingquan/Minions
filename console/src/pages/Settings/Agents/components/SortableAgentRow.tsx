@@ -2,11 +2,15 @@ import React, { createContext, useContext } from "react";
 import { MenuOutlined } from "@ant-design/icons";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import type {
+  DraggableAttributes,
+  DraggableSyntheticListeners,
+} from "@dnd-kit/core";
 import styles from "../index.module.less";
 
 type SortableHandleContextValue = {
-  attributes: any;
-  listeners: any;
+  attributes: DraggableAttributes;
+  listeners: DraggableSyntheticListeners;
   disabled: boolean;
 };
 

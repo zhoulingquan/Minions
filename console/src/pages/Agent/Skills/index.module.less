@@ -72,6 +72,19 @@
   min-width: 108px;
 }
 
+.builtinUpdateButton {
+  color: #a84c00;
+  background: #fff8f1;
+  border-color: #ffc995;
+
+  &:hover,
+  &:focus-visible {
+    color: #873800 !important;
+    background: #fff1e3 !important;
+    border-color: #ff9f43 !important;
+  }
+}
+
 .loading {
   text-align: center;
   padding: 84px 60px;
@@ -181,6 +194,12 @@
   flex-shrink: 0;
 }
 
+.skillEnableSwitch {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+
 /* Status badge: dot + text */
 .statusBadge {
   display: inline-flex;
@@ -199,6 +218,30 @@
   }
 
   &.status_disabled {
+    color: rgba(20, 20, 19, 0.45);
+
+    .statusDot {
+      background-color: rgba(20, 20, 19, 0.25);
+    }
+  }
+
+  &.status_synced {
+    color: #17b26a;
+
+    .statusDot {
+      background-color: #17b26a;
+    }
+  }
+
+  &.status_outdated {
+    color: #f79009;
+
+    .statusDot {
+      background-color: #f79009;
+    }
+  }
+
+  &.status_neutral {
     color: rgba(20, 20, 19, 0.45);
 
     .statusDot {
@@ -344,6 +387,21 @@
     background-color: rgba(239, 240, 243, 0.8);
     color: rgba(20, 20, 19, 0.65);
   }
+
+  &.synced {
+    background-color: rgba(82, 196, 26, 0.12);
+    color: #389e0d;
+  }
+
+  &.outdated {
+    background-color: rgba(247, 144, 9, 0.12);
+    color: #d46b08;
+  }
+
+  &.neutral {
+    background-color: rgba(239, 240, 243, 0.8);
+    color: rgba(20, 20, 19, 0.65);
+  }
 }
 
 .descriptionContainer {
@@ -378,6 +436,53 @@
 .descriptionSection {
   margin-top: 6px;
   flex: 1;
+}
+
+/* Drawer meta info: status / language / source / auto-update */
+.metaStack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.infoSection {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.infoLabel {
+  font-size: 12px;
+  color: rgba(20, 20, 19, 0.45);
+  white-space: nowrap;
+}
+
+.infoBlock {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background-color: rgba(239, 240, 243, 0.8);
+  color: rgba(20, 20, 19, 0.65);
+
+  &.synced {
+    background-color: rgba(82, 196, 26, 0.12);
+    color: #389e0d;
+  }
+
+  &.outdated {
+    background-color: rgba(247, 144, 9, 0.12);
+    color: #d46b08;
+  }
+
+  &.neutral {
+    background-color: rgba(239, 240, 243, 0.8);
+    color: rgba(20, 20, 19, 0.65);
+  }
+}
+
+.languageToggle {
+  display: flex;
+  gap: 4px;
 }
 
 /* Meta info rows: Channels / Updated / Tags */
@@ -475,6 +580,122 @@
   border: 1px solid rgba(250, 173, 20, 0.2);
 }
 
+.workspaceSyncTag {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 18px;
+  vertical-align: middle;
+}
+
+.workspaceSync_synced {
+  color: #237804;
+  background: rgba(82, 196, 26, 0.12);
+}
+
+.workspaceSync_changed {
+  color: #ad6800;
+  background: rgba(250, 173, 20, 0.14);
+}
+
+.workspaceSync_conflict {
+  color: #a8071a;
+  background: rgba(245, 34, 45, 0.12);
+}
+
+.workspaceSync_neutral {
+  color: rgba(20, 20, 19, 0.58);
+  background: rgba(239, 240, 243, 0.9);
+}
+
+.workspaceSyncActionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+}
+
+.workspaceSyncAction_synced {
+  color: #237804;
+  background: rgba(82, 196, 26, 0.08);
+  border-color: rgba(82, 196, 26, 0.16);
+}
+
+.workspaceSyncAction_changed {
+  color: #8c5a00;
+  background: rgba(250, 173, 20, 0.08);
+  border-color: rgba(250, 173, 20, 0.2);
+}
+
+.workspaceSyncAction_conflict {
+  color: #a8071a;
+  background: rgba(245, 34, 45, 0.06);
+  border-color: rgba(245, 34, 45, 0.18);
+}
+
+.workspaceSyncAction_neutral {
+  color: rgba(20, 20, 19, 0.68);
+  background: rgba(239, 240, 243, 0.55);
+  border-color: rgba(20, 20, 19, 0.08);
+}
+
+.workspaceSyncActionHint {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspaceSyncActionButton {
+  flex-shrink: 0;
+  border-radius: 7px;
+}
+
+.syncConflictBody {
+  display: grid;
+  gap: 10px;
+  color: rgba(20, 20, 19, 0.72);
+  line-height: 1.65;
+
+  p {
+    margin: 0;
+  }
+}
+
+.syncConflictSkillName {
+  width: fit-content;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(250, 173, 20, 0.1);
+  color: #8c5a00;
+  font-weight: 600;
+}
+
+.syncConflictNotice {
+  padding: 10px 12px;
+  border-left: 3px solid rgba(97, 92, 237, 0.6);
+  border-radius: 0 8px 8px 0;
+  background: rgba(97, 92, 237, 0.05);
+  color: rgba(20, 20, 19, 0.6);
+}
+
+.syncConflictFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 /* ─── Tags ────────────────────────────────────────────────────────────────── */
 .tagsContainer {
   display: flex;
@@ -537,11 +758,49 @@
   background: #fff;
 }
 
+.cardFooterWithSyncAction {
+  position: static;
+  margin-top: 10px;
+  padding: 0;
+  background: transparent;
+}
+
 .actionButton {
   flex: 1;
   height: 34px;
   font-size: 14px;
   border-radius: 8px;
+}
+
+.autoUpdateButton {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.autoUpdateTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  background-color: rgba(22, 119, 255, 0.1);
+  color: #1668ff;
+  margin-left: 4px;
+}
+
+.globalSkillCardFooter {
+  position: static;
+  margin-top: 12px;
+  padding: 0;
+  background: transparent;
 }
 
 .deleteButton {
@@ -712,15 +971,6 @@
   }
 }
 
-/* Pool Transfer Modal */
-.poolTransferModal {
-  :global {
-    .ant-modal-body {
-      padding: 20px;
-    }
-  }
-}
-
 .pickerSection {
   display: flex;
   flex-direction: column;
@@ -757,7 +1007,7 @@
   gap: 8px;
 }
 
-/* ─── Card Picker (pool transfer modals) ──────────────────────────────────── */
+/* ─── Card Picker (global transfer modals) ──────────────────────────────────── */
 .pickerLabel {
   font-size: 13px;
   font-weight: 500;
@@ -1560,15 +1810,6 @@
 
   .pickerCardMeta {
     color: rgba(255, 255, 255, 0.35);
-  }
-
-  /* Pool Transfer Modal - dark mode */
-  .poolTransferModal {
-    :global {
-      .ant-modal-body {
-        background: #2d2d2d;
-      }
-    }
   }
 
   /* View toggle buttons - dark mode */

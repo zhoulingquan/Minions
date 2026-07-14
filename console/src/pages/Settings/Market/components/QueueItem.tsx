@@ -1,6 +1,5 @@
 import { memo, useCallback } from "react";
 import { Button } from "@agentscope-ai/design";
-import { useTranslation } from "react-i18next";
 import type { InstallQueueItem } from "../useMarketInstall";
 import { sourceLabel } from "./SkillIcon";
 import styles from "./QueueItem.module.less";
@@ -17,14 +16,13 @@ export const QueueItem = memo(function QueueItem({
   onCancel,
   onRetry,
 }: QueueItemProps) {
-  const { t } = useTranslation();
 
   const isTerminal =
     item.status === "completed" ||
     item.status === "failed" ||
     item.status === "cancelled";
   const canCancel =
-    !isTerminal && !(item.target === "pool" && item.status === "installing");
+    !isTerminal && !(item.target === "global" && item.status === "installing");
   const canRetry = item.status === "failed" || item.status === "cancelled";
 
   const handleCancel = useCallback(
@@ -35,11 +33,11 @@ export const QueueItem = memo(function QueueItem({
 
   let displayMessage = "";
   if (item.message === "__TIMED_OUT__") {
-    displayMessage = t("market.queueMsg.timedOut");
+    displayMessage = "安装超时";
   } else if (item.message) {
     displayMessage =
       item.status === "failed"
-        ? t("market.queueMsg.failedPrefix", { msg: item.message })
+        ? `失败：${item.message}`
         : item.message;
   }
 
@@ -48,7 +46,7 @@ export const QueueItem = memo(function QueueItem({
       <div className={styles.queueItemTop}>
         <strong>{item.result.name}</strong>
         <span className={`${styles.statusTag} ${styles[item.status]}`}>
-          {t(`market.status.${item.status}`)}
+          {item.status === "queued" ? "排队中" : item.status === "installing" ? "安装中" : item.status === "completed" ? "已完成" : item.status === "failed" ? "失败" : "已取消"}
         </span>
       </div>
       <div className={styles.queueItemMeta}>
@@ -60,12 +58,12 @@ export const QueueItem = memo(function QueueItem({
       <div className={styles.queueItemActions}>
         {canCancel && (
           <Button size="small" onClick={handleCancel}>
-            {t("common.cancel")}
+            {"取消"}
           </Button>
         )}
         {canRetry && (
           <Button size="small" type="primary" onClick={handleRetry}>
-            {t("market.retry")}
+            {"重试"}
           </Button>
         )}
       </div>

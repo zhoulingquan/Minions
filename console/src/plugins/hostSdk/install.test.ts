@@ -14,7 +14,6 @@ import { auditStore } from "../registry/audit";
 beforeEach(() => {
   // Reset the window.Minions namespace before each test so installHostSdk
   // attaches fresh references.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (window as any).Minions = undefined;
   installHostExternals();
   installHostSdk();
@@ -221,9 +220,9 @@ describe("window.Minions.chat.request / response", () => {
     window.Minions.chat!.response.prepend("p1", () => null, { id: "a" });
     window.Minions.chat!.response.prepend("p2", () => null, { id: "b" });
     expect(
-      chatExtensions
-        .getListSnapshot()
-        ["response.prepend"].map((e) => e.pluginId),
+      chatExtensions.getListSnapshot()["response.prepend"].map(
+        (e) => e.pluginId,
+      ),
     ).toEqual(["p1", "p2"]);
   });
 

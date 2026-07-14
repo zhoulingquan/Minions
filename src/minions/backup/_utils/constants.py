@@ -17,7 +17,8 @@ META_FILE = "meta.json"
 # portable across installations regardless of runtime configuration.
 PREFIX_WORKSPACES = "data/workspaces/"
 PREFIX_SECRETS = "data/secrets/"
-PREFIX_SKILL_POOL = "data/skill_pool/"
+PREFIX_GLOBAL_SKILLS = "data/global_skills/"
+PREFIX_SKILL_POOL_LEGACY = "data/skill_pool/"  # legacy backups compat
 PREFIX_CONFIG = "data/config.json"
 
 # Allowed characters for a backup ID. Accepts both the new human-readable

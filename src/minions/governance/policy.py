@@ -125,13 +125,7 @@ class GovernanceRule:
         """wcmatch globmatch with directory self-match support."""
         from wcmatch import glob
 
-        flags = (
-            glob.GLOBSTAR
-            | glob.BRACE
-            | glob.NEGATE
-            | glob.SPLIT
-            | glob.DOTGLOB
-        )
+        flags = glob.GLOBSTAR | glob.BRACE | glob.NEGATE | glob.SPLIT | glob.DOTGLOB
         if glob.globmatch(target, pattern, flags=flags):
             return True
         if pattern.endswith("/**"):
@@ -492,6 +486,16 @@ DEFAULT_USER_RULES: List[GovernanceRule] = [
         action=GovernanceAction.ALLOW,
         reason="Allow all browser access",
     ),
+    GovernanceRule(
+        match="WebSearch(**)",
+        action=GovernanceAction.ALLOW,
+        reason="Allow public web search",
+    ),
+    GovernanceRule(
+        match="WebFetch(**)",
+        action=GovernanceAction.ALLOW,
+        reason="Allow SSRF-guarded public web fetch",
+    ),
     # ── /tmp ──
     # Allow all tool access under /tmp without prompting.
     GovernanceRule(
@@ -500,6 +504,13 @@ DEFAULT_USER_RULES: List[GovernanceRule] = [
         reason="Scratch directory access for tmp",
     ),
 ]
+
+# Defaults introduced after policy.yaml files existed in the wild. Each
+# migration runs once, so users may still delete a migrated rule deliberately.
+_MIGRATED_DEFAULT_USER_RULE_MATCHES = {
+    "WebSearch(**)",
+    "WebFetch(**)",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -548,6 +559,7 @@ class GovernancePolicy:
     sensitive_paths: List[str] = field(default_factory=list)
     shell_evasion_checks: dict[str, bool] = field(default_factory=dict)
     detection_rules: List[DetectionRuleConfig] = field(default_factory=list)
+    applied_migrations: List[str] = field(default_factory=list)
 
     # Internal reference to registry (defaults to module-level
     # DEFAULT_REGISTRY)
@@ -650,8 +662,7 @@ class GovernancePolicy:
                 if action == GovernanceAction.ALLOW and is_strict:
                     return GovernanceDecision(
                         action=GovernanceAction.ASK,
-                        reason="STRICT mode: all tool calls "
-                        "require approval",
+                        reason="STRICT mode: all tool calls require approval",
                         findings=findings or None,
                         source="STRICT mode",
                     )
@@ -671,8 +682,7 @@ class GovernancePolicy:
                 if action == GovernanceAction.ALLOW and is_strict:
                     return GovernanceDecision(
                         action=GovernanceAction.ASK,
-                        reason="STRICT mode: all tool calls "
-                        "require approval",
+                        reason="STRICT mode: all tool calls require approval",
                         findings=findings or None,
                         source="STRICT mode",
                     )
@@ -689,7 +699,7 @@ class GovernancePolicy:
             if is_strict:
                 return GovernanceDecision(
                     action=GovernanceAction.ASK,
-                    reason="STRICT mode: all tool calls " "require approval",
+                    reason="STRICT mode: all tool calls require approval",
                     findings=findings or None,
                     source="STRICT mode",
                 )
@@ -1005,9 +1015,20 @@ def load_governance_policy(
     if not isinstance(env_blacklist, list):
         env_blacklist = []
 
-    # ── Cold start: fill in missing default rules ──
+    applied_migrations = _parse_applied_migrations(data)
+
+    # ── Cold start / one-time default-rule migrations ──
     if not user_rules:
         user_rules = copy.deepcopy(DEFAULT_USER_RULES)
+    else:
+        user_rules = _merge_missing_default_user_rules(
+            user_rules,
+            workspace_dir,
+            applied_migrations,
+        )
+    applied_migrations = sorted(
+        set(applied_migrations) | _MIGRATED_DEFAULT_USER_RULE_MATCHES,
+    )
     if not env_blacklist:
         env_blacklist = list(DEFAULT_ENV_BLACKLIST)
 
@@ -1048,6 +1069,7 @@ def load_governance_policy(
         sensitive_paths=sensitive_paths,
         shell_evasion_checks=shell_evasion_checks,
         detection_rules=detection_rules,
+        applied_migrations=applied_migrations,
     )
 
 
@@ -1085,6 +1107,8 @@ def save_governance_policy(
     }
 
     # v2.0 fields (only write when non-empty to keep YAML clean)
+    if policy.applied_migrations:
+        data["applied_migrations"] = list(policy.applied_migrations)
     if policy.sensitive_paths:
         data["sensitive_paths"] = list(policy.sensitive_paths)
     if policy.shell_evasion_checks:
@@ -1154,7 +1178,37 @@ def _create_default_policy(
         execution_level="smart",
         sensitive_paths=list(_DEFAULT_SENSITIVE_PATHS),
         shell_evasion_checks=dict(_DEFAULT_SHELL_EVASION_CHECKS),
+        applied_migrations=sorted(_MIGRATED_DEFAULT_USER_RULE_MATCHES),
     )
+
+
+def _parse_applied_migrations(data: dict[str, Any]) -> List[str]:
+    applied = data.get("applied_migrations", [])
+    if not isinstance(applied, list):
+        return []
+    return [value for value in applied if isinstance(value, str)]
+
+
+def _merge_missing_default_user_rules(
+    user_rules: List[GovernanceRule],
+    workspace_dir: str,
+    applied_migrations: List[str],
+) -> List[GovernanceRule]:
+    """Append each new safe default once without overriding user intent."""
+    applied = set(applied_migrations)
+    merged = list(user_rules)
+    existing = {rule.match for rule in merged}
+    if workspace_dir:
+        unresolved = copy.deepcopy(merged)
+        _unresolve_placeholders(unresolved, workspace_dir)
+        existing.update(rule.match for rule in unresolved)
+    for default_rule in DEFAULT_USER_RULES:
+        if default_rule.match not in _MIGRATED_DEFAULT_USER_RULE_MATCHES:
+            continue
+        if default_rule.match in applied or default_rule.match in existing:
+            continue
+        merged.append(copy.deepcopy(default_rule))
+    return merged
 
 
 def _resolve_placeholders(

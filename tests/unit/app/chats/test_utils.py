@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
-from agentscope.message import Msg
+from agentscope.message import Msg, ToolResultState
 
 from minions.app.chats.utils import (
     _abspath_from_url,
@@ -136,6 +136,25 @@ def test_msg_to_message_hides_headline_in_history_path():
     rendered = "".join(c.text for c in message.content)
     assert "⟦" not in rendered and "shipped" not in rendered
     assert "all set" in rendered
+
+
+def test_msg_to_message_preserves_tool_result_error_state():
+    msg = Msg(
+        name="assistant",
+        role="assistant",
+        content=[
+            {
+                "type": "tool_result",
+                "id": "call-1",
+                "name": "demo_tool",
+                "output": "failed",
+                "state": ToolResultState.ERROR,
+            },
+        ],
+    )
+    [message] = agentscope_msg_to_message(msg)
+
+    assert message.content[0].data["state"] == "error"
 
 
 # ---------------------------------------------------------------------------

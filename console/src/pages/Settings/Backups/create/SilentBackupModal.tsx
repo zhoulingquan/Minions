@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { Modal } from "antd";
-import { useTranslation } from "react-i18next";
 import type { BackupMeta } from "@/api/types/backup";
 import { useBackupRunner } from "../shared/useBackupRunner";
 import { buildPreRestoreScope } from "../shared/scope";
@@ -26,15 +25,14 @@ export default function SilentBackupModal({
   onClose,
   onSuccess,
 }: Props) {
-  const { t } = useTranslation();
-  const runner = useBackupRunner({ onSuccess, onClose });
+    const runner = useBackupRunner({ onSuccess, onClose });
 
   useEffect(() => {
     if (!target) return;
-    const { name, description, scope, agents } = buildPreRestoreScope(agentIds);
+    const { name, scope, agents } = buildPreRestoreScope(agentIds);
     runner.start({
       name,
-      description: t(description),
+      description: "恢复前自动创建的备份",
       scope,
       agents,
     });
@@ -44,7 +42,7 @@ export default function SilentBackupModal({
 
   return (
     <Modal
-      title={t("backup.creatingPreRestoreBackup")}
+      title={"正在创建恢复前备份..."}
       open={target !== null}
       onCancel={runner.cancel}
       footer={null}

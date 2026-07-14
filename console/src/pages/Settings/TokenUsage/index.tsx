@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DatePicker } from "antd";
-import { useTranslation } from "react-i18next";
 import dayjs, { type Dayjs } from "dayjs";
 import { useTheme } from "../../../contexts/ThemeContext";
 import api from "../../../api";
@@ -21,8 +20,7 @@ import { useTokenTypeConfig } from "./hooks/useTokenTypeConfig";
 import styles from "./index.module.less";
 
 function TokenUsagePage() {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const { isDark } = useTheme();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -43,13 +41,13 @@ function TokenUsagePage() {
       setRecords(detailsData);
     } catch (err) {
       console.error("Failed to load token usage:", err);
-      message.error(t("tokenUsage.loadFailed"));
+      message.error("加载 Token 消耗数据失败");
       setRecords([]);
       setError(true);
     } finally {
       setLoading(false);
     }
-  }, [startDate, endDate, message, t]);
+  }, [startDate, endDate, message]);
 
   useEffect(() => {
     fetchData();
@@ -102,14 +100,14 @@ function TokenUsagePage() {
   }, [aggregatedData?.by_date]);
 
   const pageHeader = (
-    <PageHeader parent={t("nav.settings")} current={t("tokenUsage.title")} />
+    <PageHeader parent={"设置"} current={"Token 消耗"} />
   );
 
   if (loading) {
     return (
       <div className={styles.container}>
         {pageHeader}
-        <LoadingState message={t("common.loading", "Loading...")} />
+        <LoadingState message={"加载中..."} />
       </div>
     );
   }
@@ -119,7 +117,7 @@ function TokenUsagePage() {
       <div className={styles.container}>
         {pageHeader}
         <LoadingState
-          message={t("tokenUsage.loadFailed")}
+          message={"加载 Token 消耗数据失败"}
           error
           onRetry={fetchData}
         />
@@ -160,7 +158,7 @@ function TokenUsagePage() {
         </div>
 
         {byModelData.length === 0 && byDateData.length === 0 ? (
-          <EmptyState message={t("tokenUsage.noData")} />
+          <EmptyState message={"所选时间段内暂无 Token 消耗数据"} />
         ) : (
           <DataTables byModelData={byModelData} byDateData={byDateData} />
         )}

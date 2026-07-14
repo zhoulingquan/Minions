@@ -11,7 +11,6 @@ import { Audio, Video } from "@agentscope-ai/design";
 import { Image, ConfigProvider, Alert } from "antd";
 import type { Locale } from "antd/es/locale";
 import { DownloadOutlined } from "@ant-design/icons";
-import { useTranslation } from "react-i18next";
 import type { MediaInfo } from "./utils";
 import { openExternalLink } from "../../../../utils/openExternalLink";
 import styles from "./toolCards.module.less";
@@ -35,26 +34,21 @@ async function fetchPreviewError(
 }
 
 const MediaPreview: React.FC<MediaPreviewProps> = ({ media }) => {
-  const { t } = useTranslation();
-  const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
   const resolveError = useCallback(
     ({ status, code }: { status: number; code: string }) => {
-      const i18nKey = `preview.error.${code}`;
-      const translated = t(i18nKey, { defaultValue: "" });
-      if (translated) {
-        setError(translated);
-      } else if (status === 403) {
-        setError(t("preview.error.FORBIDDEN"));
+      if (status === 403) {
+        setError("访问被拒绝：没有预览此文件的权限。");
       } else if (status === 404) {
-        setError(t("preview.error.NOT_FOUND"));
+        setError("文件未找到，可能已被移动或删除。如果使用了相对路径，请尝试使用绝对路径。");
       } else if (code) {
-        setError(t("preview.error.LOAD_FAILED_DETAIL", { detail: code }));
+        setError(`加载文件预览失败：${code}`);
       } else {
-        setError(t("preview.error.LOAD_FAILED"));
+        setError("加载文件预览失败。");
       }
     },
-    [t],
+    [],
   );
 
   const handleMediaError = useCallback(() => {
@@ -116,14 +110,12 @@ const MediaPreview: React.FC<MediaPreviewProps> = ({ media }) => {
       {media.type === "file" && (
         <div className={styles.bubbleFile}>
           <Attachments.FileCard
-            item={
-              {
-                uid: media.name,
-                name: media.name,
-                url: media.url,
-                status: "done",
-              } as any
-            }
+            item={{
+              uid: media.name,
+              name: media.name,
+              url: media.url,
+              status: "done",
+            }}
           />
           {media.url && (
             <div

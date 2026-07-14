@@ -29,6 +29,8 @@ import { languageApi } from "./modules/language";
 import { backupApi } from "./modules/backup";
 import { consoleApi } from "./modules/console";
 import { accessControlApi } from "./modules/accessControl";
+import { sageApi } from "./modules/sage";
+import { tenancyApi } from "./modules/tenancy";
 
 export const api = {
   // Root
@@ -100,6 +102,12 @@ export const api = {
 
   // Access Control
   ...accessControlApi,
+
+  // SAGE experience and growth
+  ...sageApi,
+
+  // Enterprise tenancy control plane
+  ...tenancyApi,
 };
 
 export default api;

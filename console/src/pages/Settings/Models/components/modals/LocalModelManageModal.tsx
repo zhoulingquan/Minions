@@ -25,7 +25,6 @@ import type {
   LocalServerUpdateStatus,
 } from "../../../../../api/types";
 import api from "../../../../../api";
-import { useTranslation } from "react-i18next";
 import styles from "../../index.module.less";
 import { JsonConfigEditor } from "./JsonConfigEditor.tsx";
 import { LocalModelRow } from "./local-models/LocalModelRow";
@@ -126,8 +125,7 @@ export function LocalModelManageModal({
   onClose,
   onSaved,
 }: LocalModelManageModalProps) {
-  const { t } = useTranslation();
-  const [localModels, setLocalModels] = useState<LocalModelInfo[]>([]);
+    const [localModels, setLocalModels] = useState<LocalModelInfo[]>([]);
   const [customModelRepoId, setCustomModelRepoId] = useState("");
   const [customModelSource, setCustomModelSource] =
     useState<LocalDownloadSource>("huggingface");
@@ -196,16 +194,16 @@ export function LocalModelManageModal({
       try {
         parsed = JSON.parse(trimmed);
       } catch {
-        throw new Error(t("models.generateConfigInvalidJson"));
+        throw new Error("请输入有效的 JSON");
       }
 
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-        throw new Error(t("models.generateConfigMustBeObject"));
+        throw new Error("生成参数配置必须是 JSON 对象");
       }
 
       return parsed as Record<string, unknown>;
     },
-    [t],
+    [],
   );
 
   const generateKwargsError = useMemo(() => {
@@ -215,16 +213,19 @@ export function LocalModelManageModal({
     } catch (error) {
       return error instanceof Error
         ? error.message
-        : t("models.generateConfigInvalidJson");
+        : "请输入有效的 JSON";
     }
-  }, [generateKwargsText, parseGenerateConfig, t]);
+  }, [generateKwargsText, parseGenerateConfig]);
 
-  const getLocalModelDisplayName = (modelId: string | null) => {
-    if (!modelId) {
-      return null;
-    }
-    return localModels.find((model) => model.id === modelId)?.name ?? modelId;
-  };
+  const getLocalModelDisplayName = useCallback(
+    (modelId: string | null) => {
+      if (!modelId) {
+        return null;
+      }
+      return localModels.find((model) => model.id === modelId)?.name ?? modelId;
+    },
+    [localModels],
+  );
 
   const stopPolling = useCallback(() => {
     if (pollRef.current) {
@@ -356,7 +357,7 @@ export function LocalModelManageModal({
             previousLlamacppStatusRef.current === "downloading") &&
           nextLlamacppDownload.status === "completed"
         ) {
-          message.success(t("models.localLlamacppInstallSuccess"));
+          message.success("llama.cpp 安装成功");
           setServerUpdateStatus((prev) =>
             isSameServerUpdateStatus(prev, { has_update: false })
               ? prev
@@ -370,7 +371,7 @@ export function LocalModelManageModal({
             previousModelStatusRef.current === "downloading") &&
           nextModelDownload.status === "completed"
         ) {
-          message.success(t("models.localDownloadSuccess"));
+          message.success("模型下载成功");
           onSavedRef.current();
           void fetchLocalModels();
         }
@@ -413,7 +414,13 @@ export function LocalModelManageModal({
         }
       }
     },
-    [fetchLocalModels, refreshUpdateStatus, stopPolling, t],
+    [
+      fetchLocalModels,
+      message,
+      refreshUpdateStatus,
+      setModelDownloadState,
+      stopPolling,
+    ],
   );
 
   const startPolling = useCallback(() => {
@@ -471,15 +478,13 @@ export function LocalModelManageModal({
 
   const handleSaveMaxContextLength = useCallback(async () => {
     if (!Number.isInteger(maxContextLength)) {
-      message.error(t("models.localMaxContextLengthRequired"));
+      message.error("请输入最大上下文长度");
       return;
     }
 
     if (maxContextLength < MIN_LOCAL_MAX_CONTEXT_LENGTH) {
       message.error(
-        t("models.localMaxContextLengthMin", {
-          min: MIN_LOCAL_MAX_CONTEXT_LENGTH,
-        }),
+        `最大上下文长度必须大于等于 ${MIN_LOCAL_MAX_CONTEXT_LENGTH}`,
       );
       return;
     }
@@ -490,18 +495,18 @@ export function LocalModelManageModal({
         max_context_length: maxContextLength,
       });
       setSavedMaxContextLength(maxContextLength);
-      message.success(t("models.localAdvancedConfigSaved"));
+      message.success("本地模型进阶配置已保存");
       await onSavedRef.current();
     } catch (error) {
       const errMsg =
         error instanceof Error
           ? error.message
-          : t("models.localAdvancedConfigSaveFailed");
+          : "保存本地模型进阶配置失败";
       message.error(errMsg);
     } finally {
       setAdvancedSaving(false);
     }
-  }, [maxContextLength, message, t]);
+  }, [maxContextLength, message]);
 
   const handleSaveServerPort = useCallback(async () => {
     if (
@@ -511,10 +516,7 @@ export function LocalModelManageModal({
         serverPort > MAX_LOCAL_SERVER_PORT)
     ) {
       message.error(
-        t("models.localServerPortRange", {
-          min: MIN_LOCAL_SERVER_PORT,
-          max: MAX_LOCAL_SERVER_PORT,
-        }),
+        `服务端口必须在 ${MIN_LOCAL_SERVER_PORT} 到 ${MAX_LOCAL_SERVER_PORT} 之间`,
       );
       return;
     }
@@ -525,18 +527,18 @@ export function LocalModelManageModal({
         port: serverPort,
       });
       setSavedServerPort(serverPort);
-      message.success(t("models.localAdvancedConfigSaved"));
+      message.success("本地模型进阶配置已保存");
       await onSavedRef.current();
     } catch (error) {
       const errMsg =
         error instanceof Error
           ? error.message
-          : t("models.localAdvancedConfigSaveFailed");
+          : "保存本地模型进阶配置失败";
       message.error(errMsg);
     } finally {
       setAdvancedSaving(false);
     }
-  }, [message, serverPort, t]);
+  }, [message, serverPort]);
 
   const handleSaveGenerateKwargs = useCallback(async () => {
     let parsed: Record<string, unknown> = {};
@@ -547,7 +549,7 @@ export function LocalModelManageModal({
       message.error(
         error instanceof Error
           ? error.message
-          : t("models.generateConfigInvalidJson"),
+          : "请输入有效的 JSON",
       );
       return;
     }
@@ -562,18 +564,18 @@ export function LocalModelManageModal({
       });
       setGenerateKwargsText(normalizedText);
       setSavedGenerateKwargsText(normalizedText);
-      message.success(t("models.localAdvancedConfigSaved"));
+      message.success("本地模型进阶配置已保存");
       await onSavedRef.current();
     } catch (error) {
       const errMsg =
         error instanceof Error
           ? error.message
-          : t("models.localAdvancedConfigSaveFailed");
+          : "保存本地模型进阶配置失败";
       message.error(errMsg);
     } finally {
       setAdvancedSaving(false);
     }
-  }, [generateKwargsText, message, parseGenerateConfig, t]);
+  }, [generateKwargsText, message, parseGenerateConfig]);
 
   const handleStartLlamacppDownload = useCallback(async () => {
     const previousLlamacppDownload = llamacppDownload;
@@ -581,7 +583,7 @@ export function LocalModelManageModal({
 
     setLlamacppDownload({
       status: "pending",
-      model_name: t("models.localLlamacppName"),
+      model_name: "推理引擎",
       downloaded_bytes: 0,
       total_bytes: null,
       speed_bytes_per_sec: 0,
@@ -593,7 +595,7 @@ export function LocalModelManageModal({
 
     try {
       await api.startLlamacppDownload();
-      message.success(t("models.localLlamacppInstallStarted"));
+      message.success("已开始下载 llama.cpp");
       setServerUpdateStatus({ has_update: false });
       await refreshStatus();
       startPolling();
@@ -605,20 +607,18 @@ export function LocalModelManageModal({
       const errMsg =
         error instanceof Error
           ? error.message
-          : t("models.localLlamacppInstallFailed");
+          : "llama.cpp 安装失败";
       message.error(errMsg);
     }
-  }, [llamacppDownload, refreshStatus, startPolling, t]);
+  }, [llamacppDownload, message, refreshStatus, startPolling]);
 
   const handleCancelLlamacppDownload = useCallback(() => {
     Modal.confirm({
-      title: t("models.localCancelDownloadTitle"),
-      content: t("models.localCancelDownloadConfirm", {
-        repo: t("models.localLlamacppName"),
-      }),
-      okText: t("models.localCancelDownloadAction"),
+      title: "取消下载",
+      content: `确定取消下载 "推理引擎"？`,
+      okText: "取消下载",
       okButtonProps: { danger: true },
-      cancelText: t("common.close"),
+      cancelText: "关闭",
       onOk: async () => {
         try {
           setLlamacppDownload((prev) =>
@@ -630,19 +630,19 @@ export function LocalModelManageModal({
               : prev,
           );
           await api.cancelLlamacppDownload();
-          message.success(t("models.localDownloadCancelled"));
+          message.success("下载已取消");
           await refreshStatus();
           startPolling();
         } catch (error) {
           const errMsg =
             error instanceof Error
               ? error.message
-              : t("models.localCancelDownloadFailed");
+              : "取消下载失败";
           message.error(errMsg);
         }
       },
     });
-  }, [refreshStatus, startPolling, t]);
+  }, [message, refreshStatus, startPolling]);
 
   const handleStartModelDownload = useCallback(
     async (model: LocalModelInfo) => {
@@ -671,18 +671,18 @@ export function LocalModelManageModal({
         const errMsg =
           error instanceof Error
             ? error.message
-            : t("models.localDownloadFailed");
+            : "模型下载失败";
         message.error(errMsg);
       }
     },
-    [refreshStatus, setModelDownloadState, startPolling, t],
+    [message, refreshStatus, setModelDownloadState, startPolling],
   );
 
   const handleStartCustomModelDownload = useCallback(async () => {
     const trimmedRepoId = customModelRepoId.trim();
 
     if (!trimmedRepoId) {
-      message.warning(t("models.localRepoIdRequired"));
+      message.warning("请输入模型仓库 ID");
       return;
     }
 
@@ -693,16 +693,21 @@ export function LocalModelManageModal({
       downloaded: false,
       source: customModelSource,
     });
-  }, [customModelRepoId, customModelSource, handleStartModelDownload, t]);
+  }, [
+    customModelRepoId,
+    customModelSource,
+    handleStartModelDownload,
+    message,
+  ]);
 
   const handleCancelModelDownload = useCallback(
     (modelName: string) => {
       Modal.confirm({
-        title: t("models.localCancelDownloadTitle"),
-        content: t("models.localCancelDownloadConfirm", { repo: modelName }),
-        okText: t("models.localCancelDownloadAction"),
+        title: "取消下载",
+        content: `确定取消下载 "${modelName}"？`,
+        okText: "取消下载",
         okButtonProps: { danger: true },
-        cancelText: t("common.close"),
+        cancelText: "关闭",
         onOk: async () => {
           try {
             setModelDownloadState((prev) =>
@@ -714,20 +719,20 @@ export function LocalModelManageModal({
                 : prev,
             );
             await api.cancelLocalModelDownload();
-            message.success(t("models.localDownloadCancelled"));
+            message.success("下载已取消");
             await refreshStatus();
             startPolling();
           } catch (error) {
             const errMsg =
               error instanceof Error
                 ? error.message
-                : t("models.localCancelDownloadFailed");
+                : "取消下载失败";
             message.error(errMsg);
           }
         },
       });
     },
-    [refreshStatus, setModelDownloadState, startPolling, t],
+    [message, refreshStatus, setModelDownloadState, startPolling],
   );
 
   const handleStartServer = useCallback(
@@ -744,7 +749,7 @@ export function LocalModelManageModal({
           const errMsg =
             error instanceof Error
               ? error.message
-              : t("models.localServerStartFailed");
+              : "启动本地服务失败";
           message.error(errMsg);
         } finally {
           setStartingModelName(null);
@@ -757,13 +762,10 @@ export function LocalModelManageModal({
         serverStatus.model_name !== model.id
       ) {
         Modal.confirm({
-          title: t("models.localServerSwitchTitle"),
-          content: t("models.localServerSwitchConfirm", {
-            current: getLocalModelDisplayName(serverStatus.model_name),
-            next: model.name,
-          }),
-          okText: t("models.localSwitchModel"),
-          cancelText: t("models.cancel"),
+          title: "切换运行中的模型",
+          content: `当前服务正在运行 ${getLocalModelDisplayName(serverStatus.model_name)}。确认切换到 ${model.name}？`,
+          okText: "切换",
+          cancelText: "取消",
           onOk: run,
         });
         return;
@@ -771,7 +773,7 @@ export function LocalModelManageModal({
 
       await run();
     },
-    [localModels, onSaved, refreshStatus, serverStatus, t],
+    [getLocalModelDisplayName, message, onSaved, refreshStatus, serverStatus],
   );
 
   const handleStopServer = useCallback(async () => {
@@ -784,27 +786,27 @@ export function LocalModelManageModal({
       const errMsg =
         error instanceof Error
           ? error.message
-          : t("models.localServerStopFailed");
+          : "停止本地服务失败";
       message.error(errMsg);
     } finally {
       setStoppingServer(false);
     }
-  }, [onSaved, refreshStatus, t]);
+  }, [message, onSaved, refreshStatus]);
 
   const handleDeleteModel = useCallback(
     (model: LocalModelInfo) => {
       Modal.confirm({
-        title: t("models.localDeleteModel"),
-        content: t("models.localDeleteConfirm", { name: model.name }),
-        okText: t("common.delete"),
+        title: "删除模型",
+        content: `确定删除本地模型 "${model.name}"？模型文件将从磁盘中删除。`,
+        okText: "删除",
         okButtonProps: { danger: true },
-        cancelText: t("common.cancel"),
+        cancelText: "取消",
         onOk: async () => {
           setDeletingModelName(model.id);
           try {
             await api.deleteLocalModel(model.id);
             message.success(
-              t("models.localModelDeleted", { name: model.name }),
+              `模型 "${model.name}" 已删除`,
             );
             await fetchLocalModels();
             onSaved();
@@ -812,7 +814,7 @@ export function LocalModelManageModal({
             const errMsg =
               error instanceof Error
                 ? error.message
-                : t("models.localDeleteFailed");
+                : "删除模型失败";
             message.error(errMsg);
           } finally {
             setDeletingModelName(null);
@@ -820,7 +822,7 @@ export function LocalModelManageModal({
         },
       });
     },
-    [fetchLocalModels, message, onSaved, t],
+    [fetchLocalModels, message, onSaved],
   );
 
   const handleClose = () => {
@@ -835,7 +837,7 @@ export function LocalModelManageModal({
   const runtimeLockedMessage =
     !isRuntimeInstallable && serverStatus?.message
       ? serverStatus.message
-      : t("models.localModelsLockedHint");
+      : "请先安装 llama.cpp";
   const isCustomDownloadDisabled =
     customModelRepoId.trim().length === 0 || isModelDownloading || isServerBusy;
   const downloadedModelCount = localModels.filter(
@@ -848,13 +850,13 @@ export function LocalModelManageModal({
   );
   const currentModelDownloadName =
     getLocalModelDisplayName(modelDownload?.model_name ?? null) ||
-    t("models.localDownloadPending");
+    "准备下载...";
   const currentModelDownloadPercent = getProgressPercent(modelDownload);
   // Removed isAdvancedDirty, now handled per-field
 
   return (
     <Modal
-      title={t("models.localModelsTitle", { provider: provider.name })}
+      title={`${provider.name} — 本地模型`}
       open={open}
       onCancel={handleClose}
       footer={null}
@@ -864,7 +866,7 @@ export function LocalModelManageModal({
     >
       {(loadingLocal || loadingStatus || loadingLocalConfig) &&
       localModels.length === 0 ? (
-        <div className={styles.modelListEmpty}>{t("common.loading")}</div>
+        <div className={styles.modelListEmpty}>{"加载中..."}</div>
       ) : null}
 
       <section className={styles.localSection}>
@@ -881,13 +883,13 @@ export function LocalModelManageModal({
           <div className={styles.localLockedPanel}>
             <div className={styles.localLockedPanelTitle}>
               {isRuntimeInstallable
-                ? t("models.localRuntimeMissing")
-                : t("models.localRuntimeUnsupported")}
+                ? "未安装"
+                : "当前环境不支持"}
             </div>
             <div className={styles.localLockedPanelDescription}>
               <div>{runtimeLockedMessage}</div>
               {!isRuntimeInstallable ? (
-                <div>{t("models.localAlternativeRuntimeHint")}</div>
+                <div>{"请尝试使用 Ollama 或 LM Studio"}</div>
               ) : null}
             </div>
           </div>
@@ -899,7 +901,7 @@ export function LocalModelManageModal({
           <div className={styles.localSectionHeader}>
             <div>
               <div className={styles.localSectionTitle}>
-                {t("models.localModelsSectionTitle")}
+                {"本地模型"}
               </div>
             </div>
           </div>
@@ -908,7 +910,7 @@ export function LocalModelManageModal({
             <div className={styles.localSectionInfoRow}>
               <div className={styles.localSectionInfoContent}>
                 <span className={styles.localSectionInfoLabel}>
-                  {t("models.localCurrentDownloadTitle")}
+                  {"当前下载"}
                 </span>
                 <span className={styles.localSectionInfoValue}>
                   {currentModelDownloadName}
@@ -924,7 +926,7 @@ export function LocalModelManageModal({
                         strokeColor="#ff7f16"
                         strokeWidth={10}
                       />
-                      <Tooltip title={t("models.localCancelDownloadAction")}>
+                      <Tooltip title={"取消下载"}>
                         <Button
                           danger
                           size="small"
@@ -947,7 +949,7 @@ export function LocalModelManageModal({
           {isRuntimeInstalled && currentRunningModelName ? (
             <div className={styles.localSectionInfoRow}>
               <span className={styles.localSectionInfoLabel}>
-                {t("models.localEngineCurrentModelLabel")}
+                {"当前服务模型"}
               </span>
               <span className={styles.localSectionInfoValue}>
                 {currentRunningModelDisplayName}
@@ -957,16 +959,16 @@ export function LocalModelManageModal({
 
           {isRuntimeInstalled && downloadedModelCount === 0 ? (
             <div className={styles.localSectionNotice}>
-              {t("models.localNoDownloadedModelsHint")}
+              {"请先下载合适的模型，再启动本地推理服务。"}
             </div>
           ) : null}
 
           <div className={styles.modelList}>
             {serverStatus?.installed && loadingLocal ? (
-              <div className={styles.modelListEmpty}>{t("common.loading")}</div>
+              <div className={styles.modelListEmpty}>{"加载中..."}</div>
             ) : serverStatus?.installed && localModels.length === 0 ? (
               <div className={styles.modelListEmpty}>
-                {t("models.localNoRecommendedModels")}
+                {"当前机器配置较低，不适合运行本地模型"}
               </div>
             ) : null}
 
@@ -996,10 +998,10 @@ export function LocalModelManageModal({
                 <div className={styles.customModelHeader}>
                   <div className={styles.customModelListItemInfo}>
                     <span className={styles.modelListItemName}>
-                      {t("models.localCustomModelTitle")}
+                      {"自定义模型下载"}
                     </span>
                     <span className={styles.customModelHint}>
-                      {t("models.localCustomModelHint")}
+                      {"输入模型仓库 ID，仅支持 GGUF 格式。"}
                     </span>
                   </div>
                   <Button
@@ -1011,7 +1013,7 @@ export function LocalModelManageModal({
                     }}
                     disabled={isCustomDownloadDisabled}
                   >
-                    {t("common.download")}
+                    {"下载"}
                   </Button>
                 </div>
                 <div className={styles.customModelInputRow}>
@@ -1021,7 +1023,7 @@ export function LocalModelManageModal({
                     onPressEnter={() => {
                       void handleStartCustomModelDownload();
                     }}
-                    placeholder={t("models.localRepoIdPlaceholder")}
+                    placeholder={"例如 Qwen/Qwen3-0.6B-GGUF"}
                     className={styles.customModelRepoInput}
                   />
                   <Select
@@ -1033,11 +1035,11 @@ export function LocalModelManageModal({
                     options={[
                       {
                         value: "huggingface",
-                        label: t("models.localSourceHuggingFace"),
+                        label: "Hugging Face",
                       },
                       {
                         value: "modelscope",
-                        label: t("models.localSourceModelScope"),
+                        label: "ModelScope",
                       },
                     ]}
                   />
@@ -1056,7 +1058,7 @@ export function LocalModelManageModal({
             onClick={() => setAdvancedOpen((prev) => !prev)}
           >
             <span className={styles.advancedConfigToggleLabel}>
-              {t("models.localAdvancedConfigTitle")}
+              {"本地模型进阶配置"}
             </span>
             <DownOutlined
               className={
@@ -1076,7 +1078,7 @@ export function LocalModelManageModal({
               <div
                 className={`${styles.localAdvancedConfigLabel} ${styles.localAdvancedConfigLabelRow}`}
               >
-                <span>{t("models.localMaxContextLengthLabel")}</span>
+                <span>{"最大上下文长度"}</span>
                 <Button
                   type="primary"
                   size="small"
@@ -1089,7 +1091,7 @@ export function LocalModelManageModal({
                     }
                   }}
                 >
-                  {t("models.save")}
+                  {"保存"}
                 </Button>
               </div>
               <InputNumber
@@ -1105,10 +1107,10 @@ export function LocalModelManageModal({
                   )
                 }
                 className={styles.localAdvancedConfigInput}
-                placeholder={t("models.localMaxContextLengthPlaceholder")}
+                placeholder={"请输入最大上下文长度"}
               />
               <div className={styles.localAdvancedConfigHint}>
-                {t("models.localMaxContextLengthHint")}
+                {"模型上下文窗口的最大 token 数，决定每次请求可携带的历史长度，在下一次启动本地服务时生效"}
               </div>
             </div>
 
@@ -1118,7 +1120,7 @@ export function LocalModelManageModal({
               <div
                 className={`${styles.localAdvancedConfigLabel} ${styles.localAdvancedConfigLabelRow}`}
               >
-                <span>{t("models.localServerPortLabel")}</span>
+                <span>{"服务端口"}</span>
                 <Button
                   type="primary"
                   size="small"
@@ -1131,7 +1133,7 @@ export function LocalModelManageModal({
                     }
                   }}
                 >
-                  {t("models.save")}
+                  {"保存"}
                 </Button>
               </div>
               <InputNumber
@@ -1146,10 +1148,10 @@ export function LocalModelManageModal({
                   )
                 }
                 className={styles.localAdvancedConfigInput}
-                placeholder={t("models.localServerPortPlaceholder")}
+                placeholder={"留空则自动选择端口"}
               />
               <div className={styles.localAdvancedConfigHint}>
-                {t("models.localServerPortHint")}
+                {"留空时，llama.cpp 会在启动时自动选择一个可用端口；填写端口号则会在后续启动时复用该固定端口，配置会在下一次启动本地服务时生效"}
               </div>
             </div>
 
@@ -1157,7 +1159,7 @@ export function LocalModelManageModal({
               <div
                 className={`${styles.localAdvancedConfigLabel} ${styles.localAdvancedConfigLabelRow}`}
               >
-                <span>{t("models.modelGenerateConfig")}</span>
+                <span>{"模型生成参数"}</span>
                 <Button
                   type="primary"
                   size="small"
@@ -1176,7 +1178,7 @@ export function LocalModelManageModal({
                     }
                   }}
                 >
-                  {t("models.save")}
+                  {"保存"}
                 </Button>
               </div>
               <JsonConfigEditor
@@ -1191,7 +1193,7 @@ export function LocalModelManageModal({
                 </div>
               ) : null}
               <div className={styles.localAdvancedConfigHint}>
-                {t("models.localGenerateConfigHint")}
+                {"使用 JSON 格式表示的生成参数配置项，会被展开传入到生成请求中"}
               </div>
             </div>
           </div>

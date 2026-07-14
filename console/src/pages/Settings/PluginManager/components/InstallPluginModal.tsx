@@ -1,4 +1,3 @@
-import { useTranslation } from "react-i18next";
 import { Button, Modal, Input, Form, Divider, Typography, Space } from "antd";
 import { Package, Link, FolderOpen, FileArchive, X } from "lucide-react";
 import type { useInstallModal } from "../hooks/useInstallModal";
@@ -26,7 +25,6 @@ export function InstallPluginModal({
   handleInstallLocal,
   handleInstallUrl,
 }: Omit<InstallModalProps, "openModal">) {
-  const { t } = useTranslation();
 
   return (
     <>
@@ -43,7 +41,7 @@ export function InstallPluginModal({
         title={
           <Space>
             <Package size={18} />
-            {t("pluginManager.installTitle")}
+            {"安装插件"}
           </Space>
         }
         onCancel={closeModal}
@@ -84,10 +82,10 @@ export function InstallPluginModal({
                 className={styles.dropIcon}
               />
               <Text className={styles.dropPrimary}>
-                {t("pluginManager.dropPrimary")}
+                {"拖入文件夹或 ZIP 文件"}
               </Text>
               <Text type="secondary" className={styles.dropSecondary}>
-                {t("pluginManager.dropSecondary")}
+                {"或点击选择 ZIP 文件"}
               </Text>
             </div>
           )}
@@ -101,13 +99,13 @@ export function InstallPluginModal({
             onClick={handleInstallLocal}
           >
             {localInstalling
-              ? t("pluginManager.installing")
-              : t("pluginManager.installBtn")}
+              ? "安装中..."
+              : "安装插件"}
           </Button>
 
           <Divider style={{ margin: "20px 0 16px" }}>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              {t("pluginManager.orFromUrl")}
+              {"或通过 URL 安装"}
             </Text>
           </Divider>
 
@@ -124,15 +122,15 @@ export function InstallPluginModal({
                     style={{ color: "var(--ant-color-text-quaternary)" }}
                   />
                 }
-                placeholder={t("pluginManager.urlPlaceholder")}
+                placeholder={"https://example.com/plugin.zip"}
                 allowClear
                 onPressEnter={handleInstallUrl}
               />
             </Form.Item>
             <Button block loading={urlInstalling} onClick={handleInstallUrl}>
               {urlInstalling
-                ? t("pluginManager.installing")
-                : t("pluginManager.installFromUrl")}
+                ? "安装中..."
+                : "从 URL 安装"}
             </Button>
           </Form>
 
@@ -140,7 +138,7 @@ export function InstallPluginModal({
             type="secondary"
             style={{ fontSize: 11, display: "block", marginTop: 14 }}
           >
-            {t("pluginManager.restartHint")}
+            {"部分插件（如 hook、monkey-patch 类型）安装或卸载后可能需要重启应用才能完全生效。"}
           </Text>
         </div>
       </Modal>

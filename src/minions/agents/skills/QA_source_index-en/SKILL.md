@@ -28,7 +28,7 @@ When answering questions about **installation, configuration, or behavioral prin
 | Skills, SKILL, skill_pool, built-in skills | `skills` | `src/minions/agents/skill_system/`, `src/minions/agents/skills/` |
 | MCP, plugins | `mcp` | `src/minions/app/routers/` (grep `mcp` as needed) |
 | Multi-agent, workspace, agent, built-in QA | `multi-agent` | `src/minions/app/routers/agents.py`, `src/minions/app/migration.py`, `src/minions/constant.py` (`BUILTIN_QA_AGENT_ID`, etc.) |
-| Memory, MEMORY, memory_search | `memory` | `src/minions/agents/memory/memory_manager.py`, `src/minions/agents/tools/memory_search.py` |
+| SAGE, business experience, lessons, recall | `sage` | `src/minions/sage/`, `docs/sage-deployment.md` |
 | Console, frontend | `console` | `console/` |
 | CLI, subcommands, init | `cli` | `src/minions/cli/` (e.g., `init_cmd.py`) |
 | Channels, sessions | `channels` | Search for `channels` keyword under `src/minions` |

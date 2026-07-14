@@ -55,11 +55,11 @@ _REQUIREMENTS_METADATA_NAMESPACES = ("openclaw", "minions", "clawdbot")
 # ---------------------------------------------------------------------------
 
 
-def get_skill_pool_dir() -> Path:
-    """Return the local shared skill pool directory."""
+def get_global_skills_dir() -> Path:
+    """Return the local shared global skills directory."""
     from ...constant import WORKING_DIR
 
-    return Path(WORKING_DIR) / "skill_pool"
+    return Path(WORKING_DIR) / "global_skills"
 
 
 def get_workspace_skills_dir(workspace_dir: Path) -> Path:
@@ -97,9 +97,9 @@ def get_workspace_identity(workspace_dir: Path) -> dict[str, str]:
     }
 
 
-def get_pool_skill_manifest_path() -> Path:
-    """Return the shared pool skill manifest path."""
-    return get_skill_pool_dir() / "skill.json"
+def get_global_skill_manifest_path() -> Path:
+    """Return the shared global skills skill manifest path."""
+    return get_global_skills_dir() / "skill.json"
 
 
 def get_extra_skill_dirs() -> list[Path]:
@@ -112,7 +112,7 @@ def get_extra_skill_dirs() -> list[Path]:
         logger.warning("Failed to load configured skill_paths: %s", exc)
         return []
 
-    primary = get_skill_pool_dir().resolve()
+    primary = get_global_skills_dir().resolve()
     dirs: list[Path] = []
     seen: set[Path] = {primary}
     for raw in raw_paths:
@@ -128,22 +128,22 @@ def get_extra_skill_dirs() -> list[Path]:
     return dirs
 
 
-def get_skill_pool_dirs() -> list[Path]:
-    """Return ordered skill pool roots: primary pool first, then extras."""
-    return [get_skill_pool_dir(), *get_extra_skill_dirs()]
+def get_global_skills_dirs() -> list[Path]:
+    """Return ordered global skills roots: primary global skills dir first, then extras."""
+    return [get_global_skills_dir(), *get_extra_skill_dirs()]
 
 
-def resolve_pool_skill_dir(skill_name: str) -> Path | None:
-    """Resolve a pool skill's directory across all roots, in order.
+def resolve_global_skill_dir(skill_name: str) -> Path | None:
+    """Resolve a global skill's directory across all roots, in order.
 
     Returns the first ``<root>/<skill_name>`` containing ``SKILL.md`` (primary
-    pool wins), or ``None`` when the skill is not found in any root.
+    global skills root wins), or ``None`` when the skill is not found in any root.
     """
     try:
         normalized = normalize_skill_dir_name(skill_name)
     except SkillsError:
         return None
-    for root in get_skill_pool_dirs():
+    for root in get_global_skills_dirs():
         try:
             candidate = safe_skill_dir(root, normalized)
         except SkillsError:
@@ -153,10 +153,10 @@ def resolve_pool_skill_dir(skill_name: str) -> Path | None:
     return None
 
 
-def is_primary_pool_skill_dir(skill_dir: Path) -> bool:
-    """Return whether ``skill_dir`` lives under the primary pool."""
+def is_primary_global_skill_dir(skill_dir: Path) -> bool:
+    """Return whether ``skill_dir`` lives under the primary global skills dir."""
     try:
-        return skill_dir.resolve().parent == get_skill_pool_dir().resolve()
+        return skill_dir.resolve().parent == get_global_skills_dir().resolve()
     except Exception:  # pragma: no cover
         return False
 
@@ -247,6 +247,68 @@ def compute_skill_md_hash(skill_dir: Path) -> str:
     except OSError:
         return ""
     return hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+
+def compute_skill_content_hash(skill_dir: Path) -> str:
+    """Return a stable SHA-256 digest for all meaningful skill files.
+
+    Paths and bytes both participate in the digest, so renames and auxiliary
+    script/reference changes are visible.  The same cache/OS artifacts that
+    are excluded from skill copies are excluded here as well.
+    """
+    if not skill_dir.is_dir() or not (skill_dir / "SKILL.md").is_file():
+        return ""
+
+    digest = hashlib.sha256()
+    try:
+        candidates = sorted(
+            skill_dir.rglob("*"),
+            key=lambda path: path.relative_to(skill_dir).as_posix(),
+        )
+        for path in candidates:
+            relative = path.relative_to(skill_dir)
+            if any(
+                part in _IGNORED_SKILL_ARTIFACTS
+                for part in relative.parts
+            ):
+                continue
+            if path.is_symlink():
+                payload = os.readlink(path).encode("utf-8")
+                kind = b"L"
+            elif path.is_file():
+                payload = path.read_bytes()
+                kind = b"F"
+            else:
+                continue
+            encoded_path = relative.as_posix().encode("utf-8")
+            digest.update(kind)
+            digest.update(len(encoded_path).to_bytes(8, "big"))
+            digest.update(encoded_path)
+            digest.update(len(payload).to_bytes(8, "big"))
+            digest.update(payload)
+    except OSError:
+        return ""
+    return digest.hexdigest()
+
+
+def skill_hash_matches(skill_dir: Path, expected_hash: str) -> bool:
+    """Match a current skill against a directory or legacy SKILL.md hash."""
+    expected = str(expected_hash or "")
+    if not expected:
+        return False
+    return expected in {
+        compute_skill_content_hash(skill_dir),
+        compute_skill_md_hash(skill_dir),
+    }
+
+
+def compute_workspace_skill_hash(
+    workspace_dir: Path,
+    skill_name: str,
+) -> str:
+    """Return a full-content digest of one workspace skill directory."""
+    skill_dir = get_workspace_skills_dir(workspace_dir) / skill_name
+    return compute_skill_content_hash(skill_dir)
 
 
 def _directory_tree(directory: Path) -> dict[str, Any]:
@@ -407,9 +469,9 @@ def default_workspace_manifest() -> dict[str, Any]:
     }
 
 
-def default_pool_manifest() -> dict[str, Any]:
+def default_global_skills_manifest() -> dict[str, Any]:
     return {
-        "schema_version": "skill-pool-manifest.v1",
+        "schema_version": "global-skills-manifest.v1",
         "version": 0,
         "skills": {},
         "builtin_skill_names": [],
@@ -426,8 +488,8 @@ def _is_builtin_skill(skill_name: str, builtin_names: list[str]) -> bool:
     return skill_name in builtin_names
 
 
-def is_pool_builtin_entry(entry: dict[str, Any] | None) -> bool:
-    """Return whether one pool manifest entry represents a builtin slot."""
+def is_global_builtin_entry(entry: dict[str, Any] | None) -> bool:
+    """Return whether one global skills manifest entry represents a builtin slot."""
     normalized = normalize_skill_manifest_entry(entry)
     return (
         bool(normalized)
@@ -435,19 +497,19 @@ def is_pool_builtin_entry(entry: dict[str, Any] | None) -> bool:
     )
 
 
-def classify_pool_skill_source(
+def classify_global_skill_source(
     skill_name: str,
     skill_dir: Path,
     existing: dict[str, Any],
     builtin_names: list[str],
 ) -> tuple[str, bool]:
-    """Classify one pool skill against packaged builtins.
+    """Classify one global skill against packaged builtins.
 
     Preserve the manifest's builtin/customized intent when the entry
     already exists. This lets an outdated builtin remain a builtin slot,
     while same-name customized copies stay customized.
     """
-    if existing and is_pool_builtin_entry(existing):
+    if existing and is_global_builtin_entry(existing):
         return "builtin", False
 
     if not _is_builtin_skill(skill_name, builtin_names):
@@ -456,10 +518,10 @@ def classify_pool_skill_source(
     if existing:
         return "customized", False
 
-    pool_version = extract_version(
+    global_version = extract_version(
         _read_frontmatter_safe(skill_dir, skill_name),
     )
-    if pool_version:
+    if global_version:
         return "builtin", False
     return "customized", False
 
@@ -473,7 +535,7 @@ def is_ignored_skill_entry(name: str) -> bool:
     """Names to skip when enumerating skill-candidate directories.
 
     Single extension point for "not a real skill" name rules used by every
-    skill-dir enumeration (registry scanners, pool / workspace conflict
+    skill-dir enumeration (registry scanners, global skills / workspace conflict
     checks, zip imports). Add new patterns here when they appear.
     """
     return name in _IGNORED_SKILL_ARTIFACTS or name.startswith("~")
@@ -783,10 +845,10 @@ def read_skill_manifest(
     return _read_json_mtime_cached(path, default_workspace_manifest())
 
 
-def read_skill_pool_manifest() -> dict[str, Any]:
-    """Return the pool skill manifest, cached by file mtime."""
-    path = get_pool_skill_manifest_path()
-    return _read_json_mtime_cached(path, default_pool_manifest())
+def read_global_skills_manifest() -> dict[str, Any]:
+    """Return the global skill manifest, cached by file mtime."""
+    path = get_global_skill_manifest_path()
+    return _read_json_mtime_cached(path, default_global_skills_manifest())
 
 
 # ---------------------------------------------------------------------------

@@ -123,17 +123,17 @@ def _sync_default_workspace_skills(
     *,
     enable_all: bool = False,
 ) -> int:
-    """Download pool skills into the default workspace and enable some of them.
+    """Download global skills into the default workspace and enable some of them.
 
     Returns the number of skills enabled.
     """
-    from ..agents.skill_system import SkillPoolService, SkillService
+    from ..agents.skill_system import GlobalSkillService, SkillService
 
-    pool = SkillPoolService()
+    global_svc = GlobalSkillService()
     service = SkillService(default_workspace)
     prior_names = {skill.name for skill in service.list_all_skills()}
-    for skill in pool.list_all_skills():
-        pool.download_to_workspace(
+    for skill in global_svc.list_all_skills():
+        global_svc.download_to_workspace(
             skill.name,
             default_workspace,
             overwrite=False,
@@ -177,7 +177,8 @@ def init_cmd(
     from ..app.migration import (
         ensure_default_agent_exists,
         ensure_qa_agent_exists,
-        migrate_legacy_skills_to_skill_pool,
+        migrate_legacy_skills_to_global_skills,
+        migrate_skill_pool_to_global_skills,
     )
 
     config_path = get_config_path()
@@ -230,16 +231,17 @@ def init_cmd(
     # --- Ensure default agent workspace exists ---
     click.echo("\n=== Default Workspace Initialization ===")
     ensure_default_agent_exists()
-    migrate_legacy_skills_to_skill_pool()
+    migrate_legacy_skills_to_global_skills()
+    migrate_skill_pool_to_global_skills()
     click.echo("✓ Default workspace initialized")
     ensure_qa_agent_exists()
     click.echo("✓ Builtin QA agent workspace ensured")
 
     # --- Ensure local skill hub exists ---
-    from ..agents.skill_system import ensure_skill_pool_initialized
+    from ..agents.skill_system import ensure_global_skills_initialized
 
-    if ensure_skill_pool_initialized():
-        click.echo("✓ Skill pool initialized")
+    if ensure_global_skills_initialized():
+        click.echo("✓ Global skills initialized")
 
     # Get default workspace path for subsequent operations
     default_workspace = Path(f"{WORKING_DIR}/workspaces/default").expanduser()
@@ -392,10 +394,10 @@ def init_cmd(
 
     # --- skills (prompt if needed) ---
     if use_defaults:
-        # Using --defaults: download all pool skills into workspace; enable only
+        # Using --defaults: download all global skills into workspace; enable only
         # newly-added skills so re-running init never re-enables ones the user
         # has disabled.
-        click.echo("Syncing pool skills into workspace...")
+        click.echo("Syncing global skills into workspace...")
         synced = _sync_default_workspace_skills(default_workspace)
         if synced:
             click.echo(f"✓ {synced} new skill(s) enabled.")
@@ -414,7 +416,7 @@ def init_cmd(
 
         if skills_choice == "all":
             # Explicit "all": honor it and enable every skill.
-            click.echo("Syncing pool skills into workspace...")
+            click.echo("Syncing global skills into workspace...")
             synced = _sync_default_workspace_skills(
                 default_workspace,
                 enable_all=True,
@@ -424,7 +426,7 @@ def init_cmd(
             configure_skills_interactive(
                 agent_id="default",
                 working_dir=default_workspace,
-                include_pool_candidates=True,
+                include_global_candidates=True,
             )
         else:  # none
             click.echo("Skipped skills configuration.")

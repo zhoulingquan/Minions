@@ -11,7 +11,6 @@ import {
 } from "antd";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { useAppMessage } from "../hooks/useAppMessage";
 import AgentSelector from "../components/AgentSelector";
 import {
@@ -25,7 +24,7 @@ import {
 } from "@agentscope-ai/icons";
 import SidebarSessionList from "./SidebarSessionList";
 import SidebarSettingsPanel from "./SidebarSettingsPanel";
-import { clearAuthToken } from "../api/config";
+import { clearAuthToken, setAuthToken } from "../api/config";
 import { authApi } from "../api/modules/auth";
 import api from "../api";
 import {
@@ -37,6 +36,9 @@ import { buildSessionPath, getSessionIdFromPath } from "../utils/sessionRoute";
 import sessionApi from "../pages/Chat/sessionApi";
 import styles from "./index.module.less";
 import { useTheme } from "../contexts/ThemeContext";
+import { Building2 } from "lucide-react";
+import { useTenantStore } from "../stores/tenantStore";
+import type { TenantRole } from "../api/types/tenancy";
 import { useMenuItems, useRoutes } from "../plugins/registry/hooks";
 import { Slot } from "../plugins/registry/Slot";
 import {
@@ -64,6 +66,13 @@ function isMobileSidebarViewport() {
   );
 }
 const MSG_BADGE_POLLING_MS = 6000;
+const TENANT_ROLE_LABELS: Record<TenantRole, string> = {
+  owner: "所有者",
+  admin: "管理员",
+  operator: "业务运营",
+  member: "成员",
+  viewer: "只读成员",
+};
 
 // ── Simple mode whitelist ─────────────────────────────────────────────────
 
@@ -109,8 +118,7 @@ interface SidebarProps {
 export default function Sidebar({ selectedKey }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const { isDark } = useTheme();
   const currentSessionId = getSessionIdFromPath(location.pathname);
   const chatPath = buildSessionPath("chat", currentSessionId);
@@ -124,6 +132,9 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(isMobileSidebarViewport);
   const [hasMsgUnread, setHasMsgUnread] = useState(false);
+  const tenantOverview = useTenantStore((state) => state.overview);
+  const refreshTenant = useTenantStore((state) => state.refresh);
+  const clearTenant = useTenantStore((state) => state.clear);
 
   // Sidebar mode: "simple" (only core items) or "full" (everything)
   const { mode: sidebarMode } = useSidebarModeStore();
@@ -163,9 +174,16 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
   useEffect(() => {
     authApi
       .getStatus()
-      .then((res) => setAuthEnabled(res.enabled))
+      .then((res) => {
+        setAuthEnabled(res.enabled);
+        if (res.enabled && res.multitenant) {
+          void refreshTenant();
+        } else {
+          clearTenant();
+        }
+      })
       .catch(() => {});
-  }, []);
+  }, [clearTenant, refreshTenant]);
 
   useEffect(() => {
     if (
@@ -277,7 +295,7 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
       key: "core.chat",
       icon: <SparkChatTabFill size={18} />,
       path: chatPath,
-      label: t("nav.chat"),
+      label: "聊天",
     };
     // Msg in collapsed mode shows a dot overlay on its icon (kept Sidebar-local
     // for the same reason as decorateLabel: live state isn't menu data).
@@ -309,7 +327,7 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
         ? { ...entry, icon: decorateMsgIcon(entry.icon) }
         : entry,
     );
-  }, [agentMenu, settingsMenu, routes, chatPath, t, hasMsgUnread]);
+  }, [agentMenu, settingsMenu, routes, chatPath, hasMsgUnread]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -361,47 +379,59 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
     const trimmedPassword = values.newPassword?.trim() || undefined;
 
     if (values.newPassword && !trimmedPassword) {
-      message.error(t("account.passwordEmpty"));
+      message.error("密码不能为空白");
       return;
     }
 
     if (values.newUsername && !trimmedUsername) {
-      message.error(t("account.usernameEmpty"));
+      message.error("用户名不能为空白");
       return;
     }
 
     if (!trimmedUsername && !trimmedPassword) {
-      message.warning(t("account.nothingToUpdate"));
+      message.warning("请输入新用户名或新密码");
       return;
     }
 
     setAccountLoading(true);
     try {
-      await authApi.updateProfile(
+      const session = await authApi.updateProfile(
         values.currentPassword,
         trimmedUsername,
         trimmedPassword,
       );
-      message.success(t("account.updateSuccess"));
+      setAuthToken(session.token);
+      message.success("账户更新成功");
       setAccountModalOpen(false);
       accountForm.resetFields();
-      clearAuthToken();
-      window.location.href = "/login";
+      await refreshTenant();
     } catch (err: unknown) {
       const raw = err instanceof Error ? err.message : "";
-      let msg = t("account.updateFailed");
+      let msg = "账户更新失败";
       if (raw.includes("password is incorrect")) {
-        msg = t("account.wrongPassword");
+        msg = "当前密码不正确";
       } else if (raw.includes("Nothing to update")) {
-        msg = t("account.nothingToUpdate");
+        msg = "请输入新用户名或新密码";
       } else if (raw.includes("cannot be empty")) {
-        msg = t("account.nothingToUpdate");
+        msg = "请输入新用户名或新密码";
       } else if (raw) {
         msg = raw;
       }
       message.error(msg);
     } finally {
       setAccountLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      // Local logout must still complete if the server is unavailable.
+    } finally {
+      clearTenant();
+      clearAuthToken();
+      window.location.href = "/login";
     }
   };
 
@@ -538,7 +568,7 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
                 onClick={() => navigate(chatPath)}
               >
                 <SparkChatTabFill size={16} />
-                <span>{t("nav.chat")}</span>
+                <span>{"聊天"}</span>
               </button>
             </div>
             <Slot name="sider.top" kind="fill" />
@@ -569,6 +599,23 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
 
       {authEnabled && !collapsed && (
         <div className={styles.authActions}>
+          {tenantOverview && (
+            <button
+              type="button"
+              className={styles.tenantSummary}
+              onClick={() => navigate("/settings/tenancy")}
+            >
+              <span className={styles.tenantSummaryIcon}>
+                <Building2 size={16} />
+              </span>
+              <span>
+                <strong>{tenantOverview.tenant.name}</strong>
+                <small>
+                  {TENANT_ROLE_LABELS[tenantOverview.membership.role]}
+                </small>
+              </span>
+            </button>
+          )}
           <Button
             type="text"
             icon={<SparkSearchUserLine size={16} />}
@@ -581,21 +628,18 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
               collapsed ? styles.authBtnCollapsed : ""
             }`}
           >
-            {!collapsed && t("account.title")}
+            {!collapsed && "账户管理"}
           </Button>
           <Button
             type="text"
             icon={<SparkExitFullscreenLine size={16} />}
-            onClick={() => {
-              clearAuthToken();
-              window.location.href = "/login";
-            }}
+            onClick={() => void handleLogout()}
             block
             className={`${styles.authBtn} ${
               collapsed ? styles.authBtnCollapsed : ""
             }`}
           >
-            {!collapsed && t("login.logout")}
+            {!collapsed && "退出登录"}
           </Button>
         </div>
       )}
@@ -635,7 +679,7 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
       <Modal
         open={accountModalOpen}
         onCancel={() => setAccountModalOpen(false)}
-        title={t("account.title")}
+        title={"账户管理"}
         footer={null}
         destroyOnHidden
         centered
@@ -647,22 +691,22 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
         >
           <Form.Item
             name="currentPassword"
-            label={t("account.currentPassword")}
+            label={"当前密码"}
             rules={[
-              { required: true, message: t("account.currentPasswordRequired") },
+              { required: true, message: "请输入当前密码" },
             ]}
           >
             <Input.Password />
           </Form.Item>
-          <Form.Item name="newUsername" label={t("account.newUsername")}>
-            <Input placeholder={t("account.newUsernamePlaceholder")} />
+          <Form.Item name="newUsername" label={"新用户名"}>
+            <Input placeholder={"留空则保持不变"} />
           </Form.Item>
-          <Form.Item name="newPassword" label={t("account.newPassword")}>
-            <Input.Password placeholder={t("account.newPasswordPlaceholder")} />
+          <Form.Item name="newPassword" label={"新密码"}>
+            <Input.Password placeholder={"留空则保持不变"} />
           </Form.Item>
           <Form.Item
             name="confirmPassword"
-            label={t("account.confirmPassword")}
+            label={"确认新密码"}
             dependencies={["newPassword"]}
             rules={[
               ({ getFieldValue }) => ({
@@ -674,14 +718,14 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
                     return Promise.resolve();
                   }
                   return Promise.reject(
-                    new Error(t("account.passwordMismatch")),
+                    new Error("两次输入的密码不一致"),
                   );
                 },
               }),
             ]}
           >
             <Input.Password
-              placeholder={t("account.confirmPasswordPlaceholder")}
+              placeholder={"再次输入新密码"}
             />
           </Form.Item>
           <Form.Item>
@@ -691,7 +735,7 @@ export default function Sidebar({ selectedKey }: SidebarProps) {
               loading={accountLoading}
               block
             >
-              {t("account.save")}
+              {"保存更改"}
             </Button>
           </Form.Item>
         </Form>

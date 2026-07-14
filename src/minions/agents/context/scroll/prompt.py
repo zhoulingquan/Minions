@@ -53,11 +53,9 @@ DISCIPLINE:
     only the ``[context compressed]`` map), recall it FIRST. If recall fails
     or cannot retrieve it, say so explicitly — never answer an older visible
     message as if it were the current request.
-  • Memory files (MEMORY.md / PROFILE.md, via memory_search) hold the durable
-    preferences, profile facts, and decisions you distilled as worth keeping —
-    a quick first reference, a curated subset of that same history. For the raw
-    record of what was said, asked, done, or decided, recall is the source of
-    truth; memory is not.
+  • SAGE business evidence may be injected separately at request start. Use
+    only the active, source-linked evidence supplied for the current request;
+    do not promote recalled chat history into durable business knowledge.
 """
 
 SCROLL_SYSTEM_PROMPT_ZH = """\
@@ -94,10 +92,8 @@ recall 回来）。控制在大约 15 个词以内，且要具体（写清数值
   • 如果当前用户请求不在你的 live context 里（你只看到 ``[context
     compressed]`` 地图），先把它 recall 回来。recall 失败或取不回时要明确
     说明——绝不能把更早的可见消息当成当前请求来回答。
-  • 记忆文件（MEMORY.md / PROFILE.md，通过 memory_search）保存的是你提炼出来、
-    值得长期保留的偏好、画像事实与决策——一个可以先查的快速参考，是同一份历史里
-    精选出的子集。至于“到底说过、问过、做过或决定过什么”的原始记录，recall 才是
-    真相来源，memory 不是。
+  • SAGE 业务证据可能在请求开始时单独注入。只使用当前请求提供的、已生效且带来源
+    的证据；不要把召回的聊天历史自行提升为长期业务知识。
 """
 
 SCROLL_SYSTEM_PROMPT_TEMPLATES = {

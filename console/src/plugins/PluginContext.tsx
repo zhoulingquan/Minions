@@ -11,7 +11,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { pluginSystem } from "./hostExternals";
 import { loadAllPlugins } from "./usePluginLoader";
-import type { PluginRouteDeclaration } from "./hostExternals";
+import type { PluginRouteDeclaration, ToolRenderer } from "./hostExternals";
 import {
   routeRegistry,
   subscribe as registrySubscribe,
@@ -38,7 +38,7 @@ function derivePluginRoutes(): PluginRouteDeclaration[] {
 
 export interface PluginContextValue {
   /** Map of tool-name → React component. Pass to `@agentscope-ai/chat`. */
-  toolRenderConfig: Record<string, React.FC<any>>;
+  toolRenderConfig: Record<string, ToolRenderer>;
   /** Page routes registered by plugins. Inject into the router + sidebar. */
   pluginRoutes: PluginRouteDeclaration[];
   /** True until the initial plugin-load attempt completes. */
@@ -65,7 +65,7 @@ const PluginContext = createContext<PluginContextValue>({
  */
 export function PluginProvider({ children }: { children: React.ReactNode }) {
   const [toolRenderConfig, setToolRenderConfig] = useState<
-    Record<string, React.FC<any>>
+    Record<string, ToolRenderer>
   >(pluginSystem.getToolRenderConfig());
   const [pluginRoutes, setPluginRoutes] = useState<PluginRouteDeclaration[]>(
     derivePluginRoutes(),

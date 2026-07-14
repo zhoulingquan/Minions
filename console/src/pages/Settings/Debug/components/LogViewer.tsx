@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { Spin, Typography } from "antd";
-import { useTranslation } from "react-i18next";
 import styles from "../index.module.less";
 
 const { Text } = Typography;
@@ -44,10 +43,9 @@ interface LogViewerProps {
 }
 
 export function LogViewer({ lines, query, loading }: LogViewerProps) {
-  const { t } = useTranslation();
 
   return (
-    <Spin spinning={loading} tip={t("common.loading", "Loading")}>
+    <Spin spinning={loading} tip={"加载中..."}>
       <div className={styles.logViewer}>
         {lines.length ? (
           lines.map((line, idx) => (
@@ -55,10 +53,7 @@ export function LogViewer({ lines, query, loading }: LogViewerProps) {
           ))
         ) : (
           <Text type="secondary">
-            {t(
-              "debug.backend.placeholder",
-              "Backend log output will appear here.",
-            )}
+            {"后端日志会显示在这里。"}
           </Text>
         )}
       </div>

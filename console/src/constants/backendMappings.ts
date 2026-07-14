@@ -1,7 +1,5 @@
 import type { ComponentType } from "react";
 import { LightContextCard } from "../pages/Agent/Config/components/LightContextCard";
-import { ReMeLightMemoryCard } from "../pages/Agent/Config/components/ReMeLightMemoryCard";
-import { ADBPGConfigCard } from "../pages/Agent/Config/components/ADBPGConfigCard";
 
 interface BackendMapping<T> {
   configField: string;
@@ -21,32 +19,6 @@ export const CONTEXT_MANAGER_BACKEND_MAPPINGS: Record<
     tabKey: "lightContext",
   },
 };
-
-export const MEMORY_MANAGER_BACKEND_MAPPINGS: Record<
-  string,
-  BackendMapping<object>
-> = {
-  remelight: {
-    configField: "reme_light_memory_config",
-    component: ReMeLightMemoryCard,
-    label: "remelight",
-    tabKey: "remeLightMemory",
-  },
-  adbpg: {
-    configField: "adbpg_memory_config",
-    component: ADBPGConfigCard,
-    label: "adbpg",
-    tabKey: "adbpgMemory",
-  },
-};
-
-/** Valid memory backend keys (includes "none" which disables memory). */
-export const MEMORY_MANAGER_BACKEND_OPTIONS = [
-  ...Object.entries(MEMORY_MANAGER_BACKEND_MAPPINGS).map(
-    ([value, { label }]) => ({ value, label }),
-  ),
-  { value: "none", label: "none (disabled)" },
-];
 
 export const CONTEXT_MANAGER_BACKEND_OPTIONS = Object.entries(
   CONTEXT_MANAGER_BACKEND_MAPPINGS,

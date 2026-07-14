@@ -18,6 +18,8 @@ import type { ToolCallContent, ToolCallStatus } from "../shared/types";
 import type { BuiltinCardComponent } from "../cards";
 import GenericToolCard from "../cards/GenericToolCard";
 
+type ErasedRenderer = (props: never) => React.ReactNode;
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -141,8 +143,8 @@ function parseV1Props(v1Props: Record<string, unknown>): {
  */
 export function adaptCardForV1(
   CardComponent: BuiltinCardComponent,
-): React.FC<any> {
-  const V1WrappedCard: React.FC<any> = (v1Props) => {
+): React.FC<Record<string, unknown>> {
+  const V1WrappedCard: React.FC<Record<string, unknown>> = (v1Props) => {
     const { content, isStreaming } = parseV1Props(v1Props);
     return <CardComponent content={content} isStreaming={isStreaming} />;
   };
@@ -156,13 +158,13 @@ export function adaptCardForV1(
 /**
  * Convert the entire builtin card registry to ChatV1 format.
  *
- * Returns `Record<string, React.FC<any>>` suitable for passing to
+ * Returns a map of V1-compatible renderers suitable for passing to
  * `pluginSystem.addToolRenderers()`.
  */
 export function adaptRegistryForV1(
   registry: Record<string, BuiltinCardComponent>,
-): Record<string, React.FC<any>> {
-  const adapted: Record<string, React.FC<any>> = {};
+): Record<string, ErasedRenderer> {
+  const adapted: Record<string, ErasedRenderer> = {};
   for (const [toolName, CardComponent] of Object.entries(registry)) {
     adapted[toolName] = adaptCardForV1(CardComponent);
   }
@@ -170,8 +172,8 @@ export function adaptRegistryForV1(
 }
 
 /** Lazy-cached V1-wrapped GenericToolCard for the fallback proxy. */
-let _genericFallback: React.FC<any> | null = null;
-function getGenericFallback(): React.FC<any> {
+let _genericFallback: ErasedRenderer | null = null;
+function getGenericFallback(): ErasedRenderer {
   if (!_genericFallback) {
     _genericFallback = adaptCardForV1(GenericToolCard);
   }
@@ -187,8 +189,8 @@ function getGenericFallback(): React.FC<any> {
  * copy own-enumerable properties and would lose the Proxy behaviour.
  */
 export function withGenericFallback(
-  config: Record<string, React.FC<any>>,
-): Record<string, React.FC<any>> {
+  config: Record<string, ErasedRenderer>,
+): Record<string, ErasedRenderer> {
   const fallback = getGenericFallback();
   return new Proxy(config, {
     get(target, prop, receiver) {

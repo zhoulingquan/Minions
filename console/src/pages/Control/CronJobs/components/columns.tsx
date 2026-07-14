@@ -1,11 +1,10 @@
 import { Button, Tooltip, Dropdown } from "@agentscope-ai/design";
 import type { ColumnsType } from "antd/es/table";
 import type { MenuProps } from "antd";
-import type { CronJobSpecOutput } from "../../../../api/types";
+import type { CronJobSchedule, CronJobSpecOutput } from "../../../../api/types";
 import { CopyOutlined, MoreOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useAppMessage } from "../../../../hooks/useAppMessage";
-import { TFunction } from "i18next";
 import { parseCron } from "./parseCron";
 import styles from "../index.module.less";
 
@@ -17,15 +16,14 @@ interface ColumnHandlers {
   onViewHistory: (job: CronJob) => void;
   onEdit: (job: CronJob) => void;
   onDelete: (jobId: string) => void;
-  t: TFunction;
 }
 
-const createCopyToClipboard = (t: TFunction) => async (text: string) => {
+const createCopyToClipboard = () => async (text: string) => {
   const { message } = useAppMessage();
   try {
     if (navigator.clipboard && window.isSecureContext) {
       await navigator.clipboard.writeText(text);
-      message.success(t("common.copied"));
+      message.success("已复制到剪贴板");
     } else {
       const textArea = document.createElement("textarea");
       textArea.value = text;
@@ -37,35 +35,35 @@ const createCopyToClipboard = (t: TFunction) => async (text: string) => {
       textArea.select();
       document.execCommand("copy");
       textArea.remove();
-      message.success(t("common.copied"));
+      message.success("已复制到剪贴板");
     }
   } catch (err) {
     console.error("Failed to copy text: ", err);
-    message.error(t("common.copyFailed"));
+    message.error("复制到剪贴板失败");
   }
 };
 
 export const createColumns = (
   handlers: ColumnHandlers,
 ): ColumnsType<CronJob> => {
-  const copyToClipboard = createCopyToClipboard(handlers.t);
+  const copyToClipboard = createCopyToClipboard();
 
   return [
     {
-      title: handlers.t("cronJobs.id"),
+      title: "任务ID",
       dataIndex: "id",
       key: "id",
       width: 250,
       fixed: "left",
     },
     {
-      title: handlers.t("cronJobs.name"),
+      title: "任务名称",
       dataIndex: "name",
       key: "name",
       width: 250,
     },
     {
-      title: handlers.t("cronJobs.enabled"),
+      title: "启用状态",
       dataIndex: "enabled",
       key: "enabled",
       width: 100,
@@ -76,28 +74,24 @@ export const createColumns = (
               enabled ? styles.enabled : styles.disabled
             }`}
           />
-          {enabled
-            ? handlers.t("common.enabled")
-            : handlers.t("common.disabled")}
+          {enabled ? "已启用" : "已禁用"}
         </span>
       ),
     },
     {
-      title: handlers.t("cronJobs.scheduleType"),
+      title: "调度类型",
       dataIndex: ["schedule", "type"],
       key: "schedule_type",
       width: 140,
       render: (type: string) =>
-        type === "once"
-          ? handlers.t("cronJobs.scheduleTypeOnce")
-          : handlers.t("cronJobs.scheduleTypeRecurring"),
+        type === "once" ? "日程任务" : "循环任务",
     },
     {
-      title: handlers.t("cronJobs.scheduleCron"),
+      title: "执行时间（Cron）",
       dataIndex: "schedule",
       key: "cron",
       width: 180,
-      render: (schedule: any) => {
+      render: (schedule: CronJobSchedule) => {
         if (schedule?.type === "once") {
           const displayText = schedule?.run_at
             ? dayjs(schedule.run_at).format("YYYY-MM-DD HH:mm")
@@ -115,10 +109,10 @@ export const createColumns = (
 
         switch (cronParts.type) {
           case "hourly":
-            displayText = handlers.t("cronJobs.cronTypeHourly");
+            displayText = "每小时";
             break;
           case "daily":
-            displayText = `${handlers.t("cronJobs.cronTypeDaily")} ${String(
+            displayText = `每天 ${String(
               cronParts.hour,
             ).padStart(2, "0")}:${String(cronParts.minute).padStart(2, "0")}`;
             break;
@@ -126,20 +120,18 @@ export const createColumns = (
             const dayNames = (cronParts.daysOfWeek || [])
               .map((d) => {
                 const dayMap: Record<string, string> = {
-                  mon: handlers.t("cronJobs.cronDayMon"),
-                  tue: handlers.t("cronJobs.cronDayTue"),
-                  wed: handlers.t("cronJobs.cronDayWed"),
-                  thu: handlers.t("cronJobs.cronDayThu"),
-                  fri: handlers.t("cronJobs.cronDayFri"),
-                  sat: handlers.t("cronJobs.cronDaySat"),
-                  sun: handlers.t("cronJobs.cronDaySun"),
+                  mon: "周一",
+                  tue: "周二",
+                  wed: "周三",
+                  thu: "周四",
+                  fri: "周五",
+                  sat: "周六",
+                  sun: "周日",
                 };
                 return dayMap[d] || d;
               })
               .join(",");
-            displayText = `${handlers.t(
-              "cronJobs.cronTypeWeekly",
-            )} ${dayNames} ${String(cronParts.hour).padStart(2, "0")}:${String(
+            displayText = `每周 ${dayNames} ${String(cronParts.hour).padStart(2, "0")}:${String(
               cronParts.minute,
             ).padStart(2, "0")}`;
             break;
@@ -169,7 +161,7 @@ export const createColumns = (
       },
     },
     {
-      title: handlers.t("cronJobs.scheduleTimezone"),
+      title: "时区",
       dataIndex: ["schedule", "timezone"],
       key: "timezone",
       width: 170,
@@ -181,7 +173,7 @@ export const createColumns = (
       width: 140,
     },
     {
-      title: handlers.t("cronJobs.text"),
+      title: "消息内容",
       dataIndex: "text",
       key: "text",
       width: 200,
@@ -198,7 +190,7 @@ export const createColumns = (
       },
     },
     {
-      title: handlers.t("cronJobs.requestInput"),
+      title: "请求内容",
       dataIndex: ["request", "input"],
       key: "request_input",
       width: 350,
@@ -300,7 +292,7 @@ export const createColumns = (
       width: 240,
     },
     {
-      title: handlers.t("cronJobs.action"),
+      title: "操作",
       key: "action",
       width: 320,
       fixed: "right",
@@ -308,12 +300,12 @@ export const createColumns = (
         const menuItems: MenuProps["items"] = [
           {
             key: "edit",
-            label: handlers.t("cronJobs.edit"),
+            label: "编辑",
             onClick: () => handlers.onEdit(record),
           },
           {
             key: "delete",
-            label: handlers.t("cronJobs.delete"),
+            label: "删除",
             danger: true,
             onClick: () => handlers.onDelete(record.id),
           },
@@ -326,23 +318,21 @@ export const createColumns = (
               size="small"
               onClick={() => handlers.onToggleEnabled(record)}
             >
-              {record.enabled
-                ? handlers.t("cronJobs.disable")
-                : handlers.t("common.enable")}
+              {record.enabled ? "禁用" : "启用"}
             </Button>
             <Button
               type="link"
               size="small"
               onClick={() => handlers.onExecuteNow(record)}
             >
-              {handlers.t("cronJobs.executeNow")}
+              立即执行
             </Button>
             <Button
               type="link"
               size="small"
               onClick={() => handlers.onViewHistory(record)}
             >
-              {handlers.t("cronJobs.executionHistory")}
+              执行记录
             </Button>
             <Dropdown menu={{ items: menuItems }} placement="bottomRight">
               <Button type="text" size="small" icon={<MoreOutlined />} />

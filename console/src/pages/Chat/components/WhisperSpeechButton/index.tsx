@@ -9,7 +9,6 @@ import { IconButton } from "@agentscope-ai/design";
 import { SparkMicLine } from "@agentscope-ai/icons";
 import { Tooltip, message } from "antd";
 import { LoadingOutlined } from "@ant-design/icons";
-import { useTranslation } from "react-i18next";
 import { agentApi, TranscriptionError } from "@/api/modules/agent";
 import { useUploadLimitStore } from "@/stores/uploadLimitStore";
 
@@ -91,8 +90,7 @@ const WhisperSpeechButton = forwardRef<
   WhisperSpeechButtonRef,
   WhisperSpeechButtonProps
 >(({ disabled, onTranscription }, ref) => {
-  const { t } = useTranslation();
-  const [recording, setRecording] = useState(false);
+    const [recording, setRecording] = useState(false);
   const [loading, setLoading] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -136,10 +134,7 @@ const WhisperSpeechButton = forwardRef<
         const uploadLimit = useUploadLimitStore.getState().uploadMaxSizeMb;
         if (uploadLimit !== null && sizeMb > uploadLimit) {
           message.error(
-            t("chat.speech.fileTooLarge", {
-              size: sizeMb.toFixed(1),
-              limit: uploadLimit,
-            }),
+            `录音文件过大（${sizeMb.toFixed(1)}MB），最大支持 ${uploadLimit}MB`,
           );
           return;
         }
@@ -154,21 +149,18 @@ const WhisperSpeechButton = forwardRef<
           if (err instanceof TranscriptionError) {
             switch (err.code) {
               case "TRANSCRIPTION_DISABLED":
-                message.warning(t("chat.speech.transcriptionDisabled"));
+                message.warning("语音转录已禁用。请在设置 > 语音转写中配置转录服务。");
                 break;
               case "FILE_TOO_LARGE":
                 message.error(
-                  t("chat.speech.fileTooLarge", {
-                    size: sizeMb.toFixed(1),
-                    limit: uploadLimit ?? "?",
-                  }),
+                  `录音文件过大（${sizeMb.toFixed(1)}MB），最大支持 ${uploadLimit ?? "?"}MB`,
                 );
                 break;
               default:
-                message.error(t("chat.speech.transcriptionFailed"));
+                message.error("语音转录失败");
             }
           } else {
-            message.error(t("chat.speech.transcriptionFailed"));
+            message.error("语音转录失败");
           }
           console.error("Transcription error:", err);
         } finally {
@@ -185,18 +177,16 @@ const WhisperSpeechButton = forwardRef<
       recordingTimerRef.current = setTimeout(() => {
         if (internalRecordingRef.current) {
           message.warning(
-            t("chat.speech.recordingTooLong", {
-              limit: MAX_RECORDING_DURATION_MS / 1000,
-            }),
+            `录音时长超过限制（${MAX_RECORDING_DURATION_MS / 1000}秒）`,
           );
           stopRecording();
         }
       }, MAX_RECORDING_DURATION_MS);
     } catch (err) {
       console.error("Microphone access error:", err);
-      message.error(t("chat.speech.microphoneError"));
+      message.error("无法访问麦克风");
     }
-  }, [onTranscription, t, loading, stopRecording]);
+  }, [onTranscription, loading, stopRecording]);
 
   const toggleRecording = useCallback(() => {
     if (loading) return;
@@ -224,10 +214,10 @@ const WhisperSpeechButton = forwardRef<
     <Tooltip
       title={
         loading
-          ? t("chat.speech.transcribing")
+          ? "正在转录..."
           : recording
-          ? t("chat.speech.stopRecording")
-          : t("chat.speech.startRecording")
+          ? "停止录制 (Ctrl+Shift+M)"
+          : "开始语音录制 (Ctrl+Shift+M)"
       }
       mouseEnterDelay={0.5}
     >

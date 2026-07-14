@@ -19,7 +19,6 @@ from ..exceptions import SystemCommandException
 if TYPE_CHECKING:
     from agentscope.agent import Agent
     from agentscope.state import AgentState
-    from .memory import BaseMemoryManager
 
 logger = logging.getLogger(__name__)
 
@@ -33,8 +32,8 @@ logger = logging.getLogger(__name__)
 #   - ``new`` overlaps the dedicated ACP ``new_session`` affordance (clients
 #     start a fresh session natively); ``/clear`` covers the in-session
 #     "start over" need, so ``/new`` is not advertised over ACP.
-#   - ``history``, ``plan``, ``compact_str``, ``summarize_status``,
-#     ``message``, ``dump_history``, ``load_history``, ``proactive`` are
+#   - ``history``, ``plan``, ``compact_str``, ``message``,
+#     ``dump_history`` and ``load_history`` are
 #     internal/programmatic.
 # Descriptions mirror the console command palette copy
 # (``console/src/locales/en.json`` → ``chat.commands``) where they overlap,
@@ -59,7 +58,7 @@ def _fmt_tokens(n: int) -> str:
 class ConversationCommandHandlerMixin:
     """Mixin for conversation (system) commands: /compact, /new, /clear, etc.
 
-    Expects self to have: agent_name, memory, formatter, memory_manager.
+    Expects the host to provide agent state and optional context offloading.
     """
 
     # Supported conversation commands (unchanged set)
@@ -70,15 +69,11 @@ class ConversationCommandHandlerMixin:
             "clear",
             "history",
             "compact_str",
-            "summarize_status",
             "message",
             "dump_history",
             "load_history",
-            "proactive",
             "plan",
             "system_prompt",
-            "dream",
-            "memorize",
         },
     )
 
@@ -112,7 +107,6 @@ class CommandHandler(ConversationCommandHandlerMixin):
         self,
         agent_name: str,
         agent: "Agent | None" = None,
-        memory_manager: "BaseMemoryManager | None" = None,
         offloader: Any = None,
         *,
         state: "AgentState | None" = None,
@@ -135,7 +129,6 @@ class CommandHandler(ConversationCommandHandlerMixin):
         Args:
             agent_name: Name of the agent for message creation.
             agent: The owning agent (optional in standalone mode).
-            memory_manager: Optional long-term memory manager (ReMe).
             offloader: Optional offloader for persisting context to disk.
             state: Direct AgentState (standalone mode). Mutually
                 exclusive with ``agent``.
@@ -158,7 +151,6 @@ class CommandHandler(ConversationCommandHandlerMixin):
         self._agent = agent
         self._state_direct: "AgentState | None" = state
         self._agent_id = agent_id
-        self.memory_manager: "BaseMemoryManager" = memory_manager
         self._offloader = offloader
         self._workspace_dir = workspace_dir
         self._scroll_state = scroll_state
@@ -180,12 +172,10 @@ class CommandHandler(ConversationCommandHandlerMixin):
 
     def _get_agent_config(self):
         """Get hot-reloaded agent config."""
-        if self.memory_manager is not None:
-            return load_agent_config(self.memory_manager.agent_id)
         return load_agent_config(self._agent_id)
 
     # ------------------------------------------------------------------
-    # State accessors — short-term memory lives on ``agent.state``
+    # State accessors — live conversation context lives on ``agent.state``
     # or the directly-provided ``_state_direct``.
     # ------------------------------------------------------------------
 
@@ -231,10 +221,6 @@ class CommandHandler(ConversationCommandHandlerMixin):
             metadata=metadata or {},
         )
 
-    def _has_memory_manager(self) -> bool:
-        """Check if memory manager is available."""
-        return self.memory_manager is not None
-
     def _forced_context_config(self, agent: "Agent"):
         """Clone the agent's ContextConfig for a manual ``/compact``.
 
@@ -272,7 +258,7 @@ class CommandHandler(ConversationCommandHandlerMixin):
         if not messages:
             return await self._make_system_msg(
                 "📭 **No messages to compact.**\n\n"
-                "- Current memory is empty\n"
+                "- Current conversation context is empty\n"
                 "- No action taken",
             )
 
@@ -343,10 +329,6 @@ class CommandHandler(ConversationCommandHandlerMixin):
 
         after = len(self._state.context)
         evicted = max(0, before - after)
-        reme_cfg = agent_config.running.reme_light_memory_config
-        if self._has_memory_manager() and reme_cfg.summarize_when_compact:
-            self.memory_manager.add_summarize_task(messages=messages)
-
         summary = self._get_summary()
         folded = int(compress_stats.get("folded", 0) or 0)
         if evicted == 0 and folded == 0 and not summary and not index_text:
@@ -463,6 +445,16 @@ class CommandHandler(ConversationCommandHandlerMixin):
                 # Already gated: the adapter only supplies an offloader when
                 # ``offload_dialog`` is on, so this archives iff configured.
                 offloader=self._offloader,
+                summarize_unheadlined=getattr(
+                    sc,
+                    "summarize_unheadlined_evictions",
+                    True,
+                ),
+                summarize_timeout_s=getattr(
+                    sc,
+                    "summarize_eviction_timeout_seconds",
+                    20,
+                ),
             )
         except Exception:
             logger.exception("Failed to build scroll manager for /compact")
@@ -473,27 +465,19 @@ class CommandHandler(ConversationCommandHandlerMixin):
         if not messages:
             self._set_summary("")
             return await self._make_system_msg(
-                "**No messages to summarize.**\n\n"
-                "- Current memory is empty\n"
+                "**No conversation messages to clear.**\n\n"
+                "- Current context is empty\n"
                 "- Compressed summary is clear\n"
                 "- Plan state cleared\n"
                 "- No action taken",
                 metadata={"clear_plan": True},
             )
-        if not self._has_memory_manager():
-            return await self._make_system_msg(
-                "**Memory Manager Disabled**\n\n"
-                "- Cannot start new conversation with summary\n"
-                "- Enable memory manager to use this feature",
-            )
-
-        self.memory_manager.add_summarize_task(messages=messages)
         self._set_summary("")
 
         await self._persist_and_clear()
         return await self._make_system_msg(
             "**New Conversation Started!**\n\n"
-            "- Summary task started in background\n"
+            "- Previous session context archived\n"
             "- Plan state cleared\n"
             "- Ready for new conversation",
             metadata={"clear_plan": True},
@@ -510,7 +494,7 @@ class CommandHandler(ConversationCommandHandlerMixin):
         return await self._make_system_msg(
             "**History Cleared!**\n\n"
             "- Compressed summary reset\n"
-            "- Memory is now empty\n"
+            "- Conversation context is now empty\n"
             "- Plan state cleared",
             metadata={"clear_history": True, "clear_plan": True},
         )
@@ -627,204 +611,6 @@ class CommandHandler(ConversationCommandHandlerMixin):
 
         return ""
 
-    async def _process_summarize_status(
-        self,
-        _messages: list[Msg],
-        _args: str = "",
-    ) -> Msg:
-        """Process /summarize_status command to show all status."""
-        if not self._has_memory_manager():
-            return await self._make_system_msg(
-                "**Memory Manager Disabled**\n\n"
-                "- Cannot list summary task status\n"
-                "- Enable memory manager to use this feature",
-            )
-
-        task_list = self.memory_manager.list_summarize_status()
-        if not task_list:
-            return await self._make_system_msg(
-                "**No Summary Tasks**\n\n"
-                "- No summary tasks have been started",
-            )
-
-        status_lines = ["**Summary Task Status**\n\n"]
-        for info in task_list:
-            status_lines.append(
-                f"- **{info['task_id']}**\n"
-                f"  - Start: {info['start_time']}\n"
-                f"  - Status: {info['status']}\n",
-            )
-            if info["status"] == "completed" and info["result"]:
-                status_lines.append(f"  - Result: {info['result'][:200]}...\n")
-            elif info["status"] == "failed" and info["error"]:
-                status_lines.append(f"  - Error: {info['error']}\n")
-
-        return await self._make_system_msg("".join(status_lines))
-
-    async def _process_dream(
-        self,
-        _messages: list[Msg],
-        args: str = "",
-    ) -> Msg:
-        """Process /dream command to run one auto-dream pass."""
-        if not self._has_memory_manager():
-            return await self._make_system_msg(
-                "**Memory Manager Disabled**\n\n"
-                "- Cannot run auto-dream\n"
-                "- Enable memory manager to use this feature",
-            )
-
-        hint = args.strip()
-        try:
-            if hint:
-                await self.memory_manager.dream(hint=hint)
-            else:
-                await self.memory_manager.dream()
-        except Exception as e:
-            logger.exception("auto-dream failed: %s", e)
-            return await self._make_system_msg(
-                f"**Auto-dream Failed**\n\n- Error: {e}",
-            )
-
-        return await self._make_system_msg(
-            "**Auto-dream Complete**\n\n"
-            "- Ran one auto-dream memory optimization pass",
-        )
-
-    async def _process_memorize(
-        self,
-        messages: list[Msg],
-        args: str = "",
-    ) -> Msg:
-        """Process /memorize command to run auto-memory for recent replies."""
-        if not self._has_memory_manager():
-            return await self._make_system_msg(
-                "**Memory Manager Disabled**\n\n"
-                "- Cannot run auto-memory\n"
-                "- Enable memory manager to use this feature",
-            )
-
-        invalid_count_message: str | None = None
-        try:
-            count = int(args.strip() or "1")
-        except ValueError:
-            count = 0
-            invalid_count_message = (
-                f"**Invalid Count: '{args}'**\n\n"
-                "- Count must be a positive integer\n"
-                "- Examples: /memorize, /memorize 2"
-            )
-
-        if invalid_count_message is None and count <= 0:
-            invalid_count_message = (
-                f"**Invalid Count: {count}**\n\n"
-                "- Count must be a positive integer\n"
-                "- Examples: /memorize, /memorize 2"
-            )
-
-        if invalid_count_message is not None:
-            return await self._make_system_msg(
-                invalid_count_message,
-            )
-
-        reply_ids = self._latest_reply_ids(messages, count=count)
-        if not reply_ids:
-            return await self._make_system_msg(
-                "**No Reply Messages Found**\n\n"
-                "- No assistant replies are available to memorize",
-            )
-
-        memory_messages = self._messages_for_reply_ids(
-            messages,
-            reply_ids=reply_ids,
-        )
-        if not memory_messages:
-            return await self._make_system_msg(
-                "**No Messages Found**\n\n"
-                "- Could not build a message range for the selected replies",
-            )
-
-        try:
-            await self.memory_manager.auto_memory(
-                memory_messages,
-                session_id=str(getattr(self._state, "session_id", "") or ""),
-                reply_id=reply_ids[-1],
-                reply_ids=reply_ids,
-            )
-        except Exception as e:
-            logger.exception("manual auto-memory failed: %s", e)
-            return await self._make_system_msg(
-                f"**Auto-memory Failed**\n\n- Error: {e}",
-            )
-
-        return await self._make_system_msg(
-            "**Auto-memory Started**\n\n"
-            f"- Reply groups: {len(reply_ids)}\n"
-            f"- Messages submitted: {len(memory_messages)}",
-        )
-
-    def _latest_reply_ids(
-        self,
-        messages: list[Msg],
-        *,
-        count: int,
-    ) -> list[str]:
-        """Return latest assistant reply ids in chronological order."""
-        reply_ids: list[str] = []
-        for msg in reversed(messages):
-            if msg.role != "assistant" or msg.name != self.agent_name:
-                continue
-            if not msg.id:
-                continue
-            reply_ids.append(msg.id)
-            if len(reply_ids) >= count:
-                break
-        reply_ids.reverse()
-        if reply_ids:
-            return reply_ids
-
-        # Standalone slash-command handling may not have the exact runtime
-        # agent name available for older sessions.  Fall back to assistant
-        # messages by role/id instead of reporting that no reply exists.
-        for msg in reversed(messages):
-            if msg.role != "assistant" or not msg.id:
-                continue
-            reply_ids.append(msg.id)
-            if len(reply_ids) >= count:
-                break
-        reply_ids.reverse()
-        return reply_ids
-
-    def _messages_for_reply_ids(
-        self,
-        messages: list[Msg],
-        *,
-        reply_ids: list[str],
-    ) -> list[Msg]:
-        targets = set(reply_ids)
-        if not targets:
-            return []
-
-        first_idx: int | None = None
-        last_idx: int | None = None
-        for idx, msg in enumerate(messages):
-            if msg.role == "assistant" and msg.id in targets:
-                if first_idx is None:
-                    first_idx = idx
-                last_idx = idx
-
-        if first_idx is None or last_idx is None:
-            return []
-
-        start_idx = 0
-        for idx in range(first_idx - 1, -1, -1):
-            msg = messages[idx]
-            if msg.role == "assistant" and msg.id:
-                start_idx = idx + 1
-                break
-
-        return messages[start_idx : last_idx + 1]
-
     async def _process_message(
         self,
         messages: list[Msg],
@@ -860,7 +646,8 @@ class CommandHandler(ConversationCommandHandlerMixin):
 
         if not messages:
             return await self._make_system_msg(
-                "**No Messages Available**\n\n- Current memory is empty",
+                "**No Messages Available**\n\n"
+                "- Current conversation context is empty",
             )
 
         if index < 1 or index > len(messages):
@@ -1072,151 +859,3 @@ class CommandHandler(ConversationCommandHandlerMixin):
             "- Plan mode is being migrated to the new task system "
             "and will be available in a future update.",
         )
-
-    async def _process_proactive(
-        self,
-        _messages: list[Msg],
-        args: str = "",
-    ) -> Msg:
-        """Process /proactive command for proactive message feature."""
-        args = args.strip().lower()
-        from .memory import enable_proactive_for_session
-        from ..app.agent_context import get_current_agent_id
-
-        # Get current agent ID and language
-        active_agent_id = get_current_agent_id()
-        agent_config = load_agent_config(active_agent_id)
-        agent_lang = getattr(agent_config, "language", "en")
-
-        # Define warnings in both languages
-        warning_en = (
-            "**NOTE**: In this mode, the agent bypasses tool "
-            "protection mechanisms. Please note that the agent will "
-            "read historical session memories and may take screenshots "
-            "to obtain runtime environment information."
-            "Proactive mode can be turned off via /proactive off."
-        )
-
-        warning_zh = (
-            "**请注意**：在此模式下，代理会绕过工具保护机制。请注意，代理将会"
-            "读取历史会话内存，并可能截取屏幕截图以获取运行环境信息。"
-            "可通过 /proactive off 关闭主动模式。"
-        )
-
-        # Define all message templates in both languages
-        msg_templates = {
-            "en": {
-                "enabled": (
-                    "**Proactive Mode Enabled**\n\n"
-                    "- Idle time: {minutes} minutes\n"
-                    "- Status: {result}\n"
-                    "- Proactive messages will be sent after "
-                    "{minutes} minutes of inactivity\n\n{warning}"
-                ),
-                "disabled": (
-                    "**Proactive Mode Disabled**\n\n"
-                    "- Proactive monitoring has been stopped\n"
-                    "- No more proactive messages will be sent"
-                ),
-                "error_en": ("**Error Enabling Proactive Mode**\n-{error}"),
-                "error_dis": ("**Error Disabling Proactive Mode**\n- {error}"),
-                "error_args": (
-                    "**Error Enabling Proactive Mode**\n\n"
-                    "- {error}"
-                    "- Usage: /proactive [minutes|on|off]\n"
-                    "- Examples:\n"
-                    "  • /proactive (default 30 minutes)\n"
-                    "  • /proactive 45 (45 minutes idle time)\n"
-                    "  • /proactive on (default 30 minutes)\n"
-                    "  • /proactive off (disable proactive mode)\n"
-                ),
-            },
-            "zh": {
-                "enabled": (
-                    "**主动模式已启用**\n\n"
-                    "- 空闲时间: {minutes} 分钟\n"
-                    "- 状态: {result}\n"
-                    "- 将在 {minutes} 分钟不活动后发送主动消息\n\n{warning}"
-                ),
-                "disabled": ("**主动模式已停用**\n" "- 不再发送主动消息"),
-                "error_en": ("**启用主动模式时出错**\n\n-{error}"),
-                "error_dis": ("**禁用主动模式时出错**\n\n- {error}"),
-                "error_args": (
-                    "**启用主动模式时出错**\n\n"
-                    "- {error}"
-                    "- 使用方法: /proactive [分钟数|on|off]\n"
-                    "- 示例:\n"
-                    "  • /proactive (默认30分钟)\n"
-                    "  • /proactive 45 (45分钟空闲时间)\n"
-                    "  • /proactive on (默认30分钟)\n"
-                    "  • /proactive off (禁用主动模式)\n"
-                ),
-            },
-        }
-
-        # Select messages and warning based on agent language
-        lang_key = "zh" if agent_lang.lower() == "zh" else "en"
-        msgs = msg_templates[lang_key]
-        selected_warning = warning_zh if lang_key == "zh" else warning_en
-
-        if not args or args == "on":
-            try:
-                result = enable_proactive_for_session(
-                    self.agent_name,
-                    30,
-                )
-                return await self._make_system_msg(
-                    msgs["enabled"].format(
-                        minutes=30,
-                        result=result,
-                        warning=selected_warning,
-                    ),
-                )
-            except Exception as e:
-                return await self._make_system_msg(
-                    msgs["error_en"].format(error=str(e)),
-                )
-
-        elif args == "off":
-            try:
-                import asyncio
-                from .memory import proactive_tasks
-
-                if self.agent_name in proactive_tasks:
-                    task = proactive_tasks[self.agent_name]
-                    if not task.done():
-                        task.cancel()
-                        try:
-                            await task
-                        except asyncio.CancelledError:
-                            pass
-                    del proactive_tasks[self.agent_name]
-
-                return await self._make_system_msg(
-                    msgs["disabled"],
-                )
-            except Exception as e:
-                return await self._make_system_msg(
-                    msgs["error_dis"].format(error=str(e)),
-                )
-        else:
-            try:
-                minutes = int(args)
-                if minutes <= 0:
-                    raise ValueError("Minutes must be a positive integer")
-
-                result = enable_proactive_for_session(
-                    self.agent_name,
-                    minutes,
-                )
-                return await self._make_system_msg(
-                    msgs["enabled"].format(
-                        minutes=minutes,
-                        result=result,
-                        warning=selected_warning,
-                    ),
-                )
-            except Exception as e:
-                return await self._make_system_msg(
-                    msgs["error_args"].format(error=str(e)),
-                )

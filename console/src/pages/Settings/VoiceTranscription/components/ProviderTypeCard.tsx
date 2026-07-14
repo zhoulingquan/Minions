@@ -1,5 +1,4 @@
 import { Card, Radio, Space, Alert } from "antd";
-import { useTranslation } from "react-i18next";
 import type { LocalWhisperStatus } from "../useVoiceTranscription";
 import styles from "../index.module.less";
 
@@ -16,15 +15,14 @@ export function ProviderTypeCard({
   isLocalWhisper,
   localWhisperStatus,
 }: ProviderTypeCardProps) {
-  const { t } = useTranslation();
 
   return (
     <Card className={styles.card}>
       <h3 className={styles.cardTitle}>
-        {t("voiceTranscription.providerTypeLabel")}
+        {"转写提供商"}
       </h3>
       <p className={styles.cardDescription}>
-        {t("voiceTranscription.providerTypeDescription")}
+        {"选择转写后端。如果不需要语音转写，请选择「已禁用」。"}
       </p>
       <Radio.Group
         value={providerType}
@@ -33,26 +31,26 @@ export function ProviderTypeCard({
         <Space direction="vertical" size="middle">
           <Radio value="disabled">
             <span className={styles.optionLabel}>
-              {t("voiceTranscription.providerTypeDisabled")}
+              {"已禁用"}
             </span>
             <span className={styles.optionDescription}>
-              {t("voiceTranscription.providerTypeDisabledDesc")}
+              {"不进行转写。语音消息将显示为文件上传占位消息。"}
             </span>
           </Radio>
           <Radio value="whisper_api">
             <span className={styles.optionLabel}>
-              {t("voiceTranscription.providerTypeWhisperApi")}
+              {"Whisper API"}
             </span>
             <span className={styles.optionDescription}>
-              {t("voiceTranscription.providerTypeWhisperApiDesc")}
+              {"使用已配置提供商（如 OpenAI、Ollama）的 OpenAI 兼容 Whisper API 端点。"}
             </span>
           </Radio>
           <Radio value="local_whisper">
             <span className={styles.optionLabel}>
-              {t("voiceTranscription.providerTypeLocalWhisper")}
+              {"本地 Whisper"}
             </span>
             <span className={styles.optionDescription}>
-              {t("voiceTranscription.providerTypeLocalWhisperDesc")}
+              {"使用本地安装的 openai-whisper Python 库进行转写。需要同时安装 ffmpeg 和 openai-whisper。"}
             </span>
           </Radio>
         </Space>
@@ -64,21 +62,18 @@ export function ProviderTypeCard({
             <Alert
               type="success"
               showIcon
-              message={t("voiceTranscription.localWhisperReady")}
+              message={"本地 Whisper 已就绪。ffmpeg 和 openai-whisper 均已安装。"}
             />
           ) : (
             <Alert
               type="warning"
               showIcon
-              message={t("voiceTranscription.localWhisperMissing")}
-              description={t("voiceTranscription.localWhisperMissingDesc", {
-                ffmpeg: localWhisperStatus.ffmpeg_installed
-                  ? t("common.enabled")
-                  : t("common.disabled"),
-                whisper: localWhisperStatus.whisper_installed
-                  ? t("common.enabled")
-                  : t("common.disabled"),
-              })}
+              message={"本地 Whisper 未就绪，缺少必要依赖。"}
+              description={`ffmpeg: ${
+                localWhisperStatus.ffmpeg_installed ? "已启用" : "已禁用"
+              } | openai-whisper: ${
+                localWhisperStatus.whisper_installed ? "已启用" : "已禁用"
+              }。请安装缺少的依赖：ffmpeg（系统包）和 openai-whisper（uv pip install openai-whisper，或使用 [whisper] 额外依赖安装 Minions）。`}
             />
           )}
         </div>

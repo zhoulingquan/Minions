@@ -174,8 +174,8 @@ Minions 构建在 **AgentScope 2.0** 之上，把它当作一个库来用。Agen
   <text x="588" y="92" font-size="11" letter-spacing="1" font-weight="700" fill="currentColor" fill-opacity="0.75">磁盘上 · 工作区文件夹</text>
   <g font-size="11.5" fill="currentColor">
     <rect x="588" y="102" width="232" height="26" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.25"/><text x="704" y="119" text-anchor="middle">配置（纯 JSON）</text>
-    <rect x="588" y="134" width="232" height="26" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.25"/><text x="704" y="151" text-anchor="middle">MEMORY.md · memory/*.md</text>
-    <rect x="588" y="166" width="232" height="26" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.25"/><text x="704" y="183" text-anchor="middle">digest · Skills</text>
+    <rect x="588" y="134" width="232" height="26" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.25"/><text x="704" y="151" text-anchor="middle">sage/sage.db（开发）</text>
+    <rect x="588" y="166" width="232" height="26" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.25"/><text x="704" y="183" text-anchor="middle">人设文件 · Skills</text>
     <rect x="588" y="198" width="232" height="26" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.25"/><text x="704" y="215" text-anchor="middle">连接器 + 凭据</text>
     <rect x="588" y="230" width="232" height="26" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.25"/><text x="704" y="247" text-anchor="middle">持久化对话历史</text>
     <rect x="588" y="262" width="232" height="26" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.25"/><text x="704" y="279" text-anchor="middle">共享技能池</text>
@@ -268,31 +268,31 @@ Minions 的智能体跑的是一个 **ReAct（先推理后行动）循环**，�
 
 ---
 
-## 记忆与上下文
+## SAGE 与上下文
 
-Minions 把两个容易混为一谈的概念分开：**记忆**（智能体跨对话记住的东西）和**上下文**（当下能塞进模型窗口的内容）。
+Minions 把两个容易混为一谈的概念分开：**SAGE 业务经验**（跨任务复用的案例与做法）和**上下文**（当下能塞进模型窗口的会话内容）。
 
-<svg viewBox="0 0 860 372" width="100%" role="img" aria-label="记忆是构建在透明 Markdown 文件之上的可插拔后端；上下文管理要么采用总结式压缩，要么采用配备持久化存储和 recall 工具的 Scroll 策略。" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif">
+<svg viewBox="0 0 860 372" width="100%" role="img" aria-label="SAGE 管理受治理的跨任务业务经验；上下文管理采用 Native 压缩或配备持久化存储和 recall 工具的 Scroll 策略。" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif">
   <defs>
     <marker id="qpMemArrow" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto" markerUnits="strokeWidth">
       <path d="M0,0 L6,3 L0,6 Z" fill="#ff9d4d"/>
     </marker>
   </defs>
-  <!-- MEMORY side -->
+  <!-- SAGE side -->
   <rect x="20" y="24" width="400" height="324" rx="10" fill="currentColor" fill-opacity="0.03" stroke="currentColor" stroke-opacity="0.2"/>
-  <text x="40" y="50" font-size="12.5" font-weight="700" fill="#ff9d4d">记忆 · 跨对话</text>
-  <rect x="40" y="64" width="360" height="30" rx="7" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.25"/><text x="220" y="83" text-anchor="middle" font-size="12" fill="currentColor">记忆集成（检索 · 写入）</text>
+  <text x="40" y="50" font-size="12.5" font-weight="700" fill="#ff9d4d">SAGE · 跨任务经验</text>
+  <rect x="40" y="64" width="360" height="30" rx="7" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.25"/><text x="220" y="83" text-anchor="middle" font-size="12" fill="currentColor">TraceBook · CaseBook</text>
   <line x1="220" y1="94" x2="220" y2="108" stroke="#ff9d4d" stroke-width="1.4" marker-end="url(#qpMemArrow)"/>
-  <rect x="40" y="110" width="360" height="30" rx="7" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.25"/><text x="220" y="129" text-anchor="middle" font-size="12" fill="currentColor">可插拔记忆后端</text>
-  <rect x="40" y="152" width="174" height="30" rx="7" fill="#ff9d4d" fill-opacity="0.12" stroke="#ff9d4d" stroke-opacity="0.5"/><text x="127" y="171" text-anchor="middle" font-size="11.5" fill="currentColor">ReMe（默认）</text>
-  <rect x="226" y="152" width="174" height="30" rx="7" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.25"/><text x="313" y="171" text-anchor="middle" font-size="11.5" fill="currentColor">纯 Markdown</text>
-  <text x="40" y="208" font-size="11" letter-spacing="1" font-weight="700" fill="currentColor" fill-opacity="0.75">工作区中的透明文件</text>
+  <rect x="40" y="110" width="360" height="30" rx="7" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.25"/><text x="220" y="129" text-anchor="middle" font-size="12" fill="currentColor">GrowthCycle · RecallPlanner</text>
+  <rect x="40" y="152" width="174" height="30" rx="7" fill="#ff9d4d" fill-opacity="0.12" stroke="#ff9d4d" stroke-opacity="0.5"/><text x="127" y="171" text-anchor="middle" font-size="11.5" fill="currentColor">SQLite（开发）</text>
+  <rect x="226" y="152" width="174" height="30" rx="7" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.25"/><text x="313" y="171" text-anchor="middle" font-size="11.5" fill="currentColor">PostgreSQL（生产）</text>
+  <text x="40" y="208" font-size="11" letter-spacing="1" font-weight="700" fill="currentColor" fill-opacity="0.75">受治理的经验对象</text>
   <g font-size="11.5" fill="currentColor">
-    <rect x="40" y="218" width="360" height="26" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.25"/><text x="220" y="235" text-anchor="middle">MEMORY.md — 长期笔记</text>
-    <rect x="40" y="250" width="360" height="26" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.25"/><text x="220" y="267" text-anchor="middle">memory/YYYY-MM-DD.md — 每日笔记</text>
-    <rect x="40" y="282" width="360" height="26" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.25"/><text x="220" y="299" text-anchor="middle">整合后的 digest</text>
+    <rect x="40" y="218" width="360" height="26" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.25"/><text x="220" y="235" text-anchor="middle">案例 · 原始证据</text>
+    <rect x="40" y="250" width="360" height="26" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.25"/><text x="220" y="267" text-anchor="middle">心得 · 规则 · 风险提示</text>
+    <rect x="40" y="282" width="360" height="26" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-opacity="0.25"/><text x="220" y="299" text-anchor="middle">版本化 Playbook</text>
   </g>
-  <text x="220" y="330" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.6">检索、写入和整合都作为后台工作运行。</text>
+  <text x="220" y="330" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.6">身份隔离、证据审计、审批与回滚。</text>
   <!-- CONTEXT side -->
   <rect x="440" y="24" width="400" height="324" rx="10" fill="currentColor" fill-opacity="0.03" stroke="currentColor" stroke-opacity="0.2"/>
   <text x="460" y="50" font-size="12.5" font-weight="700" fill="#ff9d4d">上下文 · 实时窗口</text>
@@ -308,7 +308,7 @@ Minions 把两个容易混为一谈的概念分开：**记忆**（智能体跨�
   <text x="640" y="332" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.6">随时都能回放，而不是只剩摘要。</text>
 </svg>
 
-**记忆**是一个可插拔的后端。默认那套基于 [ReMe](https://github.com/agentscope-ai/ReMe) 记忆库，在工作区上用后台任务来做取回、写入和整合（“做梦”）；另一套更简单的则直接读写同一批文件。不管哪套，底层都是**人能读的 Markdown**——`MEMORY.md` 放长期笔记，再配上按日期分的每日文件——所以记忆你随时都能打开、查看、修改。参见[记忆](./memory)和[记忆演化与主动交互](./memory-evolving-and-proactive)。
+**SAGE** 记录业务证据与案例，从成功和失败结果中提炼候选心得，经验证或审批后发布为可召回知识与 Playbook。开发模式使用 SQLite，企业生产模式使用启用租户隔离的 PostgreSQL。参见 [SAGE 业务经验](./sage)。
 
 **上下文**管理同样可插拔。默认情况下，窗口一满，Minions 就把较早的对话轮次总结掉。可选的 **Scroll 策略**换了个思路：它把每一轮都存进持久化存储，给已经滚出窗口的内容留一份精简索引，再给智能体一个工具，按需就能回放早先的任意一段对话——长对话因此能完整找回。参见[上下文](./context)。
 
@@ -451,7 +451,7 @@ Minions 是一个常驻服务，装在你自己的机器上、或你说了算的
 下面这些能力，让 Minions 可以无人值守地长期跑下去：
 
 - **定时任务与心跳**——按时间表跑智能体，把结果发到任意频道（比如一份晨间摘要、一次定期签到）。定时跑用的是隔离的记忆上下文，所以自动化不会弄乱你平时对话的历史。参见[定时任务](./cron)和[心跳](./heartbeat)。
-- **主动收件箱**——智能体可以主动找你（提醒、摘要、复盘），这些消息会汇到控制台的一个收件箱里，供你查看和转发。参见[记忆演化与主动交互](./memory-evolving-and-proactive)。
+- **主动收件箱**——智能体可以主动找你（提醒、摘要、复盘），这些消息会汇到控制台的一个收件箱里，供你查看和转发。
 - **备份与恢复**——一个完整的工作区（配置、记忆、Skills，以及可选的密钥）可以导出成一份带签名的归档，整体恢复或挑着恢复都行。参见[备份与恢复](./backup)。
 
 ---

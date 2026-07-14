@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Modal, Button } from "@agentscope-ai/design";
 import { Loader2, ExternalLink } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import { providerApi } from "../../../api/modules/provider";
 import { useAppMessage } from "../../../hooks/useAppMessage";
 import { openExternalLink } from "../../../utils/openExternalLink";
@@ -21,8 +20,7 @@ export function OAuthConfirmModal({
   onSuccess,
   onCancel,
 }: OAuthConfirmModalProps) {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const [phase, setPhase] = useState<"confirm" | "waiting">("confirm");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -53,13 +51,13 @@ export function OAuthConfirmModal({
             if (pollRef.current) clearInterval(pollRef.current);
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
             message.success(
-              t("modelSelector.oauthConnected", { provider: providerName }),
+              `已成功连接 ${providerName}`,
             );
             onSuccess();
           } else if (status === "failed") {
             if (pollRef.current) clearInterval(pollRef.current);
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
-            message.error(t("modelSelector.oauthFailed"));
+            message.error("授权失败，请重试");
             onCancel();
           }
         } catch {
@@ -73,11 +71,11 @@ export function OAuthConfirmModal({
       }, 300000);
     } catch (err) {
       message.error(
-        err instanceof Error ? err.message : t("modelSelector.oauthFailed"),
+        err instanceof Error ? err.message : "授权失败，请重试",
       );
       onCancel();
     }
-  }, [providerId, providerName, onSuccess, onCancel, message, t]);
+  }, [providerId, providerName, onSuccess, onCancel, message]);
 
   return (
     <Modal
@@ -95,15 +93,15 @@ export function OAuthConfirmModal({
             style={{ color: "#6366f1", marginBottom: 16 }}
           />
           <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 600 }}>
-            {t("modelSelector.oauthTitle", { provider: providerName })}
+            {`连接 ${providerName}`}
           </h3>
           <p style={{ color: "var(--text-secondary)", margin: "0 0 24px" }}>
-            {t("modelSelector.oauthDescription", { provider: providerName })}
+            {`将打开一个新的浏览器窗口以授权访问 ${providerName}，API 密钥将自动保存。`}
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-            <Button onClick={onCancel}>{t("common.cancel")}</Button>
+            <Button onClick={onCancel}>{"取消"}</Button>
             <Button type="primary" onClick={handleContinue}>
-              {t("modelSelector.oauthContinue")}
+              {"继续"}
             </Button>
           </div>
         </div>
@@ -114,12 +112,12 @@ export function OAuthConfirmModal({
             style={{ color: "#6366f1", animation: "spin 1s linear infinite" }}
           />
           <h3 style={{ margin: "16px 0 8px", fontSize: 16, fontWeight: 600 }}>
-            {t("modelSelector.oauthWaiting")}
+            {"等待授权中..."}
           </h3>
           <p style={{ color: "var(--text-secondary)", margin: "0 0 24px" }}>
-            {t("modelSelector.oauthWaitingDescription")}
+            {"请在浏览器窗口中完成授权。"}
           </p>
-          <Button onClick={onCancel}>{t("common.cancel")}</Button>
+          <Button onClick={onCancel}>{"取消"}</Button>
         </div>
       )}
     </Modal>

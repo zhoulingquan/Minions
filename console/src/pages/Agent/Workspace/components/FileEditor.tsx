@@ -8,7 +8,6 @@ import {
 } from "@ant-design/icons";
 import type { MarkdownFile } from "../../../../api/types";
 import { XMarkdown } from "@ant-design/x-markdown";
-import { useTranslation } from "react-i18next";
 import { useAppMessage } from "../../../../hooks/useAppMessage";
 import { stripFrontmatter } from "../../../../utils/markdown";
 import { mermaidComponents } from "../../../../components/MermaidCodeBlock";
@@ -37,8 +36,7 @@ export const FileEditor: React.FC<FileEditorProps> = ({
   onBack,
   compact,
 }) => {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const [showMarkdown, setShowMarkdown] = useState(true);
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(
     null,
@@ -54,7 +52,7 @@ export const FileEditor: React.FC<FileEditorProps> = ({
     try {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(fileContent);
-        message.success(t("common.copied"));
+        message.success("已复制到剪贴板");
       } else {
         const textArea = document.createElement("textarea");
         textArea.value = fileContent;
@@ -66,11 +64,11 @@ export const FileEditor: React.FC<FileEditorProps> = ({
         textArea.select();
         document.execCommand("copy");
         textArea.remove();
-        message.success(t("common.copied"));
+        message.success("已复制到剪贴板");
       }
     } catch (err) {
       console.error("Failed to copy text: ", err);
-      message.error(t("common.copyFailed"));
+      message.error("复制到剪贴板失败");
     }
   };
 
@@ -108,7 +106,7 @@ export const FileEditor: React.FC<FileEditorProps> = ({
                   icon={<ArrowLeftOutlined />}
                   onClick={onBack}
                 >
-                  {t("common.back")}
+                  {"返回"}
                 </Button>
                 <span className={styles.mobileToolbarTitle}>
                   {selectedFile.filename}
@@ -131,10 +129,10 @@ export const FileEditor: React.FC<FileEditorProps> = ({
               <div className={styles.buttonGroup}>
                 <span className={styles.saveStatus}>
                   {saving
-                    ? t("workspace.saving")
+                    ? "保存中..."
                     : hasChanges
-                    ? t("workspace.unsaved")
-                    : t("workspace.saved")}
+                    ? "未保存"
+                    : "已保存"}
                 </span>
                 <Button
                   size="small"
@@ -142,7 +140,7 @@ export const FileEditor: React.FC<FileEditorProps> = ({
                   disabled={!hasChanges}
                   icon={<UndoOutlined />}
                 >
-                  {t("common.reset")}
+                  {"重置"}
                 </Button>
                 <Button
                   type="primary"
@@ -152,19 +150,19 @@ export const FileEditor: React.FC<FileEditorProps> = ({
                   loading={saving}
                   icon={<SaveOutlined />}
                 >
-                  {t("common.save")}
+                  {"保存"}
                 </Button>
               </div>
             </div>
 
             <div className={styles.editorContent}>
               <div className={styles.contentLabel}>
-                <div>{t("common.content")}</div>
+                <div>{"内容"}</div>
                 {isMarkdownFile && (
                   <div className={styles.buttonGroup}>
                     <div className={styles.markdownToggle}>
                       <span className={styles.toggleLabel}>
-                        {t("common.preview")}
+                        {"预览"}
                       </span>
                       <Switch
                         checked={showMarkdown}
@@ -201,7 +199,7 @@ export const FileEditor: React.FC<FileEditorProps> = ({
                   value={fileContent}
                   onChange={(e) => onContentChange(e.target.value)}
                   className={styles.textarea}
-                  placeholder={t("workspace.fileContent")}
+                  placeholder={"文件内容..."}
                   autoSize={
                     compact
                       ? { minRows: 15, maxRows: 40 }
@@ -212,9 +210,9 @@ export const FileEditor: React.FC<FileEditorProps> = ({
             </div>
           </>
         ) : (
-          <div className={styles.emptyState}>{t("workspace.selectFile")}</div>
+          <div className={styles.emptyState}>{"选择文件进行编辑"}</div>
         )}
-        <p className={styles.attribution}>{t("workspace.attribution")}</p>
+        <p className={styles.attribution}>{"工作区设计部分灵感源自 OpenClaw 项目，在此表示感谢 🐾"}</p>
       </Card>
     </div>
   );

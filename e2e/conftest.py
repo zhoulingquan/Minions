@@ -87,7 +87,6 @@ plugin_page = pytest.fixture(scope="function", name="plugin_page")(
     _make_page_fixture("pages.plugin_page", "PluginPage")
 )
 memory_page = pytest.fixture(scope="function", name="memory_page")(
-    _make_page_fixture("pages.memory_page", "MemoryPage")
 )
 inbox_page = pytest.fixture(scope="function", name="inbox_page")(
     _make_page_fixture("pages.inbox_page", "InboxPage")

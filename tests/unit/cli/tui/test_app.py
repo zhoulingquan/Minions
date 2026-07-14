@@ -755,7 +755,7 @@ async def test_permission_overlay_resolves_with_keyboard_selection():
             getattr(overlay.get_option_at_index(index).prompt, "plain", "")
             for index in range(len(overlay.options))
         )
-        assert "command: rm -rf /tmp/nope" in option_text
+        assert "Command: rm -rf /tmp/nope" in option_text
 
         # Down selects Deny, then Enter resolves the highlighted option.
         await pilot.press("down")

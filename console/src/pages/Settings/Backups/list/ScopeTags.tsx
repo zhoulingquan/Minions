@@ -4,7 +4,6 @@
  * Used in the BackupTable scope column and potentially elsewhere.
  */
 import { Tag } from "antd";
-import { useTranslation } from "react-i18next";
 import type { BackupMeta } from "@/api/types/backup";
 import styles from "./ScopeTags.module.less";
 
@@ -15,24 +14,23 @@ interface Props {
 }
 
 export default function ScopeTags({ scope, agentCount, compact }: Props) {
-  const { t } = useTranslation();
-  const tagClass = compact ? styles.compactTag : undefined;
+    const tagClass = compact ? styles.compactTag : undefined;
   return (
     <div className={styles.scopeTags}>
       {scope.include_agents && agentCount ? (
         <Tag className={tagClass}>
-          {t("backup.agents", { count: agentCount })}
+          {`${agentCount} 个 Agent`}
         </Tag>
       ) : null}
       {scope.include_global_config && (
-        <Tag className={tagClass}>{t("backup.globalConfig")}</Tag>
+        <Tag className={tagClass}>{"全局设置"}</Tag>
       )}
-      {scope.include_skill_pool && (
-        <Tag className={tagClass}>{t("backup.skillPool")}</Tag>
+      {scope.include_global_skills && (
+        <Tag className={tagClass}>{"全局技能"}</Tag>
       )}
       {scope.include_secrets && (
         <Tag className={tagClass} color="warning">
-          {t("backup.secrets")}
+          {"密钥"}
         </Tag>
       )}
     </div>

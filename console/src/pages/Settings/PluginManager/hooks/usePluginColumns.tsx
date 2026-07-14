@@ -1,4 +1,3 @@
-import { useTranslation } from "react-i18next";
 import { Tag, Tooltip, Button, Space, Typography } from "antd";
 import { Package, Trash2, CheckCircle, XCircle } from "lucide-react";
 import type { PluginType, PluginInfo } from "@/api/modules/plugin";
@@ -15,11 +14,10 @@ export function usePluginColumns({
   uninstallingId,
   onUninstall,
 }: UsePluginColumnsOptions) {
-  const { t } = useTranslation();
 
   return [
     {
-      title: t("pluginManager.title"),
+      title: "插件管理",
       dataIndex: "name",
       key: "name",
       render: (name: string, record: PluginInfo) => (
@@ -37,14 +35,14 @@ export function usePluginColumns({
       ),
     },
     {
-      title: t("pluginManager.type"),
+      title: "类型",
       dataIndex: "plugin_type",
       key: "plugin_type",
       width: 110,
       render: (type: PluginType) => <PluginTypeTag type={type ?? "general"} />,
     },
     {
-      title: t("pluginManager.version"),
+      title: "版本",
       dataIndex: "version",
       key: "version",
       width: 100,
@@ -55,13 +53,13 @@ export function usePluginColumns({
       ),
     },
     {
-      title: t("pluginManager.author"),
+      title: "作者",
       dataIndex: "author",
       key: "author",
       width: 140,
       render: (author: string) => (
         <Text type="secondary" style={{ fontSize: 12 }}>
-          {author || t("pluginManager.unknown")}
+          {author || "未知"}
         </Text>
       ),
     },
@@ -77,7 +75,7 @@ export function usePluginColumns({
             color="success"
             style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
           >
-            {t("pluginManager.statusLoaded")}
+            {"运行中"}
           </Tag>
         ) : (
           <Tag
@@ -85,7 +83,7 @@ export function usePluginColumns({
             color="default"
             style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
           >
-            {t("pluginManager.statusUnloaded")}
+            {"未加载"}
           </Tag>
         ),
     },
@@ -94,7 +92,7 @@ export function usePluginColumns({
       key: "actions",
       width: 100,
       render: (_: unknown, record: PluginInfo) => (
-        <Tooltip title={t("pluginManager.uninstall")}>
+        <Tooltip title={"卸载"}>
           <Button
             type="text"
             danger

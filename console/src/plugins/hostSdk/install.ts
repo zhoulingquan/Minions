@@ -31,7 +31,6 @@ import type {
   Disposable,
   OverrideRecord,
   WelcomeRenderFn,
-  WelcomeRenderProps,
 } from "../registry/types";
 import {
   useHostTheme,
@@ -207,8 +206,7 @@ function normalizeWelcomeRender(value: WelcomeRenderValue): WelcomeRenderFn {
   }
   // Plain ReactNode → wrap into a fn that ignores SDK props and renders the node verbatim.
   const node = value;
-  return ((_props: WelcomeRenderProps) =>
-    node as unknown as React.ReactElement) as WelcomeRenderFn;
+  return (() => node as unknown as React.ReactElement) as WelcomeRenderFn;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

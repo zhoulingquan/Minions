@@ -1,6 +1,5 @@
 import { Card, Radio, Alert, Space, Typography } from "antd";
 import { Shield, CheckCircle, AlertTriangle, Ban } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import styles from "../index.module.less";
 
 const { Text, Paragraph } = Typography;
@@ -26,35 +25,33 @@ export function ToolExecutionLevelCard({
   onChange,
   disabled = false,
 }: ToolExecutionLevelCardProps) {
-  const { t } = useTranslation();
-
   const levelOptions: LevelOption[] = [
     {
       value: "STRICT",
-      label: t("agentConfig.toolExecutionLevel.strict"),
+      label: "严格模式",
       icon: <Ban size={18} />,
-      description: t("agentConfig.toolExecutionLevel.strictDesc"),
+      description: "所有工具调用都需要审批，最高安全级别",
       color: "#ff4d4f",
     },
     {
       value: "SMART",
-      label: t("agentConfig.toolExecutionLevel.smart"),
+      label: "智能模式",
       icon: <AlertTriangle size={18} />,
-      description: t("agentConfig.toolExecutionLevel.smartDesc"),
+      description: "低风险工具自动放行，中高风险工具需要审批",
       color: "#faad14",
     },
     {
       value: "AUTO",
-      label: t("agentConfig.toolExecutionLevel.auto"),
+      label: "自动模式",
       icon: <Shield size={18} />,
-      description: t("agentConfig.toolExecutionLevel.autoDesc"),
+      description: "仅被明确标记为需要审批的工具才会要求审批（默认）",
       color: "#1890ff",
     },
     {
       value: "OFF",
-      label: t("agentConfig.toolExecutionLevel.off"),
+      label: "关闭模式",
       icon: <CheckCircle size={18} />,
-      description: t("agentConfig.toolExecutionLevel.offDesc"),
+      description: "关闭所有工具审批，所有工具自动执行",
       color: "#52c41a",
     },
   ];
@@ -65,13 +62,13 @@ export function ToolExecutionLevelCard({
       title={
         <Space>
           <Shield size={18} />
-          {t("agentConfig.toolExecutionLevel.title")}
+          {"工具执行安全"}
         </Space>
       }
     >
       <Alert
         type="info"
-        message={t("agentConfig.toolExecutionLevel.alertMessage")}
+        message={"配置工具调用的审批策略，控制智能体执行工具时的安全级别"}
         style={{ marginBottom: 24 }}
         showIcon
       />

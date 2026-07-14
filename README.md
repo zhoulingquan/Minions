@@ -408,8 +408,7 @@ Minions 内置四层核心安全防护：
 | [插件系统](https://minions.agentscope.io/docs/plugins)               | 插件体系与 Plugin Market                         |
 | [MCP 和工具](https://minions.agentscope.io/docs/mcp)                 | 管理 MCP 客户端                                  |
 | [Persona](https://minions.agentscope.io/docs/persona)                | 智能体人格定制（SOUL / PROFILE）                 |
-| [记忆](https://minions.agentscope.io/docs/memory)                    | 长期语义记忆（ReMe）                             |
-| [记忆进化与主动交互](https://minions.agentscope.io/docs/memory-evolving-and-proactive) | 智能体记忆进化与主动交互                 |
+| [SAGE 业务经验](https://minions.agentscope.io/docs/sage)             | 多租户业务经验、自动学习与可控成长               |
 | [上下文](https://minions.agentscope.io/docs/context)                 | 基于滚动的上下文管理                             |
 | [魔法命令](https://minions.agentscope.io/docs/commands)              | 无需等待 AI 理解即可控制对话状态                 |
 | [心跳](https://minions.agentscope.io/docs/heartbeat)                 | 定时自检与摘要                                   |
@@ -442,7 +441,7 @@ Minions 内置四层核心安全防护：
 | **已有功能扩展与完善**   | 展示优化、下载提示、Windows 路径兼容等 — **欢迎社区贡献**                                    | 征集中 |
 | **模型**                 | 多模型切换                                                                                   | 进行中 |
 | **Browser-use**          | 支持 Chrome 扩展                                                                             | 进行中 |
-| **长期记忆**             | 个人知识库                                                                                   | 进行中 |
+| **SAGE 业务经验**        | 企业案例沉淀、经验复用与成长治理                                                         | 进行中 |
 | **Minions 应用**         | Minions Creator                                                                              | 进行中 |
 |                          | Minions Insight                                                                              | 进行中 |
 | **多智能体**             | 兼容 Claude Code 等既有 Agent                                                                | 计划中 |
@@ -465,6 +464,10 @@ Minions 在开放协作中持续演进，欢迎各种形式的参与！请参考
 ---
 
 ## 从源码安装
+
+> 企业空间、成员权限、Agent 隔离和 SAGE 经验成长的配置与升级步骤见
+> [多租户 2.1 部署与升级手册](docs/multitenant-2.1-deployment.md)。本机开发无需安装
+> PostgreSQL；企业正式部署会强制使用 PostgreSQL。
 
 ```bash
 git clone https://github.com/agentscope-ai/Minions.git
@@ -497,7 +500,7 @@ Minions 既是 Qwen Personal Agent Workstation（千问个人智能体工作台�
 
 ## 由谁构建
 
-[AgentScope 团队](https://github.com/agentscope-ai) · [AgentScope](https://github.com/agentscope-ai/agentscope) · [AgentScope Runtime](https://github.com/agentscope-ai/agentscope-runtime) · [ReMe](https://github.com/agentscope-ai/ReMe)
+[AgentScope 团队](https://github.com/agentscope-ai) · [AgentScope](https://github.com/agentscope-ai/agentscope) · [AgentScope Runtime](https://github.com/agentscope-ai/agentscope-runtime)
 
 ---
 

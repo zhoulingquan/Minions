@@ -11,7 +11,6 @@ import {
 } from "@ant-design/icons";
 import { AlertTriangle, Link as LinkIcon, Settings } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { providerApi } from "../../../api/modules/provider";
 import type { ProviderInfo, ActiveModelsInfo } from "../../../api/types";
 import { useAgentStore } from "../../../stores/agentStore";
@@ -35,8 +34,7 @@ interface EligibleProvider {
 }
 
 export default function ModelSelector() {
-  const { t } = useTranslation();
-  const [providers, setProviders] = useState<ProviderInfo[]>([]);
+    const [providers, setProviders] = useState<ProviderInfo[]>([]);
   const [activeModels, setActiveModels] = useState<ActiveModelsInfo | null>(
     null,
   );
@@ -234,7 +232,7 @@ export default function ModelSelector() {
   // Display label for trigger button
   const activeModelName = (() => {
     if (!activeProviderId || !activeModelId)
-      return t("modelSelector.selectModel");
+      return "选择模型";
     for (const p of eligibleProviders) {
       if (p.id === activeProviderId) {
         const m = p.models.find((m) => m.id === activeModelId);
@@ -325,7 +323,6 @@ export default function ModelSelector() {
       const confirmed = await confirmFreeModelSwitch({
         provider: targetProvider,
         model: targetModel,
-        t,
       });
       if (!confirmed) return;
     }
@@ -349,7 +346,7 @@ export default function ModelSelector() {
       );
     } catch (err) {
       const msg =
-        err instanceof Error ? err.message : t("modelSelector.switchFailed");
+        err instanceof Error ? err.message : "切换模型失败";
       message.error(msg);
     } finally {
       setSaving(false);
@@ -389,7 +386,7 @@ export default function ModelSelector() {
         );
       } catch (err) {
         const msg =
-          err instanceof Error ? err.message : t("modelSelector.switchFailed");
+          err instanceof Error ? err.message : "切换模型失败";
         message.error(msg);
       } finally {
         setSaving(false);
@@ -476,12 +473,12 @@ export default function ModelSelector() {
                     )}
                     {model.is_free && !needsOAuth && (
                       <span className={styles.freeTag}>
-                        {t("modelSelector.free")}
+                        {"免费"}
                       </span>
                     )}
                     {(model.supports_image || model.supports_multimodal) && (
                       <span className={styles.visionTag}>
-                        {t("modelSelector.vision")}
+                        {"视觉"}
                       </span>
                     )}
                     {isActive && <CheckOutlined className={styles.checkIcon} />}
@@ -500,9 +497,7 @@ export default function ModelSelector() {
                   }));
                 }}
               >
-                {t("modelSelector.viewMore", {
-                  count: Math.min(10, remaining),
-                })}
+                {`显示更多 (${Math.min(10, remaining)})`}
               </div>
             )}
           </>
@@ -523,7 +518,7 @@ export default function ModelSelector() {
         </div>
         {isConnected && provider.models.length === 0 ? (
           <div className={styles.connectHint}>
-            {t("modelSelector.noModelsDiscovered")}
+            {"已连接，模型加载中..."}
           </div>
         ) : (
           <div
@@ -532,7 +527,7 @@ export default function ModelSelector() {
           >
             <LinkIcon size={14} className={styles.connectIcon} />
             <span>
-              {t("modelSelector.connectToUse", { provider: provider.name })}
+              {`连接 ${provider.name} 以使用免费模型`}
             </span>
           </div>
         )}
@@ -560,7 +555,7 @@ export default function ModelSelector() {
         >
           <Settings size={14} className={styles.connectIcon} />
           <span>
-            {t("modelSelector.configureApiKey", { provider: provider.name })}
+            {`配置 ${provider.name} API Key 以使用免费模型`}
           </span>
         </div>
       </div>
@@ -599,8 +594,8 @@ export default function ModelSelector() {
       return (
         <div className={styles.emptyTip}>
           {trimmedSearch
-            ? t("modelSelector.noModelsFound")
-            : t("modelSelector.noFreeModels")}
+            ? "未找到匹配的模型"
+            : "暂无可用的免费模型"}
         </div>
       );
     }
@@ -609,7 +604,7 @@ export default function ModelSelector() {
       <>
         <div className={styles.freeBanner}>
           <AlertTriangle size={14} className={styles.freeBannerIcon} />
-          <span>{t("modelSelector.freeBannerText")}</span>
+          <span>{"免费模型可能存在服务不稳定及用量限制的情况，详情请参考提供商说明。"}</span>
         </div>
         {readyProviders.map(renderProviderModels)}
         {oauthOnlyProviders.map(renderOAuthConnectEntry)}
@@ -631,7 +626,7 @@ export default function ModelSelector() {
                 });
               }}
             >
-              <span>{t("modelSelector.moreProviders")}</span>
+              <span>{"更多免费提供商（需配置 API Key）"}</span>
               {showMoreFree ? <UpOutlined /> : <DownOutlined />}
             </div>
             {showMoreFree && (
@@ -658,8 +653,8 @@ export default function ModelSelector() {
       return (
         <div className={styles.emptyTip}>
           {trimmedSearch
-            ? t("modelSelector.noModelsFound")
-            : t("modelSelector.noConfiguredModels")}
+            ? "未找到匹配的模型"
+            : "暂无已配置模型"}
         </div>
       );
     }
@@ -667,7 +662,7 @@ export default function ModelSelector() {
     return (
       <>
         <div className={styles.proBanner}>
-          <span>{t("modelSelector.proBannerText")}</span>
+          <span>{"仅显示在设置页已配置的模型。"}</span>
         </div>
         {filteredPro.map(renderProviderModels)}
       </>
@@ -681,7 +676,7 @@ export default function ModelSelector() {
         <input
           ref={searchInputRef}
           className={styles.searchInput}
-          placeholder={t("modelSelector.searchModels")}
+          placeholder={"搜索模型..."}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -741,7 +736,7 @@ export default function ModelSelector() {
         trigger={["click"]}
         placement={isMobile ? "bottomCenter" : "bottomLeft"}
       >
-        <Tooltip title={t("chat.modelSelectTooltip")} mouseEnterDelay={0.5}>
+        <Tooltip title={"模型选择"} mouseEnterDelay={0.5}>
           <div
             className={[styles.trigger, open ? styles.triggerActive : ""].join(
               " ",
@@ -781,19 +776,17 @@ export default function ModelSelector() {
 
       <Modal
         open={configNavModal.open}
-        title={t("modelSelector.configureApiKeyTitle")}
+        title={"前往配置页"}
         onCancel={() => setConfigNavModal((prev) => ({ ...prev, open: false }))}
         onOk={() => {
           setConfigNavModal((prev) => ({ ...prev, open: false }));
           navigate(`/models?provider=${configNavModal.providerId}`);
         }}
-        okText={t("modelSelector.goToConfigure")}
-        cancelText={t("common.cancel")}
+        okText={"前往配置"}
+        cancelText={"取消"}
       >
         <p>
-          {t("modelSelector.configureApiKeyConfirm", {
-            provider: configNavModal.providerName,
-          })}
+          {`即将跳转到模型配置页面，配置 ${configNavModal.providerName} 的 API Key。是否继续？`}
         </p>
       </Modal>
 

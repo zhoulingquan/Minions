@@ -14,7 +14,6 @@ import {
   CloseOutlined,
   DeleteOutlined,
 } from "@ant-design/icons";
-import { useTranslation } from "react-i18next";
 import { useAppMessage } from "../../../../hooks/useAppMessage";
 import {
   accessControlApi,
@@ -36,10 +35,10 @@ const ACTION_API_MAP: Record<
   dismiss: accessControlApi.dismissAclPending,
 };
 
-const ACTION_SUCCESS_KEY: Record<PendingAction, string> = {
-  approve: "channels.approveSuccess",
-  deny: "channels.denySuccess",
-  dismiss: "channels.dismissSuccess",
+const ACTION_SUCCESS_LABELS: Record<PendingAction, string> = {
+  approve: "已加入白名单",
+  deny: "已加入黑名单",
+  dismiss: "已忽略",
 };
 
 interface PendingApprovalsDrawerProps {
@@ -51,8 +50,7 @@ export function PendingApprovalsDrawer({
   open,
   onClose,
 }: PendingApprovalsDrawerProps) {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const [pending, setPending] = useState<PendingEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -113,7 +111,7 @@ export function PendingApprovalsDrawer({
         ),
       );
     } catch {
-      message.error(t("channels.operationFailed"));
+      message.error("操作失败");
     }
   };
 
@@ -132,7 +130,7 @@ export function PendingApprovalsDrawer({
         ),
       );
     } catch {
-      message.error(t("channels.operationFailed"));
+      message.error("操作失败");
     }
   };
 
@@ -143,10 +141,10 @@ export function PendingApprovalsDrawer({
       await ACTION_API_MAP[action]([
         { channel: entry.channel, user_id: entry.user_id },
       ]);
-      message.success(t(ACTION_SUCCESS_KEY[action]));
+      message.success(ACTION_SUCCESS_LABELS[action]);
       await fetchPending();
     } catch {
-      message.error(t("channels.operationFailed"));
+      message.error("操作失败");
     } finally {
       setActionLoading(null);
     }
@@ -157,12 +155,12 @@ export function PendingApprovalsDrawer({
     try {
       await ACTION_API_MAP[action](selectedEntries);
       message.success(
-        t("channels.batchSuccess", { count: selectedEntries.length }),
+        `已成功处理 ${selectedEntries.length} 位用户`,
       );
       setSelectedRowKeys([]);
       await fetchPending();
     } catch {
-      message.error(t("channels.operationFailed"));
+      message.error("操作失败");
     } finally {
       setBatchLoading(false);
     }
@@ -170,22 +168,22 @@ export function PendingApprovalsDrawer({
 
   const columns = [
     {
-      title: t("channels.channel"),
+      title: "频道",
       dataIndex: "channel",
       key: "channel",
       width: 100,
       fixed: "left" as const,
       render: (channel: string) => (
-        <Tooltip title={getChannelLabel(channel as ChannelKey, t)}>
+        <Tooltip title={getChannelLabel(channel as ChannelKey)}>
           <Space size={4}>
             <ChannelIcon channelKey={channel as ChannelKey} size={16} />
-            <span>{getChannelLabel(channel as ChannelKey, t)}</span>
+            <span>{getChannelLabel(channel as ChannelKey)}</span>
           </Space>
         </Tooltip>
       ),
     },
     {
-      title: t("channels.username"),
+      title: "用户名",
       dataIndex: "username",
       key: "username",
       width: 120,
@@ -201,7 +199,7 @@ export function PendingApprovalsDrawer({
       ),
     },
     {
-      title: t("channels.userId"),
+      title: "用户 ID",
       dataIndex: "user_id",
       key: "user_id",
       width: 160,
@@ -216,7 +214,7 @@ export function PendingApprovalsDrawer({
       ),
     },
     {
-      title: t("channels.firstMessage"),
+      title: "首条消息",
       dataIndex: "first_message",
       key: "first_message",
       width: 160,
@@ -228,7 +226,7 @@ export function PendingApprovalsDrawer({
       ),
     },
     {
-      title: t("channels.remark"),
+      title: "备注",
       dataIndex: "remark",
       key: "remark",
       width: 130,
@@ -244,14 +242,14 @@ export function PendingApprovalsDrawer({
       ),
     },
     {
-      title: t("channels.time"),
+      title: "时间",
       dataIndex: "timestamp",
       key: "timestamp",
       width: 150,
       render: (ts: number) => (ts ? new Date(ts * 1000).toLocaleString() : "-"),
     },
     {
-      title: t("channels.actions"),
+      title: "操作",
       key: "actions",
       width: 200,
       fixed: "right" as const,
@@ -267,7 +265,7 @@ export function PendingApprovalsDrawer({
               onClick={() => handleAction(record, "approve")}
               style={{ color: "#52c41a", padding: "0 4px" }}
             >
-              {t("channels.approve")}
+              {"加入白名单"}
             </Button>
             <Button
               type="text"
@@ -277,7 +275,7 @@ export function PendingApprovalsDrawer({
               onClick={() => handleAction(record, "deny")}
               style={{ padding: "0 4px" }}
             >
-              {t("channels.deny")}
+              {"加入黑名单"}
             </Button>
             <Button
               type="text"
@@ -286,7 +284,7 @@ export function PendingApprovalsDrawer({
               onClick={() => handleAction(record, "dismiss")}
               style={{ padding: "0 4px" }}
             >
-              {t("channels.dismiss")}
+              {"忽略"}
             </Button>
           </Space>
         );
@@ -299,7 +297,7 @@ export function PendingApprovalsDrawer({
   return (
     <Drawer
       width={920}
-      title={t("channels.pendingApprovals")}
+      title={"待审批"}
       open={open}
       onClose={onClose}
       destroyOnHidden
@@ -315,7 +313,7 @@ export function PendingApprovalsDrawer({
         <Select
           mode="multiple"
           allowClear
-          placeholder={t("channels.filterByChannel")}
+          placeholder={"按渠道筛选"}
           value={selectedChannels}
           onChange={(values) => {
             setSelectedChannels(values);
@@ -323,20 +321,18 @@ export function PendingApprovalsDrawer({
           }}
           style={{ minWidth: 200 }}
           options={availableChannels.map((ch) => ({
-            label: getChannelLabel(ch as ChannelKey, t),
+            label: getChannelLabel(ch as ChannelKey),
             value: ch,
           }))}
         />
         <Space>
           {hasSelection && (
             <Text type="secondary" style={{ fontSize: 13 }}>
-              {t("channels.selectedCount", { count: selectedRowKeys.length })}
+              {`已选 ${selectedRowKeys.length} 项`}
             </Text>
           )}
           <Popconfirm
-            title={t("channels.batchApproveConfirm", {
-              count: selectedRowKeys.length,
-            })}
+            title={`确认通过 ${selectedRowKeys.length} 位用户？`}
             onConfirm={() => handleBatchAction("approve")}
             disabled={!hasSelection}
           >
@@ -347,13 +343,11 @@ export function PendingApprovalsDrawer({
               disabled={!hasSelection}
               loading={batchLoading}
             >
-              {t("channels.batchApprove")}
+              {"批量通过"}
             </Button>
           </Popconfirm>
           <Popconfirm
-            title={t("channels.batchDenyConfirm", {
-              count: selectedRowKeys.length,
-            })}
+            title={`确认将 ${selectedRowKeys.length} 位用户加入黑名单？`}
             onConfirm={() => handleBatchAction("deny")}
             disabled={!hasSelection}
           >
@@ -363,13 +357,11 @@ export function PendingApprovalsDrawer({
               disabled={!hasSelection}
               loading={batchLoading}
             >
-              {t("channels.batchDeny")}
+              {"批量拉黑"}
             </Button>
           </Popconfirm>
           <Popconfirm
-            title={t("channels.batchDismissConfirm", {
-              count: selectedRowKeys.length,
-            })}
+            title={`确认忽略 ${selectedRowKeys.length} 位用户？`}
             onConfirm={() => handleBatchAction("dismiss")}
             disabled={!hasSelection}
           >
@@ -380,7 +372,7 @@ export function PendingApprovalsDrawer({
               disabled={!hasSelection}
               loading={batchLoading}
             >
-              {t("channels.batchDismiss")}
+              {"批量忽略"}
             </Button>
           </Popconfirm>
         </Space>
@@ -401,7 +393,7 @@ export function PendingApprovalsDrawer({
         locale={{
           emptyText: (
             <div style={{ padding: "48px 0" }}>
-              {t("channels.noPendingApprovals")}
+              {"暂无待审批"}
             </div>
           ),
         }}

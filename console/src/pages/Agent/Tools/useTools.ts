@@ -3,11 +3,9 @@ import { useAppMessage } from "../../../hooks/useAppMessage";
 import api from "../../../api";
 import type { ToolInfo } from "../../../api/modules/tools";
 import { customToolsApi } from "../../../api/modules/customTools";
-import { useTranslation } from "react-i18next";
 import { useAgentStore } from "../../../stores/agentStore";
 
 export function useTools() {
-  const { t } = useTranslation();
   const { selectedAgent } = useAgentStore();
   const [tools, setTools] = useState<ToolInfo[]>([]);
   const [loading, setLoading] = useState(false);
@@ -18,15 +16,29 @@ export function useTools() {
   const loadTools = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await api.listTools();
-      setTools(data);
+      const [toolsResult, customFilesResult] = await Promise.allSettled([
+        api.listTools(),
+        customToolsApi.list(),
+      ]);
+      if (toolsResult.status === "rejected") {
+        throw toolsResult.reason;
+      }
+      setTools(toolsResult.value);
+      if (customFilesResult.status === "fulfilled") {
+        setCustomToolNames(customFilesResult.value.map((file) => file.name));
+      } else {
+        console.error(
+          "Failed to load custom tools:",
+          customFilesResult.reason,
+        );
+      }
     } catch (error) {
       console.error("Failed to load tools:", error);
-      message.error(t("tools.loadError"));
+      message.error("加载工具失败");
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [message]);
 
   const loadCustomTools = useCallback(async () => {
     try {
@@ -39,8 +51,7 @@ export function useTools() {
 
   useEffect(() => {
     loadTools();
-    loadCustomTools();
-  }, [loadTools, loadCustomTools, selectedAgent]);
+  }, [loadTools, selectedAgent]);
 
   const toggleEnabled = useCallback(
     async (tool: ToolInfo) => {
@@ -54,24 +65,24 @@ export function useTools() {
       try {
         const result = await api.toggleTool(tool.name);
         message.success(
-          tool.enabled ? t("tools.disableSuccess") : t("tools.enableSuccess"),
+          tool.enabled ? "工具禁用成功" : "工具启用成功",
         );
         // Merge rather than replace to preserve any local state not returned
         // by the server (e.g. UI-only fields added in future expansions).
         setTools((prev) =>
           prev.map((t) => (t.name === result.name ? { ...t, ...result } : t)),
         );
-      } catch (error) {
+      } catch {
         // Revert optimistic update on error
         setTools((prev) =>
           prev.map((t) =>
             t.name === tool.name ? { ...t, enabled: tool.enabled } : t,
           ),
         );
-        message.error(t("tools.toggleError"));
+        message.error("切换工具状态失败");
       }
     },
-    [t],
+    [message],
   );
 
   const toggleAsyncExecution = useCallback(
@@ -92,14 +103,14 @@ export function useTools() {
         );
         message.success(
           result.async_execution
-            ? t("tools.asyncExecutionEnabled")
-            : t("tools.asyncExecutionDisabled"),
+            ? "异步执行已启用"
+            : "异步执行已禁用",
         );
         // Merge server response to preserve static metadata.
         setTools((prev) =>
           prev.map((t) => (t.name === result.name ? { ...t, ...result } : t)),
         );
-      } catch (error) {
+      } catch {
         // Revert optimistic update on error
         setTools((prev) =>
           prev.map((t) =>
@@ -108,16 +119,16 @@ export function useTools() {
               : t,
           ),
         );
-        message.error(t("tools.toggleError"));
+        message.error("切换工具状态失败");
       }
     },
-    [t],
+    [message],
   );
 
   const enableAll = useCallback(async () => {
     const disabledTools = tools.filter((tool) => !tool.enabled);
     if (disabledTools.length === 0) {
-      message.info(t("tools.allEnabled"));
+      message.info("所有工具已处于启用状态");
       return;
     }
 
@@ -129,7 +140,7 @@ export function useTools() {
       const results = await Promise.all(
         disabledTools.map((tool) => api.toggleTool(tool.name)),
       );
-      message.success(t("tools.enableAllSuccess"));
+      message.success("全部工具已启用");
       // Merge server responses, preserving all static metadata.
       setTools((prev) =>
         prev.map((t) => {
@@ -137,19 +148,19 @@ export function useTools() {
           return result ? { ...t, ...result } : t;
         }),
       );
-    } catch (error) {
-      message.error(t("tools.toggleError"));
+    } catch {
+      message.error("切换工具状态失败");
       // Reload on error to sync with server
       await loadTools();
     } finally {
       setBatchLoading(false);
     }
-  }, [tools, t, loadTools]);
+  }, [tools, loadTools, message]);
 
   const disableAll = useCallback(async () => {
     const enabledTools = tools.filter((tool) => tool.enabled);
     if (enabledTools.length === 0) {
-      message.info(t("tools.allDisabled"));
+      message.info("所有工具已处于禁用状态");
       return;
     }
 
@@ -161,7 +172,7 @@ export function useTools() {
       const results = await Promise.all(
         enabledTools.map((tool) => api.toggleTool(tool.name)),
       );
-      message.success(t("tools.disableAllSuccess"));
+      message.success("全部工具已禁用");
       // Merge server responses, preserving all static metadata.
       setTools((prev) =>
         prev.map((t) => {
@@ -169,43 +180,43 @@ export function useTools() {
           return result ? { ...t, ...result } : t;
         }),
       );
-    } catch (error) {
-      message.error(t("tools.toggleError"));
+    } catch {
+      message.error("切换工具状态失败");
       // Reload on error to sync with server
       await loadTools();
     } finally {
       setBatchLoading(false);
     }
-  }, [tools, t, loadTools]);
+  }, [tools, loadTools, message]);
 
   const saveToolConfig = useCallback(
-    async (toolName: string, config: Record<string, any>) => {
+    async (toolName: string, config: Record<string, unknown>) => {
       try {
         await api.updateToolConfig(toolName, config);
-        message.success(t("tools.configSaved"));
+        message.success("配置已保存");
       } catch (error) {
         console.error("Failed to save tool config:", error);
-        message.error(t("tools.configSaveError"));
+        message.error("配置保存失败");
         throw error;
       }
     },
-    [t],
+    [message],
   );
 
   const createCustomTool = useCallback(
     async (name: string, content: string) => {
       try {
         await customToolsApi.create(name, content);
-        message.success(t("tools.createSuccess"));
+        message.success("工具创建成功");
         await loadCustomTools();
         await loadTools();
       } catch (error) {
         console.error("Failed to create custom tool:", error);
-        message.error(t("tools.createFailed"));
+        message.error("工具创建失败");
         throw error;
       }
     },
-    [t, loadCustomTools, loadTools],
+    [loadCustomTools, loadTools, message],
   );
 
   const getCustomTool = useCallback(async (name: string) => {
@@ -216,44 +227,44 @@ export function useTools() {
     async (name: string, content: string) => {
       try {
         await customToolsApi.update(name, content);
-        message.success(t("tools.updateSuccess"));
+        message.success("工具更新成功");
       } catch (error) {
         console.error("Failed to update custom tool:", error);
-        message.error(t("tools.createFailed"));
+        message.error("工具更新失败");
         throw error;
       }
     },
-    [t],
+    [message],
   );
 
   const deleteCustomTool = useCallback(
     async (name: string) => {
       try {
         await customToolsApi.delete(name);
-        message.success(t("tools.deleteSuccess"));
+        message.success("工具删除成功");
         await loadCustomTools();
         await loadTools();
       } catch (error) {
         console.error("Failed to delete custom tool:", error);
-        message.error(t("tools.createFailed"));
+        message.error("工具删除失败");
         throw error;
       }
     },
-    [t, loadCustomTools, loadTools],
+    [loadCustomTools, loadTools, message],
   );
 
   const reloadCustomTool = useCallback(
     async (name: string) => {
       try {
         await customToolsApi.reload(name);
-        message.success(t("tools.reloadSuccess"));
+        message.success("工具已重新加载");
       } catch (error) {
         console.error("Failed to reload custom tool:", error);
-        message.error(t("tools.createFailed"));
+        message.error("工具重新加载失败");
         throw error;
       }
     },
-    [t],
+    [message],
   );
 
   return {

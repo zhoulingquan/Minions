@@ -20,7 +20,6 @@ import {
   Typography,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import api from "@/api";
@@ -48,8 +47,7 @@ export default function BackupTable({
   onRestore,
   onRefresh,
 }: Props) {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
 
   // Filter is applied to the full in-memory list so search covers all pages, not just the current one.
   const filteredBackups = useMemo(() => {
@@ -86,10 +84,10 @@ export default function BackupTable({
   const handleDelete = async (id: string) => {
     try {
       await api.deleteBackups([id]);
-      message.success(t("backup.deleteSuccess"));
+      message.success("备份删除成功");
       onRefresh();
     } catch {
-      message.error(t("backup.deleteFailed"));
+      message.error("备份删除失败");
     }
   };
 
@@ -99,17 +97,17 @@ export default function BackupTable({
    */
   const handleExport = (backup: BackupMeta) => {
     Modal.confirm({
-      title: t("backup.exportWarningTitle"),
-      content: t("backup.exportWarningContent"),
-      okText: t("backup.exportConfirm"),
-      cancelText: t("common.cancel"),
+      title: "敏感信息警告",
+      content: "此备份可能包含敏感凭证信息。智能体工作区包含渠道凭证（如 bot token、app secret 等），模型供应商密钥包含 API Key。请勿将备份文件分享给他人。",
+      okText: "确认导出",
+      cancelText: "取消",
       okButtonProps: { danger: true },
       centered: true,
       onOk: async () => {
         try {
           await api.exportBackup(backup.id, backup.name);
         } catch {
-          message.error(t("backup.exportFailed"));
+          message.error("导出备份失败");
         }
       },
     });
@@ -124,13 +122,13 @@ export default function BackupTable({
       render: (id: string) => <span className={styles.idCell}>{id}</span>,
     },
     {
-      title: t("backup.name"),
+      title: "名称",
       dataIndex: "name",
       key: "name",
       ellipsis: true,
     },
     {
-      title: t("backup.scopeSummary"),
+      title: "备份范围",
       key: "scope",
       width: 320,
       render: (_, record) => (
@@ -138,13 +136,13 @@ export default function BackupTable({
       ),
     },
     {
-      title: t("backup.descriptionLabel"),
+      title: "描述",
       dataIndex: "description",
       key: "description",
       ellipsis: true,
     },
     {
-      title: t("backup.createdAt"),
+      title: "创建时间",
       dataIndex: "created_at",
       key: "created_at",
       width: 160,
@@ -157,23 +155,23 @@ export default function BackupTable({
       defaultSortOrder: "descend",
     },
     {
-      title: t("common.actions"),
+      title: "操作",
       key: "actions",
       width: 200,
       render: (_, record) => (
         <span className={styles.actions}>
           <Button type="link" size="small" onClick={() => onRestore(record)}>
-            {t("backup.restore")}
+            {"恢复"}
           </Button>
           <Button type="link" size="small" onClick={() => handleExport(record)}>
-            {t("backup.export")}
+            {"导出"}
           </Button>
           <Popconfirm
-            title={t("backup.deleteConfirm")}
+            title={"确定要删除此备份吗？此操作不可恢复。"}
             onConfirm={() => handleDelete(record.id)}
           >
             <Button type="link" size="small" danger>
-              {t("backup.delete")}
+              {"删除"}
             </Button>
           </Popconfirm>
         </span>
@@ -201,7 +199,7 @@ export default function BackupTable({
       }
     >
       <div className={styles.mobileRow}>
-        <span className={styles.mobileLabel}>{t("backup.name")}</span>
+        <span className={styles.mobileLabel}>{"名称"}</span>
         <Typography.Text
           ellipsis={{ tooltip: true }}
           className={styles.mobileValue}
@@ -212,7 +210,7 @@ export default function BackupTable({
       {backup.description ? (
         <div className={styles.mobileRow}>
           <span className={styles.mobileLabel}>
-            {t("backup.descriptionLabel")}
+            {"描述"}
           </span>
           <Typography.Text
             ellipsis={{ tooltip: true }}
@@ -223,7 +221,7 @@ export default function BackupTable({
         </div>
       ) : null}
       <div className={styles.mobileRow}>
-        <span className={styles.mobileLabel}>{t("backup.scopeSummary")}</span>
+        <span className={styles.mobileLabel}>{"备份范围"}</span>
         <ScopeTags
           scope={backup.scope}
           agentCount={backup.agent_count}
@@ -237,17 +235,17 @@ export default function BackupTable({
           ghost
           onClick={() => onRestore(backup)}
         >
-          {t("backup.restore")}
+          {"恢复"}
         </Button>
         <Button size="small" onClick={() => handleExport(backup)}>
-          {t("backup.export")}
+          {"导出"}
         </Button>
         <Popconfirm
-          title={t("backup.deleteConfirm")}
+          title={"确定要删除此备份吗？此操作不可恢复。"}
           onConfirm={() => handleDelete(backup.id)}
         >
           <Button size="small" danger>
-            {t("backup.delete")}
+            {"删除"}
           </Button>
         </Popconfirm>
       </div>
@@ -259,7 +257,7 @@ export default function BackupTable({
       <Card className={styles.tableCard}>
         {backups.length === 0 ? (
           <Empty
-            description={t("backup.noBackups")}
+            description={"暂无备份。创建一个备份来保存当前配置。"}
             style={{ padding: "40px 0" }}
           />
         ) : (
@@ -271,7 +269,7 @@ export default function BackupTable({
             pagination={{
               pageSize: PAGE_SIZE,
               showSizeChanger: true,
-              showTotal: (total) => t("backup.total", { count: total }),
+              showTotal: (total) => `共 ${total} 条`,
               pageSizeOptions: ["10", "20", "50"],
             }}
           />
@@ -280,7 +278,7 @@ export default function BackupTable({
       <div className={styles.mobileCards}>
         {totalBackups === 0 ? (
           <Empty
-            description={t("backup.noBackups")}
+            description={"暂无备份。创建一个备份来保存当前配置。"}
             style={{ padding: "40px 0" }}
           />
         ) : (

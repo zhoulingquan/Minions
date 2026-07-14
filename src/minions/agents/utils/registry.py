@@ -10,16 +10,14 @@ class Registry(Generic[T]):
     """Generic registry for registering and retrieving implementations.
 
     Example:
-        from minions.agents.memory.base_memory_manager import (
-            memory_registry,
-        )
+        registry: Registry[Handler] = Registry()
 
-        @memory_registry.register("remelight")
-        class ReMeLightMemoryManager(BaseMemoryManager):
+        @registry.register("default")
+        class DefaultHandler(Handler):
             ...
 
-        cls = memory_registry.get("remelight")
-        instance = cls(working_dir=..., agent_id=...)
+        cls = registry.get("default")
+        instance = cls()
     """
 
     def __init__(self) -> None:

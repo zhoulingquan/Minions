@@ -16,11 +16,11 @@ import {
   RightOutlined,
 } from "@ant-design/icons";
 import type {
+  ActiveModelsInfo,
   BaseUrlOption,
   ProviderConfigRequest,
 } from "../../../../../api/types";
 import api from "../../../../../api";
-import { useTranslation } from "react-i18next";
 import { getLocalizedTestConnectionMessage } from "./testConnectionMessage";
 import styles from "../../index.module.less";
 
@@ -47,7 +47,7 @@ interface JsonCodeEditorProps {
 function highlightJson(text: string): ReactNode[] {
   const tokens: ReactNode[] = [];
   const pattern =
-    /("(?:\\.|[^"\\])*")(\s*:)?|\btrue\b|\bfalse\b|\bnull\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|[{}\[\],:]/g;
+    /("(?:\\.|[^"\\])*")(\s*:)?|\btrue\b|\bfalse\b|\bnull\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|[{}[\],:]/g;
 
   let lastIndex = 0;
   let match: RegExpExecArray | null;
@@ -276,7 +276,7 @@ interface ProviderConfigModalProps {
     auth_mode?: "api_key" | "auth_token";
     meta?: Record<string, unknown>;
   };
-  activeModels: any;
+  activeModels: ActiveModelsInfo | null;
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
@@ -289,8 +289,7 @@ export function ProviderConfigModal({
   onClose,
   onSaved,
 }: ProviderConfigModalProps) {
-  const { t } = useTranslation();
-  const [saving, setSaving] = useState(false);
+    const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [formDirty, setFormDirty] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -336,11 +335,11 @@ export function ProviderConfigModal({
     try {
       parsed = JSON.parse(trimmed);
     } catch {
-      throw new Error(t("models.generateConfigInvalidJson"));
+      throw new Error("请输入有效的 JSON");
     }
 
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      throw new Error(t("models.generateConfigMustBeObject"));
+      throw new Error("生成参数配置必须是 JSON 对象");
     }
 
     return parsed as Record<string, unknown>;
@@ -373,41 +372,37 @@ export function ProviderConfigModal({
 
   const apiKeyPlaceholder = useMemo(() => {
     if (provider.api_key) {
-      return t("models.leaveBlankKeep");
+      return "留空以保持当前密钥";
     }
     if (validApiKeyPrefixes.length > 0) {
-      return t("models.enterApiKey", {
-        prefix: validApiKeyPrefixes.join(", "),
-      });
+      return `输入 API 密钥 (${validApiKeyPrefixes.join(", ")}...)`;
     }
-    return t("models.enterApiKeyOptional");
-  }, [provider.api_key, validApiKeyPrefixes, t]);
+    return "输入 API 密钥（可选）";
+  }, [provider.api_key, validApiKeyPrefixes]);
 
   const apiKeyLabel =
     isAnthropicProvider && authMode === "auth_token"
-      ? t("models.authModeAuthToken")
-      : t("models.apiKey");
+      ? "Auth Token（Authorization: Bearer）"
+      : "API 密钥";
 
   const baseUrlExtra = useMemo(() => {
     if (!canEditBaseUrl) {
       return undefined;
     }
     if (useBaseUrlSelect) {
-      return t("models.selectBaseURLHint");
+      return "选择该服务商的区域接入点";
     }
     if (provider.is_custom) {
       return effectiveChatModel === "AnthropicChatModel"
-        ? t("models.anthropicEndpointHint")
-        : t("models.openAICompatibleEndpoint");
+        ? "Anthropic 端点，例如 https://api.anthropic.com"
+        : "OpenAI 兼容端点，例如 https://api.example.com（仅在你的服务要求时再追加 /v1）";
     }
-    return t("models.apiEndpointHint");
+    return "API 端点，例如 https://api.example.com";
   }, [
     canEditBaseUrl,
     useBaseUrlSelect,
-    provider.id,
     provider.is_custom,
     effectiveChatModel,
-    t,
   ]);
 
   const baseUrlPlaceholder = useMemo(() => {
@@ -418,7 +413,7 @@ export function ProviderConfigModal({
       return "https://api.anthropic.com";
     }
     return "https://api.example.com";
-  }, [canEditBaseUrl, provider.id, provider.is_custom, effectiveChatModel]);
+  }, [canEditBaseUrl, provider.is_custom, effectiveChatModel]);
 
   // Sync form when modal opens or provider data changes
   useEffect(() => {
@@ -472,7 +467,7 @@ export function ProviderConfigModal({
         });
 
         if (!result.success) {
-          message.error(getLocalizedTestConnectionMessage(result, t));
+          message.error(getLocalizedTestConnectionMessage(result));
           // For built-in providers, we want to enforce valid config before saving
           return;
         }
@@ -497,11 +492,11 @@ export function ProviderConfigModal({
       await onSaved();
       setFormDirty(false);
       onClose();
-      message.success(t("models.configurationSaved", { name: provider.name }));
+      message.success(`${provider.name} 配置已保存`);
     } catch (error) {
       if (error && typeof error === "object" && "errorFields" in error) return;
       const errMsg =
-        error instanceof Error ? error.message : t("models.failedToSaveConfig");
+        error instanceof Error ? error.message : "保存配置失败";
       message.error(errMsg);
     } finally {
       setSaving(false);
@@ -530,16 +525,16 @@ export function ProviderConfigModal({
         auth_mode: isAnthropicProvider ? authMode : undefined,
       });
       if (result.success) {
-        message.success(getLocalizedTestConnectionMessage(result, t));
+        message.success(getLocalizedTestConnectionMessage(result));
       } else {
-        message.warning(getLocalizedTestConnectionMessage(result, t));
+        message.warning(getLocalizedTestConnectionMessage(result));
       }
     } catch (error) {
       if (error && typeof error === "object" && "errorFields" in error) return;
       const errMsg =
         error instanceof Error
           ? error.message
-          : t("models.testConnectionError");
+          : "测试连接时发生错误";
       message.error(errMsg);
     } finally {
       setTesting(false);
@@ -551,15 +546,15 @@ export function ProviderConfigModal({
 
   const handleRevoke = () => {
     const confirmContent = isActiveLlmProvider
-      ? t("models.revokeConfirmContent", { name: provider.name })
-      : t("models.revokeConfirmSimple", { name: provider.name });
+      ? `确定要移除 ${provider.name} 的 API 密钥吗？当前 LLM 模型配置也将被清除。`
+      : `确定要移除 ${provider.name} 的 API 密钥吗？`;
 
     Modal.confirm({
-      title: t("models.revokeAuthorization"),
+      title: "撤销授权",
       content: confirmContent,
-      okText: t("models.revokeAuthorization"),
+      okText: "撤销授权",
       okButtonProps: { danger: true },
-      cancelText: t("models.cancel"),
+      cancelText: "取消",
       onOk: async () => {
         try {
           await api.configureProvider(provider.id, { api_key: "" });
@@ -567,16 +562,16 @@ export function ProviderConfigModal({
           onClose();
           if (isActiveLlmProvider) {
             message.success(
-              t("models.authorizationRevoked", { name: provider.name }),
+              `${provider.name} 授权已撤销，LLM 模型已清除`,
             );
           } else {
             message.success(
-              t("models.authorizationRevokedSimple", { name: provider.name }),
+              `${provider.name} 授权已撤销`,
             );
           }
         } catch (error) {
           const errMsg =
-            error instanceof Error ? error.message : t("models.failedToRevoke");
+            error instanceof Error ? error.message : "撤销授权失败";
           message.error(errMsg);
         }
       },
@@ -587,7 +582,7 @@ export function ProviderConfigModal({
     <Modal
       width={800}
       className={styles.modelManageModal}
-      title={t("models.configureProvider", { name: provider.name })}
+      title={`配置 ${provider.name}`}
       open={open}
       onCancel={onClose}
       footer={
@@ -595,7 +590,7 @@ export function ProviderConfigModal({
           <div className={styles.modalFooterLeft}>
             {provider.api_key && (
               <Button danger size="small" onClick={handleRevoke}>
-                {t("models.revokeAuthorization")}
+                {"撤销授权"}
               </Button>
             )}
             {provider.support_connection_check && (
@@ -605,19 +600,19 @@ export function ProviderConfigModal({
                 onClick={handleTest}
                 loading={testing}
               >
-                {t("models.testConnection")}
+                {"测试连接"}
               </Button>
             )}
           </div>
           <div className={styles.modalFooterRight}>
-            <Button onClick={onClose}>{t("models.cancel")}</Button>
+            <Button onClick={onClose}>{"取消"}</Button>
             <Button
               type="primary"
               loading={saving}
               disabled={!formDirty}
               onClick={handleSubmit}
             >
-              {t("models.save")}
+              {"保存"}
             </Button>
           </div>
         </div>
@@ -641,29 +636,29 @@ export function ProviderConfigModal({
         {provider.is_custom && (
           <Form.Item
             name="chat_model"
-            label={t("models.protocol")}
+            label={"协议"}
             rules={[
               {
                 required: true,
-                message: t("models.selectProtocol"),
+                message: "请选择协议",
               },
             ]}
-            extra={t("models.protocolHint")}
+            extra={"为当前配置选择提供商 API 协议。"}
           >
             <Select
               disabled
               options={[
                 {
                   value: "OpenAIChatModel",
-                  label: t("models.protocolOpenAI"),
+                  label: "OpenAI 兼容（Chat Completions）",
                 },
                 {
                   value: "OpenAIResponseModel",
-                  label: t("models.protocolOpenAIResponse"),
+                  label: "OpenAI 兼容（Response API）",
                 },
                 {
                   value: "AnthropicChatModel",
-                  label: t("models.protocolAnthropic"),
+                  label: "Anthropic（Messages API）",
                 },
               ]}
             />
@@ -673,7 +668,7 @@ export function ProviderConfigModal({
         {/* Base URL */}
         <Form.Item
           name="base_url"
-          label={t("models.baseURL")}
+          label={"基础 URL"}
           rules={
             canEditBaseUrl
               ? [
@@ -681,7 +676,7 @@ export function ProviderConfigModal({
                     ? [
                         {
                           required: true,
-                          message: t("models.pleaseEnterBaseURL"),
+                          message: "请输入 API 基础 URL",
                         },
                       ]
                     : []),
@@ -692,13 +687,13 @@ export function ProviderConfigModal({
                         const url = new URL(value.trim());
                         if (!["http:", "https:"].includes(url.protocol)) {
                           return Promise.reject(
-                            new Error(t("models.pleaseEnterValidURL")),
+                            new Error("请输入有效的 URL"),
                           );
                         }
                         return Promise.resolve();
                       } catch {
                         return Promise.reject(
-                          new Error(t("models.pleaseEnterValidURL")),
+                          new Error("请输入有效的 URL"),
                         );
                       }
                     },
@@ -714,7 +709,7 @@ export function ProviderConfigModal({
                 label: `${option.label} — ${option.value}`,
                 value: option.value,
               }))}
-              placeholder={t("models.selectBaseURL")}
+              placeholder={"请选择基础 URL"}
             />
           ) : (
             <Input
@@ -741,9 +736,7 @@ export function ProviderConfigModal({
                 ) {
                   return Promise.reject(
                     new Error(
-                      t("models.apiKeyShouldStart", {
-                        prefix: validApiKeyPrefixes.join(", "),
-                      }),
+                      `API 密钥应以 "${validApiKeyPrefixes.join(", ")}" 开头`,
                     ),
                   );
                 }
@@ -763,13 +756,13 @@ export function ProviderConfigModal({
           >
             <span className={styles.advancedConfigToggleLabel}>
               {advancedOpen ? <DownOutlined /> : <RightOutlined />}
-              {t("models.advancedConfig")}
+              {"进阶配置"}
             </span>
           </button>
 
           {/* Anthropic auth mode selector */}
           {isAnthropicProvider && advancedOpen && (
-            <Form.Item label={t("models.authMode")}>
+            <Form.Item label={"鉴权方式"}>
               <Radio.Group
                 value={authMode}
                 onChange={(e) => {
@@ -777,9 +770,9 @@ export function ProviderConfigModal({
                   setFormDirty(true);
                 }}
               >
-                <Radio value="api_key">{t("models.authModeApiKey")}</Radio>
+                <Radio value="api_key">{"API Key（x-api-key）"}</Radio>
                 <Radio value="auth_token">
-                  {t("models.authModeAuthToken")}
+                  {"Auth Token（Authorization: Bearer）"}
                 </Radio>
               </Radio.Group>
             </Form.Item>
@@ -788,15 +781,15 @@ export function ProviderConfigModal({
           {/* Custom Headers editor */}
           {advancedOpen && (
             <Form.Item
-              label={t("models.customHeaders")}
-              extra={t("models.customHeadersHint")}
+              label={"自定义 Headers"}
+              extra={"会附加到每次 API 请求中，例如 x-app: cli"}
             >
               <div className={styles.customHeadersSection}>
                 {customHeaders.map((header, index) => (
                   <div key={index} className={styles.customHeaderRow}>
                     <Input
                       className={styles.customHeaderKey}
-                      placeholder={t("models.customHeaderKey")}
+                      placeholder={"Header 名称"}
                       value={header.key}
                       onChange={(e) => {
                         const next = [...customHeaders];
@@ -807,7 +800,7 @@ export function ProviderConfigModal({
                     />
                     <Input
                       className={styles.customHeaderValue}
-                      placeholder={t("models.customHeaderValue")}
+                      placeholder={"Header 值"}
                       value={header.value}
                       onChange={(e) => {
                         const next = [...customHeaders];
@@ -841,7 +834,7 @@ export function ProviderConfigModal({
                     setFormDirty(true);
                   }}
                 >
-                  {t("models.addHeader")}
+                  {"+ 添加 Header"}
                 </button>
               </div>
             </Form.Item>
@@ -850,8 +843,8 @@ export function ProviderConfigModal({
           <Form.Item
             hidden={!advancedOpen}
             name="generate_kwargs_text"
-            label={t("models.generateConfig")}
-            extra={t("models.generateConfigHint")}
+            label={"生成参数配置"}
+            extra={"使用 JSON 格式表示的生成参数配置项，会被展开传入到生成请求（`openai.chat.completions` 或 `anthropic.messages`）中。"}
             rules={[
               {
                 validator: (_: unknown, value?: string) => {
@@ -862,7 +855,7 @@ export function ProviderConfigModal({
                     return Promise.reject(
                       error instanceof Error
                         ? error
-                        : new Error(t("models.generateConfigInvalidJson")),
+                        : new Error("请输入有效的 JSON"),
                     );
                   }
                 },

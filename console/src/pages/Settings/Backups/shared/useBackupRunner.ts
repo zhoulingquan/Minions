@@ -4,7 +4,6 @@
  * and SilentBackupModal (auto pre-restore) can share identical streaming logic.
  */
 import { useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import api from "@/api";
 import { useAppMessage } from "@/hooks/useAppMessage";
 import type { CreateBackupRequest } from "@/api/types/backup";
@@ -25,8 +24,7 @@ export function useBackupRunner({
   onSuccess,
   onClose,
 }: UseBackupRunnerOptions) {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [progressMsg, setProgressMsg] = useState("");
@@ -45,24 +43,24 @@ export function useBackupRunner({
     abortControllerRef.current = controller;
     setLoading(true);
     setProgress(0);
-    setProgressMsg(t("backup.progressStarting"));
+    setProgressMsg("正在初始化备份...");
 
     try {
       await api.createBackupStream(
         data,
         (event) => {
-          const { progress: p, msg } = handleBackupProgressEvent(event, t);
+          const { progress: p, msg } = handleBackupProgressEvent(event);
           setProgress(p);
           setProgressMsg(msg);
         },
         controller.signal,
       );
-      message.success(t("backup.createSuccess"));
+      message.success("备份创建成功");
       onSuccess?.();
       onClose?.();
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") return;
-      message.error(t("backup.createFailed"));
+      message.error("备份创建失败");
     } finally {
       setLoading(false);
       abortControllerRef.current = null;

@@ -8,7 +8,7 @@
 | **已有功能扩展与完善** | 展示优化、下载提示、Windows 路径兼容等 — **欢迎社区贡献** | 征集中 |
 | **模型**               | 多模型切换                                                | 进行中 |
 | **Browser-use**        | 支持 Chrome 扩展                                          | 进行中 |
-| **长期记忆**           | 个人知识库                                                | 进行中 |
+| **SAGE 业务经验**      | 企业案例、心得与 Playbook 的持续成长                     | 进行中 |
 | **Minions 应用**       | Minions Creator                                           | 进行中 |
 |                        | Minions Insight                                           | 进行中 |
 | **多智能体**           | 兼容 Claude Code 等既有 Agent                             | 计划中 |

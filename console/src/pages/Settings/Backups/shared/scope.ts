@@ -13,14 +13,14 @@ export function defaultCreateScope(agentIds: string[]): {
   backupMode: "full" | "partial";
   selectedAgents: string[];
   globalConfig: boolean;
-  includeSkillPool: boolean;
+  includeGlobalSkills: boolean;
   includeSecrets: boolean;
 } {
   return {
     backupMode: "full",
     selectedAgents: agentIds,
     globalConfig: true,
-    includeSkillPool: true,
+    includeGlobalSkills: true,
     includeSecrets: false,
   };
 }
@@ -50,7 +50,7 @@ export function buildPreRestoreScope(allAgentIds: string[]): {
       include_agents: true,
       include_global_config: true,
       include_secrets: false,
-      include_skill_pool: true,
+      include_global_skills: true,
     },
     agents: allAgentIds,
   };
@@ -68,7 +68,7 @@ export function buildScope(
   backupMode: "full" | "partial",
   selectedAgents: string[],
   globalConfig: boolean,
-  includeSkillPool: boolean,
+  includeGlobalSkills: boolean,
   includeSecrets: boolean,
 ): { scope: BackupScope; agents: string[] } {
   const includeAgents = backupMode === "full" || selectedAgents.length > 0;
@@ -77,7 +77,7 @@ export function buildScope(
       include_agents: includeAgents,
       include_global_config: backupMode === "full" ? true : globalConfig,
       include_secrets: backupMode === "full" ? true : includeSecrets,
-      include_skill_pool: backupMode === "full" ? true : includeSkillPool,
+      include_global_skills: backupMode === "full" ? true : includeGlobalSkills,
     },
     agents: includeAgents ? selectedAgents : [],
   };

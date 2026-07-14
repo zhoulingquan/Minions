@@ -22,25 +22,25 @@ from .models import (
 )
 from .store import (
     build_skill_metadata,
-    classify_pool_skill_source,
+    classify_global_skill_source,
     copy_skill_dir,
-    default_pool_manifest,
+    default_global_skills_manifest,
     default_workspace_manifest,
     extract_version,
-    get_pool_skill_manifest_path,
-    get_skill_pool_dirs,
-    get_skill_pool_dir,
+    get_global_skill_manifest_path,
+    get_global_skills_dirs,
+    get_global_skills_dir,
     get_workspace_skill_manifest_path,
     get_workspace_skills_dir,
     is_ignored_skill_entry,
-    is_pool_builtin_entry,
-    is_primary_pool_skill_dir,
+    is_global_builtin_entry,
+    is_primary_global_skill_dir,
     mutate_json,
     normalize_skill_manifest_entry,
     read_frontmatter_safe_from_path,
     read_json,
     read_skill_manifest,
-    read_skill_pool_manifest,
+    read_global_skills_manifest,
     safe_skill_dir,
     write_json_atomic,
 )
@@ -396,7 +396,7 @@ def apply_skill_config_env_overrides(
 # ---------------------------------------------------------------------------
 
 
-def _resolve_pool_builtin_language(
+def _resolve_global_builtin_language(
     skill_name: str,
     entry: dict[str, Any],
     registry: dict[str, dict[str, BuiltinSkillVariant]],
@@ -422,16 +422,16 @@ def _resolve_pool_builtin_language(
     ):
         return source_identity.language
 
-    # Migration fallback: match pool SKILL.md content against packaged
+    # Migration fallback: match global skill SKILL.md content against packaged
     # variants by SHA-256 hash, then guess from CJK character density.
     try:
-        pool_md = get_skill_pool_dir() / canonical_name / "SKILL.md"
-        pool_content = read_text_file_with_encoding_fallback(pool_md)
+        global_md = get_global_skills_dir() / canonical_name / "SKILL.md"
+        global_content = read_text_file_with_encoding_fallback(global_md)
     except OSError:
-        pool_content = ""
-    if pool_content:
-        pool_hash = hashlib.sha256(
-            pool_content.encode("utf-8"),
+        global_content = ""
+    if global_content:
+        global_hash = hashlib.sha256(
+            global_content.encode("utf-8"),
         ).hexdigest()
         matching = [
             lang
@@ -441,12 +441,12 @@ def _resolve_pool_builtin_language(
                     v.skill_md_path,
                 ).encode("utf-8"),
             ).hexdigest()
-            == pool_hash
+            == global_hash
         ]
         if len(matching) == 1:
             return matching[0]
         # Guess from actual content: significant CJK presence → zh.
-        cjk_count = len(re.findall(r"[\u4e00-\u9fff]", pool_content))
+        cjk_count = len(re.findall(r"[\u4e00-\u9fff]", global_content))
         guessed = "zh" if cjk_count >= 32 else "en"
         if guessed in variants:
             return guessed
@@ -498,22 +498,22 @@ def _build_builtin_language_spec(
 def _build_builtin_import_candidate(
     skill_name: str,
     *,
-    pool_skills: dict[str, Any],
+    global_skills_data: dict[str, Any],
     registry: dict[str, dict[str, BuiltinSkillVariant]],
     preferred_language: str | None = None,
 ) -> dict[str, Any]:
-    """Build one builtin import candidate enriched with pool state."""
+    """Build one builtin import candidate enriched with global skills state."""
     pref = preferred_language or get_builtin_skill_language_preference()
     canonical_name = _canonical_builtin_skill_name(skill_name, registry)
     variants = registry.get(canonical_name) or {}
     current = normalize_skill_manifest_entry(
-        pool_skills.get(canonical_name),
+        global_skills_data.get(canonical_name),
     )
     current_version_text = str(current.get("version_text", "") or "")
     current_source = str(current.get("source", "") or "")
     current_language = ""
     if current and current_source == "builtin":
-        current_language = _resolve_pool_builtin_language(
+        current_language = _resolve_global_builtin_language(
             canonical_name,
             current,
             registry,
@@ -563,15 +563,15 @@ def list_builtin_import_candidates() -> list[dict[str, Any]]:
         return []
 
     pref = get_builtin_skill_language_preference()
-    manifest = read_skill_pool_manifest()
-    pool_skills = manifest.get("skills", {})
+    manifest = read_global_skills_manifest()
+    global_skills_data = manifest.get("skills", {})
     candidates: list[dict[str, Any]] = []
 
     for skill_name in sorted(registry):
         candidates.append(
             _build_builtin_import_candidate(
                 skill_name,
-                pool_skills=pool_skills,
+                global_skills_data=global_skills_data,
                 registry=registry,
                 preferred_language=pref,
             ),
@@ -655,7 +655,7 @@ def _collect_builtin_import_conflicts(
 
 
 # ---------------------------------------------------------------------------
-# Builtin import execution + pool initialization
+# Builtin import execution + global skills initialization
 # ---------------------------------------------------------------------------
 
 
@@ -664,18 +664,18 @@ def import_builtin_skills(
     *,
     overwrite_conflicts: bool = False,
 ) -> dict[str, list[Any]]:
-    """Import selected builtins from packaged source into the local pool."""
-    pool_dir = get_skill_pool_dir()
-    pool_dir.mkdir(parents=True, exist_ok=True)
+    """Import selected builtins from packaged source into global skills."""
+    global_dir = get_global_skills_dir()
+    global_dir.mkdir(parents=True, exist_ok=True)
 
     registry = _get_packaged_builtin_registry()
     pref = get_builtin_skill_language_preference()
-    manifest = read_skill_pool_manifest()
-    pool_skills = manifest.get("skills", {})
+    manifest = read_global_skills_manifest()
+    global_skills_data = manifest.get("skills", {})
     candidates = {
         skill_name: _build_builtin_import_candidate(
             skill_name,
-            pool_skills=pool_skills,
+            global_skills_data=global_skills_data,
             registry=registry,
             preferred_language=pref,
         )
@@ -735,15 +735,15 @@ def import_builtin_skills(
     imported: list[str] = []
     updated: list[str] = []
     unchanged: list[str] = []
-    manifest_path = get_pool_skill_manifest_path()
-    manifest_default = default_pool_manifest()
+    manifest_path = get_global_skill_manifest_path()
+    manifest_default = default_global_skills_manifest()
 
     def _process(payload: dict[str, Any]) -> dict[str, list[Any]]:
         skills = payload.setdefault("skills", {})
         payload["builtin_skill_names"] = sorted(registry.keys())
         for skill_name, language in normalized_imports:
             variant = registry[skill_name][language]
-            target = safe_skill_dir(pool_dir, skill_name)
+            target = safe_skill_dir(global_dir, skill_name)
             existing = skills.get(skill_name) or {}
 
             if not target.exists():
@@ -751,7 +751,7 @@ def import_builtin_skills(
                 imported.append(skill_name)
             elif (
                 existing.get("source") == "builtin"
-                and _resolve_pool_builtin_language(
+                and _resolve_global_builtin_language(
                     skill_name,
                     existing,
                     registry,
@@ -803,8 +803,8 @@ def import_builtin_skills(
     )
 
 
-def migrate_pool_builtin_language_fields() -> bool:
-    """Ensure builtin language metadata is set for all builtin pool entries."""
+def migrate_global_builtin_language_fields() -> bool:
+    """Ensure builtin language metadata is set for all builtin global entries."""
     registry = _get_packaged_builtin_registry()
     if not registry:
         return False
@@ -815,12 +815,12 @@ def migrate_pool_builtin_language_fields() -> bool:
         skills = payload.setdefault("skills", {})
         changed = False
         for skill_name, entry in skills.items():
-            if not is_pool_builtin_entry(entry):
+            if not is_global_builtin_entry(entry):
                 continue
             variants = registry.get(skill_name) or {}
             if not variants:
                 continue
-            language = _resolve_pool_builtin_language(
+            language = _resolve_global_builtin_language(
                 skill_name,
                 entry,
                 registry,
@@ -843,47 +843,47 @@ def migrate_pool_builtin_language_fields() -> bool:
 
     return bool(
         mutate_json(
-            get_pool_skill_manifest_path(),
-            default_pool_manifest(),
+            get_global_skill_manifest_path(),
+            default_global_skills_manifest(),
             _update,
         ),
     )
 
 
-def ensure_skill_pool_initialized() -> bool:
-    """Ensure the local skill pool exists and built-ins are synced into it."""
-    pool_dir = get_skill_pool_dir()
+def ensure_global_skills_initialized() -> bool:
+    """Ensure global skills exist and built-ins are synced into it."""
+    global_dir = get_global_skills_dir()
     created = False
-    if not pool_dir.exists():
-        pool_dir.mkdir(parents=True, exist_ok=True)
+    if not global_dir.exists():
+        global_dir.mkdir(parents=True, exist_ok=True)
         created = True
 
-    manifest_path = get_pool_skill_manifest_path()
+    manifest_path = get_global_skill_manifest_path()
     if not manifest_path.exists():
-        write_json_atomic(manifest_path, default_pool_manifest())
+        write_json_atomic(manifest_path, default_global_skills_manifest())
         created = True
 
     if created:
         import_builtin_skills()
     else:
-        migrate_pool_builtin_language_fields()
+        migrate_global_builtin_language_fields()
     return created
 
 
 # ---------------------------------------------------------------------------
-# Manifest reconciliation (pool + workspace)
+# Manifest reconciliation (global skills + workspace)
 # ---------------------------------------------------------------------------
 
 
-def _discover_pool_skill_dirs() -> dict[str, Path]:
-    """Scan pool roots in priority order, mapping skill name to its dir.
+def _discover_global_skill_dirs() -> dict[str, Path]:
+    """Scan global skills roots in priority order, mapping skill name to its dir.
 
-    The primary pool is scanned first, then configured read-only roots in
-    order. The first occurrence of a name wins (the pool wins over extras);
+    The primary global skills dir is scanned first, then configured read-only roots in
+    order. The first occurrence of a name wins (global skills dir wins over extras);
     shadowed duplicates are skipped with a warning.
     """
     discovered: dict[str, Path] = {}
-    for root in get_skill_pool_dirs():
+    for root in get_global_skills_dirs():
         if not root.is_dir():
             continue
         for path in sorted(root.iterdir()):
@@ -903,7 +903,7 @@ def _discover_pool_skill_dirs() -> dict[str, Path]:
     return discovered
 
 
-def _build_reconciled_pool_entry(
+def _build_reconciled_global_entry(
     skill_name: str,
     skill_dir: Path,
     existing: dict[str, Any],
@@ -912,14 +912,14 @@ def _build_reconciled_pool_entry(
     builtin_names: list[str],
     preferred_language: str,
 ) -> dict[str, Any]:
-    """Build one pool manifest entry from a discovered skill directory."""
-    is_external = not is_primary_pool_skill_dir(skill_dir)
+    """Build one global skills manifest entry from a discovered skill directory."""
+    is_external = not is_primary_global_skill_dir(skill_dir)
     if is_external:
-        # External roots live outside the pool and never hold packaged
+        # External roots live outside the global skills dir and never hold packaged
         # builtins; always classify as customized.
         source, protected = "customized", False
     else:
-        source, protected = classify_pool_skill_source(
+        source, protected = classify_global_skill_source(
             skill_name,
             skill_dir,
             existing,
@@ -933,9 +933,9 @@ def _build_reconciled_pool_entry(
     )
     new_entry["external"] = is_external
     if not is_external and (
-        source == "builtin" or is_pool_builtin_entry(existing)
+        source == "builtin" or is_global_builtin_entry(existing)
     ):
-        language = _resolve_pool_builtin_language(
+        language = _resolve_global_builtin_language(
             skill_name,
             existing or new_entry,
             registry,
@@ -965,23 +965,23 @@ def _build_reconciled_pool_entry(
     return new_entry
 
 
-def reconcile_pool_manifest() -> dict[str, Any]:
-    """Reconcile shared pool metadata with the filesystem.
+def reconcile_global_skills_manifest() -> dict[str, Any]:
+    """Reconcile shared global skills metadata with the filesystem.
 
-    The pool manifest is not treated as the source of truth for content.
-    Instead, the pool directory on disk is scanned and metadata is rebuilt
+    The global skills manifest is not treated as the source of truth for content.
+    Instead, the global skills directory on disk is scanned and metadata is rebuilt
     from the discovered skills. Manifest-only bookkeeping such as ``config``
     is preserved when possible.
 
     Example:
-        if a user manually drops ``skill_pool/demo/SKILL.md`` onto disk,
-        the next reconcile adds ``demo`` to ``skill_pool/skill.json``.
+        if a user manually drops ``global_skills/demo/SKILL.md`` onto disk,
+        the next reconcile adds ``demo`` to ``global_skills/skill.json``.
     """
-    pool_dir = get_skill_pool_dir()
-    pool_dir.mkdir(parents=True, exist_ok=True)
-    manifest_path = get_pool_skill_manifest_path()
+    global_dir = get_global_skills_dir()
+    global_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = get_global_skill_manifest_path()
     if not manifest_path.exists():
-        write_json_atomic(manifest_path, default_pool_manifest())
+        write_json_atomic(manifest_path, default_global_skills_manifest())
 
     registry = _get_packaged_builtin_registry()
     pref = get_builtin_skill_language_preference()
@@ -992,20 +992,20 @@ def reconcile_pool_manifest() -> dict[str, Any]:
         payload.setdefault("builtin_skill_names", [])
         skills = payload["skills"]
 
-        discovered = _discover_pool_skill_dirs()
+        discovered = _discover_global_skill_dirs()
         for skill_name, skill_dir in sorted(discovered.items()):
             raw_existing = skills.get(skill_name)
             existing = normalize_skill_manifest_entry(raw_existing)
             if raw_existing not in (None, existing):
                 logger.warning(
                     (
-                        "Malformed pool manifest entry for '%s'; "
+                        "Malformed global skills manifest entry for '%s'; "
                         "rebuilding from disk"
                     ),
                     skill_name,
                 )
             try:
-                skills[skill_name] = _build_reconciled_pool_entry(
+                skills[skill_name] = _build_reconciled_global_entry(
                     skill_name,
                     skill_dir,
                     existing,
@@ -1015,7 +1015,7 @@ def reconcile_pool_manifest() -> dict[str, Any]:
                 )
             except Exception:
                 logger.warning(
-                    "Skipping pool skill '%s' during reconcile",
+                    "Skipping global skill '%s' during reconcile",
                     skill_name,
                     exc_info=True,
                 )
@@ -1028,7 +1028,7 @@ def reconcile_pool_manifest() -> dict[str, Any]:
 
     return mutate_json(
         manifest_path,
-        default_pool_manifest(),
+        default_global_skills_manifest(),
         _update,
     )
 
@@ -1120,8 +1120,17 @@ def reconcile_workspace_manifest(workspace_dir: Path) -> dict[str, Any]:
                 existing_installed_from = existing.get("installed_from")
                 if existing_installed_from:
                     next_entry["installed_from"] = existing_installed_from
+                for sync_key in (
+                    "synced_from_global_hash",
+                    "synced_from_pool_hash",
+                    "last_synced_at",
+                ):
+                    if sync_key in existing:
+                        next_entry[sync_key] = existing[sync_key]
                 skills[skill_name] = next_entry
                 skills[skill_name].pop("sync_to_hub", None)
+                skills[skill_name].pop("sync_to_global", None)
+                # Legacy key cleanup.
                 skills[skill_name].pop("sync_to_pool", None)
             except Exception:
                 logger.warning(
@@ -1211,17 +1220,17 @@ def ensure_skills_initialized(workspace_dir: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def get_pool_builtin_sync_status(
+def get_global_builtin_sync_status(
     *,
-    pool_skills: dict[str, Any] | None = None,
+    global_skills_data: dict[str, Any] | None = None,
 ) -> dict[str, dict[str, Any]]:
-    """Compare pool skills against packaged builtins.
+    """Compare global skills against packaged builtins.
 
     Returns a dict keyed by skill name with sync status for each
-    builtin pool skill.
+    builtin global skill.
 
     Status values:
-    - ``synced``: pool builtin version matches the packaged builtin version
+    - ``synced``: global skills builtin version matches the packaged builtin version
     - ``outdated``: builtin version differs, or the packaged builtin
     was removed
     """
@@ -1230,20 +1239,20 @@ def get_pool_builtin_sync_status(
         return {}
 
     pref = get_builtin_skill_language_preference()
-    if pool_skills is None:
+    if global_skills_data is None:
         manifest = read_json(
-            get_pool_skill_manifest_path(),
-            default_pool_manifest(),
+            get_global_skill_manifest_path(),
+            default_global_skills_manifest(),
         )
-        pool_skills = manifest.get("skills", {})
+        global_skills_data = manifest.get("skills", {})
     result: dict[str, dict[str, Any]] = {}
     for name, variants in registry.items():
-        pool_entry = pool_skills.get(name)
-        if pool_entry is None or not is_pool_builtin_entry(pool_entry):
+        global_entry = global_skills_data.get(name)
+        if global_entry is None or not is_global_builtin_entry(global_entry):
             continue
-        language = _resolve_pool_builtin_language(
+        language = _resolve_global_builtin_language(
             name,
-            pool_entry,
+            global_entry,
             registry,
             preferred_language=pref,
         )
@@ -1256,7 +1265,7 @@ def get_pool_builtin_sync_status(
             }
             continue
         current_version_text = str(
-            pool_entry.get("version_text", "") or "",
+            global_entry.get("version_text", "") or "",
         )
         if current_version_text != variant.version_text:
             result[name] = {
@@ -1270,8 +1279,8 @@ def get_pool_builtin_sync_status(
                 "latest_version_text": "",
                 "available_languages": sorted(variants.keys()),
             }
-    for name, pool_entry in pool_skills.items():
-        if not is_pool_builtin_entry(pool_entry):
+    for name, global_entry in global_skills_data.items():
+        if not is_global_builtin_entry(global_entry):
             continue
         if name in registry:
             continue
@@ -1296,10 +1305,10 @@ def _build_builtin_notice_fingerprint(payload: dict[str, Any]) -> str:
     return digest.hexdigest()
 
 
-def get_pool_builtin_update_notice() -> dict[str, Any]:
-    """Return added/missing/updated/removed builtin changes relative to pool.
+def get_global_builtin_update_notice() -> dict[str, Any]:
+    """Return added/missing/updated/removed builtin changes relative to global skills.
 
-    The comparison baseline comes from ``builtin_skill_names`` in the pool
+    The comparison baseline comes from ``builtin_skill_names`` in the global skills
     manifest, which is intentionally updated only when builtin imports happen.
     That lets the UI keep surfacing newly added/removed builtins across plain
     refreshes until the user explicitly reviews them.
@@ -1307,10 +1316,10 @@ def get_pool_builtin_update_notice() -> dict[str, Any]:
     registry = _get_packaged_builtin_registry()
     pref = get_builtin_skill_language_preference()
     manifest = read_json(
-        get_pool_skill_manifest_path(),
-        default_pool_manifest(),
+        get_global_skill_manifest_path(),
+        default_global_skills_manifest(),
     )
-    pool_skills = manifest.get("skills", {})
+    global_skills_data = manifest.get("skills", {})
 
     previous_builtin_names = {
         str(name).strip()
@@ -1325,10 +1334,10 @@ def get_pool_builtin_update_notice() -> dict[str, Any]:
     removed: list[dict[str, Any]] = []
 
     for name in sorted(current_builtin_names):
-        current = pool_skills.get(name) or {}
+        current = global_skills_data.get(name) or {}
         candidate = _build_builtin_import_candidate(
             name,
-            pool_skills=pool_skills,
+            global_skills_data=global_skills_data,
             registry=registry,
             preferred_language=pref,
         )
@@ -1345,7 +1354,7 @@ def get_pool_builtin_update_notice() -> dict[str, Any]:
             updated.append(candidate)
 
     for name in sorted(previous_builtin_names - current_builtin_names):
-        current = pool_skills.get(name) or {}
+        current = global_skills_data.get(name) or {}
         if not current:
             continue
         removed.append(
@@ -1437,7 +1446,7 @@ def update_single_builtin(
     *,
     language: str | None = None,
 ) -> dict[str, Any]:
-    """Update one builtin skill in the pool to the latest packaged version."""
+    """Update one builtin skill in the global skills to the latest packaged version."""
     registry = _get_packaged_builtin_registry()
     canonical_name = _canonical_builtin_skill_name(skill_name, registry)
     if canonical_name not in registry:
@@ -1445,17 +1454,17 @@ def update_single_builtin(
             message=f"'{skill_name}' is not a builtin skill",
         )
 
-    manifest = read_skill_pool_manifest()
+    manifest = read_global_skills_manifest()
     existing = manifest.get("skills", {}).get(canonical_name)
-    if existing is None or not is_pool_builtin_entry(existing):
+    if existing is None or not is_global_builtin_entry(existing):
         raise SkillsError(
-            message=f"'{canonical_name}' is not a builtin pool skill",
+            message=f"'{canonical_name}' is not a builtin global skill",
         )
 
     pref = get_builtin_skill_language_preference()
     selected_language = _normalize_builtin_skill_language(
         language
-        or _resolve_pool_builtin_language(
+        or _resolve_global_builtin_language(
             canonical_name,
             existing,
             registry,
@@ -1473,8 +1482,8 @@ def update_single_builtin(
             ),
         )
 
-    pool_dir = get_skill_pool_dir()
-    target = pool_dir / canonical_name
+    global_dir = get_global_skills_dir()
+    target = global_dir / canonical_name
 
     def _update(payload: dict[str, Any]) -> dict[str, Any]:
         copy_skill_dir(variant.skill_dir, target)
@@ -1503,7 +1512,7 @@ def update_single_builtin(
         return entry
 
     return mutate_json(
-        get_pool_skill_manifest_path(),
-        default_pool_manifest(),
+        get_global_skill_manifest_path(),
+        default_global_skills_manifest(),
         _update,
     )

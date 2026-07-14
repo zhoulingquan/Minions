@@ -11,7 +11,7 @@ Minions 是一款**个人助理型产品**，部署在你自己的环境中。
 ![控制台](https://img.alicdn.com/imgextra/i1/O1CN01ikrU3k1TRdNESHtzV_!!6000000002379-2-tps-3822-2070.png)
 
 - **多通道对话** — 通过钉钉、飞书、Discord、Telegram 等与你对话。
-- **多智能体协作** — 支持创建多个独立智能体，每个智能体拥有独立配置、记忆和技能，
+- **多智能体协作** — 支持创建多个独立智能体，每个智能体拥有独立配置、业务经验和技能，
   还可以通过协作技能互相通信、共同完成复杂任务。
 - **定时执行** — 按你的配置自动运行任务。
 - **能力由 Skills 决定，有无限可能** — 内置定时任务、PDF 与表单、Word/Excel/PPT 文档处理、新闻摘要、文件阅读等，还可在 [Skills](./skills) 中自定义扩展。
@@ -20,9 +20,8 @@ Minions 是一款**个人助理型产品**，部署在你自己的环境中。
 - **多层安全防护** — 内置工具防护、文件访问控制、技能安全扫描等机制，保障运行安全。
 
 Minions 由 [AgentScope 团队](https://github.com/agentscope-ai) 基于
-[AgentScope](https://github.com/agentscope-ai/agentscope)、
-[AgentScope Runtime](https://github.com/agentscope-ai/agentscope-runtime) 与
-[ReMe](https://github.com/agentscope-ai/ReMe) 构建。
+[AgentScope](https://github.com/agentscope-ai/agentscope) 与
+[AgentScope Runtime](https://github.com/agentscope-ai/agentscope-runtime) 构建。
 
 想了解 Minions 的整体设计——Agent OS 架构及其 AgentScope 基础，参见 [架构设计](./architecture)。
 
@@ -64,7 +63,7 @@ Minions 由 [AgentScope 团队](https://github.com/agentscope-ai) 基于
   工具服务器扩展能力。工具是 Minions 内置的基础能力（如读写文件、执行命令、
   浏览器等）。详见 [MCP和工具](./mcp) 。
 - **智能体/工作区** — 从 v0.1.0 开始，Minions 支持多智能体，允许运行多个独立的
-  AI 智能体。每个智能体拥有独立的工作区、配置、记忆、技能和对话历史，智能体之间
+  AI 智能体。每个智能体拥有独立的工作区、配置、SAGE 业务经验、技能和对话历史，智能体之间
   还可以通过协作技能互相通信、共同完成复杂任务。详见 [多智能体](./multi-agent)。
 - **安全机制** — Minions 提供多层安全防护，包括工具防护（拦截危险命令参数）、
   文件防护（限制敏感路径访问）、技能扫描器（检查技能包安全性）等。详见 [安全](./security)。

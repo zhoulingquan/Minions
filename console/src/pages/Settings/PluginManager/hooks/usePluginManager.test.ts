@@ -7,7 +7,6 @@ const hoisted = vi.hoisted(() => ({
     success: vi.fn(),
     error: vi.fn(),
   },
-  stableT: (k: string) => k,
   fetchPluginsMock: vi.fn(),
   uninstallPluginMock: vi.fn(),
   // Captured Modal.confirm options; initialized per-test in beforeEach.
@@ -20,20 +19,13 @@ vi.mock("@/hooks/useAppMessage", () => ({
   useAppMessage: () => ({ message: hoisted.messageMock }),
 }));
 
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: hoisted.stableT }),
-}));
-
 vi.mock("@/api/modules/plugin", () => ({
   fetchPlugins: hoisted.fetchPluginsMock,
   uninstallPlugin: hoisted.uninstallPluginMock,
 }));
 
 vi.mock("ahooks", () => ({
-  useRequest: (
-    _fn: unknown,
-    _opts: { onError?: () => void } & Record<string, unknown>,
-  ) => ({
+  useRequest: () => ({
     data: hoisted.pluginsData,
     loading: false,
     refresh: hoisted.refreshMock,
@@ -93,7 +85,7 @@ describe("usePluginManager", () => {
       title: string;
       okType: string;
     };
-    expect(opts.title).toBe("pluginManager.confirmTitle");
+    expect(opts.title).toBe("确认卸载");
     expect(opts.okType).toBe("danger");
   });
 
@@ -115,7 +107,7 @@ describe("usePluginManager", () => {
 
     expect(uninstallPluginMock).toHaveBeenCalledWith("p1");
     expect(messageMock.success).toHaveBeenCalledWith(
-      "pluginManager.uninstallSuccess",
+      "插件卸载成功",
     );
     expect(refreshMock).toHaveBeenCalled();
   });

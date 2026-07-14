@@ -18,9 +18,11 @@ from __future__ import annotations
 import pytest
 
 from minions.providers.dashscope_provider import (
+    DashScopeProvider,
     _CappingDashScopeFormatter,
     MAX_INLINE_MEDIA_BYTES,
 )
+from minions.providers.provider import ModelInfo
 
 
 def _write(tmp_path, name: str, size: int) -> str:
@@ -118,3 +120,20 @@ def test_zero_threshold_disables_capping(tmp_path) -> None:
     )
     out = _CappingDashScopeFormatter(max_bytes=0)._format_video_source(source)
     assert out["type"] == "video_url"
+
+
+def test_dashscope_reasoning_relay_defaults_off_but_honors_explicit_value():
+    default_model = ModelInfo(id="qwen-default", name="Qwen Default")
+    explicit_model = ModelInfo(
+        id="qwen-explicit",
+        name="Qwen Explicit",
+        preserve_thinking=True,
+    )
+    provider = DashScopeProvider(
+        id="dashscope-test",
+        name="DashScope Test",
+        models=[default_model, explicit_model],
+    )
+
+    assert provider._get_relay_reasoning("qwen-default") is False
+    assert provider._get_relay_reasoning("qwen-explicit") is True

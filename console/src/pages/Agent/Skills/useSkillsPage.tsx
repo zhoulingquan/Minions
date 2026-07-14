@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Form, Modal } from "@agentscope-ai/design";
-import type { PoolSkillSpec, SkillSpec } from "../../../api/types";
+import { Button, Form, Modal } from "@agentscope-ai/design";
+import type { GlobalSkillSpec, SkillSpec } from "../../../api/types";
 import type { SkillDrawerFormValues } from "./components";
 import { useConflictRenameModal } from "./components";
 import { useProgressiveRender } from "../../../hooks/useProgressiveRender";
-import { useTranslation } from "react-i18next";
 import { useAgentStore } from "../../../stores/agentStore";
 import { useAppMessage } from "../../../hooks/useAppMessage";
 import api from "../../../api";
@@ -18,6 +17,8 @@ import {
 } from "../../../utils/scanError";
 import { useSkills } from "./useSkills";
 import { useSkillFilter } from "./useSkillFilter";
+import { getWorkspaceSyncAction } from "./components/skillSync";
+import styles from "./index.module.less";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -39,7 +40,6 @@ export type DownloadConflict =
 // ─── Hook ───────────────────────────────────────────────────────────────────
 
 export function useSkillsPage() {
-  const { t } = useTranslation();
   const { message } = useAppMessage();
   const { selectedAgent } = useAgentStore();
 
@@ -58,14 +58,8 @@ export function useSkillsPage() {
     hardRefresh,
   } = useSkills();
 
-  const {
-    searchQuery,
-    setSearchQuery,
-    searchTags,
-    setSearchTags,
-    allTags,
-    filteredSkills,
-  } = useSkillFilter(skills);
+  const { searchQuery, setSearchQuery, filteredSkills } =
+    useSkillFilter(skills);
 
   const { showConflictRenameModal, conflictRenameModal } =
     useConflictRenameModal();
@@ -77,14 +71,22 @@ export function useSkillsPage() {
   const [editingSkill, setEditingSkill] = useState<SkillSpec | null>(null);
   const [form] = Form.useForm<SkillDrawerFormValues>();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [poolSkills, setPoolSkills] = useState<PoolSkillSpec[]>([]);
-  const [poolModal, setPoolModal] = useState<"upload" | "download" | null>(
+  const [globalSkillsData, setGlobalSkillsData] = useState<GlobalSkillSpec[]>(
+    [],
+  );
+  const [globalModal, setGlobalModal] = useState<"upload" | "download" | null>(
     null,
   );
   const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
   const [batchModeEnabled, setBatchModeEnabled] = useState(false);
   const [viewMode, setViewMode] = useState<"card" | "list">("card");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [promotingSkillName, setPromotingSkillName] = useState<string | null>(
+    null,
+  );
+  const [syncConflictSkill, setSyncConflictSkill] = useState<SkillSpec | null>(
+    null,
+  );
 
   // ── Derived ─────────────────────────────────────────────────────────────
 
@@ -107,13 +109,13 @@ export function useSkillsPage() {
   // ── Effects ─────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (poolModal === "upload" || poolModal === "download") {
+    if (globalModal === "upload" || globalModal === "download") {
       void api
-        .listSkillPoolSkills()
-        .then(setPoolSkills)
+        .listGlobalSkills()
+        .then(setGlobalSkillsData)
         .catch(() => undefined);
     }
-  }, [poolModal]);
+  }, [globalModal]);
 
   // ── Helpers ─────────────────────────────────────────────────────────────
 
@@ -122,8 +124,8 @@ export function useSkillsPage() {
       Modal.confirm({
         title,
         content,
-        okText: t("common.confirm"),
-        cancelText: t("common.cancel"),
+        okText: "确认",
+        cancelText: "取消",
         onOk: () => resolve(true),
         onCancel: () => resolve(false),
       });
@@ -134,7 +136,6 @@ export function useSkillsPage() {
       skillName,
       api.getBlockedHistory,
       api.getSkillScanner,
-      t,
     );
   };
 
@@ -161,7 +162,7 @@ export function useSkillsPage() {
     }
   };
 
-  const closePoolModal = () => setPoolModal(null);
+  const closeGlobalModal = () => setGlobalModal(null);
 
   const handleUploadClick = () => fileInputRef.current?.click();
 
@@ -172,17 +173,14 @@ export function useSkillsPage() {
     if (!file) return;
     e.target.value = "";
     if (!file.name.toLowerCase().endsWith(".zip")) {
-      message.warning(t("skills.zipOnly"));
+      message.warning("仅支持上传 .zip 文件");
       return;
     }
     const sizeMB = file.size / (1024 * 1024);
     const uploadLimit = useUploadLimitStore.getState().uploadMaxSizeMb;
     if (uploadLimit !== null && sizeMB > uploadLimit) {
       message.warning(
-        t("skills.fileSizeExceeded", {
-          limit: uploadLimit,
-          size: sizeMB.toFixed(1),
-        }),
+        `文件大小超过 ${uploadLimit}MB 限制。当前文件：${sizeMB.toFixed(1)}MB`,
       );
       return;
     }
@@ -195,10 +193,10 @@ export function useSkillsPage() {
         : [];
       if (conflicts.length === 0) break;
       const newRenames = await showConflictRenameModal(
-        conflicts.map((c: { skill_name: string; suggested_name: string }) => ({
-          key: c.skill_name,
-          label: c.skill_name,
-          suggested_name: c.suggested_name,
+        conflicts.map((conflict) => ({
+          key: String(conflict.skill_name || ""),
+          label: String(conflict.skill_name || ""),
+          suggested_name: String(conflict.suggested_name || ""),
         })),
       );
       if (!newRenames) break;
@@ -211,7 +209,7 @@ export function useSkillsPage() {
   const handleCreate = () => {
     setEditingSkill(null);
     form.resetFields();
-    form.setFieldsValue({ enabled: false, channels: ["all"], tags: [] });
+    form.setFieldsValue({ enabled: false, channels: ["all"] });
     setDrawerOpen(true);
   };
 
@@ -258,8 +256,7 @@ export function useSkillsPage() {
     setDrawerOpen(true);
   };
 
-  const handleToggleEnabled = async (skill: SkillSpec, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleToggleEnabled = async (skill: SkillSpec) => {
     await toggleEnabled(skill);
     await refreshSkills();
   };
@@ -296,12 +293,6 @@ export function useSkillsPage() {
         ) {
           sideUpdates.push(api.updateSkillChannels(result.name, newChannels));
         }
-        const newTags = values.tags || [];
-        if (
-          JSON.stringify(newTags) !== JSON.stringify(editingSkill.tags || [])
-        ) {
-          sideUpdates.push(api.updateSkillTags(result.name, newTags));
-        }
         await Promise.all(sideUpdates);
         if (result.mode === "noop" && sideUpdates.length === 0) {
           setDrawerOpen(false);
@@ -309,9 +300,7 @@ export function useSkillsPage() {
         }
         if (result.mode !== "noop") {
           message.success(
-            result.mode === "rename"
-              ? `${t("common.save")}: ${result.name}`
-              : t("common.save"),
+            result.mode === "rename" ? `${"保存"}: ${result.name}` : "保存",
           );
         }
         setDrawerOpen(false);
@@ -324,9 +313,9 @@ export function useSkillsPage() {
         const detail = parseErrorDetail(error);
         if (detail?.reason === "conflict") {
           const confirmed = await confirmOverwrite(
-            t("skillPool.overwriteConfirm"),
+            "覆盖已存在的技能？",
             <div style={{ display: "grid", gap: 8 }}>
-              <div>{t("skills.overwriteExistingList")}</div>
+              <div>{"以下技能已存在，确认后将直接覆盖："}</div>
               <ul style={{ margin: 0, paddingLeft: 20 }}>
                 <li>{targetName}</li>
               </ul>
@@ -337,15 +326,11 @@ export function useSkillsPage() {
             await saveEditedSkill(true);
           } catch (retryError) {
             message.error(
-              retryError instanceof Error
-                ? retryError.message
-                : t("common.save"),
+              retryError instanceof Error ? retryError.message : "保存",
             );
           }
         } else {
-          message.error(
-            error instanceof Error ? error.message : t("common.save"),
-          );
+          message.error(error instanceof Error ? error.message : "保存");
         }
       }
     } else {
@@ -358,12 +343,7 @@ export function useSkillsPage() {
       );
       if (result.success) {
         const actualName = result.name || submitName;
-        await Promise.all([
-          api.updateSkillChannels(actualName, values.channels || ["all"]),
-          ...(values.tags?.length
-            ? [api.updateSkillTags(actualName, values.tags)]
-            : []),
-        ]);
+        await api.updateSkillChannels(actualName, values.channels || ["all"]);
         setDrawerOpen(false);
         invalidateSkillCache({ agentId: selectedAgent });
         await refreshSkills();
@@ -385,15 +365,155 @@ export function useSkillsPage() {
     }
   };
 
+  const handlePromoteToGlobal = async (skill: SkillSpec) => {
+    if (promotingSkillName) return;
+
+    const isNewGlobalSkill = !skill.in_global;
+    const needsConflictChoice =
+      skill.sync_status === "conflict" ||
+      (Boolean(skill.in_global) && !skill.last_synced_hash);
+
+    if (!needsConflictChoice) {
+      const confirmed = await confirmOverwrite(
+        isNewGlobalSkill ? "发布为全局技能？" : "晋升为全局版本？",
+        <div style={{ display: "grid", gap: 8 }}>
+          <div>
+            {isNewGlobalSkill
+              ? `将当前智能体中的“${skill.name}”发布到全局技能。`
+              : `将当前智能体中调优后的“${skill.name}”设为新的全局版本。`}
+          </div>
+          <div style={{ color: "rgba(20, 20, 19, 0.58)" }}>
+            这次操作不会自动覆盖其他智能体中的副本，也不会上传当前智能体的私有配置。
+          </div>
+        </div>,
+      );
+      if (!confirmed) return;
+    }
+
+    const promote = async (force: boolean, expectedGlobalHash?: string) =>
+      api.promoteSkillToGlobal(
+        skill.name,
+        {
+          force,
+          expected_global_hash: expectedGlobalHash,
+          include_config: false,
+          propagate: false,
+        },
+        selectedAgent,
+      );
+
+    setPromotingSkillName(skill.name);
+    try {
+      let result: Awaited<ReturnType<typeof api.promoteSkillToGlobal>>;
+      try {
+        result = await promote(false, skill.global_hash);
+      } catch (error) {
+        const detail = parseErrorDetail(error);
+        const forceable = [
+          "conflict",
+          "not_linked",
+          "outdated_global",
+          "stale_global",
+        ].includes(String(detail?.reason || ""));
+        if (!forceable) throw error;
+        setSyncConflictSkill({
+          ...skill,
+          sync_status: "conflict",
+          global_hash: String(detail?.global_hash || skill.global_hash || ""),
+          agent_hash: String(detail?.agent_hash || skill.agent_hash || ""),
+        });
+        return;
+      }
+
+      message.success(
+        result.mode === "noop"
+          ? "当前智能体技能已与全局一致"
+          : isNewGlobalSkill
+          ? "已发布为全局技能"
+          : "已晋升为新的全局版本",
+      );
+      invalidateSkillCache({
+        agentId: selectedAgent,
+        global: true,
+        workspaces: true,
+      });
+      await refreshSkills();
+    } catch (error) {
+      message.error(
+        error instanceof Error ? error.message : "同步到全局技能失败",
+      );
+    } finally {
+      setPromotingSkillName(null);
+    }
+  };
+
+  const refreshAfterSync = async () => {
+    invalidateSkillCache({
+      agentId: selectedAgent,
+      global: true,
+      workspaces: true,
+    });
+    await refreshSkills();
+  };
+
+  const handleResolveSkillSync = async (
+    skill: SkillSpec,
+    resolution: "keep_global" | "keep_agent",
+  ) => {
+    if (promotingSkillName) return;
+    setPromotingSkillName(skill.name);
+    try {
+      await api.resolveSkillSync(skill.name, resolution, selectedAgent);
+      setSyncConflictSkill(null);
+      await refreshAfterSync();
+      message.success(
+        resolution === "keep_global"
+          ? "已使用全局版本更新当前智能体"
+          : "已将智能体版本同步到全局",
+      );
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : "技能同步失败");
+    } finally {
+      setPromotingSkillName(null);
+    }
+  };
+
+  const handleSyncSkill = async (skill: SkillSpec) => {
+    const action = getWorkspaceSyncAction(skill);
+    if (!action || promotingSkillName) return;
+
+    if (action === "resolve") {
+      setSyncConflictSkill(skill);
+      return;
+    }
+
+    if (action === "pull") {
+      const confirmed = await confirmOverwrite(
+        "使用全局版本更新智能体？",
+        <div style={{ display: "grid", gap: 8 }}>
+          <div>将全局技能“{skill.name}”的最新内容更新到当前智能体。</div>
+          <div style={{ color: "rgba(20, 20, 19, 0.58)" }}>
+            当前状态表明智能体副本没有本地改动；运行配置和启用状态会保留。
+          </div>
+        </div>,
+      );
+      if (!confirmed) return;
+      await handleResolveSkillSync(skill, "keep_global");
+      return;
+    }
+
+    await handlePromoteToGlobal(skill);
+  };
+
   // ── Pool transfer ───────────────────────────────────────────────────────
 
-  const handleUploadToPool = async (workspaceSkillNames: string[]) => {
+  const handleUploadToGlobal = async (workspaceSkillNames: string[]) => {
     if (workspaceSkillNames.length === 0) return;
     try {
       const conflictingNames: string[] = [];
       for (const skillName of workspaceSkillNames) {
         try {
-          await api.uploadWorkspaceSkillToPool({
+          await api.uploadWorkspaceSkillToGlobal({
             workspace_id: selectedAgent,
             skill_name: skillName,
             preview_only: true,
@@ -409,9 +529,9 @@ export function useSkillsPage() {
       }
       if (conflictingNames.length > 0) {
         const confirmed = await confirmOverwrite(
-          t("skillPool.overwriteConfirm"),
+          "覆盖已存在的技能？",
           <div style={{ display: "grid", gap: 8 }}>
-            <div>{t("skills.overwriteExistingList")}</div>
+            <div>{"以下技能已存在，确认后将直接覆盖："}</div>
             <ul style={{ margin: 0, paddingLeft: 20 }}>
               {conflictingNames.map((name) => (
                 <li key={name}>{name}</li>
@@ -422,31 +542,29 @@ export function useSkillsPage() {
         if (!confirmed) return;
       }
       for (const skillName of workspaceSkillNames) {
-        await api.uploadWorkspaceSkillToPool({
+        await api.uploadWorkspaceSkillToGlobal({
           workspace_id: selectedAgent,
           skill_name: skillName,
           overwrite: conflictingNames.includes(skillName),
         });
       }
-      message.success(t("skills.uploadedToPool"));
-      closePoolModal();
-      invalidateSkillCache({ agentId: selectedAgent, pool: true });
+      message.success("已上传至全局技能");
+      closeGlobalModal();
+      invalidateSkillCache({ agentId: selectedAgent, global: true });
       await refreshSkills();
-      setPoolSkills(await api.listSkillPoolSkills());
+      setGlobalSkillsData(await api.listGlobalSkills());
     } catch (error) {
-      message.error(
-        error instanceof Error ? error.message : t("skills.uploadFailed"),
-      );
+      message.error(error instanceof Error ? error.message : "技能上传失败");
     }
   };
 
-  const handleDownloadFromPool = async (poolSkillNames: string[]) => {
+  const handleDownloadFromGlobal = async (poolSkillNames: string[]) => {
     if (poolSkillNames.length === 0) return;
     try {
       const conflicts: DownloadConflict[] = [];
       for (const skillName of poolSkillNames) {
         try {
-          await api.downloadSkillPoolSkill({
+          await api.downloadGlobalSkill({
             skill_name: skillName,
             targets: [{ workspace_id: selectedAgent }],
             preview_only: true,
@@ -491,15 +609,15 @@ export function useSkillsPage() {
           (c) => c.reason === "language_switch",
         );
         const title = allBuiltinUpgrades
-          ? t("skills.builtinUpgradeTitle")
+          ? "升级内置技能"
           : allLanguageSwitch
-          ? t("skills.languageSwitchTitle")
-          : t("skillPool.overwriteConfirm");
+          ? "切换技能语言"
+          : "覆盖已存在的技能？";
         const subtitle = allBuiltinUpgrades
-          ? t("skillPool.builtinOverwriteTargetsContent")
+          ? "以下目标中的内置技能版本不同，确认后将直接覆盖："
           : allLanguageSwitch
-          ? t("skills.languageSwitchContent")
-          : t("skills.overwriteExistingList");
+          ? "以下技能在池中有不同的语言版本，确认后将覆盖："
+          : "以下技能已存在，确认后将直接覆盖：";
         const confirmed = await confirmOverwrite(
           title,
           <div style={{ display: "grid", gap: 8 }}>
@@ -510,23 +628,17 @@ export function useSkillsPage() {
                 {conflict.reason === "builtin_upgrade" ? (
                   <>
                     {"  "}
-                    {t("skillPool.currentVersion")}:{" "}
-                    {conflict.current_version_text || "-"}
+                    {"当前版本"}: {conflict.current_version_text || "-"}
                     {"  ->  "}
-                    {t("skillPool.sourceVersion")}:{" "}
-                    {conflict.source_version_text || "-"}
+                    {"源码版本"}: {conflict.source_version_text || "-"}
                   </>
                 ) : null}
                 {conflict.reason === "language_switch" ? (
                   <>
                     {"  "}
-                    {conflict.current_language === "zh"
-                      ? t("skillPool.langZh")
-                      : t("skillPool.langEn")}
+                    {conflict.current_language === "zh" ? "中文" : "英文"}
                     {"  →  "}
-                    {conflict.source_language === "zh"
-                      ? t("skillPool.langZh")
-                      : t("skillPool.langEn")}
+                    {conflict.source_language === "zh" ? "中文" : "英文"}
                   </>
                 ) : null}
               </div>
@@ -539,21 +651,19 @@ export function useSkillsPage() {
         const shouldOverwrite = conflicts.some(
           (c) => c.skill_name === skillName,
         );
-        await api.downloadSkillPoolSkill({
+        await api.downloadGlobalSkill({
           skill_name: skillName,
           targets: [{ workspace_id: selectedAgent }],
           overwrite: shouldOverwrite,
         });
       }
-      message.success(t("skills.downloadedToWorkspace"));
-      closePoolModal();
-      invalidateSkillCache({ agentId: selectedAgent, pool: true });
+      message.success("已下载至当前工作区");
+      closeGlobalModal();
+      invalidateSkillCache({ agentId: selectedAgent, global: true });
       await refreshSkills();
     } catch (error) {
       message.error(
-        error instanceof Error
-          ? error.message
-          : t("common.download") + " failed",
+        error instanceof Error ? error.message : "下载" + " failed",
       );
     }
   };
@@ -573,19 +683,14 @@ export function useSkillsPage() {
       for (const [, result] of failed) {
         const detail = result.detail;
         if (result.reason !== "security_scan_failed" || !detail) continue;
-        showScanErrorModal(detail as SecurityScanErrorResponse, t);
+        showScanErrorModal(detail as SecurityScanErrorResponse);
       }
       if (failed.length > 0) {
         message.warning(
-          t("skills.batchEnablePartial", {
-            enabled: names.length - failed.length,
-            failed: failed.length,
-          }),
+          `${names.length - failed.length} 个已启用，${failed.length} 个失败`,
         );
       } else {
-        message.success(
-          t("skills.batchEnableSuccess", { count: names.length }),
-        );
+        message.success(`已启用 ${names.length} 个技能`);
       }
       clearSelection();
       invalidateSkillCache({ agentId: selectedAgent });
@@ -594,9 +699,7 @@ export function useSkillsPage() {
         await checkScanWarnings(name);
       }
     } catch (error) {
-      message.error(
-        error instanceof Error ? error.message : t("skills.batchEnableFailed"),
-      );
+      message.error(error instanceof Error ? error.message : "批量启用失败");
     }
   };
 
@@ -608,23 +711,16 @@ export function useSkillsPage() {
       const failed = Object.entries(results).filter(([, r]) => !r.success);
       if (failed.length > 0) {
         message.warning(
-          t("skills.batchDisablePartial", {
-            disabled: names.length - failed.length,
-            failed: failed.length,
-          }),
+          `${names.length - failed.length} 个已禁用，${failed.length} 个失败`,
         );
       } else {
-        message.success(
-          t("skills.batchDisableSuccess", { count: names.length }),
-        );
+        message.success(`已禁用 ${names.length} 个技能`);
       }
       clearSelection();
       invalidateSkillCache({ agentId: selectedAgent });
       await refreshSkills();
     } catch (error) {
-      message.error(
-        error instanceof Error ? error.message : t("skills.batchDisableFailed"),
-      );
+      message.error(error instanceof Error ? error.message : "批量禁用失败");
     }
   };
 
@@ -635,7 +731,7 @@ export function useSkillsPage() {
     if (names.length === 0) return;
     const confirmed = await new Promise<boolean>((resolve) => {
       Modal.confirm({
-        title: t("skills.batchDeleteTitle", { count: names.length }),
+        title: `删除 ${names.length} 个技能？`,
         content: (
           <ul style={{ margin: "8px 0", paddingLeft: 20 }}>
             {names.map((n) => (
@@ -643,9 +739,9 @@ export function useSkillsPage() {
             ))}
           </ul>
         ),
-        okText: t("common.delete"),
+        okText: "删除",
         okType: "danger",
-        cancelText: t("common.cancel"),
+        cancelText: "取消",
         onOk: () => resolve(true),
         onCancel: () => resolve(false),
       });
@@ -656,25 +752,81 @@ export function useSkillsPage() {
       const failed = Object.entries(results).filter(([, r]) => !r.success);
       if (failed.length > 0) {
         message.warning(
-          t("skills.batchDeletePartial", {
-            deleted: names.length - failed.length,
-            failed: failed.length,
-          }),
+          `${names.length - failed.length} 个已删除，${failed.length} 个失败`,
         );
       } else {
-        message.success(
-          t("skills.batchDeleteSuccess", { count: names.length }),
-        );
+        message.success(`已删除 ${names.length} 个技能`);
       }
       clearSelection();
       invalidateSkillCache({ agentId: selectedAgent });
       await refreshSkills();
     } catch (error) {
-      message.error(
-        error instanceof Error ? error.message : t("skills.batchDeleteFailed"),
-      );
+      message.error(error instanceof Error ? error.message : "批量删除失败");
     }
   };
+
+  const syncConflictModal = (
+    <Modal
+      title={
+        syncConflictSkill?.sync_status === "conflict"
+          ? "解决技能同步冲突"
+          : "选择要保留的技能版本"
+      }
+      open={Boolean(syncConflictSkill)}
+      onCancel={() => {
+        if (!promotingSkillName) setSyncConflictSkill(null);
+      }}
+      destroyOnClose
+      footer={
+        <div className={styles.syncConflictFooter}>
+          <Button
+            onClick={() => setSyncConflictSkill(null)}
+            disabled={Boolean(promotingSkillName)}
+          >
+            取消
+          </Button>
+          <Button
+            loading={Boolean(promotingSkillName)}
+            onClick={() => {
+              if (syncConflictSkill) {
+                void handleResolveSkillSync(syncConflictSkill, "keep_global");
+              }
+            }}
+          >
+            使用全局版本
+          </Button>
+          <Button
+            type="primary"
+            danger={syncConflictSkill?.sync_status === "conflict"}
+            loading={Boolean(promotingSkillName)}
+            onClick={() => {
+              if (syncConflictSkill) {
+                void handleResolveSkillSync(syncConflictSkill, "keep_agent");
+              }
+            }}
+          >
+            使用智能体版本并同步到全局
+          </Button>
+        </div>
+      }
+    >
+      {syncConflictSkill && (
+        <div className={styles.syncConflictBody}>
+          <div className={styles.syncConflictSkillName}>
+            {syncConflictSkill.name}
+          </div>
+          <p>
+            {syncConflictSkill.sync_status === "conflict"
+              ? "智能体版本和全局版本都发生了变化，系统不会自动覆盖任何一方。"
+              : "当前智能体和全局存在同名但内容不同的技能，尚未建立可验证的同步基线。"}
+          </p>
+          <p className={styles.syncConflictNotice}>
+            选择智能体版本只会更新全局源，不会自动覆盖其他智能体中的副本。
+          </p>
+        </div>
+      )}
+    </Modal>
+  );
 
   return {
     skills,
@@ -682,10 +834,10 @@ export function useSkillsPage() {
     visibleSkills,
     hasMore,
     sentinelRef,
-    poolSkills,
-    allTags,
+    globalSkillsData,
     filteredSkills,
     conflictRenameModal,
+    syncConflictModal,
     loading,
     uploading,
     importing,
@@ -695,26 +847,26 @@ export function useSkillsPage() {
     editingSkill,
     form,
     fileInputRef,
-    poolModal,
-    setPoolModal,
+    globalModal,
+    setGlobalModal,
     selectedSkills,
     batchModeEnabled,
     viewMode,
     setViewMode,
     filterOpen,
     setFilterOpen,
+    promotingSkillName,
     searchQuery,
     setSearchQuery,
-    searchTags,
-    setSearchTags,
     handleCreate,
     handleEdit,
     handleToggleEnabled,
     handleDelete,
     handleDrawerClose,
     handleSubmit,
-    handleUploadToPool,
-    handleDownloadFromPool,
+    handleSyncSkill,
+    handleUploadToGlobal,
+    handleDownloadFromGlobal,
     handleBatchEnable,
     handleBatchDisable,
     handleBatchDelete,
@@ -722,7 +874,7 @@ export function useSkillsPage() {
     handleFileChange,
     handleConfirmImport,
     closeImportModal,
-    closePoolModal,
+    closeGlobalModal,
     toggleSelect,
     clearSelection,
     selectAll,

@@ -5,7 +5,6 @@
  */
 import { useState } from "react";
 import { Modal, Input, Alert, Space } from "antd";
-import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import type { AgentSummary } from "@/api/types/agents";
 import { useBackupRunner } from "../shared/useBackupRunner";
@@ -28,8 +27,7 @@ export default function CreateBackupModal({
   onClose,
   onSuccess,
 }: Props) {
-  const { t } = useTranslation();
-  const [name, setName] = useState("");
+    const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [scope, setScope] = useState<ScopeFormValue>(
     defaultCreateScope(agents.map((a) => a.id)),
@@ -55,7 +53,7 @@ export default function CreateBackupModal({
       scope.backupMode,
       scope.selectedAgents,
       scope.globalConfig,
-      scope.includeSkillPool,
+      scope.includeGlobalSkills,
       scope.includeSecrets,
     );
     runner.start({
@@ -68,7 +66,7 @@ export default function CreateBackupModal({
 
   return (
     <Modal
-      title={t("backup.createTitle")}
+      title={"创建备份"}
       open={open}
       onCancel={runner.loading ? undefined : onClose}
       onOk={runner.loading ? undefined : handleOk}
@@ -77,8 +75,8 @@ export default function CreateBackupModal({
           ? { style: { display: "none" } }
           : { disabled: !name.trim() }
       }
-      cancelText={t("common.cancel")}
-      okText={t("common.confirm")}
+      cancelText={"取消"}
+      okText={"确认"}
       destroyOnHidden
       afterOpenChange={handleAfterOpenChange}
       centered
@@ -93,30 +91,30 @@ export default function CreateBackupModal({
       ) : (
         <Space direction="vertical" size="middle" style={{ width: "100%" }}>
           <div>
-            <div className={styles.fieldLabel}>{t("backup.name")}</div>
+            <div className={styles.fieldLabel}>{"名称"}</div>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={t("backup.namePlaceholder")}
+              placeholder={"输入备份名称"}
             />
           </div>
 
           <div>
             <div className={styles.fieldLabel}>
-              {t("backup.descriptionLabel")}
+              {"描述"}
             </div>
             <Input.TextArea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder={t("backup.descriptionPlaceholder")}
+              placeholder={"可选的描述信息..."}
               rows={2}
             />
           </div>
 
           <BackupScopeForm value={scope} onChange={setScope} agents={agents} />
 
-          <Alert type="info" showIcon message={t("backup.localModelsNotice")} />
-          <Alert type="warning" showIcon message={t("backup.securityNotice")} />
+          <Alert type="info" showIcon message={"备份文件不包含本地模型文件。如需跨设备迁移，请在目标设备上重新下载所需的本地模型。"} />
+          <Alert type="warning" showIcon message={"此备份可能包含敏感凭证信息。智能体工作区包含渠道凭证（如 bot token、app secret 等），模型供应商密钥包含 API Key。请勿将备份文件分享给他人。"} />
         </Space>
       )}
     </Modal>

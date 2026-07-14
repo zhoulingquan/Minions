@@ -1,5 +1,4 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { ChannelIcon } from "./ChannelIcon";
 import { getChannelLabel, type ChannelKey } from "./constants";
 import styles from "../index.module.less";
@@ -13,8 +12,7 @@ export const ChannelAvailableItem = React.memo(function ChannelAvailableItem({
   channelKey,
   onClick,
 }: ChannelAvailableItemProps) {
-  const { t } = useTranslation();
-  const label = getChannelLabel(channelKey, t);
+    const label = getChannelLabel(channelKey);
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === "Enter" || event.key === " ") {
@@ -34,7 +32,7 @@ export const ChannelAvailableItem = React.memo(function ChannelAvailableItem({
       <ChannelIcon channelKey={channelKey} size={24} />
       <span className={styles.availableItemName}>{label}</span>
       <span className={styles.availableItemAction}>
-        {t("channels.enableAction")}
+        {"启用"}
       </span>
     </div>
   );

@@ -29,9 +29,7 @@ const CronJobsPage = lazyImportWithRetry("../../pages/Control/CronJobs");
 const HeartbeatPage = lazyImportWithRetry("../../pages/Control/Heartbeat");
 const AgentConfigPage = lazyImportWithRetry("../../pages/Agent/Config");
 const SkillsPage = lazyImportWithRetry("../../pages/Agent/Skills");
-const SkillPoolPage = lazyImportWithRetry("../../pages/Settings/SkillPool");
 const ToolsPage = lazyImportWithRetry("../../pages/Agent/Tools");
-const CustomToolsPage = lazyImportWithRetry("../../pages/Agent/CustomTools");
 const WorkspacePage = lazyImportWithRetry("../../pages/Agent/Workspace");
 const MCPPage = lazyImportWithRetry("../../pages/Agent/MCP");
 const ACPPage = lazyImportWithRetry("../../pages/Agent/ACP");
@@ -42,6 +40,8 @@ const EnvironmentsPage = lazyImportWithRetry(
 const SecurityPage = lazyImportWithRetry("../../pages/Settings/Security");
 const TokenUsagePage = lazyImportWithRetry("../../pages/Settings/TokenUsage");
 const AgentStatsPage = lazyImportWithRetry("../../pages/Settings/AgentStats");
+const SagePage = lazyImportWithRetry("../../pages/Settings/Sage");
+const TenancyPage = lazyImportWithRetry("../../pages/Settings/Tenancy");
 const VoiceTranscriptionPage = lazyImportWithRetry(
   "../../pages/Settings/VoiceTranscription",
 );
@@ -71,9 +71,7 @@ export const BUILTIN_ROUTES: Route[] = [
   { id: "core.cron-jobs", path: "/cron-jobs", component: CronJobsPage },
   { id: "core.heartbeat", path: "/heartbeat", component: HeartbeatPage },
   { id: "core.skills", path: "/skills", component: SkillsPage },
-  { id: "core.skill-pool", path: "/skill-pool", component: SkillPoolPage },
   { id: "core.tools", path: "/tools", component: ToolsPage },
-  { id: "core.custom-tools", path: "/custom-tools", component: CustomToolsPage },
   { id: "core.mcp", path: "/mcp", component: MCPPage },
   { id: "core.acp", path: "/acp", component: ACPPage },
   { id: "core.acp-alias", path: "/ACP", component: ACPRedirect },
@@ -93,6 +91,8 @@ export const BUILTIN_ROUTES: Route[] = [
   { id: "core.security", path: "/security", component: SecurityPage },
   { id: "core.token-usage", path: "/token-usage", component: TokenUsagePage },
   { id: "core.agent-stats", path: "/agent-stats", component: AgentStatsPage },
+  { id: "core.sage", path: "/sage", component: SagePage },
+  { id: "core.tenancy", path: "/tenancy", component: TenancyPage },
   {
     id: "core.voice-transcription",
     path: "/voice-transcription",
@@ -111,4 +111,4 @@ routeRegistry.addBuiltin(BUILTIN_ROUTES);
 
 // Suspense imported above is used by lazyImportWithRetry consumers; ref keeps
 // TS from tree-shaking the import in older bundler configs.
-void Suspense;
+  void Suspense;

@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Button, Empty, Modal } from "@agentscope-ai/design";
 import { Spin } from "antd";
-import { useTranslation } from "react-i18next";
 import api from "../../../../api";
 import { useAppMessage } from "../../../../hooks/useAppMessage";
 import type {
@@ -43,8 +42,7 @@ export const MCPAccessModal: React.FC<MCPAccessModalProps> = ({
   onClose,
   onSave,
 }) => {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const [policy, setPolicy] = useState<MCPAccessPolicy | null>(null);
   const [tools, setTools] = useState<MCPToolInfo[]>([]);
   const [principalOptions, setPrincipalOptions] = useState<
@@ -84,7 +82,7 @@ export const MCPAccessModal: React.FC<MCPAccessModalProps> = ({
 
         if (!client.enabled) {
           if (!cancelled) {
-            setToolsError(t("mcp.access.disabledTools"));
+            setToolsError("该 MCP 客户端已禁用，仍可编辑已保存的访问规则。");
           }
           return;
         }
@@ -94,16 +92,20 @@ export const MCPAccessModal: React.FC<MCPAccessModalProps> = ({
           if (!cancelled) {
             setTools(currentTools);
           }
-        } catch (err: any) {
+        } catch (err) {
           if (!cancelled) {
-            setToolsError(err?.message || t("mcp.toolsLoadError"));
+            setToolsError(
+              err instanceof Error
+                ? err.message
+                : "获取 MCP 服务器工具列表失败",
+            );
           }
         }
       } catch {
         if (!cancelled) {
           setPolicy(null);
           setInitialPolicySignature("");
-          setToolsError(t("mcp.access.loadError"));
+          setToolsError("加载 MCP 访问策略失败");
         }
       } finally {
         if (!cancelled) {
@@ -115,7 +117,7 @@ export const MCPAccessModal: React.FC<MCPAccessModalProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [open, client.key, client.enabled, t]);
+  }, [open, client.key, client.enabled]);
 
   const groups = useMemo(
     () => (policy ? buildMCPAccessToolGroups(tools, policy) : []),
@@ -127,7 +129,7 @@ export const MCPAccessModal: React.FC<MCPAccessModalProps> = ({
   );
 
   const effectLabel = (effect: MCPAccessEffect) =>
-    t(`mcp.access.effect.${effect}`);
+    effect === "allow" ? "允许" : effect === "ask" ? "审批" : "拒绝";
 
   const setDefaultEffect = (effect: MCPAccessEffect) => {
     setPolicy((prev) =>
@@ -179,7 +181,7 @@ export const MCPAccessModal: React.FC<MCPAccessModalProps> = ({
     if (!policy) return;
     const validationError = validateMCPAccessPolicy(policy);
     if (validationError) {
-      message.error(t(`mcp.access.validation.${validationError.reason}`));
+      message.error(validationError.reason);
       return;
     }
     const validationWarning = findMCPAccessPolicyWarning(
@@ -187,7 +189,7 @@ export const MCPAccessModal: React.FC<MCPAccessModalProps> = ({
       principalOptions,
     );
     if (validationWarning) {
-      message.warning(t(`mcp.access.validation.${validationWarning.reason}`));
+      message.warning(validationWarning.reason);
     }
     setSaving(true);
     try {
@@ -207,24 +209,24 @@ export const MCPAccessModal: React.FC<MCPAccessModalProps> = ({
       return;
     }
     Modal.confirm({
-      title: t("mcp.access.discardTitle"),
-      content: t("mcp.access.discardContent"),
-      okText: t("common.confirm"),
-      cancelText: t("common.cancel"),
+      title: "放弃未保存的改动？",
+      content: "未保存的访问策略改动将会丢失。",
+      okText: "确认",
+      cancelText: "取消",
       onOk: onClose,
     });
   };
 
   return (
     <Modal
-      title={`${client.name} - ${t("mcp.tools")}`}
+      title={`${client.name} - ${"工具&权限"}`}
       open={open}
       onCancel={handleClose}
       width="min(1040px, calc(100vw - 32px))"
       footer={
         <div style={{ textAlign: "right" }}>
           <Button onClick={handleClose} style={{ marginRight: 8 }}>
-            {t("common.cancel")}
+            {"取消"}
           </Button>
           <Button
             type="primary"
@@ -232,7 +234,7 @@ export const MCPAccessModal: React.FC<MCPAccessModalProps> = ({
             loading={saving}
             disabled={!policy || loading}
           >
-            {t("common.save")}
+            {"保存"}
           </Button>
         </div>
       }
@@ -265,7 +267,7 @@ export const MCPAccessModal: React.FC<MCPAccessModalProps> = ({
           {toolsError && <div className={styles.toolsError}>{toolsError}</div>}
 
           {groups.length === 0 ? (
-            <Empty description={t("mcp.noTools")} />
+            <Empty description={"该 MCP 服务器暂无可用工具"} />
           ) : (
             <MCPAccessToolPanel
               groups={groups}
@@ -292,7 +294,7 @@ export const MCPAccessModal: React.FC<MCPAccessModalProps> = ({
           )}
         </div>
       ) : (
-        <div className={styles.toolsError}>{t("mcp.access.loadError")}</div>
+        <div className={styles.toolsError}>{"加载 MCP 访问策略失败"}</div>
       )}
     </Modal>
   );

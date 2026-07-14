@@ -59,7 +59,7 @@ async def execute_restore(
     backup_id:
         ID of the backup to restore.
     req:
-        Restore parameters (agents, config, secrets, skill pool).
+        Restore parameters (agents, config, secrets, global skills).
     stop_agent_fn:
         Async callable that stops a single agent by ID.  ``None`` when no
         ``MultiAgentManager`` is available (e.g. tests).
@@ -75,7 +75,7 @@ async def execute_restore(
     list_running_agent_ids_fn:
         Sync callable that returns all currently running agent IDs.  Used to
         expand the stop set when ``include_secrets`` or
-        ``include_skill_pool`` is True, because those directories may contain
+        ``include_global_skills`` is True, because those directories may contain
         files held open by any running agent (not only the restored ones).
         ``None`` when no ``MultiAgentManager`` is available.
 
@@ -105,19 +105,19 @@ async def execute_restore(
     else:
         affected_agents = []
 
-    # When restoring secrets or the skill pool, ALL running agents may hold
+    # When restoring secrets or the global skills, ALL running agents may hold
     # open file handles inside those directories (especially on Windows).
     # Expand the stop set to every currently running agent so that directory
     # renames succeed.
     agents_to_stop: list[str] = list(affected_agents)
-    if (req.include_secrets or req.include_skill_pool) and (
+    if (req.include_secrets or req.include_global_skills) and (
         list_running_agent_ids_fn is not None
     ):
         running = list_running_agent_ids_fn()
         extra = [aid for aid in running if aid not in set(agents_to_stop)]
         if extra:
             logger.info(
-                "include_secrets/include_skill_pool: also stopping "
+                "include_secrets/include_global_skills: also stopping "
                 "non-restored agents to release file handles: %s",
                 extra,
             )
@@ -131,7 +131,7 @@ async def execute_restore(
     )
 
     # Stop all agents that may hold open handles before file operations.
-    # On Windows, open handles inside the workspace / secrets / skill-pool
+    # On Windows, open handles inside the workspace / secrets / global-skills
     # directories prevent the atomic directory rename in the restore logic.
     if stop_agent_fn is not None:
         for agent_id in agents_to_stop:

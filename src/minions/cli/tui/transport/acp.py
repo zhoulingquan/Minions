@@ -18,6 +18,7 @@ import asyncio
 import logging
 import os
 import sys
+import time
 import uuid
 from contextlib import AsyncExitStack
 from typing import Any, AsyncIterator, cast
@@ -35,11 +36,16 @@ from acp.schema import (
     RequestPermissionResponse,
 )
 
+from ....agents.acp.meta import (
+    ACP_APPROVAL_EXPIRES_AT_META_KEY,
+    ACP_EPHEMERAL_META_KEY,
+)
 from ..__version__ import __version__
 from ..events import (
     BackendWarmed,
     Connected,
     PermissionOption,
+    PermissionExpired,
     PermissionRequest,
     PushMessage,
     SessionSummary,
@@ -64,12 +70,6 @@ _WARMUP_PROMPT = (
     "Warm up the Minions backend for an interactive terminal session. "
     "Reply with exactly: ready. Do not call tools."
 )
-
-# ``_meta`` flag marking the warmup session ephemeral so the Minions ACP server
-# never registers a console chat or persists state for it. Passed as an extra
-# kwarg on ``new_session``/``prompt`` (the ACP client folds extra kwargs into
-# the request's ``_meta``). Mirrors the server's ``ACP_EPHEMERAL_META_KEY``.
-_EPHEMERAL_META_KEY = "minions.ephemeral"
 
 
 def _open_agent_stderr_log() -> tuple[int | None, str | None]:
@@ -113,7 +113,12 @@ def _kill_process_tree(pid: int) -> None:
         parent = psutil.Process(pid)
     except Exception:
         return
-    for child in parent.children(recursive=True):
+    try:
+        children = parent.children(recursive=True)
+    except Exception as exc:  # process enumeration can be sandbox-restricted
+        logger.debug("could not enumerate ACP child processes: %s", exc)
+        children = []
+    for child in children:
         try:
             child.kill()
         except Exception:
@@ -131,6 +136,47 @@ def _permission_params(tool_call: Any) -> str | None:
     approves is exactly what the panel then shows.
     """
     return tool_input_text(_tool_call_raw_input(tool_call)) or None
+
+
+def _tool_call_meta(tool_call: Any) -> dict[str, Any]:
+    if isinstance(tool_call, dict):
+        meta = tool_call.get("_meta") or tool_call.get("field_meta")
+    else:
+        meta = getattr(tool_call, "field_meta", None)
+        if meta is None:
+            meta = getattr(tool_call, "_meta", None)
+    return meta if isinstance(meta, dict) else {}
+
+
+def _permission_expires_at(tool_call: Any) -> float | None:
+    value = _tool_call_meta(tool_call).get(
+        ACP_APPROVAL_EXPIRES_AT_META_KEY,
+    )
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    return None
+
+
+_PERMISSION_TIMEOUT_MESSAGE = (
+    "Approval request timed out. The tool call was blocked; "
+    "start a new request to try again."
+)
+_PERMISSION_EXPIRY_GRACE_SECONDS = 1.0
+
+
+def _permission_expired_message(exc: asyncio.CancelledError) -> str:
+    reason = str(exc.args[0]) if exc.args else ""
+    if reason == "timeout":
+        return _PERMISSION_TIMEOUT_MESSAGE
+    return (
+        "Approval request is no longer pending; it was resolved or "
+        "cancelled elsewhere."
+    )
 
 
 def _tool_call_raw_input(tool_call: Any) -> Any:
@@ -201,12 +247,14 @@ class _TuiClient:
             or getattr(tool_call, "tool_call_id", None)
             or "Permission required"
         )
+        expires_at = _permission_expires_at(tool_call)
         await self._queue.put(
             PermissionRequest(
                 request_id=request_id,
                 title=str(title),
                 tool_kind=getattr(tool_call, "kind", None),
                 params=_permission_params(tool_call),
+                expires_at=expires_at,
                 options=[
                     PermissionOption(
                         option_id=getattr(o, "option_id", ""),
@@ -219,8 +267,35 @@ class _TuiClient:
             ),
         )
 
+        timeout = None
+        if expires_at is not None:
+            timeout = max(
+                expires_at + _PERMISSION_EXPIRY_GRACE_SECONDS - time.time(),
+                0.0,
+            )
+
         try:
-            option_id = await future
+            option_id = await asyncio.wait_for(future, timeout)
+        except asyncio.TimeoutError:
+            await self._queue.put(
+                PermissionExpired(
+                    request_id=request_id,
+                    message=_PERMISSION_TIMEOUT_MESSAGE,
+                ),
+            )
+            return RequestPermissionResponse(
+                outcome=DeniedOutcome(outcome="cancelled"),
+            )
+        except asyncio.CancelledError as exc:
+            if not future.done():
+                future.cancel()
+            await self._queue.put(
+                PermissionExpired(
+                    request_id=request_id,
+                    message=_permission_expired_message(exc),
+                ),
+            )
+            raise
         finally:
             self._pending.pop(request_id, None)
 
@@ -379,7 +454,7 @@ class AcpTransport:
                 return
             warm_session = await self._conn.new_session(
                 cwd=self._cwd,
-                **{_EPHEMERAL_META_KEY: True},
+                **{ACP_EPHEMERAL_META_KEY: True},
             )
             warm_session_id = cast(str, warm_session.session_id)
             if warm_session_id == self._session_id:
@@ -398,7 +473,7 @@ class AcpTransport:
             await self._conn.prompt(
                 prompt=[text_block(_WARMUP_PROMPT)],
                 session_id=warm_session_id,
-                **{_EPHEMERAL_META_KEY: True},
+                **{ACP_EPHEMERAL_META_KEY: True},
             )
             await self._queue.put(BackendWarmed())
         except asyncio.CancelledError:  # pylint: disable=try-except-raise

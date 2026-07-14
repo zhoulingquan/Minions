@@ -12,8 +12,9 @@ from pathlib import Path
 
 from .._utils.constants import (
     PREFIX_CONFIG,
+    PREFIX_GLOBAL_SKILLS,
     PREFIX_SECRETS,
-    PREFIX_SKILL_POOL,
+    PREFIX_SKILL_POOL_LEGACY,
     PREFIX_WORKSPACES,
     find_zip_path,
 )
@@ -239,27 +240,32 @@ def _stage_secrets(zf: zipfile.ZipFile, staged_dirs: list[Path]) -> None:
     staged_dirs.append(SECRET_DIR)
 
 
-def _stage_skill_pool(zf: zipfile.ZipFile, staged_dirs: list[Path]) -> None:
-    """Stage skill pool directory from *zf*; appends to *staged_dirs* on
+def _stage_global_skills(zf: zipfile.ZipFile, staged_dirs: list[Path]) -> None:
+    """Stage global skills directory from *zf*; appends to *staged_dirs* on
     success."""
-    from ...agents.skill_system.store import get_skill_pool_dir
+    from ...agents.skill_system.store import get_global_skills_dir
 
-    if not _zip_has_prefix(zf, PREFIX_SKILL_POOL):
-        logger.warning(
-            "include_skill_pool=True but backup contains no skill "
-            "pool entries; skipping to avoid wiping existing skill pool.",
-        )
-        return
-    skill_pool_dir = get_skill_pool_dir()
-    logger.info("Staging skill pool from backup")
-    cleanup_stale_restore_artifacts(skill_pool_dir)
+    # Try new prefix first, fall back to legacy prefix for old backups.
+    prefix = PREFIX_GLOBAL_SKILLS
+    if not _zip_has_prefix(zf, prefix):
+        if _zip_has_prefix(zf, PREFIX_SKILL_POOL_LEGACY):
+            prefix = PREFIX_SKILL_POOL_LEGACY
+        else:
+            logger.warning(
+                "include_global_skills=True but backup contains no global "
+                "skills entries; skipping to avoid wiping existing global skills.",
+            )
+            return
+    global_skills_dir = get_global_skills_dir()
+    logger.info("Staging global skills from backup")
+    cleanup_stale_restore_artifacts(global_skills_dir)
     extract_to_tmp(
         zf,
-        PREFIX_SKILL_POOL,
-        skill_pool_dir,
-        zip_slip_base=skill_pool_dir,
+        prefix,
+        global_skills_dir,
+        zip_slip_base=global_skills_dir,
     )
-    staged_dirs.append(skill_pool_dir)
+    staged_dirs.append(global_skills_dir)
 
 
 def _stage_agents(
@@ -317,10 +323,13 @@ def _restore_directory_targets(
     targets: list[Path] = []
     if req.include_secrets and _zip_has_prefix(zf, PREFIX_SECRETS):
         targets.append(SECRET_DIR)
-    if req.include_skill_pool and _zip_has_prefix(zf, PREFIX_SKILL_POOL):
-        from ...agents.skill_system.store import get_skill_pool_dir
+    if req.include_global_skills and (
+        _zip_has_prefix(zf, PREFIX_GLOBAL_SKILLS)
+        or _zip_has_prefix(zf, PREFIX_SKILL_POOL_LEGACY)
+    ):
+        from ...agents.skill_system.store import get_global_skills_dir
 
-        targets.append(get_skill_pool_dir())
+        targets.append(get_global_skills_dir())
     if req.include_agents:
         for aid in agent_ids:
             if aid not in ws_agents:
@@ -405,8 +414,8 @@ def _stage_all(
         staged_config_tmp = _stage_global_config(zf, req, meta, restore_aids)
         if req.include_secrets:
             _stage_secrets(zf, staged_dirs)
-        if req.include_skill_pool:
-            _stage_skill_pool(zf, staged_dirs)
+        if req.include_global_skills:
+            _stage_global_skills(zf, staged_dirs)
         _stage_agents(
             zf,
             agent_ids,

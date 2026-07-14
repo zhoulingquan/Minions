@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Integration tests for agent-scoped /api/agents/{id}/skills endpoints.
 
-Covers active-skill CRUD (create, save, upload, channels, config, tags)
+Covers active-skill lifecycle (import, save, channels, config, tags)
 and their error branches, all through ``/api/agents/{agentId}/skills/*``.
 """
 from __future__ import annotations
@@ -25,25 +25,24 @@ def _skill_md(name: str, description: str) -> str:
 
 @pytest.mark.integration
 @pytest.mark.p0
-def test_agent_scoped_skills_create_list_batch_delete(app_server) -> None:
+def test_agent_scoped_skills_import_list_batch_delete(app_server) -> None:
     """Test purpose:
-    - Verify workspace skills can be created, listed, and batch-deleted using
+    - Verify workspace skills can be imported, listed, and batch-deleted using
       only ``/api/agents/{agentId}/skills`` paths (no ``X-Agent-Id`` header).
 
     Test flow:
     1. Create a dedicated test agent.
-    2. POST two skills under the scoped skills prefix.
+    2. Import two skills from a zip under the scoped skills prefix.
     3. GET scoped skills list and assert both names appear.
     4. POST scoped ``batch-delete`` with both names; per-skill success.
     5. GET list again and assert both are gone.
-    6. Defensive per-skill DELETE and DELETE agent in finally.
+    6. Delete the agent in finally.
 
     API endpoints:
     - POST /api/agents
-    - POST /api/agents/{agentId}/skills
+    - POST /api/agents/{agentId}/skills/upload
     - GET /api/agents/{agentId}/skills
     - POST /api/agents/{agentId}/skills/batch-delete
-    - DELETE /api/agents/{agentId}/skills/{skill_name}
     - DELETE /api/agents/{agentId}
     """
     agent_id = "integ_scoped_skills_batch_01"
@@ -62,17 +61,12 @@ def test_agent_scoped_skills_create_list_batch_delete(app_server) -> None:
     assert create_agent.status_code == 201, app_server.logs_tail()
 
     try:
-        for skill_name in skill_names:
-            create_skill = app_server.api_request(
-                "POST",
-                base,
-                json={
-                    "name": skill_name,
-                    "content": _skill_md(skill_name, "scoped batch skill"),
-                    "enable": False,
-                },
-            )
-            assert create_skill.status_code == 200, app_server.logs_tail()
+        imported = _upload_workspace_skills(
+            app_server,
+            agent_id,
+            {name: _skill_md(name, "scoped batch skill") for name in skill_names},
+        )
+        assert imported.get("count") == len(skill_names)
 
         list_before = app_server.api_request("GET", base)
         assert list_before.status_code == 200, app_server.logs_tail()
@@ -96,8 +90,6 @@ def test_agent_scoped_skills_create_list_batch_delete(app_server) -> None:
         for skill_name in skill_names:
             assert skill_name not in names_after
     finally:
-        for skill_name in skill_names:
-            app_server.api_request("DELETE", f"{base}/{skill_name}")
         app_server.api_request("DELETE", f"/api/agents/{agent_id}")
 
 
@@ -108,17 +100,16 @@ def test_agent_scoped_skills_batch_enable_disable(app_server) -> None:
     - Verify scoped batch-enable and batch-disable update ``enabled`` flags.
 
     Test flow:
-    1. Create a dedicated test agent and two disabled workspace skills.
+    1. Create a dedicated test agent and import two disabled workspace skills.
     2. POST scoped batch-enable and assert per-skill success plus list state.
     3. POST scoped batch-disable and assert per-skill success plus list state.
-    4. POST scoped batch-delete for cleanup.
+    4. Delete the agent for cleanup.
 
     API endpoints:
     - POST /api/agents
-    - POST /api/agents/{agentId}/skills
+    - POST /api/agents/{agentId}/skills/upload
     - POST /api/agents/{agentId}/skills/batch-enable
     - POST /api/agents/{agentId}/skills/batch-disable
-    - POST /api/agents/{agentId}/skills/batch-delete
     - GET /api/agents/{agentId}/skills
     - DELETE /api/agents/{agentId}
     """
@@ -138,17 +129,12 @@ def test_agent_scoped_skills_batch_enable_disable(app_server) -> None:
     assert create_agent.status_code == 201, app_server.logs_tail()
 
     try:
-        for skill_name in skill_names:
-            create_skill = app_server.api_request(
-                "POST",
-                base,
-                json={
-                    "name": skill_name,
-                    "content": _skill_md(skill_name, "batch enable skill"),
-                    "enable": False,
-                },
-            )
-            assert create_skill.status_code == 200, app_server.logs_tail()
+        imported = _upload_workspace_skills(
+            app_server,
+            agent_id,
+            {name: _skill_md(name, "batch enable skill") for name in skill_names},
+        )
+        assert imported.get("count") == len(skill_names)
 
         batch_en = app_server.api_request(
             "POST",
@@ -182,43 +168,35 @@ def test_agent_scoped_skills_batch_enable_disable(app_server) -> None:
         for skill_name in skill_names:
             assert by_name2[skill_name]["enabled"] is False
 
-        batch_del = app_server.api_request(
-            "POST",
-            f"{base}/batch-delete",
-            json=skill_names,
-        )
-        assert batch_del.status_code == 200, app_server.logs_tail()
     finally:
-        for skill_name in skill_names:
-            app_server.api_request("DELETE", f"{base}/{skill_name}")
         app_server.api_request("DELETE", f"/api/agents/{agent_id}")
 
 
 @pytest.mark.integration
 @pytest.mark.p1
-def test_agent_scoped_skills_pool_refresh(app_server) -> None:
+def test_agent_scoped_skills_global_refresh(app_server) -> None:
     """Test purpose:
-    - Verify scoped POST skills/pool/refresh returns a list payload (local
+    - Verify scoped POST skills/global/refresh returns a list payload (local
       reconcile only, no hub credentials).
 
     Test flow:
     1. Create a dedicated test agent.
-    2. POST scoped pool refresh.
+    2. POST scoped global skills refresh.
     3. Assert 200 and JSON array response.
     4. Delete test agent.
 
     API endpoints:
     - POST /api/agents
-    - POST /api/agents/{agentId}/skills/pool/refresh
+    - POST /api/agents/{agentId}/skills/global/refresh
     - DELETE /api/agents/{agentId}
     """
-    agent_id = "integ_scoped_skills_pool_refresh_01"
-    refresh_path = f"/api/agents/{agent_id}/skills/pool/refresh"
+    agent_id = "integ_scoped_skills_global_refresh_01"
+    refresh_path = f"/api/agents/{agent_id}/skills/global/refresh"
 
     create_agent = app_server.api_request(
         "POST",
         "/api/agents",
-        json={"id": agent_id, "name": "Pool refresh agent", "description": ""},
+        json={"id": agent_id, "name": "Global skills refresh agent", "description": ""},
     )
     assert create_agent.status_code == 201, app_server.logs_tail()
 
@@ -278,18 +256,17 @@ def test_agent_scoped_skills_disable_enable_roundtrip(app_server) -> None:
     - Verify per-skill POST disable/enable under scoped skills prefix.
 
     Test flow:
-    1. Create agent and one enabled skill via scoped POST.
+    1. Create agent and import one enabled skill via scoped zip upload.
     2. POST .../skills/{name}/disable and GET list -> enabled false.
     3. POST .../skills/{name}/enable and GET list -> enabled true.
-    4. DELETE skill and agent.
+    4. Delete the agent.
 
     API endpoints:
     - POST /api/agents
-    - POST /api/agents/{agentId}/skills
+    - POST /api/agents/{agentId}/skills/upload
     - POST /api/agents/{agentId}/skills/{skill_name}/disable
     - POST /api/agents/{agentId}/skills/{skill_name}/enable
     - GET /api/agents/{agentId}/skills
-    - DELETE /api/agents/{agentId}/skills/{skill_name}
     - DELETE /api/agents/{agentId}
     """
     agent_id = "integ_scoped_skills_toggle_01"
@@ -308,16 +285,18 @@ def test_agent_scoped_skills_disable_enable_roundtrip(app_server) -> None:
     assert create_agent.status_code == 201, app_server.logs_tail()
 
     try:
-        create_skill = app_server.api_request(
-            "POST",
-            base,
-            json={
-                "name": skill_name,
-                "content": _skill_md(skill_name, "integration scoped toggle"),
-                "enable": True,
+        imported = _upload_workspace_skills(
+            app_server,
+            agent_id,
+            {
+                skill_name: _skill_md(
+                    skill_name,
+                    "integration scoped toggle",
+                ),
             },
+            enable=True,
         )
-        assert create_skill.status_code == 200, app_server.logs_tail()
+        assert imported.get("count") == 1
 
         disable = app_server.api_request(
             "POST",
@@ -343,7 +322,6 @@ def test_agent_scoped_skills_disable_enable_roundtrip(app_server) -> None:
         by_name_2 = {item["name"]: item for item in list_enabled.json()}
         assert by_name_2[skill_name]["enabled"] is True
     finally:
-        app_server.api_request("DELETE", f"{base}/{skill_name}")
         app_server.api_request("DELETE", f"/api/agents/{agent_id}")
 
 
@@ -359,6 +337,29 @@ def _build_skill_zip(skills: dict[str, str]) -> bytes:
         for name, content in skills.items():
             zf.writestr(f"{name}/SKILL.md", content)
     return buf.getvalue()
+
+
+def _upload_workspace_skills(
+    app_server,
+    agent_id: str,
+    skills: dict[str, str],
+    *,
+    enable: bool = False,
+) -> dict:
+    response = app_server.api_request(
+        "POST",
+        f"/api/agents/{agent_id}/skills/upload",
+        files={
+            "file": (
+                "skills.zip",
+                _build_skill_zip(skills),
+                "application/zip",
+            ),
+        },
+        data={"enable": str(enable).lower()},
+    )
+    assert response.status_code == 200, app_server.logs_tail()
+    return response.json()
 
 
 def _create_agent_and_skill(
@@ -381,24 +382,16 @@ def _create_agent_and_skill(
     )
     assert create_agent.status_code == 201, app_server.logs_tail()
 
-    create_skill = app_server.api_request(
-        "POST",
-        f"/api/agents/{agent_id}/skills",
-        json={
-            "name": skill_name,
-            "content": _skill_md(skill_name, description),
-            "enable": enable,
-        },
+    imported = _upload_workspace_skills(
+        app_server,
+        agent_id,
+        {skill_name: _skill_md(skill_name, description)},
+        enable=enable,
     )
-    assert create_skill.status_code == 200, app_server.logs_tail()
+    assert imported.get("count") == 1
 
 
-def _cleanup_agent_skill(app_server, agent_id: str, *skill_names: str):
-    for sn in skill_names:
-        app_server.api_request(
-            "DELETE",
-            f"/api/agents/{agent_id}/skills/{sn}",
-        )
+def _cleanup_agent_skill(app_server, agent_id: str, *_skill_names: str):
     app_server.api_request("DELETE", f"/api/agents/{agent_id}")
 
 
@@ -550,16 +543,12 @@ def test_agent_scoped_skills_save_conflict_409(app_server) -> None:
         agent_id,
         skill_a,
     )
-    create_b = app_server.api_request(
-        "POST",
-        f"/api/agents/{agent_id}/skills",
-        json={
-            "name": skill_b,
-            "content": _skill_md(skill_b, "target"),
-            "enable": False,
-        },
+    imported = _upload_workspace_skills(
+        app_server,
+        agent_id,
+        {skill_b: _skill_md(skill_b, "target")},
     )
-    assert create_b.status_code == 200, app_server.logs_tail()
+    assert imported.get("count") == 1
 
     try:
         resp = app_server.api_request(
@@ -893,35 +882,35 @@ def test_agent_scoped_skills_tags_missing_404(app_server) -> None:
 
 
 # ------------------------------------------------------------------ #
-# workspace → pool roundtrip
+# workspace → global skills roundtrip
 # ------------------------------------------------------------------ #
 
 
 @pytest.mark.integration
 @pytest.mark.p0
-def test_agent_scoped_skills_workspace_to_pool_roundtrip(
+def test_agent_scoped_skills_workspace_to_global_roundtrip(
     app_server,
 ) -> None:
     """Test purpose:
     - Verify a skill can be created in a workspace, uploaded to the
-      pool, downloaded back into a second workspace, forming a
-      complete workspace → pool → workspace roundtrip.
+      global skills, downloaded back into a second workspace, forming a
+      complete workspace → global → workspace roundtrip.
 
     Test flow:
     1. Create agent_a + skill.
-    2. POST /pool/upload from agent_a's workspace.
+    2. POST /global/upload from agent_a's workspace.
     3. Create agent_b.
-    4. POST /pool/download targeting agent_b.
+    4. POST /global/download targeting agent_b.
     5. GET agent_b's skills — assert the skill appears.
 
     API endpoints:
-    - POST /api/skills/pool/upload
-    - POST /api/skills/pool/download
+    - POST /api/skills/global/upload
+    - POST /api/skills/global/download
     - GET  /api/agents/{agentId}/skills
     """
-    agent_a = "integ_ws2pool_a_01"
-    agent_b = "integ_ws2pool_b_01"
-    skill_name = "integ-ws2pool-roundtrip-01"
+    agent_a = "integ_ws2global_a_01"
+    agent_b = "integ_ws2global_b_01"
+    skill_name = "integ-ws2global-roundtrip-01"
 
     _create_agent_and_skill(
         app_server,
@@ -933,7 +922,7 @@ def test_agent_scoped_skills_workspace_to_pool_roundtrip(
     try:
         upload_resp = app_server.api_request(
             "POST",
-            "/api/skills/pool/upload",
+            "/api/skills/global/upload",
             json={
                 "workspace_id": agent_a,
                 "skill_name": skill_name,
@@ -956,7 +945,7 @@ def test_agent_scoped_skills_workspace_to_pool_roundtrip(
 
         dl_resp = app_server.api_request(
             "POST",
-            "/api/skills/pool/download",
+            "/api/skills/global/download",
             json={
                 "skill_name": skill_name,
                 "targets": [{"workspace_id": agent_b}],
@@ -977,7 +966,7 @@ def test_agent_scoped_skills_workspace_to_pool_roundtrip(
         try:
             app_server.api_request(
                 "DELETE",
-                f"/api/skills/pool/{skill_name}",
+                f"/api/skills/global/{skill_name}",
             )
         except Exception:
             pass

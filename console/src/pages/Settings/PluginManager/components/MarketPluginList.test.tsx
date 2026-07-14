@@ -10,13 +10,6 @@ const hoisted = vi.hoisted(() => ({
   handleInstall: vi.fn(),
 }));
 
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-    i18n: { language: "en" },
-  }),
-}));
-
 vi.mock("../hooks/useMarketPlugins", () => ({
   useMarketPlugins: () => ({
     loading: false,
@@ -74,7 +67,7 @@ describe("MarketPluginList", () => {
     );
 
     render(<MarketPluginList onInstalled={vi.fn()} />);
-    fireEvent.click(screen.getByText("pluginManager.marketDetails"));
+    fireEvent.click(screen.getByText("详情"));
 
     expect(windowOpen).toHaveBeenCalledWith(
       "https://platform.agentscope.io/plugins/agentscope/demo",
@@ -87,7 +80,7 @@ describe("MarketPluginList", () => {
     hoisted.plugins.push(makePlugin("javascript:alert(1)"));
 
     render(<MarketPluginList onInstalled={vi.fn()} />);
-    fireEvent.click(screen.getByText("pluginManager.marketDetails"));
+    fireEvent.click(screen.getByText("详情"));
 
     expect(windowOpen).not.toHaveBeenCalled();
   });

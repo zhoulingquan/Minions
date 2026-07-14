@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """BudgetGate — universal token budget limiter.
 
-Tracks per-session token usage. Returns STOP when
+Tracks per-session token usage. Returns TERMINATE when
 ``max_tokens`` is exceeded.
 """
+
 from __future__ import annotations
 
 import logging
@@ -61,19 +62,22 @@ class BudgetGate(LoopGate):
     async def check(
         self,
         ctx: Any,  # pylint: disable=unused-argument
-    ) -> Optional[StopHandlerResult]:
+    ) -> StopHandlerResult:
         """Check token budget."""
+        _bypass = StopHandlerResult(
+            action=StopAction.BYPASS,
+        )
         state: Optional[_BudgetState] = self._state()
         if state is None:
-            return None
+            return _bypass
 
         if state.tokens_used >= state.max_tokens:
             self.deactivate()
             return StopHandlerResult(
-                action=StopAction.STOP,
+                action=StopAction.TERMINATE,
                 reason="Token budget exceeded",
             )
-        return None
+        return _bypass
 
 
 __all__ = ["BudgetGate"]

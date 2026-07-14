@@ -1,5 +1,4 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { ApiOutlined } from "@ant-design/icons";
 import type { ToolCallContent } from "../shared/types";
 import { ToolCardShell, DefaultBlock } from "../shared";
@@ -14,12 +13,11 @@ const DelegateExternalAgentCard: React.FC<DelegateExternalAgentCardProps> = ({
   content,
   isStreaming,
 }) => {
-  const { t } = useTranslation();
-  const params = content.params || {};
+    const params = content.params || {};
   const runner = (params.runner || "") as string;
   const title = runner
-    ? t("tool.delegateExternalAgent", { runner })
-    : t("tool.delegateExternalAgentDefault");
+    ? `委派 ${runner}`
+    : "委派 外部代理";
 
   const resultText = stringifyResult(content.result);
 

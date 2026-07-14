@@ -1,5 +1,4 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { SendOutlined } from "@ant-design/icons";
 import type { ToolCallContent } from "../shared/types";
 import { ToolCardShell, MediaPreview } from "../shared";
@@ -14,8 +13,7 @@ const SendFileCard: React.FC<SendFileCardProps> = ({
   content,
   isStreaming,
 }) => {
-  const { t } = useTranslation();
-  const params = content.params || {};
+    const params = content.params || {};
   const filePath = (params.file_path ||
     params.image_path ||
     params.video_path ||
@@ -23,7 +21,7 @@ const SendFileCard: React.FC<SendFileCardProps> = ({
     params.path ||
     "") as string;
   const file = shortFileName(filePath);
-  const title = file ? t("tool.sendFile", { file }) : t("tool.sendFileDefault");
+  const title = file ? `发送 ${file}` : "发送 文件";
 
   const media = getMediaInfo(content);
 

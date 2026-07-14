@@ -4,7 +4,7 @@
 The parameterized front door to durable history: ``expand`` / ``search`` /
 ``recall_tool`` cover the overwhelming share of recall calls, and none of
 them needs model-authored code — each is a bound, read-only SQL query over
-:class:`.memoryspace.MemorySpace`, executed in-process. That is why this tool
+:class:`.recall_space.RecallSpace`, executed in-process. That is why this tool
 needs no sandbox and no approval (it is registered as an ``internal``
 governance type): unlike ``recall_history_python`` there is nothing here the
 model controls beyond scalar parameters, so there is nothing to isolate.
@@ -109,17 +109,17 @@ def make_recall_history(
 
     Runs in-process (no subprocess, no sandbox): every op is a bound-parameter
     read-only query, so the model never supplies code. A fresh
-    :class:`MemorySpace` per call keeps the read-only ATTACH + authorizer
+    :class:`RecallSpace` per call keeps the read-only ATTACH + authorizer
     setup identical to the REPL's and leaks no connection across calls.
     """
 
     def _open_ms() -> Any:
         # Imported lazily (not at module top) for symmetry with the sandboxed
-        # cell, which imports memoryspace by bare name — and so a broken
-        # memoryspace degrades this tool, not the whole scroll import chain.
-        from .memoryspace import MemorySpace
+        # cell, which imports recall_space by bare name — and so a broken
+        # recall surface degrades this tool, not the whole scroll import chain.
+        from .recall_space import RecallSpace
 
-        return MemorySpace(
+        return RecallSpace(
             history_db_path=history_db_path,
             session_id=session_id,
             agent_id=agent_id,

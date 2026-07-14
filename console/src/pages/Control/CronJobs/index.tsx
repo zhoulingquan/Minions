@@ -16,7 +16,7 @@ import {
   RightOutlined,
   UnorderedListOutlined,
 } from "@ant-design/icons";
-import dayjs from "dayjs";
+import dayjs, { type Dayjs } from "dayjs";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
 import type {
@@ -24,7 +24,6 @@ import type {
   CronJobExecutionRecord,
   CronJobSpecOutput,
 } from "../../../api/types";
-import { useTranslation } from "react-i18next";
 import api from "../../../api";
 import {
   createColumns,
@@ -33,11 +32,29 @@ import {
   useCronJobs,
   DEFAULT_FORM_VALUES,
 } from "./components";
-import { parseCron, serializeCron } from "./components/parseCron";
+import {
+  parseCron,
+  serializeCron,
+  type CronParts,
+  type CronType,
+} from "./components/parseCron";
 import { PageHeader } from "@/components/PageHeader";
 import styles from "./index.module.less";
 
 type CronJob = CronJobSpecOutput;
+type CronJobFormValues = CronJob & {
+  scheduleType?: "cron" | "once";
+  onceRunAt?: Dayjs | null;
+  onceRepeatEnabled?: boolean;
+  onceRepeatEveryDays?: number;
+  onceRepeatEndType?: "never" | "until" | "count";
+  onceRepeatUntil?: Dayjs | null;
+  onceRepeatCount?: number;
+  cronType?: CronType;
+  cronTime?: Dayjs;
+  cronDaysOfWeek?: string[];
+  cronCustom?: string;
+};
 type OneTimeCronJob = CronJob & {
   schedule: {
     type: "once";
@@ -60,8 +77,7 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 function CronJobsPage() {
-  const { t } = useTranslation();
-  const {
+    const {
     jobs,
     loading,
     createJob,
@@ -182,9 +198,9 @@ function CronJobsPage() {
     const parts = parseCron(cron);
     switch (parts.type) {
       case "hourly":
-        return t("cronJobs.cronTypeHourly");
+        return "每小时";
       case "daily":
-        return `${t("cronJobs.cronTypeDaily")} ${String(parts.hour).padStart(
+        return `${"每天"} ${String(parts.hour).padStart(
           2,
           "0",
         )}:${String(parts.minute).padStart(2, "0")}`;
@@ -192,18 +208,18 @@ function CronJobsPage() {
         const dayNames = (parts.daysOfWeek || [])
           .map((d) => {
             const dayMap: Record<string, string> = {
-              mon: t("cronJobs.cronDayMon"),
-              tue: t("cronJobs.cronDayTue"),
-              wed: t("cronJobs.cronDayWed"),
-              thu: t("cronJobs.cronDayThu"),
-              fri: t("cronJobs.cronDayFri"),
-              sat: t("cronJobs.cronDaySat"),
-              sun: t("cronJobs.cronDaySun"),
+              mon: "周一",
+              tue: "周二",
+              wed: "周三",
+              thu: "周四",
+              fri: "周五",
+              sat: "周六",
+              sun: "周日",
             };
             return dayMap[d] || d;
           })
           .join(",");
-        return `${t("cronJobs.cronTypeWeekly")} ${dayNames}`;
+        return `${"每周"} ${dayNames}`;
       }
       default:
         return cron;
@@ -213,7 +229,7 @@ function CronJobsPage() {
   const handleEdit = (job: CronJob) => {
     setEditingJob(job);
 
-    const formValues: any = {
+    const formValues: CronJobFormValues = {
       ...job,
       request: {
         ...job.request,
@@ -258,17 +274,19 @@ function CronJobsPage() {
       }
     }
 
-    form.setFieldsValue(formValues);
+    form.setFieldsValue(
+      formValues as Parameters<typeof form.setFieldsValue>[0],
+    );
     setDrawerOpen(true);
   };
 
   const handleDelete = (jobId: string) => {
     Modal.confirm({
-      title: t("cronJobs.confirmDelete"),
-      content: t("cronJobs.deleteConfirm"),
-      okText: t("cronJobs.deleteText"),
+      title: "确认删除",
+      content: "确定要删除此定时任务吗？",
+      okText: "删除",
       okType: "primary",
-      cancelText: t("cronJobs.cancelText"),
+      cancelText: "取消",
       onOk: async () => {
         await deleteJob(jobId);
       },
@@ -281,11 +299,11 @@ function CronJobsPage() {
 
   const handleExecuteNow = async (job: CronJob) => {
     Modal.confirm({
-      title: t("cronJobs.executeNowTitle"),
-      content: t("cronJobs.executeNowContent", { name: job.name }),
-      okText: t("cronJobs.executeNowConfirm"),
+      title: "立即执行任务",
+      content: `确定要立即执行任务 "${job.name}" 吗？`,
+      okText: "立即执行",
       okType: "primary",
-      cancelText: t("cronJobs.cancelText"),
+      cancelText: "取消",
       onOk: async () => {
         await executeNow(job.id);
       },
@@ -313,16 +331,17 @@ function CronJobsPage() {
     }
   };
 
-  const handleSubmit = async (values: any) => {
-    let schedule: any = values.schedule || {};
+  const handleSubmit = async (values: CronJobFormValues) => {
+    let schedule: CronJob["schedule"] = values.schedule;
     if ((values.scheduleType || "cron") === "once") {
+      if (!values.onceRunAt) {
+        throw new Error("请选择执行时间");
+      }
       const onceRepeatEnabled = Boolean(values.onceRepeatEnabled);
       const repeatEndType = values.onceRepeatEndType || "never";
       schedule = {
         type: "once",
-        run_at: values.onceRunAt
-          ? dayjs(values.onceRunAt).format("YYYY-MM-DDTHH:mm:00")
-          : undefined,
+        run_at: dayjs(values.onceRunAt).format("YYYY-MM-DDTHH:mm:00"),
         timezone: values.schedule?.timezone || userTimezoneRef.current,
         repeat_every_days: onceRepeatEnabled
           ? Number(values.onceRepeatEveryDays || 1)
@@ -340,7 +359,7 @@ function CronJobsPage() {
             : undefined,
       };
     } else {
-      const cronParts: any = {
+      const cronParts: CronParts = {
         type: values.cronType || "daily",
       };
 
@@ -366,7 +385,7 @@ function CronJobsPage() {
       };
     }
 
-    let processedValues = {
+    const processedValues: CronJobFormValues = {
       ...values,
       schedule,
     };
@@ -388,7 +407,7 @@ function CronJobsPage() {
     } else if (processedValues.task_type === "agent") {
       //Ensure request object exists
       if (!processedValues.request) {
-        processedValues.request = {};
+        processedValues.request = { input: "" };
       }
 
       // Parse request input JSON
@@ -428,7 +447,6 @@ function CronJobsPage() {
     onViewHistory: handleViewHistory,
     onEdit: handleEdit,
     onDelete: handleDelete,
-    t,
   });
 
   const HISTORY_ERROR_PREVIEW_LINES = 4;
@@ -574,7 +592,7 @@ function CronJobsPage() {
   return (
     <div className={styles.cronJobsPage}>
       <PageHeader
-        items={[{ title: t("nav.control") }, { title: t("cronJobs.title") }]}
+        items={[{ title: "控制" }, { title: "定时任务" }]}
         extra={
           <div className={styles.headerActions}>
             {viewMode === "list" && (
@@ -586,15 +604,15 @@ function CronJobsPage() {
                 }
                 options={[
                   {
-                    label: t("cronJobs.scheduleFilterAll"),
+                    label: "全部调度类型",
                     value: "all",
                   },
                   {
-                    label: t("cronJobs.scheduleTypeRecurring"),
+                    label: "循环任务",
                     value: "cron",
                   },
                   {
-                    label: t("cronJobs.scheduleTypeOnce"),
+                    label: "日程任务",
                     value: "once",
                   },
                 ]}
@@ -606,7 +624,7 @@ function CronJobsPage() {
                   viewMode === "list" ? styles.viewToggleBtnActive : ""
                 }`}
                 onClick={() => setViewMode("list")}
-                title={t("cronJobs.listView")}
+                title={"列表视图"}
               >
                 <UnorderedListOutlined />
               </button>
@@ -615,14 +633,14 @@ function CronJobsPage() {
                   viewMode === "calendar" ? styles.viewToggleBtnActive : ""
                 }`}
                 onClick={() => setViewMode("calendar")}
-                title={t("cronJobs.calendarView")}
+                title={"日历视图"}
               >
                 <CalendarOutlined />
               </button>
             </div>
             {!isMobile && (
               <Button type="primary" onClick={handleCreate}>
-                + {t("cronJobs.createJob")}
+                + {"创建任务"}
               </Button>
             )}
             {isMobile && (
@@ -632,7 +650,7 @@ function CronJobsPage() {
             )}
             {!isMobile && (
               <Button onClick={handleOpenTemplateModal}>
-                {t("cronJobs.createFromTemplate")}
+                {"从模板创建"}
               </Button>
             )}
           </div>
@@ -661,7 +679,7 @@ function CronJobsPage() {
                         job.enabled ? styles.enabled : styles.disabled
                       }`}
                     />
-                    {job.enabled ? t("common.enabled") : t("common.disabled")}
+                    {job.enabled ? "已启用" : "已禁用"}
                   </span>
                 </div>
                 <div className={styles.mobileJobSchedule}>
@@ -673,33 +691,33 @@ function CronJobsPage() {
                     className={styles.mobileActionBtn}
                     onClick={() => toggleEnabled(job)}
                   >
-                    {job.enabled ? t("cronJobs.disable") : t("common.enable")}
+                    {job.enabled ? "禁用" : "启用"}
                   </Button>
                   <Button
                     size="small"
                     className={styles.mobileActionBtn}
                     onClick={() => executeNow(job.id as string)}
                   >
-                    {t("cronJobs.executeNow")}
+                    {"立即执行"}
                   </Button>
                   <Button
                     size="small"
                     className={styles.mobileActionBtn}
                     onClick={() => handleViewHistory(job)}
                   >
-                    {t("cronJobs.executionHistory")}
+                    {"执行记录"}
                   </Button>
                   <Dropdown
                     menu={{
                       items: [
                         {
                           key: "edit",
-                          label: t("cronJobs.edit"),
+                          label: "编辑",
                           onClick: () => handleEdit(job),
                         },
                         {
                           key: "delete",
-                          label: t("cronJobs.delete"),
+                          label: "删除",
                           danger: true,
                           onClick: () => handleDelete(job.id as string),
                         },
@@ -755,7 +773,7 @@ function CronJobsPage() {
 
           {oneTimeJobs.length === 0 && (
             <div className={styles.calendarEmptyHint}>
-              {t("cronJobs.calendarEmptyHint")}
+              {"暂无日程任务。创建日程任务后会显示在日历中。"}
             </div>
           )}
 
@@ -845,9 +863,7 @@ function CronJobsPage() {
                         content={popoverContent}
                       >
                         <button className={styles.calendarMoreBtn}>
-                          {t("cronJobs.calendarMoreItems", {
-                            count: hiddenCount,
-                          })}
+                          {`还有 ${hiddenCount} 项`}
                         </button>
                       </Popover>
                     )}
@@ -881,16 +897,16 @@ function CronJobsPage() {
 
       <Modal
         visible={historyModalOpen}
-        title={t("cronJobs.historyTitle", { name: historyJobName })}
+        title={`执行记录 - ${historyJobName}`}
         footer={null}
         onCancel={() => setHistoryModalOpen(false)}
       >
         <div className={styles.historyList}>
           {historyLoading ? (
-            <div className={styles.historyEmpty}>{t("common.loading")}</div>
+            <div className={styles.historyEmpty}>{"加载中..."}</div>
           ) : historyRecords.length === 0 ? (
             <div className={styles.historyEmpty}>
-              {t("cronJobs.historyEmpty")}
+              {"暂无执行记录。"}
             </div>
           ) : (
             historyRecords.map((record, index) => (
@@ -912,18 +928,18 @@ function CronJobsPage() {
                     }`}
                   >
                     {record.status === "success"
-                      ? t("cronJobs.historyStatusSuccess")
+                      ? "成功"
                       : record.status === "running"
-                      ? t("cronJobs.historyStatusRunning")
+                      ? "执行中"
                       : record.status === "cancelled"
-                      ? t("cronJobs.historyStatusCancelled")
-                      : t("cronJobs.historyStatusFailed")}
+                      ? "已取消"
+                      : "失败"}
                   </span>
                 </div>
                 <div className={styles.historyItemMeta}>
                   {record.trigger === "manual"
-                    ? t("cronJobs.historyTriggerManual")
-                    : t("cronJobs.historyTriggerScheduled")}
+                    ? "手动触发"
+                    : "定时触发"}
                 </div>
                 {record.error &&
                   (() => {
@@ -948,8 +964,8 @@ function CronJobsPage() {
                             onClick={() => toggleHistoryError(recordKey)}
                           >
                             {expanded
-                              ? t("cronJobs.historyCollapse")
-                              : t("cronJobs.historyExpand")}
+                              ? "收起"
+                              : "展开全文"}
                           </button>
                         )}
                       </div>

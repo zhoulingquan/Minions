@@ -6,7 +6,6 @@
 import { useRef } from "react";
 import { Button } from "antd";
 import { ImportOutlined } from "@ant-design/icons";
-import { useTranslation } from "react-i18next";
 
 interface Props {
   onPick: (file: File) => void;
@@ -17,8 +16,7 @@ interface Props {
  * doesn't need to manage a ref or wire up onChange directly.
  */
 export default function ImportButton({ onPick }: Props) {
-  const { t } = useTranslation();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <>
@@ -39,7 +37,7 @@ export default function ImportButton({ onPick }: Props) {
         icon={<ImportOutlined />}
         onClick={() => fileInputRef.current?.click()}
       >
-        {t("backup.import")}
+        {"导入"}
       </Button>
     </>
   );

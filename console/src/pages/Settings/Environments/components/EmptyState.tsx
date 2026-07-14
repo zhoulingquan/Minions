@@ -1,4 +1,3 @@
-import { useTranslation } from "react-i18next";
 import styles from "../index.module.less";
 
 interface EmptyStateProps {
@@ -6,12 +5,11 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({ className }: EmptyStateProps) {
-  const { t } = useTranslation();
 
   return (
     <div className={`${styles.emptyState} ${className || ""}`}>
       <span className={styles.emptyIcon}>📦</span>
-      <span>{t("environments.noVariables")}</span>
+      <span>{"尚未配置环境变量。"}</span>
     </div>
   );
 }

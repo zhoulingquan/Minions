@@ -1,5 +1,4 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { ClockCircleOutlined } from "@ant-design/icons";
 import type { ToolCallContent } from "../shared/types";
 import { ToolCardShell } from "../shared";
@@ -13,8 +12,7 @@ const GetCurrentTimeCard: React.FC<GetCurrentTimeCardProps> = ({
   content,
   isStreaming,
 }) => {
-  const { t } = useTranslation();
-  const title = t("tool.getCurrentTime");
+    const title = "获取 当前时间";
 
   const inlineResult = (() => {
     if (content.status !== "done" || !content.result) return null;

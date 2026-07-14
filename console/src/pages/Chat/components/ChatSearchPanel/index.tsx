@@ -4,7 +4,6 @@ import type { InputRef } from "antd";
 import { IconButton } from "@agentscope-ai/design";
 import { SparkOperateRightLine, SparkSearchLine } from "@agentscope-ai/icons";
 import { useChatAnywhereSessionsState } from "@agentscope-ai/chat";
-import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { chatApi } from "../../../../api/modules/chat";
 import sessionApi from "../../sessionApi";
@@ -26,11 +25,11 @@ const extractTextFromContent = (content: unknown): string => {
 };
 
 /** Get role label for message */
-const getRoleLabel = (role: string, t: (key: string) => string): string => {
+const getRoleLabel = (role: string): string => {
   if (role === "user") {
-    return t("chat.search.userMessage");
+    return "用户";
   }
-  return t("chat.search.assistantMessage");
+  return "助手";
 };
 
 interface SearchResult {
@@ -56,8 +55,7 @@ const formatTimestamp = (raw: string | null | undefined): string => {
 };
 
 const ChatSearchPanel: React.FC<ChatSearchPanelProps> = ({ open, onClose }) => {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
+    const navigate = useNavigate();
   const { sessions, setCurrentSessionId } = useChatAnywhereSessionsState();
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -140,7 +138,7 @@ const ChatSearchPanel: React.FC<ChatSearchPanelProps> = ({ open, onClose }) => {
               chatId,
               chatName,
               role: "chat_title",
-              roleLabel: t("chat.search.titleMatch"),
+              roleLabel: "标题",
               text: chatName,
               matchedText: chatName,
               timestamp: chatTimestamp,
@@ -171,7 +169,7 @@ const ChatSearchPanel: React.FC<ChatSearchPanelProps> = ({ open, onClose }) => {
                   chatName,
                   messageId: String(msg.id || ""),
                   role: msg.role || "",
-                  roleLabel: getRoleLabel(msg.role || "", t),
+                  roleLabel: getRoleLabel(msg.role || ""),
                   text: "",
                   matchedText: start > 0 ? `...${matchedText}` : matchedText,
                   timestamp: chatTimestamp,
@@ -229,7 +227,7 @@ const ChatSearchPanel: React.FC<ChatSearchPanelProps> = ({ open, onClose }) => {
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [searchQuery, t]);
+  }, [searchQuery]);
 
   // Navigate to chat when clicking result
   const handleResultClick = useCallback(
@@ -280,7 +278,7 @@ const ChatSearchPanel: React.FC<ChatSearchPanelProps> = ({ open, onClose }) => {
       {/* Header bar */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <span className={styles.headerTitle}>{t("chat.search.title")}</span>
+          <span className={styles.headerTitle}>{"搜索聊天"}</span>
         </div>
         <div className={styles.headerRight}>
           <IconButton
@@ -295,7 +293,7 @@ const ChatSearchPanel: React.FC<ChatSearchPanelProps> = ({ open, onClose }) => {
       <div className={styles.searchSection}>
         <Input
           ref={inputRef}
-          placeholder={t("chat.search.placeholder")}
+          placeholder={"搜索消息..."}
           prefix={<SparkSearchLine style={{ color: "rgba(0,0,0,0.25)" }} />}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -309,14 +307,10 @@ const ChatSearchPanel: React.FC<ChatSearchPanelProps> = ({ open, onClose }) => {
         <div className={styles.resultsCount}>
           <Typography.Text type="secondary">
             {loading && searchProgress
-              ? t("chat.search.searching", {
-                  progress: searchProgress,
-                })
+              ? `正在搜索 ${searchProgress}...`
               : loading
-              ? t("chat.search.loading")
-              : t("chat.search.resultsCount", {
-                  count: searchResults.length,
-                })}
+              ? "加载中..."
+              : `找到 ${searchResults.length} 个结果`}
           </Typography.Text>
         </div>
       )}
@@ -333,7 +327,7 @@ const ChatSearchPanel: React.FC<ChatSearchPanelProps> = ({ open, onClose }) => {
             </div>
           ) : searchQuery.trim() && !loading && searchResults.length === 0 ? (
             <Empty
-              description={t("chat.search.noResults")}
+              description={"未找到结果"}
               style={{ marginTop: 40 }}
             />
           ) : (

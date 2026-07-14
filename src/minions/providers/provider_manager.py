@@ -151,7 +151,10 @@ class ProviderManager:  # pylint: disable=too-many-public-methods
         self._add_builtin(PROVIDER_LMSTUDIO)
 
     def _add_builtin(self, provider: Provider):
-        self.builtin_providers[provider.id] = provider
+        # Built-in definitions are module-level templates.  Each manager must
+        # own its copy; otherwise updating one manager mutates the template and
+        # leaks credentials/configuration into every manager created later.
+        self.builtin_providers[provider.id] = provider.model_copy(deep=True)
 
     async def list_provider_info(self) -> List[ProviderInfo]:
         tasks = [
@@ -860,6 +863,8 @@ class ProviderManager:  # pylint: disable=too-many-public-methods
                 if not builtin.freeze_url:
                     builtin.base_url = provider.base_url
                 builtin.api_key = provider.api_key
+                builtin.api_key_prefix = provider.api_key_prefix
+                builtin.api_key_prefixes = list(provider.api_key_prefixes)
                 if provider.auth_mode != "api_key":
                     builtin.auth_mode = provider.auth_mode
                 if provider.custom_headers:

@@ -1,5 +1,4 @@
 import { Button, Tabs } from "@agentscope-ai/design";
-import { useTranslation } from "react-i18next";
 import { useSecurityPage } from "./useSecurityPage";
 import {
   ToolGuardTab,
@@ -13,7 +12,6 @@ import { PageHeader } from "@/components/PageHeader";
 import styles from "./index.module.less";
 
 function SecurityPage() {
-  const { t } = useTranslation();
 
   const {
     activeTab,
@@ -57,7 +55,7 @@ function SecurityPage() {
     return (
       <div className={styles.securityPage}>
         <div className={styles.centerState}>
-          <span className={styles.stateText}>{t("common.loading")}</span>
+          <span className={styles.stateText}>{"加载中..."}</span>
         </div>
       </div>
     );
@@ -70,7 +68,7 @@ function SecurityPage() {
         <div className={styles.centerState}>
           <span className={styles.stateTextError}>{error}</span>
           <Button size="small" onClick={fetchAll} style={{ marginTop: 12 }}>
-            {t("environments.retry")}
+            {"重试"}
           </Button>
         </div>
       </div>
@@ -80,8 +78,8 @@ function SecurityPage() {
   return (
     <div className={styles.securityPage}>
       <PageHeader
-        parent={t("security.parent")}
-        current={t("security.security")}
+        parent={"设置"}
+        current={"安全"}
       />
 
       <div className={styles.content}>
@@ -94,7 +92,7 @@ function SecurityPage() {
               key: "toolGuard",
               label: (
                 <span className={styles.tabLabel}>
-                  {t("security.toolGuardTitle")}
+                  {"工具防护"}
                 </span>
               ),
               children: (
@@ -120,14 +118,14 @@ function SecurityPage() {
               key: "fileGuard",
               label: (
                 <span className={styles.tabLabel}>
-                  {t("security.fileGuard.title")}
+                  {"文件防护"}
                 </span>
               ),
               children: (
                 <div className={styles.tabContent}>
                   <div className={styles.sectionFileGuardContainer}>
                     <p className={styles.tabDescription}>
-                      {t("security.fileGuard.description")}
+                      {"保护敏感文件和目录，防止被 Agent 工具访问。添加的路径将在所有工具调用中被拦截。"}
                     </p>
                     <FileGuardSection onSave={onFileGuardHandlersReady} />
                   </div>
@@ -138,14 +136,14 @@ function SecurityPage() {
               key: "skillScanner",
               label: (
                 <span className={styles.tabLabel}>
-                  {t("security.skillScanner.title")}
+                  {"技能扫描器"}
                 </span>
               ),
               children: (
                 <div className={styles.tabContent}>
                   <div className={styles.sectionSkillScannerContainer}>
                     <p className={styles.tabDescription}>
-                      {t("security.skillScanner.description")}
+                      {"在启用或安装技能前，自动扫描安全威胁。不安全的技能可以被拦截或加入白名单。"}
                     </p>
                     <SkillScannerSection />
                   </div>
@@ -156,7 +154,7 @@ function SecurityPage() {
               key: "allowNoAuthHosts",
               label: (
                 <span className={styles.tabLabel}>
-                  {t("security.allowNoAuthHosts.title")}
+                  {"免认证主机白名单"}
                 </span>
               ),
               children: (
@@ -174,10 +172,10 @@ function SecurityPage() {
             disabled={saving}
             style={{ marginRight: 8 }}
           >
-            {t("common.reset")}
+            {"重置"}
           </Button>
           <Button type="primary" onClick={handleSave} loading={saving}>
-            {t("common.save")}
+            {"保存"}
           </Button>
         </div>
       )}
@@ -189,14 +187,14 @@ function SecurityPage() {
             disabled={fileGuardHandlers.saving}
             style={{ marginRight: 8 }}
           >
-            {t("common.reset")}
+            {"重置"}
           </Button>
           <Button
             type="primary"
             onClick={fileGuardHandlers.save}
             loading={fileGuardHandlers.saving}
           >
-            {t("common.save")}
+            {"保存"}
           </Button>
         </div>
       )}
@@ -208,14 +206,14 @@ function SecurityPage() {
             disabled={allowNoAuthHostsHandlers.saving}
             style={{ marginRight: 8 }}
           >
-            {t("common.reset")}
+            {"重置"}
           </Button>
           <Button
             type="primary"
             onClick={allowNoAuthHostsHandlers.save}
             loading={allowNoAuthHostsHandlers.saving}
           >
-            {t("common.save")}
+            {"保存"}
           </Button>
         </div>
       )}

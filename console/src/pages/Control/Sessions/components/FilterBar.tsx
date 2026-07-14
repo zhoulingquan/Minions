@@ -1,5 +1,4 @@
 import { Input, Select } from "@agentscope-ai/design";
-import { useTranslation } from "react-i18next";
 import styles from "../index.module.less";
 
 interface FilterBarProps {
@@ -23,12 +22,11 @@ export function FilterBar({
   onChannelChange,
   onTitleChange,
 }: FilterBarProps) {
-  const { t } = useTranslation();
 
   return (
     <div className={styles.filterBar}>
       <Input
-        placeholder={t("sessions.filterTitle")}
+        placeholder={"按标题筛选"}
         value={filterTitle}
         onChange={(e) => onTitleChange(e.target.value)}
         allowClear
@@ -36,7 +34,7 @@ export function FilterBar({
         style={isMobile ? { width: "100%" } : { width: 200, marginRight: 8 }}
       />
       <Input
-        placeholder={t("sessions.filterUserId")}
+        placeholder={"按用户ID筛选"}
         value={filterUserId}
         onChange={(e) => onUserIdChange(e.target.value)}
         allowClear
@@ -44,7 +42,7 @@ export function FilterBar({
         style={isMobile ? { width: "100%" } : { width: 200, marginRight: 8 }}
       />
       <Select
-        placeholder={t("sessions.filterChannel")}
+        placeholder={"按频道筛选"}
         value={filterChannel || undefined}
         onChange={(value) => onChannelChange(value || "")}
         allowClear

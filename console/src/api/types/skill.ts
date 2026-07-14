@@ -2,6 +2,8 @@ export type SkillSyncStatus =
   | "-"
   | "synced"
   | "outdated"
+  | "outdated_global"
+  | "outdated_agent"
   | "not_synced"
   | "conflict";
 
@@ -18,9 +20,15 @@ export interface SkillSpec {
   last_updated?: string;
   emoji?: string;
   installed_from?: string;
+  in_global?: boolean;
+  sync_status?: SkillSyncStatus;
+  global_hash?: string;
+  agent_hash?: string;
+  last_synced_hash?: string;
+  last_synced_at?: string;
 }
 
-export interface PoolSkillSpec {
+export interface GlobalSkillSpec {
   name: string;
   description?: string;
   version_text?: string;

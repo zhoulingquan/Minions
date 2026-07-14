@@ -9,7 +9,6 @@ import type { Key } from "react";
 import { Checkbox, Input, Tag, Table, Spin, Typography } from "antd";
 import type { TableColumnsType } from "antd";
 import { SearchOutlined, RightOutlined } from "@ant-design/icons";
-import { useTranslation } from "react-i18next";
 import styles from "./RestoreAgentTable.module.less";
 
 const { Text } = Typography;
@@ -43,8 +42,7 @@ export default function RestoreAgentTable({
   onIncludeAgentsChange,
   summaryText,
 }: Props) {
-  const { t } = useTranslation();
-  const [agentSearch, setAgentSearch] = useState("");
+    const [agentSearch, setAgentSearch] = useState("");
   const [agentsExpanded, setAgentsExpanded] = useState(true);
 
   const filteredAgentRows = useMemo(() => {
@@ -87,12 +85,12 @@ export default function RestoreAgentTable({
   const getNewAgentDestPath = (aid: string): string => {
     const base = defaultWorkspaceDir.trim();
     if (base) return `${base.replace(/[/\\]+$/, "")}/${aid}`;
-    return t("backup.defaultWorkspaceDirDefault", { aid });
+    return `<默认路径>/${aid}`;
   };
 
   const agentColumns: TableColumnsType<AgentRow> = [
     {
-      title: t("backup.agentColumnName"),
+      title: "智能体",
       key: "name",
       render: (_, row) => (
         <div>
@@ -109,14 +107,14 @@ export default function RestoreAgentTable({
             className={styles.agentActionTag}
           >
             {row.isExisting
-              ? t("backup.agentActionReplace")
-              : t("backup.agentActionAdd")}
+              ? "替换已有"
+              : "新增"}
           </Tag>
         </div>
       ),
     },
     {
-      title: t("backup.agentColumnWorkspace"),
+      title: "工作目录",
       key: "workspace",
       ellipsis: true,
       render: (_, row) => (
@@ -147,7 +145,7 @@ export default function RestoreAgentTable({
             setAgentsExpanded(e.target.checked);
           }}
         >
-          {t("backup.scopeAgents")}
+          {"智能体工作区"}
           {includeAgents && detailLoading && (
             <Spin size="small" style={{ marginLeft: 8 }} />
           )}
@@ -177,7 +175,7 @@ export default function RestoreAgentTable({
             <div className={styles.agentsLoading}>
               <Spin />
               <div className={styles.agentsLoadingText}>
-                {t("backup.loadingAgents")}
+                {"正在加载智能体列表..."}
               </div>
             </div>
           ) : (
@@ -190,7 +188,7 @@ export default function RestoreAgentTable({
                       style={{ color: "var(--ant-color-text-quaternary)" }}
                     />
                   }
-                  placeholder={t("backup.agentSearchPlaceholder")}
+                  placeholder={"按名称或 ID 搜索智能体..."}
                   value={agentSearch}
                   onChange={(e) => setAgentSearch(e.target.value)}
                   allowClear
@@ -224,15 +222,12 @@ export default function RestoreAgentTable({
                   showSizeChanger: false,
                   showTotal: (total) =>
                     agentSearch
-                      ? t("backup.agentSearchTotal", {
-                          count: total,
-                          total: allAgentIds.length,
-                        })
-                      : t("backup.agentTotal", { count: total }),
+                      ? `搜索到 ${total} 个，共 ${allAgentIds.length} 个`
+                      : `共 ${total} 个智能体`,
                   size: "small",
                   hideOnSinglePage: true,
                 }}
-                locale={{ emptyText: t("backup.noAgentsInBackup") }}
+                locale={{ emptyText: "备份中没有智能体工作区" }}
                 className={styles.agentTable}
               />
             </>

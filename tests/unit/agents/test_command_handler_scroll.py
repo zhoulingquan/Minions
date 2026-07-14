@@ -131,6 +131,5 @@ def test_agent_backed_mode_never_builds_a_throwaway_manager():
 
     agent = MagicMock()
     agent.state = SimpleNamespace(context=[], session_id="s")
-    agent.memory_manager = None
     handler = CommandHandler(agent_name="Minions", agent=agent)
     assert handler.updated_scroll_state is None

@@ -2,7 +2,6 @@ import { Dropdown, Button, type MenuProps } from "antd";
 import { SparkMoonLine, SparkSunLine } from "@agentscope-ai/icons";
 import { SunMoon } from "lucide-react";
 import { useTheme, type ThemeMode } from "../../contexts/ThemeContext";
-import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
 import styles from "./index.module.less";
 
@@ -14,22 +13,21 @@ const ICONS: Record<ThemeMode, ReactNode> = {
 
 export default function ThemeToggleButton() {
   const { themeMode, isDark, setThemeMode } = useTheme();
-  const { t } = useTranslation();
 
   const items: MenuProps["items"] = [
     {
       key: "light",
-      label: t("theme.light"),
+      label: "浅色",
       onClick: () => setThemeMode("light"),
     },
     {
       key: "dark",
-      label: t("theme.dark"),
+      label: "深色",
       onClick: () => setThemeMode("dark"),
     },
     {
       key: "system",
-      label: t("theme.system"),
+      label: "跟随系统",
       onClick: () => setThemeMode("system"),
     },
   ];

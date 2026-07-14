@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, Empty, Button } from "@agentscope-ai/design";
 import { Spin, Tooltip } from "antd";
 import { DatePicker } from "antd";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
-import { useTranslation } from "react-i18next";
 import { Column, Pie } from "@ant-design/plots";
 import api from "../../../api";
 import type { AgentStatsSummary } from "../../../api/types/agentStats";
@@ -96,8 +95,7 @@ function getColumnConfig(
 }
 
 function AgentStatsPage() {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const { isDark: isDarkMode } = useTheme();
   const { selectedAgent } = useAgentStore();
   const [loading, setLoading] = useState(true);
@@ -106,7 +104,7 @@ function AgentStatsPage() {
   const [startDate, setStartDate] = useState<Dayjs>(dayjs().subtract(7, "day"));
   const [endDate, setEndDate] = useState<Dayjs>(dayjs());
 
-  const fetchData = async (start: Dayjs, end: Dayjs) => {
+  const fetchData = useCallback(async (start: Dayjs, end: Dayjs) => {
     setLoading(true);
     setError(null);
     try {
@@ -117,27 +115,24 @@ function AgentStatsPage() {
       setData(summary);
     } catch (e) {
       console.error("Failed to load agent statistics:", e);
-      const msg = t("agentStats.loadFailed");
+      const msg = "加载统计数据失败";
       message.error(msg);
       setError(msg);
       setData(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, [message]);
 
   useEffect(() => {
-    fetchData(startDate, endDate);
-  }, [selectedAgent]);
+    void fetchData(startDate, endDate);
+  }, [endDate, fetchData, selectedAgent, startDate]);
 
   const handleDateChange = (dates: [Dayjs | null, Dayjs | null] | null) => {
     const newStart = dates?.[0] || startDate;
     const newEnd = dates?.[1] || endDate;
     if (dates?.[0]) setStartDate(newStart);
     if (dates?.[1]) setEndDate(newEnd);
-    if (dates?.[0] && dates?.[1]) {
-      fetchData(newStart, newEnd);
-    }
   };
 
   const crossesYear = useMemo(
@@ -174,17 +169,17 @@ function AgentStatsPage() {
       getColumnConfig(
         chartData,
         [
-          { key: "userMessages", label: t("agentStats.userMessages") },
+          { key: "userMessages", label: "用户消息" },
           {
             key: "assistantMessages",
-            label: t("agentStats.assistantMessages"),
+            label: "智能体消息",
           },
         ],
         ["#3b82f6", "#f97316"],
         isDarkMode,
         crossesYear,
       ),
-    [chartData, t, isDarkMode, crossesYear],
+    [chartData, isDarkMode, crossesYear],
   );
 
   const chatColumnConfig = useMemo(
@@ -192,14 +187,14 @@ function AgentStatsPage() {
       getColumnConfig(
         chartData,
         [
-          { key: "chats", label: t("agentStats.newSessions") },
-          { key: "activeSessions", label: t("agentStats.activeSessions") },
+          { key: "chats", label: "新建会话" },
+          { key: "activeSessions", label: "活跃会话" },
         ],
         ["#ff7f16", "#3b82f6"],
         isDarkMode,
         crossesYear,
       ),
-    [chartData, t, isDarkMode, crossesYear],
+    [chartData, isDarkMode, crossesYear],
   );
 
   const tokenColumnConfig = useMemo(
@@ -207,8 +202,8 @@ function AgentStatsPage() {
       getColumnConfig(
         chartData,
         [
-          { key: "promptTokens", label: t("agentStats.promptTokens") },
-          { key: "completionTokens", label: t("agentStats.completionTokens") },
+          { key: "promptTokens", label: "输入 Token" },
+          { key: "completionTokens", label: "输出 Token" },
         ],
         ["#8b5cf6", "#10b981"],
         isDarkMode,
@@ -218,7 +213,7 @@ function AgentStatsPage() {
           tooltipFormatter: formatCompact,
         },
       ),
-    [chartData, t, isDarkMode, crossesYear],
+    [chartData, isDarkMode, crossesYear],
   );
 
   const llmToolColumnConfig = useMemo(
@@ -226,14 +221,14 @@ function AgentStatsPage() {
       getColumnConfig(
         chartData,
         [
-          { key: "llmCalls", label: t("agentStats.llmCalls") },
-          { key: "toolCalls", label: t("agentStats.toolCalls") },
+          { key: "llmCalls", label: "LLM 调用" },
+          { key: "toolCalls", label: "工具调用" },
         ],
         ["#ec4899", "#14b8a6"],
         isDarkMode,
         crossesYear,
       ),
-    [chartData, t, isDarkMode, crossesYear],
+    [chartData, isDarkMode, crossesYear],
   );
 
   const pieCommon = useMemo(
@@ -281,7 +276,7 @@ function AgentStatsPage() {
 
   return (
     <div className={styles.page}>
-      <PageHeader parent={t("nav.settings")} current={t("agentStats.title")} />
+      <PageHeader parent={"设置"} current={"智能体统计"} />
       <div className={styles.content}>
         {error && !data ? (
           <div className={styles.error}>
@@ -290,13 +285,13 @@ function AgentStatsPage() {
               type="primary"
               onClick={() => fetchData(startDate, endDate)}
             >
-              {t("agentStats.retry")}
+              {"重试"}
             </Button>
           </div>
         ) : loading && !data ? (
           <div className={styles.loading}>
             <Spin size="large" />
-            <p>{t("common.loading")}</p>
+            <p>{"加载中..."}</p>
           </div>
         ) : (
           <>
@@ -318,33 +313,33 @@ function AgentStatsPage() {
                 <div className={styles.summaryCards}>
                   <SummaryCard
                     value={data.total_active_sessions}
-                    label={t("agentStats.totalSessions")}
-                    tooltip={t("agentStats.totalSessionsTooltip")}
+                    label={"总会话数"}
+                    tooltip={"创建的会话总数，每个会话对应一次独立聊天上下文"}
                   />
                   <SummaryCard
                     value={data.total_messages}
-                    label={t("agentStats.totalMessages")}
-                    tooltip={t("agentStats.totalMessagesTooltip")}
+                    label={"总消息数"}
+                    tooltip={"所有会话中的消息总数，含用户消息和智能体消息"}
                   />
                   <SummaryCard
                     value={data.total_prompt_tokens}
-                    label={t("agentStats.promptTokens")}
-                    tooltip={t("agentStats.promptTokensTooltip")}
+                    label={"输入 Token"}
+                    tooltip={"调用 LLM 时发送的提示词 Token 总数"}
                   />
                   <SummaryCard
                     value={data.total_completion_tokens}
-                    label={t("agentStats.completionTokens")}
-                    tooltip={t("agentStats.completionTokensTooltip")}
+                    label={"输出 Token"}
+                    tooltip={"LLM 生成回复的 Token 总数"}
                   />
                   <SummaryCard
                     value={data.total_llm_calls}
-                    label={t("agentStats.llmCalls")}
-                    tooltip={t("agentStats.llmCallsTooltip")}
+                    label={"LLM 调用"}
+                    tooltip={"调用 LLM API 的次数，每次请求计为一次调用"}
                   />
                   <SummaryCard
                     value={data.total_tool_calls}
-                    label={t("agentStats.toolCalls")}
-                    tooltip={t("agentStats.toolCallsTooltip")}
+                    label={"工具调用"}
+                    tooltip={"智能体决定调用工具的次数，单次 LLM 调用可能产生多个工具意图"}
                   />
                 </div>
 
@@ -353,11 +348,11 @@ function AgentStatsPage() {
                     className={styles.chartCard}
                     title={
                       <Tooltip
-                        title={t("agentStats.messageTrendTooltip")}
+                        title={"用户消息与智能体消息的数量对比趋势"}
                         placement="bottom"
                       >
                         <span className={styles.chartTitle}>
-                          {t("agentStats.messageTrend")}
+                          {"消息趋势"}
                         </span>
                       </Tooltip>
                     }
@@ -371,11 +366,11 @@ function AgentStatsPage() {
                     className={styles.chartCard}
                     title={
                       <Tooltip
-                        title={t("agentStats.sessionTrendTooltip")}
+                        title={"新建会话与活跃会话的对比趋势，橙色为当天创建的会话，蓝色为当天产生过消息的会话"}
                         placement="bottom"
                       >
                         <span className={styles.chartTitle}>
-                          {t("agentStats.sessionTrend")}
+                          {"会话趋势"}
                         </span>
                       </Tooltip>
                     }
@@ -389,11 +384,11 @@ function AgentStatsPage() {
                     className={styles.chartCard}
                     title={
                       <Tooltip
-                        title={t("agentStats.tokenTrendTooltip")}
+                        title={"输入 Token 与输出 Token 的消耗趋势"}
                         placement="bottom"
                       >
                         <span className={styles.chartTitle}>
-                          {t("agentStats.tokenTrend")}
+                          {"Token 趋势"}
                         </span>
                       </Tooltip>
                     }
@@ -407,11 +402,11 @@ function AgentStatsPage() {
                     className={styles.chartCard}
                     title={
                       <Tooltip
-                        title={t("agentStats.llmAndToolTrendTooltip")}
+                        title={"LLM 调用次数与工具调用次数的对比趋势"}
                         placement="bottom"
                       >
                         <span className={styles.chartTitle}>
-                          {t("agentStats.llmAndToolTrend")}
+                          {"LLM & 工具调用趋势"}
                         </span>
                       </Tooltip>
                     }
@@ -429,11 +424,11 @@ function AgentStatsPage() {
                         className={styles.chartCard}
                         title={
                           <Tooltip
-                            title={t("agentStats.sessionsByChannelTooltip")}
+                            title={"按消息渠道分布的会话数量占比，未关联渠道的会话默认归为 Console"}
                             placement="bottom"
                           >
                             <span className={styles.chartTitle}>
-                              {t("agentStats.sessionsByChannel")}
+                              {"按渠道会话统计"}
                             </span>
                           </Tooltip>
                         }
@@ -449,11 +444,11 @@ function AgentStatsPage() {
                         className={styles.chartCard}
                         title={
                           <Tooltip
-                            title={t("agentStats.messagesByChannelTooltip")}
+                            title={"按消息渠道分布的消息总数占比"}
                             placement="bottom"
                           >
                             <span className={styles.chartTitle}>
-                              {t("agentStats.messagesByChannel")}
+                              {"按渠道消息统计"}
                             </span>
                           </Tooltip>
                         }
@@ -468,7 +463,7 @@ function AgentStatsPage() {
               </>
             ) : (
               <Empty
-                description={t("agentStats.noData")}
+                description={"所选时间段内暂无统计数据"}
                 style={{ marginTop: 48 }}
               />
             )}

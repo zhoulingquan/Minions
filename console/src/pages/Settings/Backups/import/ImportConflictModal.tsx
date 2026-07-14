@@ -4,7 +4,6 @@
  * replace it or cancel. The resolution is handled by useImportFlow.
  */
 import { Button, Modal } from "antd";
-import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import type { BackupMeta } from "@/api/types/backup";
 
@@ -19,23 +18,22 @@ export default function ImportConflictModal({
   onChoice,
   onCancel,
 }: Props) {
-  const { t } = useTranslation();
 
   return (
     <Modal
       open={!!conflictMeta}
-      title={t("backup.importConflictTitle")}
+      title={"备份已存在"}
       onCancel={onCancel}
       footer={[
         <Button key="cancel" onClick={onCancel}>
-          {t("common.cancel")}
+          {"取消"}
         </Button>,
         <Button key="replace" type="primary" danger onClick={() => onChoice()}>
-          {t("backup.importReplace")}
+          {"覆盖"}
         </Button>,
       ]}
     >
-      <p>{t("backup.importConflictDesc")}</p>
+      <p>{"导入的备份与系统中已有的备份 ID 相同，是否覆盖已有备份？"}</p>
       {conflictMeta && (
         <div
           style={{
@@ -46,7 +44,7 @@ export default function ImportConflictModal({
           }}
         >
           <div>
-            <strong>{t("backup.name")}:</strong> {conflictMeta.name}
+            <strong>{"名称"}:</strong> {conflictMeta.name}
           </div>
           <div>
             <strong>ID:</strong>{" "}
@@ -55,7 +53,7 @@ export default function ImportConflictModal({
             </span>
           </div>
           <div>
-            <strong>{t("backup.createdAt")}:</strong>{" "}
+            <strong>{"创建时间"}:</strong>{" "}
             {dayjs(conflictMeta.created_at).format("YYYY-MM-DD HH:mm:ss")}
           </div>
         </div>

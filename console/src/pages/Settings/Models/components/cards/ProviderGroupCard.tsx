@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Button, Input, Modal } from "@agentscope-ai/design";
-import { useTranslation } from "react-i18next";
 import type { ProviderInfo } from "../../../../../api/types";
 import type { ProviderGroup } from "../../utils";
 import { getIsConfigured } from "../../utils";
@@ -35,8 +34,7 @@ export const ProviderGroupCard = React.memo(function ProviderGroupCard({
   onOpenConfig,
   onOpenModels,
 }: ProviderGroupCardProps) {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const [activeIdx, setActiveIdx] = useState(0);
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [saving, setSaving] = useState(false);
@@ -54,11 +52,11 @@ export const ProviderGroupCard = React.memo(function ProviderGroupCard({
       await providerApi.configureProvider(activeProvider.id, {
         api_key: apiKeyInput.trim(),
       });
-      message.success(t("models.saved"));
+      message.success("已保存");
       setApiKeyInput("");
       onSaved();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : t("models.failedToSave");
+      const msg = err instanceof Error ? err.message : "保存失败";
       message.error(msg);
     } finally {
       setSaving(false);
@@ -125,12 +123,12 @@ export const ProviderGroupCard = React.memo(function ProviderGroupCard({
                 className={styles.groupCardChangeBtn}
                 onClick={() => onOpenConfig(activeProvider)}
               >
-                {t("models.changeApiKey")}
+                {"修改"}
               </span>
             </div>
           ) : activeProvider.require_api_key === false ? (
             <div className={styles.groupCardMono}>
-              {t("models.notRequired")}
+              {"无需配置"}
             </div>
           ) : (
             <div className={styles.groupCardKeyInput}>
@@ -154,7 +152,7 @@ export const ProviderGroupCard = React.memo(function ProviderGroupCard({
                 disabled={!apiKeyInput.trim()}
                 onClick={handleSaveKey}
               >
-                {t("models.saveApiKey")}
+                {"保存"}
               </Button>
             </div>
           )}
@@ -164,8 +162,8 @@ export const ProviderGroupCard = React.memo(function ProviderGroupCard({
           <span className={styles.groupCardFieldLabel}>Models</span>
           <span className={styles.groupCardFieldValue}>
             {totalModels > 0
-              ? t("models.modelsCount", { count: totalModels })
-              : t("models.noModels")}
+              ? `${totalModels} 个模型`
+              : "暂无模型"}
           </span>
         </div>
       </div>
@@ -176,13 +174,13 @@ export const ProviderGroupCard = React.memo(function ProviderGroupCard({
           className={styles.groupCardActBtn}
           onClick={() => onOpenModels(activeProvider)}
         >
-          {t("models.models")}
+          {"模型"}
         </button>
         <button
           className={styles.groupCardActBtn}
           onClick={() => onOpenConfig(activeProvider)}
         >
-          {t("models.settings")}
+          {"设置"}
         </button>
         {getIsConfigured(activeProvider) &&
           activeProvider.require_api_key !== false && (
@@ -190,36 +188,32 @@ export const ProviderGroupCard = React.memo(function ProviderGroupCard({
               className={`${styles.groupCardActBtn} ${styles.groupCardActBtnDanger}`}
               onClick={() => {
                 Modal.confirm({
-                  title: t("models.disableProvider"),
-                  content: t("models.disableProviderConfirm", {
-                    name: activeProvider.name,
-                  }),
-                  okText: t("models.disableBtn"),
+                  title: "停用提供商",
+                  content: `确定清除 "${activeProvider.name}" 的 API Key？该提供商将变为未配置状态。`,
+                  okText: "停用",
                   okButtonProps: { danger: true },
-                  cancelText: t("models.cancel"),
+                  cancelText: "取消",
                   onOk: async () => {
                     try {
                       await providerApi.configureProvider(activeProvider.id, {
                         api_key: "",
                       });
                       message.success(
-                        t("models.providerDisabled", {
-                          name: activeProvider.name,
-                        }),
+                        `提供商 "${activeProvider.name}" 已停用`,
                       );
                       onSaved();
                     } catch (err) {
                       const msg =
                         err instanceof Error
                           ? err.message
-                          : t("models.failedToSave");
+                          : "保存失败";
                       message.error(msg);
                     }
                   },
                 });
               }}
             >
-              {t("models.disableBtn")}
+              {"停用"}
             </button>
           )}
       </div>

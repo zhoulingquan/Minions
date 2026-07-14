@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Form, Modal, Select } from "@agentscope-ai/design";
-import type { TFunction } from "i18next";
-import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/PageHeader";
 import api from "../../../api";
 import { useAppMessage } from "../../../hooks/useAppMessage";
@@ -28,18 +26,19 @@ const BUILTIN_ACP_ORDER = [
   "qwen_code",
   "claude_code",
   "codex",
+  "opencode",
 ] as const;
 const OTHER_NODE_VALUE = "__other_node__";
 const NODE_RUNTIME_LABEL_KEYS: Record<string, string> = {
-  bundled: "acp.nodeRuntime.bundled",
-  system: "acp.nodeRuntime.system",
-  custom: "acp.nodeRuntime.custom",
+  bundled: "内置 Node",
+  system: "系统 Node",
+  custom: "自定义 Node",
 };
 const NODE_RUNTIME_REASON_KEYS: Record<string, string> = {
-  node_missing: "acp.nodeRuntimeReason.nodeMissing",
-  npx_missing: "acp.nodeRuntimeReason.npxMissing",
-  system_node_missing: "acp.nodeRuntimeReason.systemNodeMissing",
-  version_check_failed: "acp.nodeRuntimeReason.versionCheckFailed",
+  node_missing: "Node 路径不存在",
+  npx_missing: "未找到 npx",
+  system_node_missing: "未检测到系统 Node",
+  version_check_failed: "版本检查失败",
 };
 
 function isBuiltinACPAgent(key: string): boolean {
@@ -50,31 +49,27 @@ type FilterType = "all" | "builtin" | "custom";
 
 function formatNodeOption(
   candidate: ACPNodeRuntimeCandidate,
-  t: TFunction,
 ): string {
-  const label = t(
-    NODE_RUNTIME_LABEL_KEYS[candidate.key] || NODE_RUNTIME_LABEL_KEYS.custom,
-  );
+  const label =
+    NODE_RUNTIME_LABEL_KEYS[candidate.key] || NODE_RUNTIME_LABEL_KEYS.custom;
   const version = candidate.node_version ? ` (${candidate.node_version})` : "";
-  const reason = formatNodeReason(candidate.reason_code, t);
+  const reason = formatNodeReason(candidate.reason_code);
   const detail = candidate.available
     ? candidate.node_path
     : [candidate.node_path, reason].filter(Boolean).join(" - ");
   return `${label}${version}${detail ? `  ${detail}` : ""}`;
 }
 
-function formatNodeReason(reasonCode: string, t: TFunction): string {
-  return t(
-    NODE_RUNTIME_REASON_KEYS[reasonCode] || "acp.nodeRuntimeReason.unavailable",
-  );
+function formatNodeReason(reasonCode: string): string {
+  return NODE_RUNTIME_REASON_KEYS[reasonCode] || "不可用";
 }
 
-function getNodeRuntimeErrorMessage(error: unknown, t: TFunction): string {
+function getNodeRuntimeErrorMessage(error: unknown): string {
   const detail = parseNodeRuntimeErrorDetail(error);
   const reasonCode =
     typeof detail?.reason_code === "string" ? detail.reason_code : "";
   const reasonKey = NODE_RUNTIME_REASON_KEYS[reasonCode];
-  return reasonKey ? t(reasonKey) : t("acp.nodeSaveFailed");
+  return reasonKey || "Node 路径不可用";
 }
 
 function parseNodeRuntimeErrorDetail(
@@ -121,8 +116,7 @@ function getSelectedNodeValue(
 }
 
 function ACPPage() {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const { selectedAgent } = useAgentStore();
   const [agents, setAgents] = useState<Record<string, ACPAgentConfig>>({});
   const [loading, setLoading] = useState(true);
@@ -161,11 +155,11 @@ function ACPPage() {
       setNodeRuntime(await api.getACPNodeRuntime());
     } catch (error) {
       console.error("Failed to load ACP Node runtime:", error);
-      message.error(t("acp.nodeLoadFailed"));
+      message.error("Node 设置加载失败");
     } finally {
       setNodeRuntimeLoading(false);
     }
-  }, [message, t]);
+  }, [message]);
 
   const orderedKeys = useMemo(() => {
     const keys = Object.keys(agents);
@@ -202,16 +196,16 @@ function ACPPage() {
   const nodeOptions = useMemo(
     () => [
       ...(nodeRuntime?.candidates || []).map((candidate) => ({
-        label: formatNodeOption(candidate, t),
+        label: formatNodeOption(candidate),
         value: candidate.node_path || `__missing_${candidate.key}`,
         disabled: !candidate.available,
       })),
       {
-        label: t("acp.chooseOtherNode"),
+        label: "选择其他 Node...",
         value: OTHER_NODE_VALUE,
       },
     ],
-    [nodeRuntime, t],
+    [nodeRuntime],
   );
 
   const selectedNodeValue = useMemo(
@@ -221,11 +215,11 @@ function ACPPage() {
 
   const pickNodePath = useCallback(async () => {
     const value = window.prompt(
-      t("acp.nodePathPrompt"),
+      "请输入 node 可执行文件路径",
       nodeRuntime?.effective_node_path || "",
     );
     return value?.trim() || null;
-  }, [nodeRuntime?.effective_node_path, t]);
+  }, [nodeRuntime?.effective_node_path]);
 
   const saveNodePath = useCallback(
     async (value: string) => {
@@ -239,16 +233,16 @@ function ACPPage() {
       setNodeRuntimeSaving(true);
       try {
         setNodeRuntime(await api.updateACPNodeRuntime({ node_path: nodePath }));
-        message.success(t("acp.nodeSaved"));
+        message.success("Node 设置已保存");
       } catch (error) {
         console.error("Failed to update ACP Node runtime:", error);
-        message.error(getNodeRuntimeErrorMessage(error, t));
+        message.error(getNodeRuntimeErrorMessage(error));
         void fetchNodeRuntime();
       } finally {
         setNodeRuntimeSaving(false);
       }
     },
-    [fetchNodeRuntime, message, pickNodePath, t],
+    [fetchNodeRuntime, message, pickNodePath],
   );
 
   const handleNodeSettingsClick = () => {
@@ -303,7 +297,7 @@ function ACPPage() {
       (!isCreateMode && activeKey ? agents[activeKey] : undefined) || {};
 
     if ((isCreateMode || targetKey !== activeKey) && agents[targetKey]) {
-      message.error(t("acp.agentKeyExists"));
+      message.error("该 Agent Key 已存在");
       return;
     }
 
@@ -338,11 +332,11 @@ function ACPPage() {
       await fetchACP();
       setDrawerOpen(false);
       message.success(
-        isCreateMode ? t("acp.createSuccess") : t("acp.configSaved"),
+        isCreateMode ? "ACP Agent 已创建" : "ACP 配置已保存",
       );
     } catch (error) {
       console.error("❌ Failed to update ACP config:", error);
-      message.error(t("acp.configFailed"));
+      message.error("ACP 配置保存失败");
     } finally {
       setSaving(false);
     }
@@ -352,10 +346,10 @@ function ACPPage() {
     if (!activeKey || isBuiltinACPAgent(activeKey)) return;
 
     Modal.confirm({
-      title: t("acp.deleteTitle", { name: activeKey }),
-      content: t("acp.deleteConfirm"),
-      okText: t("common.delete"),
-      cancelText: t("common.cancel"),
+      title: `删除 ${activeKey}`,
+      content: "确定删除该 ACP Agent 吗？此操作不可撤销。",
+      okText: "删除",
+      cancelText: "取消",
       okButtonProps: { danger: true },
       async onOk() {
         try {
@@ -364,10 +358,10 @@ function ACPPage() {
           await api.updateACPConfig({ agents: nextAgents });
           await fetchACP();
           handleClose();
-          message.success(t("acp.deleteSuccess"));
+          message.success("ACP Agent 已删除");
         } catch (error) {
           console.error("❌ Failed to delete ACP config:", error);
-          message.error(t("acp.deleteFailed"));
+          message.error("ACP Agent 删除失败");
           throw error;
         }
       },
@@ -375,16 +369,16 @@ function ACPPage() {
   };
 
   const FILTER_TABS: { key: FilterType; label: string }[] = [
-    { key: "all", label: t("common.all", { defaultValue: "All" }) },
-    { key: "builtin", label: t("acp.builtin") },
-    { key: "custom", label: t("acp.custom") },
+    { key: "all", label: "全部" },
+    { key: "builtin", label: "内置" },
+    { key: "custom", label: "自定义" },
   ];
 
   return (
     <div className={styles.channelsPage}>
       <PageHeader
         className={stylesACP.pageHeader}
-        items={[{ title: t("nav.agent") }, { title: t("acp.title") }]}
+        items={[{ title: "工作区" }, { title: "ACP" }]}
         center={
           <div className={styles.filterTabs}>
             {FILTER_TABS.map(({ key, label }) => (
@@ -403,10 +397,10 @@ function ACPPage() {
         extra={
           <div className={stylesACP.headerActions}>
             <Button onClick={handleNodeSettingsClick}>
-              {t("acp.nodeSettings")}
+              {"Node 设置"}
             </Button>
             <Button type="primary" onClick={handleCreateClick}>
-              {t("acp.create")}
+              {"新增 Custom Agent"}
             </Button>
           </div>
         }
@@ -414,7 +408,7 @@ function ACPPage() {
       <div className={styles.channelsContainer}>
         {loading ? (
           <div className={styles.loading}>
-            <span className={styles.loadingText}>{t("acp.loading")}</span>
+            <span className={styles.loadingText}>{"加载 ACP 配置中..."}</span>
           </div>
         ) : (
           <div
@@ -446,20 +440,20 @@ function ACPPage() {
         onDelete={handleDelete}
       />
       <Modal
-        title={t("acp.nodeSettings")}
+        title={"Node 设置"}
         open={nodeModalOpen}
         onCancel={() => setNodeModalOpen(false)}
         footer={null}
         destroyOnHidden
       >
         <div className={stylesACP.nodeSettings}>
-          <label className={stylesACP.nodeLabel}>{t("acp.nodePath")}</label>
+          <label className={stylesACP.nodeLabel}>{"Node 路径"}</label>
           <Select
             value={selectedNodeValue}
             options={nodeOptions}
             loading={nodeRuntimeLoading || nodeRuntimeSaving}
             onChange={(value) => saveNodePath(String(value))}
-            placeholder={t("acp.nodePath")}
+            placeholder={"Node 路径"}
             style={{ width: "100%" }}
           />
         </div>

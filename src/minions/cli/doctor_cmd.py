@@ -45,7 +45,6 @@ from .doctor_checks import (
     legacy_single_agent_workspace_note,
     load_raw_config_dict,
     mcp_client_notes,
-    memory_embedding_notes,
     provider_overview_notes,
     scan_unknown_config_keys,
     security_baseline_notes,
@@ -591,16 +590,6 @@ def run_doctor_checks(
         else:
             click.echo(
                 click.style("OK", fg="green") + " — no baseline warnings",
-            )
-
-        click.echo("\n=== Memory / embedding ===")
-        mem_notes = memory_embedding_notes(cfg)
-        if mem_notes:
-            for line in mem_notes:
-                click.echo(click.style("Note:", fg="yellow") + f" {line}")
-        else:
-            click.echo(
-                click.style("OK", fg="green") + " — no embedding warnings",
             )
 
         click.echo("\n=== Workspace hygiene ===")

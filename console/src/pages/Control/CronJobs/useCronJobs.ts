@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
+import { useCallback, useState, useEffect } from "react";
 import { useAppMessage } from "../../../hooks/useAppMessage";
 import api from "../../../api";
 import type { CronJobSpecOutput } from "../../../api/types";
@@ -13,38 +12,37 @@ export function useCronJobs() {
   const [jobs, setJobs] = useState<CronJob[]>([]);
   const [loading, setLoading] = useState(false);
   const { message } = useAppMessage();
-  const { t } = useTranslation();
 
   const getDisplayErrorMessage = (error: unknown, fallback: string): string => {
     const normalizeMessage = (raw: string): string => {
       const cleaned = raw.replace(/^Value error,\s*/i, "").trim();
       if (cleaned.includes("schedule.type is cron but cron is empty")) {
-        return t("cronJobs.validation.cronRequired");
+        return "循环任务必须填写 Cron 表达式。";
       }
       if (cleaned.includes("schedule.type is once but run_at is missing")) {
-        return t("cronJobs.validation.runAtRequired");
+        return "日程任务必须填写执行时间。";
       }
       if (
         cleaned.includes("repeat_end_type is until but repeat_until is missing")
       ) {
-        return t("cronJobs.validation.repeatUntilRequired");
+        return "选择“终止于某天”时，必须填写截止时间。";
       }
       if (
         cleaned.includes("repeat_end_type is count but repeat_count is missing")
       ) {
-        return t("cronJobs.validation.repeatCountRequired");
+        return "选择“限定次数”时，必须填写执行次数。";
       }
       if (cleaned.includes("repeat_until must be later than run_at")) {
-        return t("cronJobs.validation.repeatUntilAfterRunAt");
+        return "截止时间必须晚于执行时间，请将截止时间设置为执行时间之后。";
       }
       if (cleaned.includes("task_type is text but text is empty")) {
-        return t("cronJobs.validation.textRequired");
+        return "任务类型为“消息内容”时，消息内容不能为空。";
       }
       if (cleaned.includes("task_type is agent but request is missing")) {
-        return t("cronJobs.validation.requestRequired");
+        return "任务类型为“Agent”时，请求内容不能为空。";
       }
       if (cleaned.includes("cron must have 5 fields")) {
-        return t("cronJobs.validation.invalidCronExpression");
+        return "Cron 表达式无效，请使用 5 段 Cron 格式。";
       }
       return cleaned;
     };
@@ -95,7 +93,7 @@ export function useCronJobs() {
     return fallback;
   };
 
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
       const data = await api.listCronJobs();
@@ -108,7 +106,7 @@ export function useCronJobs() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [message]);
 
   useEffect(() => {
     let mounted = true;
@@ -124,7 +122,7 @@ export function useCronJobs() {
     return () => {
       mounted = false;
     };
-  }, [selectedAgent]);
+  }, [fetchJobs, selectedAgent]);
 
   const createJob = async (values: CronJob) => {
     try {

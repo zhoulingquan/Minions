@@ -1,5 +1,4 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { GlobalOutlined } from "@ant-design/icons";
 import type { ToolCallContent } from "../shared/types";
 import { ToolCardShell } from "../shared";
@@ -14,11 +13,8 @@ const SetTimezoneCard: React.FC<SetTimezoneCardProps> = ({
   content,
   isStreaming,
 }) => {
-  const { t } = useTranslation();
-  const params = content.params || {};
-  const title = t("tool.setTimezone", {
-    timezone: (params.timezone_name || "") as string,
-  });
+    const params = content.params || {};
+  const title = `设置 ${(params.timezone_name || "") as string}`;
 
   const inlineResult =
     content.status === "done" && content.result

@@ -6,7 +6,6 @@
  */
 
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { ToolOutlined } from "@ant-design/icons";
 import type { ToolCallContent } from "../shared/types";
 import { ToolCardShell } from "../shared";
@@ -22,8 +21,7 @@ const GenericToolCard: React.FC<GenericToolCardProps> = ({
   content,
   isStreaming,
 }) => {
-  const { t } = useTranslation();
-  const toolLabel = content.serverLabel
+    const toolLabel = content.serverLabel
     ? `${content.serverLabel} / ${content.name}`
     : content.name;
   const resultText = stringifyResult(content.result);
@@ -31,7 +29,7 @@ const GenericToolCard: React.FC<GenericToolCardProps> = ({
   return (
     <ToolCardShell
       icon={<ToolOutlined />}
-      title={t("tool.execute", { tool: toolLabel })}
+      title={`执行 ${toolLabel}`}
       content={content}
       isStreaming={isStreaming}
     >

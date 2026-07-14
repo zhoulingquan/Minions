@@ -134,7 +134,6 @@
 | TestFileToggleReorderMemory | test_file_toggle_reorder_memory | P0 | Toggle + drag reorder |
 | TestFileContentEditAndSave | test_file_content_edit_save_reset | P0 | File content edit/save/reset |
 | TestWorkspaceUploadDownload | test_workspace_download_and_upload_button | P0 | Workspace upload/download |
-| TestDailyMemoryView | test_daily_memory_view | P1 | Daily memory expand/collapse view |
 | TestMarkdownPreview | test_markdown_preview | P1 | Markdown live preview |
 | TestWorkspaceZipUpload | test_workspace_zip_upload | P2 | ZIP upload to restore workspace |
 | TestWorkspaceZipDownload | test_workspace_zip_download | P2 | ZIP download of workspace |

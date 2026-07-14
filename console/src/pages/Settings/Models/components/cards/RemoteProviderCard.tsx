@@ -3,7 +3,6 @@ import { Button, Modal, Input } from "@agentscope-ai/design";
 import type { ProviderInfo } from "../../../../../api/types";
 import api from "../../../../../api";
 import { providerApi } from "../../../../../api/modules/provider";
-import { useTranslation } from "react-i18next";
 import { useAppMessage } from "../../../../../hooks/useAppMessage";
 import { getIsConfigured } from "../../utils";
 import styles from "../../index.module.less";
@@ -23,8 +22,7 @@ export const RemoteProviderCard = React.memo(function RemoteProviderCard({
   onOpenConfig,
   onOpenModels,
 }: RemoteProviderCardProps) {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const [oauthModalOpen, setOauthModalOpen] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [apiKeySaving, setApiKeySaving] = useState(false);
@@ -35,21 +33,21 @@ export const RemoteProviderCard = React.memo(function RemoteProviderCard({
   const handleDeleteProvider = (e: React.MouseEvent) => {
     e.stopPropagation();
     Modal.confirm({
-      title: t("models.deleteProvider"),
-      content: t("models.deleteProviderConfirm", { name: provider.name }),
-      okText: t("common.delete"),
+      title: "删除提供商",
+      content: `确定删除自定义提供商 "${provider.name}" 及其所有模型？此操作不可撤销。`,
+      okText: "删除",
       okButtonProps: { danger: true },
-      cancelText: t("models.cancel"),
+      cancelText: "取消",
       onOk: async () => {
         try {
           await api.deleteCustomProvider(provider.id);
-          message.success(t("models.providerDeleted", { name: provider.name }));
+          message.success(`提供商 "${provider.name}" 已删除`);
           onSaved();
         } catch (error) {
           const errMsg =
             error instanceof Error
               ? error.message
-              : t("models.providerDeleteFailed");
+              : "删除提供商失败";
           message.error(errMsg);
         }
       },
@@ -62,7 +60,7 @@ export const RemoteProviderCard = React.memo(function RemoteProviderCard({
   const isAvailable = isConfigured && hasModels;
 
   const providerTag = provider.is_custom ? (
-    <span className={styles.customTag}>{t("models.custom")}</span>
+    <span className={styles.customTag}>{"自定义"}</span>
   ) : null;
 
   return (
@@ -97,12 +95,12 @@ export const RemoteProviderCard = React.memo(function RemoteProviderCard({
                 className={styles.groupCardChangeBtn}
                 onClick={() => onOpenConfig(provider)}
               >
-                {t("models.changeApiKey")}
+                {"修改"}
               </span>
             </div>
           ) : provider.require_api_key === false ? (
             <div className={styles.groupCardMono}>
-              {t("models.notRequired")}
+              {"无需配置"}
             </div>
           ) : (
             <div className={styles.groupCardKeyInput}>
@@ -131,21 +129,21 @@ export const RemoteProviderCard = React.memo(function RemoteProviderCard({
                     await providerApi.configureProvider(provider.id, {
                       api_key: apiKeyInput.trim(),
                     });
-                    message.success(t("models.saved"));
+                    message.success("已保存");
                     setApiKeyInput("");
                     onSaved();
                   } catch (err) {
                     const msg =
                       err instanceof Error
                         ? err.message
-                        : t("models.failedToSave");
+                        : "保存失败";
                     message.error(msg);
                   } finally {
                     setApiKeySaving(false);
                   }
                 }}
               >
-                {t("models.saveApiKey")}
+                {"保存"}
               </Button>
             </div>
           )}
@@ -155,8 +153,8 @@ export const RemoteProviderCard = React.memo(function RemoteProviderCard({
           <span className={styles.groupCardFieldLabel}>Models</span>
           <span className={styles.groupCardFieldValue}>
             {totalCount > 0
-              ? t("models.modelsCount", { count: totalCount })
-              : t("models.noModels")}
+              ? `${totalCount} 个模型`
+              : "暂无模型"}
           </span>
         </div>
       </div>
@@ -168,27 +166,27 @@ export const RemoteProviderCard = React.memo(function RemoteProviderCard({
             className={styles.groupCardActBtn}
             onClick={() => setOauthModalOpen(true)}
           >
-            {t("models.connect")}
+            {"OAuth 认证"}
           </button>
         )}
         <button
           className={styles.groupCardActBtn}
           onClick={() => onOpenModels(provider)}
         >
-          {t("models.models")}
+          {"模型"}
         </button>
         <button
           className={styles.groupCardActBtn}
           onClick={() => onOpenConfig(provider)}
         >
-          {t("models.settings")}
+          {"设置"}
         </button>
         {provider.is_custom ? (
           <button
             className={`${styles.groupCardActBtn} ${styles.groupCardActBtnDanger}`}
             onClick={handleDeleteProvider}
           >
-            {t("common.delete")}
+            {"删除"}
           </button>
         ) : (
           isConfigured &&
@@ -198,36 +196,32 @@ export const RemoteProviderCard = React.memo(function RemoteProviderCard({
               onClick={(e) => {
                 e.stopPropagation();
                 Modal.confirm({
-                  title: t("models.disableProvider"),
-                  content: t("models.disableProviderConfirm", {
-                    name: provider.name,
-                  }),
-                  okText: t("models.disableBtn"),
+                  title: "停用提供商",
+                  content: `确定清除 "${provider.name}" 的 API Key？该提供商将变为未配置状态。`,
+                  okText: "停用",
                   okButtonProps: { danger: true },
-                  cancelText: t("models.cancel"),
+                  cancelText: "取消",
                   onOk: async () => {
                     try {
                       await providerApi.configureProvider(provider.id, {
                         api_key: "",
                       });
                       message.success(
-                        t("models.providerDisabled", {
-                          name: provider.name,
-                        }),
+                        `提供商 "${provider.name}" 已停用`,
                       );
                       onSaved();
                     } catch (err) {
                       const msg =
                         err instanceof Error
                           ? err.message
-                          : t("models.failedToSave");
+                          : "保存失败";
                       message.error(msg);
                     }
                   },
                 });
               }}
             >
-              {t("models.disableBtn")}
+              {"停用"}
             </button>
           )
         )}

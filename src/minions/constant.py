@@ -100,9 +100,8 @@ KEYRING_ACCOUNT_ENV = "MINIONS_KEYRING_ACCOUNT"
 
 PROJECT_NAME = "Minions"
 
-# Message metadata tags shared across agent middleware and memory managers.
+# Message metadata tags shared across runtime components.
 MINIONS_MESSAGE_TAG_KEY = "minions_tag"
-AUTO_MEMORY_SEARCH_BLOCK_IDS_KEY = "auto_memory_search_block_ids"
 AUTO_CONTINUE_MESSAGE_TAG = "auto_continue"
 LOOP_CONTINUATION_MESSAGE_TAG = "loop_continuation"
 # User-role messages the runtime injects to keep a turn going. They are NOT
@@ -112,14 +111,6 @@ LOOP_CONTINUATION_MESSAGE_TAG = "loop_continuation"
 SYNTHETIC_USER_MESSAGE_TAGS = frozenset(
     {AUTO_CONTINUE_MESSAGE_TAG, LOOP_CONTINUATION_MESSAGE_TAG},
 )
-AUTO_MEMORY_SEARCH_TEXT = (
-    "I'll check memory for relevant context before answering."
-)
-AUTO_MEMORY_SEARCH_THINKING_PREFIX = (
-    "I should search long-term memory before answering."
-)
-
-
 def _resolve_docs_dir() -> Path | None:
     """Find Minions documentation directory across all install methods."""
     _pkg_docs = Path(__file__).resolve().parent / "docs"
@@ -222,9 +213,6 @@ PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH_ENV = "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH"
 # When True, expose /docs, /redoc, /openapi.json
 # (dev only; keep False in prod).
 DOCS_ENABLED = EnvVarLoader.get_bool("MINIONS_OPENAPI_DOCS", False)
-
-# Memory directory
-MEMORY_DIR = WORKING_DIR / "memory"
 
 # Backup directory
 BACKUP_DIR = (

@@ -17,8 +17,10 @@ const hoisted = vi.hoisted(() => {
     updateAsyncExecution: vi.fn(),
     updateToolConfig: vi.fn(),
   };
-  const stableT = (k: string) => k;
-  return { messageMock, apiMocks, stableT };
+  const customToolsMocks = {
+    list: vi.fn(),
+  };
+  return { messageMock, apiMocks, customToolsMocks };
 });
 
 vi.mock("../../../api", () => ({
@@ -30,17 +32,17 @@ vi.mock("../../../stores/agentStore", () => ({
   useAgentStore: () => ({ selectedAgent: "agent-1" }),
 }));
 
+vi.mock("../../../api/modules/customTools", () => ({
+  customToolsApi: hoisted.customToolsMocks,
+}));
+
 vi.mock("../../../hooks/useAppMessage", () => ({
   useAppMessage: () => ({ message: hoisted.messageMock }),
 }));
 
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: hoisted.stableT }),
-}));
-
 import { useTools } from "./useTools";
 
-const { messageMock, apiMocks } = hoisted;
+const { messageMock, apiMocks, customToolsMocks } = hoisted;
 
 function makeTool(overrides: Partial<ToolInfo> = {}): ToolInfo {
   return {
@@ -64,11 +66,13 @@ describe("useTools", () => {
     apiMocks.toggleTool.mockReset();
     apiMocks.updateAsyncExecution.mockReset();
     apiMocks.updateToolConfig.mockReset();
+    customToolsMocks.list.mockReset();
     messageMock.success.mockReset();
     messageMock.error.mockReset();
     messageMock.info.mockReset();
 
     apiMocks.listTools.mockResolvedValue([]);
+    customToolsMocks.list.mockResolvedValue([]);
   });
 
   it("mount calls listTools; tools populated and loading true then false", async () => {
@@ -96,7 +100,21 @@ describe("useTools", () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(messageMock.error).toHaveBeenCalledWith("tools.loadError");
+    expect(messageMock.error).toHaveBeenCalledWith("加载工具失败");
+  });
+
+  it("keeps built-in tools when custom tools fail to load", async () => {
+    const tools = [makeTool({ name: "builtin", enabled: true })];
+    apiMocks.listTools.mockResolvedValue(tools);
+    customToolsMocks.list.mockRejectedValue(new Error("custom tools unavailable"));
+
+    const { result } = renderToolsHook();
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+    expect(result.current.tools).toEqual(tools);
+    expect(messageMock.error).not.toHaveBeenCalled();
   });
 
   it("toggleEnabled success on disabled tool flips to enabled and shows enableSuccess", async () => {
@@ -115,7 +133,7 @@ describe("useTools", () => {
     });
 
     expect(apiMocks.toggleTool).toHaveBeenCalledWith("a");
-    expect(messageMock.success).toHaveBeenCalledWith("tools.enableSuccess");
+    expect(messageMock.success).toHaveBeenCalledWith("工具启用成功");
     expect(result.current.tools[0].enabled).toBe(true);
   });
 
@@ -135,7 +153,7 @@ describe("useTools", () => {
 
     // After rollback the tool's enabled must return to its original value.
     expect(result.current.tools[0].enabled).toBe(false);
-    expect(messageMock.error).toHaveBeenCalledWith("tools.toggleError");
+    expect(messageMock.error).toHaveBeenCalledWith("切换工具状态失败");
   });
 
   it("toggleAsyncExecution success shows asyncExecutionEnabled and sets async_execution true", async () => {
@@ -155,7 +173,7 @@ describe("useTools", () => {
 
     expect(apiMocks.updateAsyncExecution).toHaveBeenCalledWith("a", true);
     expect(messageMock.success).toHaveBeenCalledWith(
-      "tools.asyncExecutionEnabled",
+      "异步执行已启用",
     );
     expect(result.current.tools[0].async_execution).toBe(true);
   });
@@ -173,7 +191,7 @@ describe("useTools", () => {
       await result.current.enableAll();
     });
 
-    expect(messageMock.info).toHaveBeenCalledWith("tools.allEnabled");
+    expect(messageMock.info).toHaveBeenCalledWith("所有工具已处于启用状态");
     expect(apiMocks.toggleTool).not.toHaveBeenCalled();
     expect(result.current.batchLoading).toBe(false);
   });
@@ -199,7 +217,7 @@ describe("useTools", () => {
     expect(apiMocks.toggleTool).toHaveBeenCalledTimes(2);
     expect(apiMocks.toggleTool).toHaveBeenCalledWith("a");
     expect(apiMocks.toggleTool).toHaveBeenCalledWith("b");
-    expect(messageMock.success).toHaveBeenCalledWith("tools.enableAllSuccess");
+    expect(messageMock.success).toHaveBeenCalledWith("全部工具已启用");
     expect(result.current.tools.every((t) => t.enabled)).toBe(true);
   });
 
@@ -221,7 +239,7 @@ describe("useTools", () => {
     expect(apiMocks.updateToolConfig).toHaveBeenCalledWith("a", {
       key: "value",
     });
-    expect(messageMock.success).toHaveBeenCalledWith("tools.configSaved");
+    expect(messageMock.success).toHaveBeenCalledWith("配置已保存");
   });
 
   it("saveToolConfig failure shows message.error('tools.configSaveError') and rethrows", async () => {
@@ -238,6 +256,6 @@ describe("useTools", () => {
       ).rejects.toThrow("save failed");
     });
 
-    expect(messageMock.error).toHaveBeenCalledWith("tools.configSaveError");
+    expect(messageMock.error).toHaveBeenCalledWith("配置保存失败");
   });
 });

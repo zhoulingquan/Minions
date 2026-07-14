@@ -8,6 +8,7 @@ degraded-durability fail-safe (no eviction when a write fails), and retention.
 """
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from agentscope.message import (
@@ -20,8 +21,6 @@ from agentscope.message import (
 from minions.agents.context.scroll.history import HistoryStore
 from minions.agents.context.scroll.manager import ScrollContextManager
 from minions.agents.context.types import LogEntry
-from minions.agents.memory.base_memory_manager import BaseMemoryManager
-from minions.constant import AUTO_MEMORY_SEARCH_BLOCK_IDS_KEY
 
 # -- fixtures ---------------------------------------------------------------
 
@@ -114,22 +113,6 @@ class FakeAgent:
         return (self.state.context[:-1], self.state.context[-1:])
 
 
-class AutoMemoryMsgBuilder(BaseMemoryManager):
-    """Concrete memory manager used only to build synthetic memory messages."""
-
-    async def start(self) -> None:
-        pass
-
-    async def close(self) -> bool:
-        return True
-
-    def get_memory_prompt(self) -> str:
-        return ""
-
-    def list_memory_tools(self) -> list:
-        return []
-
-
 @pytest.fixture
 def store(tmp_path: Path) -> HistoryStore:
     h = HistoryStore(tmp_path / "history.db")
@@ -141,17 +124,6 @@ def make_manager(store: HistoryStore, **kw) -> ScrollContextManager:
     kw.setdefault("session_id", "s1")
     kw.setdefault("agent_id", "ag1")
     return ScrollContextManager(history=store, **kw)
-
-
-def auto_memory_search_msg(*, query: str, max_results: int, text: str) -> Msg:
-    return AutoMemoryMsgBuilder(
-        working_dir="",
-        agent_id="ag1",
-    )._build_auto_memory_search_msg(
-        query=query,
-        max_results=max_results,
-        text=text,
-    )
 
 
 # -- write-through dedup -----------------------------------------------------
@@ -186,52 +158,6 @@ def test_tool_result_persisted_under_tool_call_id(store: HistoryStore):
     ).fetchall()
     assert len(rows) == 1
     assert rows[0]["content"] == "big output"
-
-
-def test_auto_memory_search_message_not_persisted(store: HistoryStore):
-    """Auto-search context is live-only and must not pollute history.db."""
-    mgr = make_manager(store)
-    auto_msg = auto_memory_search_msg(
-        query="deploy plan",
-        max_results=2,
-        text="remembered deployment notes",
-    )
-    agent = FakeAgent([user("what was the deploy plan?"), auto_msg])
-
-    mgr._persist_new(agent)
-
-    rows = store._conn.execute(
-        "SELECT kind, name, content FROM conversation_history ORDER BY seq",
-    ).fetchall()
-    assert [(r["kind"], r["name"], r["content"]) for r in rows] == [
-        ("context_msg", None, "what was the deploy plan?"),
-    ]
-
-
-def test_auto_memory_search_blocks_stripped_from_mixed_message(
-    store: HistoryStore,
-):
-    """If a real Msg also carries auto-search blocks, keep only real blocks."""
-    mgr = make_manager(store)
-    real_block = TextBlock(type="text", text="real reply")
-    synthetic_block = TextBlock(type="text", text="synthetic memory context")
-    msg = Msg(
-        name="a",
-        role="assistant",
-        content=[real_block, synthetic_block],
-        metadata={
-            AUTO_MEMORY_SEARCH_BLOCK_IDS_KEY: [synthetic_block.id],
-        },
-    )
-
-    mgr._persist_new(FakeAgent([msg]))
-
-    rows = store._conn.execute(
-        "SELECT kind, content, metadata FROM conversation_history",
-    ).fetchall()
-    assert len(rows) == 1
-    assert rows[0]["kind"] == "model_turn"
-    assert rows[0]["content"] == "real reply"
 
 
 # -- resume: a restored window is not re-appended ---------------------------
@@ -549,15 +475,13 @@ async def test_pressure_fold_stubs_older_results_keeps_newest(
 
 async def test_steady_state_counts_once_and_warns_once(
     store: HistoryStore,
-    caplog,
+    monkeypatch: pytest.MonkeyPatch,
 ):
     """Over the trigger with nothing evictable, compactable, or foldable:
     each compress pays exactly ONE token count (the trigger check — the
     context never changed, so recounting it is waste), and the
     still-over-trigger warning fires once per overflow episode, not once
     per reasoning step."""
-    import logging as _logging
-
     ctx = [
         user("/heartbeat"),
         assistant("step one"),
@@ -566,13 +490,22 @@ async def test_steady_state_counts_once_and_warns_once(
     mgr = make_manager(store)
     agent = FakeAgent(ctx, tokens=600)  # > trigger (100), nothing to shrink
     agent._split_return = (ctx, [])
-    with caplog.at_level(_logging.WARNING):
-        await mgr.compress(agent)
-        assert agent.model.calls == 1  # trigger check only
-        await mgr.compress(agent)
-        assert agent.model.calls == 2
+    warnings: list[str] = []
+
+    def capture_warning(message: str, *args) -> None:
+        warnings.append(message % args)
+
+    monkeypatch.setattr(
+        "minions.agents.context.scroll.manager.logger.warning",
+        capture_warning,
+    )
+
+    await mgr.compress(agent)
+    assert agent.model.calls == 1  # trigger check only
+    await mgr.compress(agent)
+    assert agent.model.calls == 2
     stuck = [
-        r for r in caplog.records if "compression trigger" in r.getMessage()
+        message for message in warnings if "compression trigger" in message
     ]
     assert len(stuck) == 1
 
@@ -606,6 +539,201 @@ async def test_empty_middle_still_compacts_index_under_pressure(
     )
     # The active turn is still live, after the placeholder.
     assert agent.state.context[-1].id == ctx[-1].id
+
+
+# -- generated headlines for un-headlined evicted spans ---------------------
+
+
+class _CallableModel(FakeModel):
+    """A ``FakeModel`` that is also callable as a chat model.
+
+    ``reply`` is the text an index call returns (``<n>: headline`` section
+    lines by convention); set it to an ``Exception`` instance to have the call
+    raise (to exercise the fallback). ``call_count`` records how many times it
+    was invoked as a chat model — so a test can assert the index path was (or
+    was not) taken. ``last_body`` captures the user message (the numbered
+    sections the harness assembled) of the last call."""
+
+    def __init__(self, tokens, reply="1: a legacy 1.x decision", **kw):
+        super().__init__(tokens, **kw)
+        self._reply = reply
+        self.call_count = 0
+        self.last_body = ""
+
+    async def __call__(self, messages, *args, **kwargs):
+        self.call_count += 1
+        self.last_body = messages[-1].get_text_content()
+        if isinstance(self._reply, Exception):
+            raise self._reply
+        return SimpleNamespace(text=self._reply)
+
+
+def _agent_with_callable_model(
+    ctx,
+    reply="1: a legacy 1.x decision",
+    tokens=200,
+):
+    agent = FakeAgent(ctx, tokens=tokens)
+    agent.model = _CallableModel(tokens, reply=reply)
+    return agent
+
+
+def _index_headline_lines(mgr) -> list[str]:
+    """The ``·`` headline lines of the eviction-index map (text after ⟦)."""
+    return [ln for ln in mgr._index.describe().splitlines() if "·" in ln]
+
+
+async def test_unheadlined_span_gets_generated_summary(store: HistoryStore):
+    """An evicted span with no headline is labelled by the model's synthesized
+    headline instead of the bare ``(no milestone)`` marker."""
+    ctx = [
+        user("what was the old plan"),
+        assistant("we shipped v1 without milestones"),  # NO headline
+        user("next question"),
+        assistant("recent"),
+    ]
+    mgr = make_manager(store, summarize_unheadlined=True)
+    agent = _agent_with_callable_model(
+        ctx,
+        reply="1: shipped v1 sans milestones",
+    )
+    agent._split_return = (ctx[:2], ctx[2:])
+    await mgr.compress(agent)
+    index = mgr._index.describe()
+    assert "shipped v1 sans milestones" in index
+    assert "(no milestone)" not in index
+    assert agent.model.call_count == 1
+
+
+async def test_unheadlined_span_tiled_into_multiple_headlines(
+    store: HistoryStore,
+):
+    """A longer un-headlined span is tiled into several harness-addressed
+    headlines, each its own ``·`` line — structurally like real milestones.
+    The model only writes ``<n>: headline``; the seqs are the harness's."""
+    ctx = [
+        user("q1 about billing"),
+        assistant("answered billing"),  # NO headline
+        user("q2 about shipping"),
+        assistant("answered shipping"),  # NO headline
+        user("next question"),
+        assistant("recent"),
+    ]
+    mgr = make_manager(store, summarize_unheadlined=True)
+    agent = _agent_with_callable_model(
+        ctx,
+        reply=(
+            "1: billing question resolved\n" "2: shipping question resolved"
+        ),
+    )
+    agent._split_return = (ctx[:4], ctx[4:])
+    await mgr.compress(agent)
+    index = mgr._index.describe()
+    assert "billing question resolved" in index
+    assert "shipping question resolved" in index
+    # Two distinct headline lines, not one coarse summary.
+    assert len(_index_headline_lines(mgr)) == 2
+    # The harness split the span into numbered sections for the model.
+    assert "[1]" in agent.model.last_body
+    assert "[2]" in agent.model.last_body
+
+
+async def test_skipped_section_keeps_extractive_fallback(store: HistoryStore):
+    """A section the model omits is still labelled — the harness fills it with
+    an extractive fallback drawn from that section's own text, never
+    ``(no milestone)`` for a section that had content."""
+    ctx = [
+        user("distinctive-billing-question"),
+        assistant("answered billing"),  # NO headline
+        user("distinctive-shipping-question"),
+        assistant("answered shipping"),  # NO headline
+        user("next question"),
+        assistant("recent"),
+    ]
+    mgr = make_manager(store, summarize_unheadlined=True)
+    # Model labels section 1 only; section 2 must fall back to its own content.
+    agent = _agent_with_callable_model(ctx, reply="1: billing resolved")
+    agent._split_return = (ctx[:4], ctx[4:])
+    await mgr.compress(agent)
+    index = mgr._index.describe()
+    assert "billing resolved" in index  # model's headline for section 1
+    assert "distinctive-shipping-question" in index  # fallback for section 2
+    assert len(_index_headline_lines(mgr)) == 2
+
+
+async def test_bare_reply_lines_map_positionally(store: HistoryStore):
+    """A reply without ``<n>:`` prefixes still lines up: bare headline lines
+    are assigned to sections in order."""
+    ctx = [
+        user("old thing"),
+        assistant("did old thing"),  # NO headline
+        user("next question"),
+        assistant("recent"),
+    ]
+    mgr = make_manager(store, summarize_unheadlined=True)
+    agent = _agent_with_callable_model(
+        ctx,
+        reply="This stretch was about the old thing",
+    )
+    agent._split_return = (ctx[:2], ctx[2:])
+    await mgr.compress(agent)
+    index = mgr._index.describe()
+    assert "This stretch was about the old thing" in index
+    assert "(no milestone)" not in index
+    assert len(_index_headline_lines(mgr)) == 1
+
+
+async def test_headlined_span_never_calls_summary_model(store: HistoryStore):
+    """A span that already has a headline uses it as the leaf — no index
+    call is made (leaves present)."""
+    ctx = [
+        user("task"),
+        assistant("step", headline="did-step"),
+        user("next question"),
+        assistant("recent"),
+    ]
+    mgr = make_manager(store, summarize_unheadlined=True)
+    agent = _agent_with_callable_model(ctx)
+    agent._split_return = (ctx[:2], ctx[2:])
+    await mgr.compress(agent)
+    assert "did-step" in mgr._index.describe()
+    assert agent.model.call_count == 0
+
+
+async def test_unheadlined_span_falls_back_when_summary_fails(
+    store: HistoryStore,
+):
+    """A model/timeout error must never abort eviction — the span keeps the
+    ``(no milestone)`` marker and the evicted count is unaffected."""
+    ctx = [
+        user("old thing"),
+        assistant("did old thing"),  # NO headline
+        user("next question"),
+        assistant("recent"),
+    ]
+    mgr = make_manager(store, summarize_unheadlined=True)
+    agent = _agent_with_callable_model(ctx, reply=RuntimeError("model down"))
+    agent._split_return = (ctx[:2], ctx[2:])
+    await mgr.compress(agent)
+    assert "(no milestone)" in mgr._index.describe()
+    assert mgr.last_compress["evicted"] == 2
+
+
+async def test_summary_disabled_keeps_no_milestone(store: HistoryStore):
+    """With the flag off the span stays ``(no milestone)`` and the model is
+    never called — the default behaviour is preserved."""
+    ctx = [
+        user("old thing"),
+        assistant("did old thing"),  # NO headline
+        user("next question"),
+        assistant("recent"),
+    ]
+    mgr = make_manager(store, summarize_unheadlined=False)
+    agent = _agent_with_callable_model(ctx)
+    agent._split_return = (ctx[:2], ctx[2:])
+    await mgr.compress(agent)
+    assert "(no milestone)" in mgr._index.describe()
+    assert agent.model.call_count == 0
 
 
 def test_seq_by_tcid_round_trips_through_checkpoint(store: HistoryStore):

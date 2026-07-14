@@ -5,7 +5,6 @@
  * so it can be unit-tested and potentially reused independently.
  */
 import { Checkbox, Radio } from "antd";
-import { useTranslation } from "react-i18next";
 import type { AgentSummary } from "@/api/types/agents";
 import AgentMultiSelect from "./AgentMultiSelect";
 import styles from "./BackupScopeForm.module.less";
@@ -14,7 +13,7 @@ export interface ScopeFormValue {
   backupMode: "full" | "partial";
   selectedAgents: string[];
   globalConfig: boolean;
-  includeSkillPool: boolean;
+  includeGlobalSkills: boolean;
   includeSecrets: boolean;
 }
 
@@ -29,7 +28,6 @@ interface Props {
  * Extracted from CreateBackupModal so it can be tested and reused independently.
  */
 export default function BackupScopeForm({ value, onChange, agents }: Props) {
-  const { t } = useTranslation();
 
   /** Shallow-merges a partial update into the current form value. */
   const set = (partial: Partial<ScopeFormValue>) =>
@@ -38,20 +36,20 @@ export default function BackupScopeForm({ value, onChange, agents }: Props) {
   return (
     <div className={styles.form}>
       <div className={styles.section}>
-        <div className={styles.sectionLabel}>{t("backup.backupMode")}</div>
+        <div className={styles.sectionLabel}>{"备份模式"}</div>
         <Radio.Group
           value={value.backupMode}
           onChange={(e) => set({ backupMode: e.target.value })}
           className={styles.radioGroup}
         >
           <Radio value="full">
-            <strong>{t("backup.fullBackup")}</strong>
-            <div className={styles.radioDesc}>{t("backup.fullBackupDesc")}</div>
+            <strong>{"完整备份"}</strong>
+            <div className={styles.radioDesc}>{"备份所有内容，包括所有智能体工作区、全局设置、全局技能和密钥信息"}</div>
           </Radio>
           <Radio value="partial">
-            <strong>{t("backup.partialBackup")}</strong>
+            <strong>{"部分备份"}</strong>
             <div className={styles.radioDesc}>
-              {t("backup.partialBackupDesc")}
+              {"自定义选择要备份的内容"}
             </div>
           </Radio>
         </Radio.Group>
@@ -71,7 +69,7 @@ export default function BackupScopeForm({ value, onChange, agents }: Props) {
               });
             }}
           >
-            {t("backup.scopeAgents")}
+            {"智能体工作区"}
           </Checkbox>
 
           {value.selectedAgents.length > 0 && (
@@ -88,14 +86,14 @@ export default function BackupScopeForm({ value, onChange, agents }: Props) {
             checked={value.globalConfig}
             onChange={(e) => set({ globalConfig: e.target.checked })}
           >
-            {t("backup.scopeGlobalConfig")}
+            {"全局设置"}
           </Checkbox>
 
           <Checkbox
-            checked={value.includeSkillPool}
-            onChange={(e) => set({ includeSkillPool: e.target.checked })}
+            checked={value.includeGlobalSkills}
+            onChange={(e) => set({ includeGlobalSkills: e.target.checked })}
           >
-            {t("backup.scopeSkillPool")}
+            {"全局技能"}
           </Checkbox>
 
           <div>
@@ -103,10 +101,10 @@ export default function BackupScopeForm({ value, onChange, agents }: Props) {
               checked={value.includeSecrets}
               onChange={(e) => set({ includeSecrets: e.target.checked })}
             >
-              {t("backup.scopeSecrets")}
+              {"密钥信息"}
             </Checkbox>
             <div className={styles.secretsHint}>
-              {t("backup.scopeSecretsHint")}
+              {"包含模型供应商密钥（API Key）和环境变量等敏感信息"}
             </div>
           </div>
         </div>

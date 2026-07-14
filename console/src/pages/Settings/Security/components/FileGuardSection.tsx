@@ -16,7 +16,6 @@ import {
   FolderOutlined,
   FileOutlined,
 } from "@ant-design/icons";
-import { useTranslation } from "react-i18next";
 import api from "../../../../api";
 import styles from "../index.module.less";
 
@@ -29,8 +28,7 @@ interface FileGuardSectionProps {
 }
 
 export function FileGuardSection({ onSave }: FileGuardSectionProps = {}) {
-  const { t } = useTranslation();
-  const [enabled, setEnabled] = useState(true);
+    const [enabled, setEnabled] = useState(true);
   const [allowPreviewOutsideWorkspace, setAllowPreviewOutsideWorkspace] =
     useState(false);
   const [paths, setPaths] = useState<string[]>([]);
@@ -49,11 +47,11 @@ export function FileGuardSection({ onSave }: FileGuardSectionProps = {}) {
       );
       setPaths(data?.paths ?? []);
     } catch {
-      message.error(t("security.fileGuard.loadFailed"));
+      message.error("加载文件防护设置失败");
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [message]);
 
   useEffect(() => {
     fetchData();
@@ -64,13 +62,13 @@ export function FileGuardSection({ onSave }: FileGuardSectionProps = {}) {
       setEnabled(checked);
       try {
         await api.updateFileGuard({ enabled: checked });
-        message.success(t("security.fileGuard.saveSuccess"));
+        message.success("文件防护设置已保存");
       } catch {
         setEnabled(!checked);
-        message.error(t("security.fileGuard.saveFailed"));
+        message.error("保存文件防护设置失败");
       }
     },
-    [t],
+    [message],
   );
 
   const handlePreviewToggle = useCallback(
@@ -80,25 +78,25 @@ export function FileGuardSection({ onSave }: FileGuardSectionProps = {}) {
         await api.updateFileGuard({
           allow_preview_outside_workspace: checked,
         });
-        message.success(t("security.fileGuard.saveSuccess"));
+        message.success("文件防护设置已保存");
       } catch {
         setAllowPreviewOutsideWorkspace(!checked);
-        message.error(t("security.fileGuard.saveFailed"));
+        message.error("保存文件防护设置失败");
       }
     },
-    [t],
+    [message],
   );
 
   const handleAdd = useCallback(() => {
     const trimmed = newPath.trim();
     if (!trimmed) return;
     if (paths.includes(trimmed)) {
-      message.warning(t("security.fileGuard.duplicate"));
+      message.warning("该路径已存在");
       return;
     }
     setPaths((prev) => [...prev, trimmed]);
     setNewPath("");
-  }, [newPath, paths, t]);
+  }, [message, newPath, paths]);
 
   const handleRemove = useCallback((path: string) => {
     setPaths((prev) => prev.filter((p) => p !== path));
@@ -108,13 +106,13 @@ export function FileGuardSection({ onSave }: FileGuardSectionProps = {}) {
     try {
       setSaving(true);
       await api.updateFileGuard({ paths });
-      message.success(t("security.fileGuard.saveSuccess"));
+      message.success("文件防护设置已保存");
     } catch {
-      message.error(t("security.fileGuard.saveFailed"));
+      message.error("保存文件防护设置失败");
     } finally {
       setSaving(false);
     }
-  }, [paths, t]);
+  }, [message, paths]);
 
   const handleReset = useCallback(() => {
     fetchData();
@@ -126,7 +124,7 @@ export function FileGuardSection({ onSave }: FileGuardSectionProps = {}) {
 
   const columns = [
     {
-      title: t("security.fileGuard.path"),
+      title: "路径",
       dataIndex: "path",
       key: "path",
       render: (path: string) => {
@@ -140,22 +138,22 @@ export function FileGuardSection({ onSave }: FileGuardSectionProps = {}) {
             )}
             <code>{path}</code>
             {isDir && (
-              <Tag color="orange">{t("security.fileGuard.directory")}</Tag>
+              <Tag color="orange">{"目录"}</Tag>
             )}
           </Space>
         );
       },
     },
     {
-      title: t("security.fileGuard.actions"),
+      title: "操作",
       key: "actions",
       width: 80,
       render: (_: unknown, record: { path: string }) => (
         <Popconfirm
-          title={t("security.fileGuard.removeConfirm")}
+          title={"从保护列表中移除该路径？"}
           onConfirm={() => handleRemove(record.path)}
-          okText={t("common.delete")}
-          cancelText={t("common.cancel")}
+          okText={"删除"}
+          cancelText={"取消"}
         >
           <Button type="text" danger icon={<DeleteOutlined />} size="small" />
         </Popconfirm>
@@ -177,7 +175,7 @@ export function FileGuardSection({ onSave }: FileGuardSectionProps = {}) {
           }}
         >
           <span style={{ fontWeight: 500 }}>
-            {t("security.fileGuard.enableLabel")}
+            {"启用文件防护"}
           </span>
           <Switch checked={enabled} onChange={handleToggle} />
         </div>
@@ -192,10 +190,10 @@ export function FileGuardSection({ onSave }: FileGuardSectionProps = {}) {
         >
           <div>
             <span style={{ fontWeight: 500 }}>
-              {t("security.fileGuard.allowPreviewOutsideWorkspace")}
+              {"允许控制台预览工作区外文件"}
             </span>
             <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
-              {t("security.fileGuard.allowPreviewOutsideWorkspaceDesc")}
+              {"允许在控制台中预览工作区目录之外的文件，敏感文件防护仍然生效。"}
             </div>
           </div>
           <Switch
@@ -208,7 +206,7 @@ export function FileGuardSection({ onSave }: FileGuardSectionProps = {}) {
           <Input
             value={newPath}
             onChange={(e) => setNewPath(e.target.value)}
-            placeholder={t("security.fileGuard.inputPlaceholder")}
+            placeholder={"输入文件或目录路径（如 ~/.ssh/ 或 /etc/passwd）"}
             onPressEnter={handleAdd}
             allowClear
             disabled={!enabled}
@@ -219,7 +217,7 @@ export function FileGuardSection({ onSave }: FileGuardSectionProps = {}) {
             onClick={handleAdd}
             disabled={!newPath.trim() || !enabled}
           >
-            {t("security.fileGuard.add")}
+            {"添加"}
           </Button>
         </Space.Compact>
       </Card>
@@ -232,7 +230,7 @@ export function FileGuardSection({ onSave }: FileGuardSectionProps = {}) {
           pagination={false}
           size="middle"
           locale={{
-            emptyText: t("security.fileGuard.empty"),
+            emptyText: "未配置自定义敏感路径",
           }}
         />
       </Card>

@@ -11,7 +11,6 @@ import {
 import { useAppMessage } from "../../../../hooks/useAppMessage";
 import { Space } from "antd";
 import { Shield, Plus, Trash2, AlertTriangle } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import api from "../../../../api";
 import styles from "../index.module.less";
 
@@ -24,8 +23,7 @@ interface AllowNoAuthHostsTabProps {
 }
 
 export function AllowNoAuthHostsTab({ onSave }: AllowNoAuthHostsTabProps = {}) {
-  const { t } = useTranslation();
-  const [hosts, setHosts] = useState<string[]>([]);
+    const [hosts, setHosts] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [newHost, setNewHost] = useState("");
@@ -37,11 +35,11 @@ export function AllowNoAuthHostsTab({ onSave }: AllowNoAuthHostsTabProps = {}) {
       const data = await api.getAllowNoAuthHosts();
       setHosts(data?.hosts ?? ["127.0.0.1", "::1"]);
     } catch {
-      message.error(t("security.allowNoAuthHosts.loadFailed"));
+      message.error("加载免认证主机白名单设置失败");
     } finally {
       setLoading(false);
     }
-  }, [t, message]);
+  }, [message]);
 
   useEffect(() => {
     fetchData();
@@ -65,18 +63,18 @@ export function AllowNoAuthHostsTab({ onSave }: AllowNoAuthHostsTabProps = {}) {
     if (!trimmed) return;
 
     if (!isValidIP(trimmed)) {
-      message.error(t("security.allowNoAuthHosts.invalidIP"));
+      message.error("无效的 IP 地址格式");
       return;
     }
 
     if (hosts.includes(trimmed)) {
-      message.warning(t("security.allowNoAuthHosts.duplicate"));
+      message.warning("该 IP 地址已存在");
       return;
     }
 
     setHosts((prev) => [...prev, trimmed]);
     setNewHost("");
-  }, [newHost, hosts, t, message]);
+  }, [newHost, hosts, message]);
 
   const handleRemove = useCallback((host: string) => {
     setHosts((prev) => prev.filter((h) => h !== host));
@@ -86,13 +84,13 @@ export function AllowNoAuthHostsTab({ onSave }: AllowNoAuthHostsTabProps = {}) {
     try {
       setSaving(true);
       await api.updateAllowNoAuthHosts({ hosts });
-      message.success(t("security.allowNoAuthHosts.saveSuccess"));
+      message.success("免认证主机白名单设置已保存");
     } catch {
-      message.error(t("security.allowNoAuthHosts.saveFailed"));
+      message.error("保存免认证主机白名单设置失败");
     } finally {
       setSaving(false);
     }
-  }, [hosts, t, message]);
+  }, [hosts, message]);
 
   const handleReset = useCallback(() => {
     fetchData();
@@ -108,7 +106,7 @@ export function AllowNoAuthHostsTab({ onSave }: AllowNoAuthHostsTabProps = {}) {
 
   const columns = [
     {
-      title: t("security.allowNoAuthHosts.ipAddress"),
+      title: "IP 地址",
       dataIndex: "host",
       key: "host",
       render: (host: string) => (
@@ -116,21 +114,21 @@ export function AllowNoAuthHostsTab({ onSave }: AllowNoAuthHostsTabProps = {}) {
           <Shield size={16} style={{ color: "#52c41a" }} />
           <code style={{ fontSize: "13px" }}>{host}</code>
           {isDefaultHost(host) && (
-            <Tag color="blue">{t("security.allowNoAuthHosts.default")}</Tag>
+            <Tag color="blue">{"默认"}</Tag>
           )}
         </Space>
       ),
     },
     {
-      title: t("security.allowNoAuthHosts.actions"),
+      title: "操作",
       key: "actions",
       width: 80,
       render: (_: unknown, record: { host: string }) => (
         <Popconfirm
-          title={t("security.allowNoAuthHosts.removeConfirm")}
+          title={"从白名单中移除该 IP 地址？"}
           onConfirm={() => handleRemove(record.host)}
-          okText={t("common.delete")}
-          cancelText={t("common.cancel")}
+          okText={"删除"}
+          cancelText={"取消"}
         >
           <Button type="text" danger size="small">
             <Trash2 size={14} />
@@ -145,8 +143,8 @@ export function AllowNoAuthHostsTab({ onSave }: AllowNoAuthHostsTabProps = {}) {
   return (
     <div className={styles.tabContent}>
       <Alert
-        message={t("security.allowNoAuthHosts.warningTitle")}
-        description={t("security.allowNoAuthHosts.warningDescription")}
+        message={"安全警告"}
+        description={"此列表中的 IP 地址可以无需认证访问 API 端点。默认情况下，本地主机（127.0.0.1 和 ::1）允许 CLI 访问。仅添加可信任的 IP 地址。警告：添加不受信任的 IP 会带来严重的安全风险。"}
         type="warning"
         icon={<AlertTriangle size={16} />}
         showIcon
@@ -158,7 +156,7 @@ export function AllowNoAuthHostsTab({ onSave }: AllowNoAuthHostsTabProps = {}) {
           <Input
             value={newHost}
             onChange={(e) => setNewHost(e.target.value)}
-            placeholder={t("security.allowNoAuthHosts.inputPlaceholder")}
+            placeholder={"输入 IP 地址（例如：192.168.1.100 或 ::1）"}
             onPressEnter={handleAdd}
             allowClear
           />
@@ -168,7 +166,7 @@ export function AllowNoAuthHostsTab({ onSave }: AllowNoAuthHostsTabProps = {}) {
             onClick={handleAdd}
             disabled={!newHost.trim()}
           >
-            {t("security.allowNoAuthHosts.add")}
+            {"添加"}
           </Button>
         </Space.Compact>
       </Card>
@@ -181,7 +179,7 @@ export function AllowNoAuthHostsTab({ onSave }: AllowNoAuthHostsTabProps = {}) {
           pagination={false}
           size="middle"
           locale={{
-            emptyText: t("security.allowNoAuthHosts.empty"),
+            emptyText: "未配置 IP 地址",
           }}
         />
       </Card>

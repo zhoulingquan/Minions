@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""HTTP smoke tests for workspace file APIs (working/memory + zip up/down)."""
+"""HTTP smoke tests for workspace Markdown and zip APIs."""
 from __future__ import annotations
 
 import io
@@ -36,10 +36,8 @@ def test_api_workspace_working_file_list_put_get(app_server) -> None:
     expected_seed_files = {
         "SOUL.md",
         "PROFILE.md",
-        "MEMORY.md",
         "HEARTBEAT.md",
         "BOOTSTRAP.md",
-        "AGENTS.md",
     }
 
     create_agent = app_server.api_request(
@@ -90,78 +88,6 @@ def test_api_workspace_working_file_list_put_get(app_server) -> None:
         list_after = app_server.api_request(
             "GET",
             "/api/workspace/files",
-            headers=headers,
-        )
-        assert list_after.status_code == 200, app_server.logs_tail()
-        names = {f["filename"] for f in list_after.json()}
-        assert f"{md_stem}.md" in names
-    finally:
-        app_server.api_request("DELETE", f"/api/agents/{agent_id}")
-
-
-@pytest.mark.integration
-@pytest.mark.p1
-def test_api_workspace_memory_file_list_put_get(app_server) -> None:
-    """Test purpose:
-    - Verify workspace memory-file APIs support write/read/list roundtrip under
-      an explicit agent context.
-
-    Test flow:
-    1. Create a test agent.
-    2. GET /api/workspace/memory and assert list response shape.
-    3. PUT /api/workspace/memory/{md_name} with test content.
-    4. GET /api/workspace/memory/{md_name} and verify content matches.
-    5. GET /api/workspace/memory again and assert new file appears.
-    6. Delete test agent for cleanup.
-
-    API endpoints:
-    - POST /api/agents
-    - GET /api/workspace/memory
-    - PUT /api/workspace/memory/{md_name}
-    - GET /api/workspace/memory/{md_name}
-    - DELETE /api/agents/{agentId}
-    """
-    agent_id = "integ_mem_01"
-    headers = {"X-Agent-Id": agent_id}
-    md_stem = "integ_memory_note"
-    content = "# memory integration\nfacts: 42\n"
-
-    create_agent = app_server.api_request(
-        "POST",
-        "/api/agents",
-        json={"id": agent_id, "name": "Memory smoke agent", "description": ""},
-    )
-    assert create_agent.status_code == 201, app_server.logs_tail()
-
-    try:
-        list_before = app_server.api_request(
-            "GET",
-            "/api/workspace/memory",
-            headers=headers,
-        )
-        assert list_before.status_code == 200, app_server.logs_tail()
-        assert isinstance(list_before.json(), list)
-
-        put_resp = app_server.api_request(
-            "PUT",
-            f"/api/workspace/memory/{md_stem}",
-            headers=headers,
-            json={"content": content},
-        )
-        assert put_resp.status_code == 200, app_server.logs_tail()
-        assert put_resp.json() == {"written": True}
-
-        get_resp = app_server.api_request(
-            "GET",
-            f"/api/workspace/memory/{md_stem}",
-            headers=headers,
-        )
-        assert get_resp.status_code == 200, app_server.logs_tail()
-        assert get_resp.json()["content"] == content.strip()
-
-        list_after = app_server.api_request(
-            "GET",
-            "/api/workspace/memory",
             headers=headers,
         )
         assert list_after.status_code == 200, app_server.logs_tail()
@@ -315,7 +241,7 @@ def test_api_workspace_download_zip_contract(app_server) -> None:
         with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as zf:
             names = set(zf.namelist())
 
-        assert "AGENTS.md" in names
+        assert "BOOTSTRAP.md" in names
         assert f"{marker_stem}.md" in names
     finally:
         app_server.api_request("DELETE", f"/api/agents/{agent_id}")

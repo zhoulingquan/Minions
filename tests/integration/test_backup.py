@@ -24,7 +24,7 @@ _DEFAULT_BACKUP_PAYLOAD = {
         "include_agents": False,
         "include_global_config": False,
         "include_secrets": False,
-        "include_skill_pool": True,
+        "include_global_skills": True,
     },
     "agents": [],
 }
@@ -158,7 +158,7 @@ def test_backup_restore_returns_404_for_missing(app_server) -> None:
             "agent_ids": [],
             "include_global_config": False,
             "include_secrets": False,
-            "include_skill_pool": False,
+            "include_global_skills": False,
             "mode": "custom",
         },
         timeout=_BACKUP_HTTP_TIMEOUT,
@@ -177,7 +177,7 @@ def test_backup_create_stream_and_restore_lifecycle(app_server) -> None:
 
     Test flow:
     1. POST /api/backups/stream with a minimal scope (no agents/secrets,
-       skill_pool only) and consume SSE events until ``done`` arrives.
+       global_skills only) and consume SSE events until ``done`` arrives.
     2. Capture ``backup_id`` from the final ``done`` event meta.
     3. GET /api/backups and assert the new id is present in the listing.
     4. GET /api/backups/{backup_id} and assert detail matches the id.
@@ -202,7 +202,7 @@ def test_backup_create_stream_and_restore_lifecycle(app_server) -> None:
             "include_agents": False,
             "include_global_config": False,
             "include_secrets": False,
-            "include_skill_pool": True,
+            "include_global_skills": True,
         },
         "agents": [],
     }
@@ -237,7 +237,7 @@ def test_backup_create_stream_and_restore_lifecycle(app_server) -> None:
                 "agent_ids": [],
                 "include_global_config": False,
                 "include_secrets": False,
-                "include_skill_pool": False,
+                "include_global_skills": False,
                 "mode": "custom",
             },
             timeout=_BACKUP_HTTP_TIMEOUT,

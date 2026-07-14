@@ -2,7 +2,7 @@
 // New code should import directly from "@/utils/skill".
 export {
   getSkillDisplaySource,
-  getPoolBuiltinStatusLabel,
-  getPoolBuiltinStatusTone,
+  getGlobalBuiltinStatusLabel,
+  getGlobalBuiltinStatusTone,
   isSkillBuiltin,
 } from "@/utils/skill";

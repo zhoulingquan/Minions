@@ -36,7 +36,6 @@ def test_initialize_agent_workspace_creates_runtime_compatible_files(
     agents_router._initialize_agent_workspace(tmp_path)
 
     assert (tmp_path / "sessions").is_dir()
-    assert (tmp_path / "memory").is_dir()
     assert (tmp_path / "skills").is_dir()
     assert not (tmp_path / "active_skills").exists()
     assert not (tmp_path / "customized_skills").exists()

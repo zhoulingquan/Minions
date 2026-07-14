@@ -2,12 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 import { useAppMessage } from "../../../hooks/useAppMessage";
 import api from "../../../api";
 import type { MCPAccessPolicy, MCPClientInfo } from "../../../api/types";
-import { useTranslation } from "react-i18next";
 import { useAgentStore } from "../../../stores/agentStore";
 
 export function useMCP() {
-  const { t } = useTranslation();
-  const { selectedAgent } = useAgentStore();
+    const { selectedAgent } = useAgentStore();
   const [clients, setClients] = useState<MCPClientInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const { message } = useAppMessage();
@@ -19,11 +17,11 @@ export function useMCP() {
       setClients(data);
     } catch (error) {
       console.error("Failed to load MCP clients:", error);
-      message.error(t("mcp.loadError"));
+      message.error("加载 MCP 客户端失败");
     } finally {
       setLoading(false);
     }
-  }, [message, t]);
+  }, [message]);
 
   useEffect(() => {
     loadClients();
@@ -50,16 +48,17 @@ export function useMCP() {
           client_key: key,
           client: clientData,
         });
-        message.success(t("mcp.createSuccess"));
+        message.success("MCP 客户端创建成功");
         await loadClients();
         return true;
-      } catch (error: any) {
-        const errorMsg = error?.message || t("mcp.createError");
+      } catch (error) {
+        const errorMsg =
+          error instanceof Error ? error.message : "MCP 客户端创建失败";
         message.error(errorMsg);
         return false;
       }
     },
-    [message, t, loadClients],
+    [message, loadClients],
   );
 
   const updateClient = useCallback(
@@ -80,16 +79,17 @@ export function useMCP() {
     ) => {
       try {
         await api.updateMCPClient(key, updates);
-        message.success(t("mcp.updateSuccess"));
+        message.success("MCP 客户端更新成功");
         await loadClients();
         return true;
-      } catch (error: any) {
-        const errorMsg = error?.message || t("mcp.updateError");
+      } catch (error) {
+        const errorMsg =
+          error instanceof Error ? error.message : "MCP 客户端更新失败";
         message.error(errorMsg);
         return false;
       }
     },
-    [message, t, loadClients],
+    [message, loadClients],
   );
 
   const toggleEnabled = useCallback(
@@ -97,43 +97,44 @@ export function useMCP() {
       try {
         await api.toggleMCPClient(client.key);
         message.success(
-          client.enabled ? t("mcp.disableSuccess") : t("mcp.enableSuccess"),
+          client.enabled ? "MCP 客户端禁用成功" : "MCP 客户端启用成功",
         );
         await loadClients();
-      } catch (error) {
-        message.error(t("mcp.toggleError"));
+      } catch {
+        message.error("切换 MCP 客户端状态失败");
       }
     },
-    [message, t, loadClients],
+    [message, loadClients],
   );
 
   const deleteClient = useCallback(
     async (client: MCPClientInfo) => {
       try {
         await api.deleteMCPClient(client.key);
-        message.success(t("mcp.deleteSuccess"));
+        message.success("MCP 客户端删除成功");
         await loadClients();
-      } catch (error) {
-        message.error(t("mcp.deleteError"));
+      } catch {
+        message.error("MCP 客户端删除失败");
       }
     },
-    [message, t, loadClients],
+    [message, loadClients],
   );
 
   const updatePolicy = useCallback(
     async (clientKey: string, policy: MCPAccessPolicy) => {
       try {
         await api.updateMCPPolicy(clientKey, policy);
-        message.success(t("mcp.access.saveSuccess"));
+        message.success("MCP 访问策略已保存");
         await loadClients();
         return true;
-      } catch (error: any) {
-        const errorMsg = error?.message || t("mcp.access.saveError");
+      } catch (error) {
+        const errorMsg =
+          error instanceof Error ? error.message : "保存 MCP 访问策略失败";
         message.error(errorMsg);
         return false;
       }
     },
-    [message, t, loadClients],
+    [message, loadClients],
   );
 
   return {

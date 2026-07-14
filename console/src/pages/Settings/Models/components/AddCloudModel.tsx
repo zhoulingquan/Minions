@@ -3,7 +3,6 @@ import { Button, Form, Input, Modal } from "@agentscope-ai/design";
 import { PlusOutlined, ApiOutlined, CheckOutlined } from "@ant-design/icons";
 import type { ModelInfo } from "../../../../api/types";
 import api from "../../../../api";
-import { useTranslation } from "react-i18next";
 import { useAppMessage } from "../../../../hooks/useAppMessage";
 import styles from "../index.module.less";
 
@@ -12,8 +11,7 @@ interface AddCloudModelProps {
 }
 
 export function AddCloudModel({ onSaved }: AddCloudModelProps) {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [discovering, setDiscovering] = useState(false);
@@ -75,13 +73,13 @@ export function AddCloudModel({ onSaved }: AddCloudModelProps) {
       if (result.success && result.models.length > 0) {
         setDiscoveredModels(result.models);
       } else if (result.success) {
-        message.info(t("models.autoDiscoverModelsNoNew"));
+        message.info("自动发现完成，未新增模型");
       } else {
-        message.warning(result.message || t("models.autoDiscoverModelsFailed"));
+        message.warning(result.message || "自动发现模型失败");
       }
     } catch (error) {
       if (error && typeof error === "object" && "errorFields" in error) return;
-      const errMsg = error instanceof Error ? error.message : t("models.failedToSave");
+      const errMsg = error instanceof Error ? error.message : "保存失败";
       message.error(errMsg);
     } finally {
       setDiscovering(false);
@@ -114,12 +112,12 @@ export function AddCloudModel({ onSaved }: AddCloudModelProps) {
         name: modelName,
       });
 
-      message.success(t("models.modelAdded", { name: modelName }));
+      message.success(`模型 "${modelName}" 已添加`);
       onSaved();
       setModalOpen(false);
     } catch (error) {
       if (error && typeof error === "object" && "errorFields" in error) return;
-      const errMsg = error instanceof Error ? error.message : t("models.failedToSave");
+      const errMsg = error instanceof Error ? error.message : "保存失败";
       message.error(errMsg);
     } finally {
       setSaving(false);
@@ -129,27 +127,27 @@ export function AddCloudModel({ onSaved }: AddCloudModelProps) {
   return (
     <>
       <Button type="primary" icon={<PlusOutlined />} onClick={handleOpen}>
-        {t("models.addCloudModel")}
+        {"添加自定义模型"}
       </Button>
 
       <Modal
         width={640}
-        title={t("models.addCloudModelTitle")}
+        title={"添加自定义模型"}
         open={modalOpen}
         onCancel={handleClose}
         destroyOnHidden
         footer={
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-            <Button onClick={handleClose}>{t("models.cancel")}</Button>
+            <Button onClick={handleClose}>{"取消"}</Button>
             <Button
               icon={<ApiOutlined />}
               onClick={handleDiscover}
               loading={discovering}
             >
-              {t("models.getModelList")}
+              {"获取模型列表"}
             </Button>
             <Button type="primary" loading={saving} onClick={handleSave}>
-              {t("models.save")}
+              {"保存"}
             </Button>
           </div>
         }
@@ -157,40 +155,40 @@ export function AddCloudModel({ onSaved }: AddCloudModelProps) {
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item
             name="provider_name"
-            label={t("models.providerNameLabel")}
-            rules={[{ required: true, message: t("models.providerNameLabel") }]}
+            label={"显示名称"}
+            rules={[{ required: true, message: "显示名称" }]}
           >
-            <Input placeholder={t("models.providerNamePlaceholder")} />
+            <Input placeholder={"例如 OpenAI, Google Gemini"} />
           </Form.Item>
 
           <Form.Item
             name="model_id"
-            label={t("models.modelIdLabel")}
-            rules={[{ required: true, message: t("models.modelIdRequired") }]}
+            label={"模型 ID"}
+            rules={[{ required: true, message: "请输入模型 ID" }]}
           >
-            <Input placeholder={t("models.modelIdPlaceholder")} />
+            <Input placeholder={"例如 gpt-4o, gemini-2.0-flash"} />
           </Form.Item>
 
-          <Form.Item name="name" label={t("models.modelNameLabel")}>
-            <Input placeholder={t("models.modelNamePlaceholder")} />
+          <Form.Item name="name" label={"模型名称"}>
+            <Input placeholder={"例如 GPT-4o, Gemini 2.0 Flash"} />
           </Form.Item>
 
           <Form.Item
             name="base_url"
-            label={t("models.baseURL")}
+            label={"基础 URL"}
             rules={[
-              { required: true, message: t("models.pleaseEnterBaseURL") },
+              { required: true, message: "请输入 API 基础 URL" },
               {
                 validator: (_: unknown, value: string) => {
                   if (!value || !value.trim()) return Promise.resolve();
                   try {
                     const url = new URL(value.trim());
                     if (!["http:", "https:"].includes(url.protocol)) {
-                      return Promise.reject(new Error(t("models.pleaseEnterValidURL")));
+                      return Promise.reject(new Error("请输入有效的 URL"));
                     }
                     return Promise.resolve();
                   } catch {
-                    return Promise.reject(new Error(t("models.pleaseEnterValidURL")));
+                    return Promise.reject(new Error("请输入有效的 URL"));
                   }
                 },
               },
@@ -199,15 +197,15 @@ export function AddCloudModel({ onSaved }: AddCloudModelProps) {
             <Input placeholder="https://api.openai.com/v1" />
           </Form.Item>
 
-          <Form.Item name="api_key" label={t("models.apiKey")}>
-            <Input.Password placeholder={t("models.enterApiKeyOptional")} />
+          <Form.Item name="api_key" label={"API 密钥"}>
+            <Input.Password placeholder={"输入 API 密钥（可选）"} />
           </Form.Item>
         </Form>
 
         {discoveredModels.length > 0 && (
           <div className={styles.discoveredModelsSection}>
             <div className={styles.discoveredModelsTitle}>
-              {t("models.discovered")} {discoveredModels.length} {t("models.models")}
+              {"可用模型："} {discoveredModels.length} {"模型"}
             </div>
             <div className={styles.discoveredModelsList}>
               {discoveredModels.map((m) => (

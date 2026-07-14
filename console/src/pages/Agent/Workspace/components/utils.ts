@@ -7,7 +7,3 @@ export const formatTimeAgo = (timestamp: number | string): string => {
 
   return dayjs(time).fromNow();
 };
-
-export const isDailyMemoryFile = (filename: string): boolean => {
-  return /^\d{4}-\d{2}-\d{2}\.md$/.test(filename);
-};

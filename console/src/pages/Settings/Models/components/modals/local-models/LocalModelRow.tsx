@@ -6,7 +6,6 @@ import {
   PlayCircleOutlined,
   StopOutlined,
 } from "@ant-design/icons";
-import { useTranslation } from "react-i18next";
 import type { LocalModelInfo } from "../../../../../../api/types";
 import styles from "../../../index.module.less";
 import prettyBytes from "pretty-bytes";
@@ -38,8 +37,7 @@ export const LocalModelRow = memo(function LocalModelRow({
   onStopServer,
   onDeleteModel,
 }: LocalModelRowProps) {
-  const { t } = useTranslation();
-  const isRunning = currentRunningModelName === model.id;
+    const isRunning = currentRunningModelName === model.id;
   const isStarting = startingModelName === model.id;
   const isDeleting = deletingModelName === model.id;
 
@@ -60,7 +58,7 @@ export const LocalModelRow = memo(function LocalModelRow({
             onClick={() => onStartDownload(model)}
             disabled={isModelDownloading || isServerBusy}
           >
-            {t("common.download")}
+            {"下载"}
           </Button>
         ) : isRunning ? (
           <>
@@ -71,7 +69,7 @@ export const LocalModelRow = memo(function LocalModelRow({
               loading={stoppingServer}
               onClick={onStopServer}
             >
-              {t("models.localStopServer")}
+              {"停止"}
             </Button>
             <Button
               danger
@@ -81,7 +79,7 @@ export const LocalModelRow = memo(function LocalModelRow({
               disabled
               onClick={() => onDeleteModel(model)}
             >
-              {t("common.delete")}
+              {"删除"}
             </Button>
           </>
         ) : (
@@ -94,7 +92,7 @@ export const LocalModelRow = memo(function LocalModelRow({
               onClick={() => onStartServer(model)}
               disabled={isServerBusy || isDeleting}
             >
-              {t("models.localStartServer")}
+              {"启动"}
             </Button>
             <Button
               danger
@@ -104,7 +102,7 @@ export const LocalModelRow = memo(function LocalModelRow({
               onClick={() => onDeleteModel(model)}
               disabled={isDeleting || isServerBusy}
             >
-              {t("common.delete")}
+              {"删除"}
             </Button>
           </>
         )}

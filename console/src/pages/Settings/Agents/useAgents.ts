@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useAppMessage } from "../../../hooks/useAppMessage";
-import { useTranslation } from "react-i18next";
 import { agentsApi } from "@/api/modules/agents";
 import type { AgentSummary } from "@/api/types/agents";
 import { useAgentStore } from "@/stores/agentStore";
@@ -16,19 +15,21 @@ interface UseAgentsReturn {
 }
 
 export function useAgents(): UseAgentsReturn {
-  const { t } = useTranslation();
-  const [agents, setAgents] = useState<AgentSummary[]>([]);
+    const [agents, setAgents] = useState<AgentSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const { setAgents: updateStoreAgents } = useAgentStore();
   const { message } = useAppMessage();
 
-  const setAgentsState = (nextAgents: AgentSummary[]) => {
-    setAgents(nextAgents);
-    updateStoreAgents(nextAgents);
-  };
+  const setAgentsState = useCallback(
+    (nextAgents: AgentSummary[]) => {
+      setAgents(nextAgents);
+      updateStoreAgents(nextAgents);
+    },
+    [updateStoreAgents],
+  );
 
-  const loadAgents = async () => {
+  const loadAgents = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -37,21 +38,21 @@ export function useAgents(): UseAgentsReturn {
     } catch (err) {
       console.error("Failed to load agents:", err);
       const errorMsg =
-        err instanceof Error ? err : new Error(t("agent.loadFailed"));
+        err instanceof Error ? err : new Error("加载智能体列表失败");
       setError(errorMsg);
-      message.error(t("agent.loadFailed"));
+      message.error("加载智能体列表失败");
     } finally {
       setLoading(false);
     }
-  };
+  }, [message, setAgentsState]);
 
   const deleteAgent = async (agentId: string) => {
     try {
       await agentsApi.deleteAgent(agentId);
-      message.success(t("agent.deleteSuccess"));
+      message.success("智能体删除成功");
       await loadAgents();
-    } catch (err: any) {
-      message.error(err.message || t("agent.deleteFailed"));
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : "智能体删除失败");
       throw err;
     }
   };
@@ -60,19 +61,21 @@ export function useAgents(): UseAgentsReturn {
     try {
       await agentsApi.toggleAgentEnabled(agentId, enabled);
       const successMsg = enabled
-        ? t("agent.enableSuccess")
-        : t("agent.disableSuccess");
+        ? "智能体已启用"
+        : "智能体已禁用";
       message.success(successMsg);
       await loadAgents();
-    } catch (err: any) {
-      message.error(err.message || t("agent.toggleFailed"));
+    } catch (err) {
+      message.error(
+        err instanceof Error ? err.message : "切换智能体状态失败",
+      );
       throw err;
     }
   };
 
   useEffect(() => {
-    loadAgents();
-  }, []);
+    void loadAgents();
+  }, [loadAgents]);
 
   return {
     agents,

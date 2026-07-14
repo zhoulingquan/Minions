@@ -1,5 +1,4 @@
 import { Card, Table } from "@agentscope-ai/design";
-import { useTranslation } from "react-i18next";
 import { formatCompact } from "../../../../utils/formatNumber";
 import styles from "../index.module.less";
 
@@ -25,16 +24,15 @@ interface DataTablesProps {
 }
 
 export function DataTables({ byModelData, byDateData }: DataTablesProps) {
-  const { t } = useTranslation();
 
   const byModelColumns = [
     {
-      title: t("tokenUsage.model"),
+      title: "模型",
       dataIndex: "model",
       key: "model",
     },
     {
-      title: t("tokenUsage.promptTokens"),
+      title: "输入 Token",
       dataIndex: "prompt_tokens",
       key: "prompt_tokens",
       render: (v: number) => formatCompact(v),
@@ -42,7 +40,7 @@ export function DataTables({ byModelData, byDateData }: DataTablesProps) {
         a.prompt_tokens - b.prompt_tokens,
     },
     {
-      title: t("tokenUsage.completionTokens"),
+      title: "输出 Token",
       dataIndex: "completion_tokens",
       key: "completion_tokens",
       render: (v: number) => formatCompact(v),
@@ -50,7 +48,7 @@ export function DataTables({ byModelData, byDateData }: DataTablesProps) {
         a.completion_tokens - b.completion_tokens,
     },
     {
-      title: t("tokenUsage.totalTokens"),
+      title: "总 Token",
       key: "total_tokens",
       render: (_: unknown, record: ByModelData) =>
         formatCompact(record.prompt_tokens + record.completion_tokens),
@@ -60,7 +58,7 @@ export function DataTables({ byModelData, byDateData }: DataTablesProps) {
         (b.prompt_tokens + b.completion_tokens),
     },
     {
-      title: t("tokenUsage.totalCalls"),
+      title: "总调用次数",
       dataIndex: "call_count",
       key: "call_count",
       render: (v: number) => formatCompact(v),
@@ -70,12 +68,12 @@ export function DataTables({ byModelData, byDateData }: DataTablesProps) {
 
   const byDateColumns = [
     {
-      title: t("tokenUsage.date"),
+      title: "日期",
       dataIndex: "date",
       key: "date",
     },
     {
-      title: t("tokenUsage.promptTokens"),
+      title: "输入 Token",
       dataIndex: "prompt_tokens",
       key: "prompt_tokens",
       render: (v: number) => formatCompact(v),
@@ -83,7 +81,7 @@ export function DataTables({ byModelData, byDateData }: DataTablesProps) {
         a.prompt_tokens - b.prompt_tokens,
     },
     {
-      title: t("tokenUsage.completionTokens"),
+      title: "输出 Token",
       dataIndex: "completion_tokens",
       key: "completion_tokens",
       render: (v: number) => formatCompact(v),
@@ -91,7 +89,7 @@ export function DataTables({ byModelData, byDateData }: DataTablesProps) {
         a.completion_tokens - b.completion_tokens,
     },
     {
-      title: t("tokenUsage.totalTokens"),
+      title: "总 Token",
       key: "total_tokens",
       render: (_: unknown, record: ByDateData) =>
         formatCompact(record.prompt_tokens + record.completion_tokens),
@@ -101,7 +99,7 @@ export function DataTables({ byModelData, byDateData }: DataTablesProps) {
         (b.prompt_tokens + b.completion_tokens),
     },
     {
-      title: t("tokenUsage.totalCalls"),
+      title: "总调用次数",
       dataIndex: "call_count",
       key: "call_count",
       render: (v: number) => formatCompact(v),
@@ -114,7 +112,7 @@ export function DataTables({ byModelData, byDateData }: DataTablesProps) {
       {byModelData.length > 0 && (
         <Card
           className={`${styles.tableCard} mobile-scroll-x`}
-          title={t("tokenUsage.byModel")}
+          title={"按模型"}
         >
           <Table
             columns={byModelColumns}
@@ -129,7 +127,7 @@ export function DataTables({ byModelData, byDateData }: DataTablesProps) {
       {byDateData.length > 0 && (
         <Card
           className={`${styles.tableCard} mobile-scroll-x`}
-          title={t("tokenUsage.byDate")}
+          title={"按日期"}
         >
           <Table
             columns={byDateColumns}

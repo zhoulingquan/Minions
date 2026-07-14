@@ -105,10 +105,11 @@ def test_validate_invalid_pattern(agent_id):
         validate_agent_id(agent_id, set())
 
 
-def test_validate_reserved_id():
+@pytest.mark.parametrize("agent_id", ["default", "order"])
+def test_validate_reserved_id(agent_id):
     """Test that reserved IDs are rejected."""
     with pytest.raises(ValueError, match="reserved"):
-        validate_agent_id("default", set())
+        validate_agent_id(agent_id, set())
 
 
 def test_validate_duplicate_id():

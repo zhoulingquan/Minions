@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { App } from "antd";
-import { useTranslation } from "react-i18next";
 import {
   debugApi,
   type BackendDebugLogsResponse,
@@ -20,8 +19,7 @@ export function backendLevelColor(level: BackendLevelFilter): string {
 }
 
 export function useDebugLogs() {
-  const { t } = useTranslation();
-  const { message: messageApi } = App.useApp();
+    const { message: messageApi } = App.useApp();
 
   const [backendLogs, setBackendLogs] =
     useState<BackendDebugLogsResponse | null>(null);
@@ -44,20 +42,20 @@ export function useDebugLogs() {
         setBackendError("");
         if (opts?.successToast) {
           messageApi.success(
-            t("debug.actions.refreshSuccess", "Logs refreshed"),
+            "日志已刷新",
           );
         }
       } catch (error) {
         setBackendError(
           error instanceof Error
             ? error.message
-            : t("debug.backend.loadFailed", "Failed to load backend logs"),
+            : "加载后端日志失败",
         );
         if (opts?.successToast) {
           messageApi.error(
             error instanceof Error
               ? error.message
-              : t("debug.backend.loadFailed", "Failed to load backend logs"),
+              : "加载后端日志失败",
           );
         }
       } finally {
@@ -67,7 +65,7 @@ export function useDebugLogs() {
         }
       }
     },
-    [t, messageApi],
+    [messageApi],
   );
 
   // ── Initial load ────────────────────────────────────────────────────────
@@ -138,11 +136,11 @@ export function useDebugLogs() {
   const handleCopyBackend = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(filteredBackendText);
-      messageApi.success(t("common.copied"));
+      messageApi.success("已复制到剪贴板");
     } catch {
-      messageApi.error(t("common.copyFailed"));
+      messageApi.error("复制到剪贴板失败");
     }
-  }, [filteredBackendText, t, messageApi]);
+  }, [filteredBackendText, messageApi]);
 
   return {
     backendLogs,

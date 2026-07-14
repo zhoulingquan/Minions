@@ -123,13 +123,13 @@ export const moduleRegistry = new ModuleRegistryImpl();
 // Set during initialization
 if (typeof window !== "undefined") {
   if (!window.Minions) {
-    (window as any).Minions = {};
+    window.Minions = {} as typeof window.Minions;
   }
 
   // Use Proxy for dynamic access, ensuring plugins always get latest module state
   Object.defineProperty(window.Minions, "modules", {
     get() {
-      return (moduleRegistry as any).getAllModules();
+      return moduleRegistry.getAllModules();
     },
     configurable: true,
     enumerable: true,

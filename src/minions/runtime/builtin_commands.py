@@ -49,7 +49,7 @@ def _make_daemon_adapter(subcommand: str) -> CommandSpec:
 
         daemon_ctx = DaemonContext(
             load_config_fn=lambda: load_agent_config(agent_id),
-            memory_manager=getattr(workspace, "memory_manager", None),
+            sage_runtime=getattr(workspace, "sage_runtime", None),
             manager=getattr(workspace, "_manager", None),
             agent_id=agent_id,
             session_id=getattr(ctx, "session_id", "") or "",
@@ -111,9 +111,9 @@ def _make_daemon_compound_adapter() -> CommandSpec:
 
         daemon_ctx = DaemonContext(
             load_config_fn=lambda: load_agent_config(agent_id),
-            memory_manager=getattr(
+            sage_runtime=getattr(
                 workspace,
-                "memory_manager",
+                "sage_runtime",
                 None,
             ),
             manager=getattr(workspace, "_manager", None),
@@ -266,15 +266,11 @@ _CONVERSATION_COMMANDS = frozenset(
         "clear",
         "history",
         "compact_str",
-        "summarize_status",
         "message",
         "dump_history",
         "load_history",
-        "proactive",
         "plan",
         "system_prompt",
-        "dream",
-        "memorize",
     },
 )
 
@@ -453,7 +449,6 @@ def _make_conversation_adapter(name: str) -> CommandSpec:
             agent_name=agent_name,
             state=state,
             agent_id=agent_id,
-            memory_manager=getattr(workspace, "memory_manager", None),
             offloader=offloader,
             workspace_dir=ws_dir,
             scroll_state=existing_scroll,
@@ -639,6 +634,9 @@ def collect_builtin_command_specs() -> list[CommandSpec]:
     specs.extend(_collect_daemon_specs())
     specs.extend(_collect_control_specs())
     specs.extend(_collect_conversation_specs())
+    from ..sage.commands import build_sage_command_specs
+
+    specs.extend(build_sage_command_specs())
     return specs
 
 

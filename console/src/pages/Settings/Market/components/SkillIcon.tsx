@@ -12,11 +12,11 @@ export function sourceLabel(source: string): string {
   return SOURCE_LABELS[source] ?? source;
 }
 
-const PROVIDER_FALLBACK: Record<string, { letter: string; color: string }> = {
-  minions: { letter: "Q", color: "#10b981" },
-  clawhub: { letter: "C", color: "#f59e0b" },
-  modelscope: { letter: "M", color: "#4f46e5" },
-  aliyun: { letter: "A", color: "#ff6a00" },
+const PROVIDER_FALLBACK: Record<string, { letter: string }> = {
+  minions: { letter: "Q" },
+  clawhub: { letter: "C" },
+  modelscope: { letter: "M" },
+  aliyun: { letter: "A" },
 };
 
 interface SkillIconProps {
@@ -47,7 +47,7 @@ export function SkillIcon({ url, alt, source }: SkillIconProps) {
       <div
         className={styles.skillIcon}
         aria-hidden
-        style={{ background: fallback.color, color: "#fff", fontWeight: 600 }}
+        style={{ fontWeight: 600 }}
       >
         {fallback.letter}
       </div>

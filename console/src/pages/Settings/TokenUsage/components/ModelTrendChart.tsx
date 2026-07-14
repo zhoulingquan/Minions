@@ -1,14 +1,13 @@
 import { Card } from "@agentscope-ai/design";
-import { useTranslation } from "react-i18next";
 import { Line } from "@ant-design/plots";
+import type { LineConfig } from "@ant-design/plots";
 import styles from "../index.module.less";
 
 interface ModelTrendChartProps {
-  chartConfig: any;
+  chartConfig: LineConfig | null;
 }
 
 export function ModelTrendChart({ chartConfig }: ModelTrendChartProps) {
-  const { t } = useTranslation();
 
   if (!chartConfig) return null;
 
@@ -16,7 +15,7 @@ export function ModelTrendChart({ chartConfig }: ModelTrendChartProps) {
     <Card
       className={styles.chartCard}
       title={
-        <span className={styles.chartTitle}>{t("tokenUsage.modelTrend")}</span>
+        <span className={styles.chartTitle}>{"模型用量趋势"}</span>
       }
     >
       <Line {...chartConfig} />

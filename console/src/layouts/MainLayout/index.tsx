@@ -1,7 +1,6 @@
 import { Suspense, useMemo } from "react";
 import { Layout, Spin } from "antd";
 import { Routes, Route, useLocation, matchPath } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import Sidebar from "../Sidebar";
 import Header from "../Header";
 import ConsolePollService from "../../components/ConsolePollService";
@@ -30,8 +29,7 @@ function pickSelectedKey(
 }
 
 export default function MainLayout() {
-  const { t } = useTranslation();
-  const location = useLocation();
+    const location = useLocation();
   const currentPath = location.pathname;
   const routes = useRoutes();
 
@@ -53,7 +51,7 @@ export default function MainLayout() {
               <Suspense
                 fallback={
                   <Spin
-                    tip={t("common.loading")}
+                    tip={"加载中..."}
                     style={{ display: "block", margin: "20vh auto" }}
                   />
                 }

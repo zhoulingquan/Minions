@@ -39,7 +39,7 @@ def _context(agent_id: str) -> DaemonContext:
     working_dir = _get_agent_workspace(agent_id)
     return DaemonContext(
         working_dir=working_dir,
-        memory_manager=None,
+        sage_runtime=None,
         manager=None,  # CLI has no access to MultiAgentManager
         agent_id=agent_id,
     )
@@ -57,7 +57,7 @@ def daemon_group() -> None:
     help="Agent ID (defaults to 'default')",
 )
 def status_cmd(agent_id: str) -> None:
-    """Show daemon status (config, working dir, memory manager)."""
+    """Show daemon status (config, working dir, SAGE availability)."""
     ctx = _context(agent_id)
     click.echo(f"Agent: {agent_id}\n")
     click.echo(run_daemon_status(ctx))

@@ -1,5 +1,4 @@
 import { Drawer, Form, Input, Button } from "@agentscope-ai/design";
-import { useTranslation } from "react-i18next";
 import type { FormInstance } from "antd";
 import type { Session } from "./constants";
 import styles from "../index.module.less";
@@ -21,13 +20,12 @@ export function SessionDrawer({
   onClose,
   onSubmit,
 }: SessionDrawerProps) {
-  const { t } = useTranslation();
 
   const drawerFooter = (
     <div className={styles.formActions}>
-      <Button onClick={onClose}>{t("common.cancel")}</Button>
+      <Button onClick={onClose}>{"取消"}</Button>
       <Button type="primary" loading={saving} onClick={() => form.submit()}>
-        {t("common.save")}
+        {"保存"}
       </Button>
     </div>
   );
@@ -36,7 +34,7 @@ export function SessionDrawer({
     <Drawer
       width={520}
       placement="right"
-      title={t("sessions.editSession")}
+      title={"编辑会话"}
       open={open}
       onClose={onClose}
       destroyOnHidden

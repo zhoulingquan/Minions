@@ -1,5 +1,4 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { RocketOutlined } from "@ant-design/icons";
 import type { ToolCallContent } from "../shared/types";
 import { ToolCardShell } from "../shared";
@@ -13,17 +12,13 @@ const SubmitToAgentCard: React.FC<SubmitToAgentCardProps> = ({
   content,
   isStreaming,
 }) => {
-  const { t } = useTranslation();
-  const params = content.params || {};
+    const params = content.params || {};
   const agent = (params.to_agent || "") as string;
   const task = (params.text || "") as string;
   const taskShort = task.length > 20 ? task.slice(0, 20) + "…" : task;
   const title = agent
-    ? t("tool.submitToAgent", {
-        agent,
-        task: taskShort ? " " + taskShort : "",
-      })
-    : t("tool.submitToAgentDefault");
+    ? `提交 ${agent}${taskShort ? " " + taskShort : ""}`
+    : "提交 任务";
 
   const inlineResult = (() => {
     if (content.status !== "done" || !content.result) return null;
@@ -31,8 +26,8 @@ const SubmitToAgentCard: React.FC<SubmitToAgentCardProps> = ({
     if (!result) return null;
     const match = result.match(/\[TASK_ID:\s*(.+?)\]/);
     return match
-      ? t("tool.inlineResult.taskId", { id: match[1] })
-      : t("tool.inlineResult.submitted");
+      ? `任务 #${match[1]}`
+      : "已提交";
   })();
 
   return (

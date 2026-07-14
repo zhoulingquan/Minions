@@ -1,6 +1,4 @@
 import { Button, Tag } from "@agentscope-ai/design";
-import { useTranslation } from "react-i18next";
-import type { TFunction } from "i18next";
 import type { ColumnsType } from "antd/es/table";
 import { formatTime, type Session } from "./constants";
 import { CHANNEL_COLORS } from "../../../../constants/channel";
@@ -10,21 +8,19 @@ interface ColumnHandlers {
   onEdit: (session: Session) => void;
   onDelete: (sessionId: string) => void;
   onView: (session: Session) => void;
-  t: TFunction;
 }
 
 /** Normalize ISO string to UTC for consistent sorting across mixed timezone formats. */
 const toUTCTime = (ts: string | null | undefined): number => {
   if (!ts) return 0;
   const normalized =
-    /[Z+\-]\d{2}:?\d{2}$/.test(ts) || ts.endsWith("Z") ? ts : ts + "Z";
+    /[Z+-]\d{2}:?\d{2}$/.test(ts) || ts.endsWith("Z") ? ts : ts + "Z";
   return new Date(normalized).getTime();
 };
 
 export const createColumns = (
   handlers: ColumnHandlers,
 ): ColumnsType<Session> => {
-  const { t } = useTranslation();
 
   return [
     {
@@ -91,7 +87,7 @@ export const createColumns = (
             size="small"
             onClick={() => handlers.onEdit(record)}
           >
-            {t("common.edit")}
+            {"编辑"}
           </Button>
           <Button
             type="link"
@@ -99,7 +95,7 @@ export const createColumns = (
             style={{ color: "#52c41a" }}
             onClick={() => handlers.onView(record)}
           >
-            {t("common.view")}
+            {"查看"}
           </Button>
           <Button
             type="link"
@@ -107,7 +103,7 @@ export const createColumns = (
             danger
             onClick={() => handlers.onDelete(record.id)}
           >
-            {t("common.delete")}
+            {"删除"}
           </Button>
         </div>
       ),

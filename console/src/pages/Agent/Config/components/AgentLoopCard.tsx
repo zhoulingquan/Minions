@@ -26,7 +26,6 @@ import {
   Wallet,
   Lock,
 } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import styles from "../index.module.less";
 
 const ACTION_OPTIONS = [
@@ -79,8 +78,7 @@ function MockGateCard({
   title: string;
   description: string;
 }) {
-  const { t } = useTranslation();
-  return (
+    return (
     <div
       style={{
         border: "1px solid var(--border-color, #f0f0f0)",
@@ -118,7 +116,7 @@ function MockGateCard({
           }}
         >
           <Lock size={10} />
-          {t("agentConfig.comingSoon", "Coming Soon")}
+          {"即将推出"}
         </Tag>
       </div>
       <p
@@ -138,45 +136,35 @@ function MockGateCard({
           fontStyle: "italic",
         }}
       >
-        {t(
-          "agentConfig.comingSoonEditable",
-          "Custom configuration will be available in a future release.",
-        )}
+        {"自定义配置将在未来版本中开放。"}
       </p>
     </div>
   );
 }
 
 function IterationSection() {
-  const { t } = useTranslation();
-  const form = Form.useFormInstance();
+    const form = Form.useFormInstance();
   const enabled = Form.useWatch(["loop", "iteration", "enabled"], form);
 
   return (
     <div>
       <SectionHeader
         icon={<Repeat size={16} style={{ opacity: 0.7 }} />}
-        title={t("agentConfig.iterationTitle", "Iteration Limit")}
+        title={"迭代限制"}
       />
       <Form.Item
         name={["loop", "iteration", "enabled"]}
-        label={t("agentConfig.iterationEnabled", "Enable Iteration Limit")}
+        label={"启用迭代限制"}
         valuePropName="checked"
-        tooltip={t(
-          "agentConfig.iterationEnabledTooltip",
-          "Stop the agent after a fixed number of loop turns",
-        )}
+        tooltip={"在固定轮次后停止 Agent 循环"}
       >
         <Switch />
       </Form.Item>
       {enabled && (
         <Form.Item
           name={["loop", "iteration", "max_iterations"]}
-          label={t("agentConfig.iterationMaxIterations", "Maximum Iterations")}
-          tooltip={t(
-            "agentConfig.iterationMaxIterationsTooltip",
-            "Maximum number of loop turns before stopping",
-          )}
+          label={"最大迭代次数"}
+          tooltip={"循环执行的最大轮次"}
         >
           <InputNumber min={1} max={500} style={{ width: 200 }} />
         </Form.Item>
@@ -186,8 +174,7 @@ function IterationSection() {
 }
 
 function DoomLoopSection() {
-  const { t } = useTranslation();
-  const form = Form.useFormInstance();
+    const form = Form.useFormInstance();
   const [advanced, setAdvanced] = useState(false);
   const enabled = Form.useWatch(["loop", "doom_loop", "enabled"], form);
   const stages = Form.useWatch(["loop", "doom_loop", "stages"], form) || [];
@@ -196,16 +183,13 @@ function DoomLoopSection() {
     <div>
       <SectionHeader
         icon={<Shield size={16} style={{ opacity: 0.7 }} />}
-        title={t("agentConfig.doomLoopEnabled", "Repetition Protection")}
+        title={"重复行为保护"}
       />
       <Form.Item
         name={["loop", "doom_loop", "enabled"]}
-        label={t("agentConfig.doomLoopEnabled", "Repetition Protection")}
+        label={"重复行为保护"}
         valuePropName="checked"
-        tooltip={t(
-          "agentConfig.doomLoopEnabledTooltip",
-          "Automatically intervene when the agent gets stuck repeating the same actions",
-        )}
+        tooltip={"当 Agent 陷入重复相同操作时自动介入"}
       >
         <Switch />
       </Form.Item>
@@ -238,21 +222,15 @@ function DoomLoopSection() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      {t("agentConfig.doomLoopAfter", "After")}{" "}
+                      {"连续重复"}{" "}
                       <strong>{stage.after}</strong>{" "}
-                      {t(
-                        "agentConfig.doomLoopRepetitions",
-                        "identical actions",
-                      )}{" "}
+                      {"次相同操作后"}{" "}
                       →
                     </span>
                     <span>
                       {stage.action === "stop"
-                        ? t(
-                            "agentConfig.doomLoopStopAction",
-                            "Pause & Ask for Help",
-                          )
-                        : t("agentConfig.doomLoopWarnAction", "Send Reminder")}
+                        ? "暂停并等待确认"
+                        : "发送提醒"}
                     </span>
                   </div>
                 ),
@@ -279,8 +257,8 @@ function DoomLoopSection() {
                 <ChevronRight size={14} />
               )}
               {advanced
-                ? t("agentConfig.simpleMode", "Simple")
-                : t("agentConfig.advancedMode", "Advanced")}
+                ? "简单"
+                : "高级"}
             </span>
           </Button>
 
@@ -289,11 +267,8 @@ function DoomLoopSection() {
               <div className={styles.reactAgentRow}>
                 <Form.Item
                   name={["loop", "doom_loop", "window_size"]}
-                  label={t("agentConfig.doomLoopWindowSize", "Detection Range")}
-                  tooltip={t(
-                    "agentConfig.doomLoopWindowSizeTooltip",
-                    "How many recent actions to check for repetition",
-                  )}
+                  label={"检测范围"}
+                  tooltip={"检查最近多少次操作是否重复"}
                   className={styles.reactAgentField}
                 >
                   <InputNumber min={2} max={20} style={{ width: "100%" }} />
@@ -301,14 +276,8 @@ function DoomLoopSection() {
 
                 <Form.Item
                   name={["loop", "doom_loop", "similarity_threshold"]}
-                  label={t(
-                    "agentConfig.doomLoopSimilarity",
-                    "Match Sensitivity",
-                  )}
-                  tooltip={t(
-                    "agentConfig.doomLoopSimilarityTooltip",
-                    "How similar actions must be to count as repetition (lower = stricter)",
-                  )}
+                  label={"匹配灵敏度"}
+                  tooltip={"操作相似度超过此值视为重复（越低越严格）"}
                   className={styles.reactAgentField}
                 >
                   <InputNumber
@@ -328,7 +297,7 @@ function DoomLoopSection() {
                 }}
               />
               <strong style={{ display: "block", marginBottom: 12 }}>
-                {t("agentConfig.doomLoopStages", "Intervention Rules")}
+                {"干预规则"}
               </strong>
 
               <Form.List name={["loop", "doom_loop", "stages"]}>
@@ -349,7 +318,7 @@ function DoomLoopSection() {
                           name={[name, "after"]}
                           label={
                             name === 0
-                              ? t("agentConfig.doomLoopAfter", "After")
+                              ? "连续重复"
                               : undefined
                           }
                           rules={[{ required: true }]}
@@ -367,7 +336,7 @@ function DoomLoopSection() {
                           name={[name, "action"]}
                           label={
                             name === 0
-                              ? t("agentConfig.doomLoopAction", "Action")
+                              ? "动作"
                               : undefined
                           }
                           rules={[{ required: true }]}
@@ -381,7 +350,7 @@ function DoomLoopSection() {
                           name={[name, "prompt"]}
                           label={
                             name === 0
-                              ? t("agentConfig.doomLoopPrompt", "Message")
+                              ? "提示语"
                               : undefined
                           }
                           style={{ flex: 3 }}
@@ -389,10 +358,7 @@ function DoomLoopSection() {
                           <Input.TextArea
                             rows={1}
                             autoSize={{ minRows: 1, maxRows: 3 }}
-                            placeholder={t(
-                              "agentConfig.doomLoopPromptPlaceholder",
-                              "Reminder message or pause reason...",
-                            )}
+                            placeholder={"提醒内容或暂停原因..."}
                           />
                         </Form.Item>
 
@@ -417,7 +383,7 @@ function DoomLoopSection() {
                       icon={<Plus size={14} />}
                       style={{ width: "100%" }}
                     >
-                      {t("agentConfig.doomLoopAddStage", "Add Rule")}
+                      {"添加规则"}
                     </Button>
                   </>
                 )}
@@ -431,8 +397,7 @@ function DoomLoopSection() {
 }
 
 function RubricSection() {
-  const { t } = useTranslation();
-  const form = Form.useFormInstance();
+    const form = Form.useFormInstance();
   const [advanced, setAdvanced] = useState(false);
   const enabled = Form.useWatch(["loop", "rubric", "enabled"], form);
 
@@ -440,7 +405,7 @@ function RubricSection() {
     <div>
       <SectionHeader
         icon={<CheckCircle size={16} style={{ opacity: 0.7 }} />}
-        title={t("agentConfig.rubricTitle", "Completion Check")}
+        title={"完成度检查"}
       />
       <p
         style={{
@@ -450,19 +415,13 @@ function RubricSection() {
           lineHeight: 1.6,
         }}
       >
-        {t(
-          "agentConfig.rubricDesc",
-          "Some LLMs may stop with a text-only response without calling any tool, causing the agent to end prematurely. Enable this to re-prompt the agent and improve task completion.",
-        )}
+        {"部分大模型可能仅输出文本而不调用任何工具，导致 Agent 提前停止。启用后会重新提示 Agent 继续完成任务。"}
       </p>
       <Form.Item
         name={["loop", "rubric", "enabled"]}
-        label={t("agentConfig.rubricEnabled", "Enable Completion Check")}
+        label={"启用完成度检查"}
         valuePropName="checked"
-        tooltip={t(
-          "agentConfig.rubricEnabledTooltip",
-          "Re-prompt the agent when it produces a text-only response without tool calls",
-        )}
+        tooltip={"每轮结束后让 Agent 自评任务是否完成"}
       >
         <Switch />
       </Form.Item>
@@ -470,18 +429,12 @@ function RubricSection() {
         <>
           <Form.Item
             name={["loop", "rubric", "prompt"]}
-            label={t("agentConfig.rubricPrompt", "Re-prompt Message")}
-            tooltip={t(
-              "agentConfig.rubricPromptTooltip",
-              "The prompt injected when the agent outputs text without tool calls",
-            )}
+            label={"检查提示语"}
+            tooltip={"注入的提示语，要求 Agent 评估任务完成情况"}
           >
             <Input.TextArea
               autoSize={{ minRows: 2, maxRows: 5 }}
-              placeholder={t(
-                "agentConfig.rubricPromptPlaceholder",
-                "You did not call any tool. If the task is complete, confirm. Otherwise, continue with tool calls.",
-              )}
+              placeholder={"你上一轮没有调用任何工具。如果任务已完成请确认，否则请继续使用工具完成。"}
             />
           </Form.Item>
 
@@ -504,22 +457,16 @@ function RubricSection() {
                 <ChevronRight size={14} />
               )}
               {advanced
-                ? t("agentConfig.simpleMode", "Simple")
-                : t("agentConfig.advancedMode", "Advanced")}
+                ? "简单"
+                : "高级"}
             </span>
           </Button>
 
           {advanced && (
             <Form.Item
               name={["loop", "rubric", "max_interventions"]}
-              label={t(
-                "agentConfig.rubricMaxInterventions",
-                "Max Interventions per Turn",
-              )}
-              tooltip={t(
-                "agentConfig.rubricMaxInterventionsTooltip",
-                "Maximum times to re-prompt per turn. Prevents infinite re-prompting if the LLM keeps producing text-only responses.",
-              )}
+              label={"每轮最大介入次数"}
+              tooltip={"每轮最多重新提示的次数，防止 LLM 持续输出纯文本导致无限循环。"}
             >
               <InputNumber min={1} max={10} style={{ width: 200 }} />
             </Form.Item>
@@ -543,97 +490,66 @@ function ReactTab() {
 }
 
 function GoalModeTab() {
-  const { t } = useTranslation();
-  return (
+    return (
     <div>
       <Alert
         type="info"
         showIcon
         icon={<Info size={14} />}
-        message={t("agentConfig.goalModeInfoTitle", "Goal Mode vs Default")}
-        description={t(
-          "agentConfig.goalModeInfo",
-          "Default mode stops after a single reply. Goal mode keeps the agent looping toward a goal, using Rubric evaluation to determine completion. All operations run within the current agent context.",
-        )}
+        message={"Goal模式 vs 默认模式"}
+        description={"默认模式在产生回复后即停止。Goal模式让 Agent 围绕目标持续循环执行，通过 Rubric 评估自动判断是否完成，未完成则继续推进。所有操作在当前 Agent 上下文中进行。"}
         style={{ marginBottom: 16 }}
       />
       <MockGateCard
         icon={<Repeat size={14} style={{ opacity: 0.5 }} />}
-        title={t("agentConfig.goalIterationGate", "Goal Iteration Gate")}
-        description={t(
-          "agentConfig.goalIterationGateDesc",
-          "Limits the number of agent turns within a goal session. Tracks iteration count and token usage.",
-        )}
+        title={"目标迭代 Gate"}
+        description={"限制目标会话中的 Agent 执行轮次，跟踪迭代次数和 Token 使用量。"}
       />
       <MockGateCard
         icon={<Wallet size={14} style={{ opacity: 0.5 }} />}
-        title={t("agentConfig.goalBudgetGate", "Token Budget Gate")}
-        description={t(
-          "agentConfig.goalBudgetGateDesc",
-          "Enforces a token spending limit for the goal session. Stops the agent when budget is exceeded.",
-        )}
+        title={"Token 预算 Gate"}
+        description={"为目标会话设置 Token 消耗上限，超出预算时停止 Agent。"}
       />
       <MockGateCard
         icon={<CheckCircle size={14} style={{ opacity: 0.5 }} />}
-        title={t("agentConfig.goalRubricGate", "Goal Completion Rubric")}
-        description={t(
-          "agentConfig.goalRubricGateDesc",
-          "Evaluates whether the goal has been achieved by checking the session status.",
-        )}
+        title={"目标完成度评估"}
+        description={"通过检查会话状态评估目标是否已完成。"}
       />
       <MockGateCard
         icon={<Shield size={14} style={{ opacity: 0.5 }} />}
-        title={t("agentConfig.goalDoomGate", "Repetition Protection")}
-        description={t(
-          "agentConfig.goalDoomGateDesc",
-          "Detects repetitive patterns during goal execution and triggers intervention.",
-        )}
+        title={"重复行为保护"}
+        description={"在目标执行过程中检测重复模式并触发干预。"}
       />
     </div>
   );
 }
 
 function MissionModeTab() {
-  const { t } = useTranslation();
-  return (
+    return (
     <div>
       <Alert
         type="info"
         showIcon
         icon={<Info size={14} />}
-        message={t(
-          "agentConfig.missionModeInfoTitle",
-          "Mission Mode vs Goal Mode",
-        )}
-        description={t(
-          "agentConfig.missionModeInfo",
-          "Mission mode decomposes complex tasks and delegates sub-tasks to independent sub-agents. Each sub-task runs in its own context, preventing context pollution of the main session. Best for complex engineering tasks.",
-        )}
+        message={"Mission模式 vs Goal模式"}
+        description={"Mission模式将复杂任务自动分解为子任务，由 Worker 子Agent独立执行，Verifier 子Agent验证结果。每个子任务有独立上下文，不会污染主会话历史。适合需要长时间、多步骤协作的复杂工程任务。"}
         style={{ marginBottom: 16 }}
       />
       <MockGateCard
         icon={<Gauge size={14} style={{ opacity: 0.5 }} />}
-        title={t("agentConfig.missionProgressGate", "Mission Progress Gate")}
-        description={t(
-          "agentConfig.missionProgressGateDesc",
-          "Tracks PRD user story completion. Continues until all stories pass or max iterations reached.",
-        )}
+        title={"任务进度 Gate"}
+        description={"跟踪 PRD 用户故事的完成情况，直到所有故事通过或达到最大迭代次数。"}
       />
       <MockGateCard
         icon={<Repeat size={14} style={{ opacity: 0.5 }} />}
-        title={t("agentConfig.missionIterBypass", "Iteration Bypass")}
-        description={t(
-          "agentConfig.missionIterBypassDesc",
-          "Temporarily lifts the ReAct iteration limit during mission execution to allow long-running phases.",
-        )}
+        title={"迭代绕行"}
+        description={"在任务执行期间临时取消 ReAct 迭代限制，允许长时间运行的阶段。"}
       />
     </div>
   );
 }
 
 export function AgentLoopCard() {
-  const { t } = useTranslation();
-
   const tabItems = [
     {
       key: "react",
@@ -646,7 +562,7 @@ export function AgentLoopCard() {
           }}
         >
           <Repeat size={13} />
-          {t("agentConfig.reactModeTab", "Loop Template - Default")}
+          {"Loop模板 - 默认"}
         </span>
       ),
       children: <ReactTab />,
@@ -662,7 +578,7 @@ export function AgentLoopCard() {
           }}
         >
           <Target size={13} />
-          {t("agentConfig.goalModeTab", "Loop Template - Goal")}
+          {"Loop模板 - Goal模式"}
         </span>
       ),
       children: <GoalModeTab />,
@@ -678,7 +594,7 @@ export function AgentLoopCard() {
           }}
         >
           <Rocket size={13} />
-          {t("agentConfig.missionModeTab", "Loop Template - Mission")}
+          {"Loop模板 - Mission模式"}
         </span>
       ),
       children: <MissionModeTab />,
@@ -707,13 +623,10 @@ export function AgentLoopCard() {
         >
           <Plus size={32} style={{ opacity: 0.3, marginBottom: 12 }} />
           <p style={{ fontSize: 14, fontWeight: 500 }}>
-            {t("agentConfig.customLoopTitle", "Custom Loop Modes")}
+            {"自定义循环模式"}
           </p>
           <p style={{ fontSize: 12 }}>
-            {t(
-              "agentConfig.customLoopDesc",
-              "Create your own loop modes with custom gate combinations. Coming soon.",
-            )}
+            {"使用自定义 Gate 组合创建您自己的循环模式，即将推出。"}
           </p>
         </div>
       ),
@@ -723,7 +636,7 @@ export function AgentLoopCard() {
   return (
     <Card
       className={styles.formCard}
-      title={t("agentConfig.agentLoopTitle", "Agent Loop Settings")}
+      title={"智能体 Loop 设置"}
     >
       <Tabs defaultActiveKey="react" items={tabItems} size="small" />
     </Card>

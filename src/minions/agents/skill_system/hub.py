@@ -29,7 +29,7 @@ from ...exceptions import (
     SkillsError,
 )
 from ...constant import EnvVarLoader
-from .pool_service import SkillPoolService
+from .global_skill_service import GlobalSkillService
 from .store import suggest_conflict_name
 from .workspace_service import SkillService
 
@@ -2100,7 +2100,7 @@ async def _prepare_install_payload(
     """Validate, fetch, normalise, resolve final skill name.
 
     Shared front-half of both install entry points; the entry points
-    differ only in which store (workspace vs pool) they write to and in
+    differ only in which store (workspace vs global skills) they write to and in
     cancel/enable semantics.
     """
     if not bundle_url or not _is_http_url(bundle_url):
@@ -2184,7 +2184,7 @@ async def install_skill_from_hub(
         )
 
 
-async def import_pool_skill_from_hub(
+async def import_global_skill_from_hub(
     *,
     bundle_url: str,
     version: str = "",
@@ -2198,9 +2198,9 @@ async def import_pool_skill_from_hub(
             target_name,
         )
         _ensure_not_cancelled()
-        pool_service = SkillPoolService()
+        global_svc = GlobalSkillService()
         created = await asyncio.to_thread(
-            pool_service.create_skill,
+            global_svc.create_skill,
             name=payload.name,
             content=payload.content,
             references=payload.references,

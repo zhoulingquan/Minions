@@ -13,7 +13,7 @@ function makeBackup(id: string): BackupMeta {
       include_agents: false,
       include_global_config: false,
       include_secrets: false,
-      include_skill_pool: false,
+      include_global_skills: false,
     },
     agent_count: 0,
   };

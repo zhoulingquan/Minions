@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
 import { Button, Form, Tabs } from "@agentscope-ai/design";
-import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import { useAgentConfig } from "./useAgentConfig.tsx";
 import {
@@ -13,14 +12,12 @@ import {
 import { PageHeader } from "@/components/PageHeader";
 import {
   CONTEXT_MANAGER_BACKEND_MAPPINGS,
-  MEMORY_MANAGER_BACKEND_MAPPINGS,
 } from "@/constants/backendMappings";
 import api from "@/api";
 import styles from "./index.module.less";
 
 function AgentConfigPage() {
-  const { t } = useTranslation();
-  const [searchParams] = useSearchParams();
+    const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(
     searchParams.get("tab") || "reactAgent",
   );
@@ -44,8 +41,6 @@ function AgentConfigPage() {
   const llmRetryEnabled = Form.useWatch("llm_retry_enabled", form) ?? true;
   const contextBackend =
     Form.useWatch("context_manager_backend", form) || "light";
-  const memoryBackend =
-    Form.useWatch("memory_manager_backend", form) || "remelight";
 
   const [maxInputLength, setMaxInputLength] = useState(131072);
   useEffect(() => {
@@ -74,7 +69,7 @@ function AgentConfigPage() {
         key: "reactAgent",
         label: (
           <span className={styles.tabLabel}>
-            {t("agentConfig.reactAgentTitle")}
+            {"ReAct 智能体"}
           </span>
         ),
         children: (
@@ -94,7 +89,7 @@ function AgentConfigPage() {
         key: "agentLoop",
         label: (
           <span className={styles.tabLabel}>
-            {t("agentConfig.agentLoopTitle", "Agent Loop Settings")}
+            {"智能体 Loop 设置"}
           </span>
         ),
         children: (
@@ -107,7 +102,7 @@ function AgentConfigPage() {
         key: "llmRetry",
         label: (
           <span className={styles.tabLabel}>
-            {t("agentConfig.llmRetryTitle")}
+            {"LLM 自动重试"}
           </span>
         ),
         children: (
@@ -120,7 +115,7 @@ function AgentConfigPage() {
         key: "llmRateLimiter",
         label: (
           <span className={styles.tabLabel}>
-            {t("agentConfig.llmRateLimiterTitle")}
+            {"LLM 并发限流"}
           </span>
         ),
         children: (
@@ -138,7 +133,7 @@ function AgentConfigPage() {
         key: contextMapping.tabKey,
         label: (
           <span className={styles.tabLabel}>
-            {t(`agentConfig.${contextMapping.tabKey}Title`)}
+            {"上下文管理"}
           </span>
         ),
         children: (
@@ -149,30 +144,12 @@ function AgentConfigPage() {
       });
     }
 
-    const memoryMapping = MEMORY_MANAGER_BACKEND_MAPPINGS[memoryBackend];
-    if (memoryMapping) {
-      const MemoryComponent = memoryMapping.component;
-      baseTabs.push({
-        key: memoryMapping.tabKey,
-        label: (
-          <span className={styles.tabLabel}>
-            {t(`agentConfig.${memoryMapping.tabKey}Title`)}
-          </span>
-        ),
-        children: (
-          <div className={styles.tabContent}>
-            <MemoryComponent />
-          </div>
-        ),
-      });
-    }
-
     // Add Tool Execution Level tab
     baseTabs.push({
       key: "toolExecutionLevel",
       label: (
         <span className={styles.tabLabel}>
-          {t("agentConfig.toolExecutionLevelTitle")}
+          {"工具执行安全"}
         </span>
       ),
       children: (
@@ -188,7 +165,6 @@ function AgentConfigPage() {
 
     return baseTabs;
   }, [
-    t,
     language,
     savingLang,
     timezone,
@@ -198,7 +174,6 @@ function AgentConfigPage() {
     llmRetryEnabled,
     maxInputLength,
     contextBackend,
-    memoryBackend,
     approvalLevel,
     setApprovalLevel,
     saving,
@@ -215,7 +190,7 @@ function AgentConfigPage() {
     return (
       <div className={styles.configPage}>
         <div className={styles.centerState}>
-          <span className={styles.stateText}>{t("common.loading")}</span>
+          <span className={styles.stateText}>{"加载中..."}</span>
         </div>
       </div>
     );
@@ -227,7 +202,7 @@ function AgentConfigPage() {
         <div className={styles.centerState}>
           <span className={styles.stateTextError}>{error}</span>
           <Button size="small" onClick={fetchConfig} style={{ marginTop: 12 }}>
-            {t("environments.retry")}
+            {"重试"}
           </Button>
         </div>
       </div>
@@ -236,7 +211,7 @@ function AgentConfigPage() {
 
   return (
     <div className={styles.configPage}>
-      <PageHeader parent={t("nav.agent")} current={t("agentConfig.title")} />
+      <PageHeader parent={"工作区"} current={"运行配置"} />
 
       <div className={styles.content}>
         <Form form={form} layout="vertical" className={styles.form}>
@@ -256,10 +231,10 @@ function AgentConfigPage() {
           disabled={saving}
           style={{ marginRight: 8 }}
         >
-          {t("common.reset")}
+          {"重置"}
         </Button>
         <Button type="primary" onClick={handleSave} loading={saving}>
-          {t("common.save")}
+          {"保存"}
         </Button>
       </div>
     </div>

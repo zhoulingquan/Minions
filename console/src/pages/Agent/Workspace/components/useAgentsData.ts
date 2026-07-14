@@ -1,24 +1,18 @@
 import { useState, useEffect } from "react";
 import { useAppMessage } from "../../../../hooks/useAppMessage";
-import { useTranslation } from "react-i18next";
-import api from "../../../../api";
-import type { MarkdownFile, DailyMemoryFile } from "../../../../api/types";
+import type { MarkdownFile } from "../../../../api/types";
 import { workspaceApi } from "../../../../api/modules/workspace";
 import { useAgentStore } from "../../../../stores/agentStore";
 
-// Returns the parent directory of a file path, supporting both '/' and '\' separators.
 const getParentDir = (filePath: string): string => {
   const match = filePath.match(/^(.*)[/\\]/);
   return match ? match[1] : filePath;
 };
 
 export const useAgentsData = () => {
-  const { t } = useTranslation();
   const { selectedAgent } = useAgentStore();
   const [files, setFiles] = useState<MarkdownFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<MarkdownFile | null>(null);
-  const [dailyMemories, setDailyMemories] = useState<DailyMemoryFile[]>([]);
-  const [expandedMemory, setExpandedMemory] = useState(false);
   const [fileContent, setFileContent] = useState("");
   const [originalContent, setOriginalContent] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,67 +20,22 @@ export const useAgentsData = () => {
   const [enabledFiles, setEnabledFiles] = useState<string[]>([]);
   const { message } = useAppMessage();
 
-  useEffect(() => {
-    const initializeData = async () => {
-      // Remember currently selected file name
-      const previouslySelectedFilename = selectedFile?.filename;
-
-      // Clear content first
-      setFileContent("");
-      setOriginalContent("");
-      setExpandedMemory(false);
-
-      const enabled = await fetchEnabledFiles();
-      const fileList = await workspaceApi.listFiles();
-      const sortedFiles = sortFilesByEnabled(
-        fileList as unknown as MarkdownFile[],
-        enabled,
-      );
-      setFiles(sortedFiles);
-      await fetchDailyMemories();
-
-      // Set workspace path (handle both Unix '/' and Windows '\' separators)
-      if (fileList.length > 0) {
-        setWorkspacePath(getParentDir(fileList[0].path));
-      } else {
-        setWorkspacePath("");
-      }
-
-      // Try to re-select the same file in new workspace
-      if (previouslySelectedFilename) {
-        const sameFile = sortedFiles.find(
-          (f) => f.filename === previouslySelectedFilename,
-        );
-        if (sameFile) {
-          // Auto-load the same file from new workspace
-          await handleFileClick(sameFile);
-        } else {
-          // File doesn't exist in new workspace, clear selection
-          setSelectedFile(null);
-        }
-      } else {
-        setSelectedFile(null);
-      }
-    };
-    initializeData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedAgent]);
-
-  // Re-sort when enabledFiles changes (for toggle/reorder operations)
-  useEffect(() => {
-    if (files.length > 0 && enabledFiles.length >= 0) {
-      const sortedFiles = sortFilesByEnabled(files, enabledFiles);
-
-      // Only update if order actually changed to avoid infinite loop
-      const orderChanged = sortedFiles.some(
-        (file, index) => file.filename !== files[index]?.filename,
-      );
-      if (orderChanged) {
-        setFiles(sortedFiles);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabledFiles]);
+  const sortFilesByEnabled = (
+    fileList: MarkdownFile[],
+    currentEnabledFiles: string[],
+  ) => {
+    const safeEnabled = Array.isArray(currentEnabledFiles)
+      ? currentEnabledFiles
+      : [];
+    return [...fileList].sort((a, b) => {
+      const aIndex = safeEnabled.indexOf(a.filename);
+      const bIndex = safeEnabled.indexOf(b.filename);
+      if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+      if (aIndex !== -1) return -1;
+      if (bIndex !== -1) return 1;
+      return a.filename.localeCompare(b.filename);
+    });
+  };
 
   const fetchEnabledFiles = async () => {
     try {
@@ -100,73 +49,59 @@ export const useAgentsData = () => {
     }
   };
 
-  const sortFilesByEnabled = (
-    fileList: MarkdownFile[],
-    currentEnabledFiles: string[],
-  ) => {
-    const safeEnabled = Array.isArray(currentEnabledFiles)
-      ? currentEnabledFiles
-      : [];
-    return [...fileList].sort((a, b) => {
-      const aIndex = safeEnabled.indexOf(a.filename);
-      const bIndex = safeEnabled.indexOf(b.filename);
-      const aEnabled = aIndex !== -1;
-      const bEnabled = bIndex !== -1;
-
-      if (aEnabled && bEnabled) {
-        return aIndex - bIndex;
-      }
-      if (aEnabled) return -1;
-      if (bEnabled) return 1;
-      return a.filename.localeCompare(b.filename);
-    });
+  const refreshFiles = async (latestEnabledFiles?: string[]) => {
+    const enabled = Array.isArray(latestEnabledFiles)
+      ? latestEnabledFiles
+      : await fetchEnabledFiles();
+    const fileList = await workspaceApi.listFiles();
+    const markdownFiles = fileList as unknown as MarkdownFile[];
+    setFiles(sortFilesByEnabled(markdownFiles, enabled));
+    setWorkspacePath(
+      fileList.length > 0 ? getParentDir(fileList[0].path) : "",
+    );
+    return markdownFiles;
   };
+
+  useEffect(() => {
+    const initializeData = async () => {
+      const previousFilename = selectedFile?.filename;
+      setFileContent("");
+      setOriginalContent("");
+      try {
+        const fileList = await refreshFiles();
+        const previous = fileList.find(
+          (file) => file.filename === previousFilename,
+        );
+        if (previous) await handleFileClick(previous);
+        else setSelectedFile(null);
+      } catch (error) {
+        console.error("Failed to initialize workspace files", error);
+        message.error("Failed to load file list");
+      }
+    };
+    void initializeData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAgent]);
+
+  useEffect(() => {
+    if (files.length === 0) return;
+    const sorted = sortFilesByEnabled(files, enabledFiles);
+    if (sorted.some((file, index) => file.filename !== files[index]?.filename)) {
+      setFiles(sorted);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabledFiles]);
 
   const fetchFiles = async (latestEnabledFiles?: string[]) => {
     try {
-      // Validate with Array.isArray: onClick handlers may pass a MouseEvent as the first argument
-      const enabled = Array.isArray(latestEnabledFiles)
-        ? latestEnabledFiles
-        : await fetchEnabledFiles();
-      const fileList = await workspaceApi.listFiles();
-      const sortedFiles = sortFilesByEnabled(
-        fileList as unknown as MarkdownFile[],
-        enabled,
-      );
-      setFiles(sortedFiles);
-      await fetchDailyMemories();
-      // Set workspace path (handle both Unix '/' and Windows '\' separators)
-      if (fileList.length > 0) {
-        setWorkspacePath(getParentDir(fileList[0].path));
-      } else {
-        setWorkspacePath("");
-      }
+      await refreshFiles(latestEnabledFiles);
     } catch (error) {
       console.error("Failed to fetch files", error);
       message.error("Failed to load file list");
     }
   };
 
-  const fetchDailyMemories = async () => {
-    try {
-      const memoryList = await api.listDailyMemory();
-      setDailyMemories(memoryList);
-    } catch (error) {
-      console.error("Failed to fetch daily memories", error);
-      message.error("Failed to load memory list");
-    }
-  };
-
   const handleFileClick = async (file: MarkdownFile) => {
-    if (file.filename === "MEMORY.md") {
-      setExpandedMemory((prev) => {
-        if (!prev) {
-          fetchDailyMemories();
-        }
-        return !prev;
-      });
-    }
-
     setSelectedFile(file);
     setLoading(true);
     try {
@@ -181,45 +116,14 @@ export const useAgentsData = () => {
     }
   };
 
-  const handleDailyMemoryClick = async (daily: DailyMemoryFile) => {
-    setSelectedFile({
-      filename: daily.filename,
-      path: daily.path,
-      size: daily.size,
-      created_time: daily.created_time,
-      modified_time: daily.modified_time,
-      updated_at: daily.updated_at,
-      memory_path: daily.filename,
-    });
-    setLoading(true);
-    try {
-      const data = await api.loadDailyMemory(daily.filename);
-      setFileContent(data.content);
-      setOriginalContent(data.content);
-    } catch (error) {
-      console.error("Failed to load daily memory", error);
-      message.error("Failed to load daily memory");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSave = async () => {
     if (!selectedFile) return;
     setLoading(true);
     try {
-      if (selectedFile.memory_path) {
-        await api.saveDailyMemory(selectedFile.memory_path, fileContent);
-      } else {
-        await api.saveFile(selectedFile.filename, fileContent);
-      }
+      await workspaceApi.saveFile(selectedFile.filename, fileContent);
       setOriginalContent(fileContent);
       message.success("Saved successfully");
-      if (selectedFile.memory_path) {
-        fetchDailyMemories();
-      } else {
-        fetchFiles();
-      }
+      await fetchFiles();
     } catch (error) {
       console.error("Failed to save file", error);
       message.error("Failed to save");
@@ -228,37 +132,17 @@ export const useAgentsData = () => {
     }
   };
 
-  const handleReset = () => {
-    setFileContent(originalContent);
-  };
-
   const handleToggleFileEnabled = async (filename: string) => {
-    const isEnabling = !enabledFiles.includes(filename);
-
-    // Show warning for MEMORY.md
-    if (isEnabling && filename === "MEMORY.md") {
-      message.warning({
-        content: t("workspace.memoryFileWarning"),
-        duration: 5,
-      });
-    }
-
-    const newEnabledFiles = enabledFiles.includes(filename)
-      ? enabledFiles.filter((f) => f !== filename)
+    const next = enabledFiles.includes(filename)
+      ? enabledFiles.filter((file) => file !== filename)
       : [...enabledFiles, filename];
-
     try {
-      await workspaceApi.setSystemPromptFiles(newEnabledFiles);
-      setEnabledFiles(newEnabledFiles);
-      message.success(
-        t("workspace.configUpdated") || "System prompt configuration updated",
-      );
+      await workspaceApi.setSystemPromptFiles(next);
+      setEnabledFiles(next);
+      message.success("系统提示词配置已更新");
     } catch (error) {
       console.error("Failed to update system prompt files", error);
-      message.error(
-        t("workspace.configUpdateFailed") ||
-          "Failed to update system prompt configuration",
-      );
+      message.error("更新系统提示词配置失败");
     }
   };
 
@@ -272,33 +156,19 @@ export const useAgentsData = () => {
     }
   };
 
-  const hasChanges = fileContent !== originalContent;
-
   return {
     files,
     selectedFile,
-    dailyMemories,
-    expandedMemory,
     fileContent,
     loading,
     workspacePath,
-    hasChanges,
+    hasChanges: fileContent !== originalContent,
     enabledFiles,
     setFileContent,
     fetchFiles,
-    fetchDailyMemories,
     handleFileClick,
-    handleDailyMemoryClick,
-    toggleExpandedMemory: () => {
-      setExpandedMemory((v) => {
-        if (!v) {
-          fetchDailyMemories();
-        }
-        return !v;
-      });
-    },
     handleSave,
-    handleReset,
+    handleReset: () => setFileContent(originalContent),
     handleToggleFileEnabled,
     handleReorderFiles,
   };

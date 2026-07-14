@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from "react";
 import { Button, Switch, Input } from "@agentscope-ai/design";
 import { CopyOutlined } from "@ant-design/icons";
 import { XMarkdown } from "@ant-design/x-markdown";
-import { useTranslation } from "react-i18next";
 import type { CSSProperties } from "react";
 import { useAppMessage } from "../../hooks/useAppMessage";
 import { stripFrontmatter } from "../../utils/markdown";
@@ -53,8 +52,7 @@ export function MarkdownCopy({
   editable = false,
   onContentChange,
 }: MarkdownCopyProps) {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const [isCopying, setIsCopying] = useState(false);
   const [editContent, setEditContent] = useState(content);
   const [localShowMarkdown, setLocalShowMarkdown] = useState(showMarkdown);
@@ -89,7 +87,7 @@ export function MarkdownCopy({
     try {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(contentToCopy);
-        message.success(t("common.copied"));
+        message.success("已复制到剪贴板");
       } else {
         const textArea = document.createElement("textarea");
         textArea.value = contentToCopy;
@@ -101,11 +99,11 @@ export function MarkdownCopy({
         textArea.select();
         document.execCommand("copy");
         textArea.remove();
-        message.success(t("common.copied"));
+        message.success("已复制到剪贴板");
       }
     } catch (err) {
       console.error("Failed to copy text: ", err);
-      message.error(t("common.copyFailed"));
+      message.error("复制到剪贴板失败");
     } finally {
       setIsCopying(false);
     }
@@ -146,7 +144,7 @@ export function MarkdownCopy({
 
   const defaultTextareaProps = {
     rows: 12,
-    placeholder: t("common.contentPlaceholder"),
+    placeholder: "输入内容...",
     ...textareaProps,
   };
 
@@ -154,10 +152,10 @@ export function MarkdownCopy({
     <div className={styles.markdownCopy}>
       {showControls && (
         <div className={styles.controls}>
-          <div>{t("common.content")}</div>
+          <div>{"内容"}</div>
           <div className={styles.controlGroup}>
             <div className={styles.previewToggle}>
-              <span className={styles.previewLabel}>{t("common.preview")}</span>
+              <span className={styles.previewLabel}>{"预览"}</span>
               <Switch
                 checked={localShowMarkdown}
                 onChange={handleShowMarkdownChange}

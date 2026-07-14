@@ -6,19 +6,19 @@ Minions 当前默认的上下文策略是 **scroll**：旧轮次不会被总结�
 
 旧的 AgentScope 原生压缩路径仍然可用，配置 `strategy: "native"` 即可切回；新配置默认使用 `strategy: "scroll"`。
 
-## 三种记忆系统
+## 三类连续性数据
 
-Minions 把记忆组织为三套互补的系统——工作记忆（Working）、情景记忆（Episodic）和语义记忆（Semantic）——大致对应人类记忆，每套由不同子系统负责：
+Minions 把连续性数据组织为三套互补的系统：实时上下文、逐字会话历史和 SAGE 业务经验。每套由不同子系统负责：
 
-| 记忆系统     | 是什么                                                                                     | 文档                    |
+| 数据系统     | 是什么                                                                                     | 文档                    |
 | ------------ | ------------------------------------------------------------------------------------------ | ----------------------- |
 | **工作记忆** | 实时的提示词窗口。较早的轮次被驱逐成一份紧凑、可展开的索引——从不总结。                     | [上下文管理](./context) |
 | **情景记忆** | 跨会话、逐字的持久记录，通过 `recall_history`（或 `recall_history_python` REPL）按需取回。 | [上下文管理](./context) |
-| **语义记忆** | 提炼后的事实、偏好与知识；ReMe 把每日记忆沉淀进 `digest/`，用 `memory_search` 检索。       | [长期记忆](./memory)    |
+| **业务经验** | 带租户、作用域、证据和版本的案例、心得、规则与 Playbook，由 SAGE 召回。                    | [SAGE](./sage)          |
 
-其中 **工作记忆** 与 **情景记忆** 由 **scroll** 上下文管理器（`ScrollContextManager`）实现；**语义记忆** 由 **ReMe** 实现。三者刻意保持正交：scroll 逐字保留原始历史、从不总结，而 ReMe 提炼可复用知识、从不触碰实时窗口或逐字历史库。
+其中实时上下文与逐字历史由 **scroll** 上下文管理器（`ScrollContextManager`）实现；长期业务经验由 **SAGE** 实现。两者刻意保持正交：scroll 负责会话级可回溯性，SAGE 负责跨业务案例的受控学习与经验复用。
 
-> **本页讲的是工作记忆与情景记忆**——即 scroll 上下文管理器。语义记忆（ReMe 长期记忆后端）请通过上方链接查看。
+> **本页讲的是实时上下文与逐字会话历史**。长期业务经验请查看 [SAGE](./sage)。
 
 ## Scroll 工作方式
 
@@ -158,7 +158,7 @@ Recall API 是情景记忆的接口：把工作记忆驱逐后留下的、持久
   recall_history(op="recall_tool", tool_call_id="tool-call-id")
   ```
 
-- **`recall_history_python`**——沙箱化的 Python REPL，覆盖这三种读取之外的需求（列出会话、自写 SQL 聚合、scratch 表）。cell 中已经定义好 `ms`，它是一个 `MemorySpace` 对象。
+- **`recall_history_python`**——沙箱化的 Python REPL，覆盖这三种读取之外的需求（列出会话、自写 SQL 聚合、scratch 表）。cell 中已经定义好 `ms`，它是一个 `RecallSpace` 对象。
 
 REPL 中常用的 `ms` helper：
 

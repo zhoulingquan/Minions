@@ -6,7 +6,7 @@ import type {
   BuiltinUpdateNotice,
   HubInstallTaskResponse,
   HubSkillSpec,
-  PoolSkillSpec,
+  GlobalSkillSpec,
   SkillSpec,
   WorkspaceSkillSummary,
 } from "../types";
@@ -35,7 +35,7 @@ function setCache<T>(key: string, data: T): void {
 export function invalidateSkillCache(options?: {
   agentId?: string;
   workspaces?: boolean;
-  pool?: boolean;
+  global?: boolean;
 }): void {
   // Clear all skill-related cache entries
   for (const key of Array.from(apiCache.keys())) {
@@ -48,10 +48,10 @@ export function invalidateSkillCache(options?: {
     }
 
     // Targeted invalidation based on options
-    if (options.pool && key === "/skills/pool") {
+    if (options.global && key === "/skills/global") {
       apiCache.delete(key);
-      apiCache.delete("/skills/pool/builtin-notice");
-      apiCache.delete("/skills/pool/builtin-sources");
+      apiCache.delete("/skills/global/builtin-notice");
+      apiCache.delete("/skills/global/builtin-sources");
     } else if (options.workspaces && key === "/skills/workspaces") {
       apiCache.delete(key);
     } else if (options.agentId && key === `/skills?agent=${options.agentId}`) {
@@ -137,16 +137,16 @@ export const skillApi = {
     return data;
   },
 
-  listSkillPoolSkills: async () => {
-    const cacheKey = "/skills/pool";
-    const cached = getCached<PoolSkillSpec[]>(cacheKey);
+  listGlobalSkills: async () => {
+    const cacheKey = "/skills/global";
+    const cached = getCached<GlobalSkillSpec[]>(cacheKey);
     if (cached) return cached;
 
-    const data = await request<PoolSkillSpec[]>("/skills/pool");
+    const data = await request<GlobalSkillSpec[]>("/skills/global");
     // Ensure data is an array
     if (!Array.isArray(data)) {
       throw new Error(
-        `Expected array from /skills/pool but got ${typeof data}`,
+        `Expected array from /skills/global but got ${typeof data}`,
       );
     }
     setCache(cacheKey, data);
@@ -162,17 +162,17 @@ export const skillApi = {
     return data;
   },
 
-  refreshSkillPool: async () => {
-    const data = await request<PoolSkillSpec[]>("/skills/pool/refresh", {
+  refreshGlobalSkills: async () => {
+    const data = await request<GlobalSkillSpec[]>("/skills/global/refresh", {
       method: "POST",
     });
     // Ensure data is an array
     if (!Array.isArray(data)) {
       throw new Error(
-        `Expected array from /skills/pool/refresh but got ${typeof data}`,
+        `Expected array from /skills/global/refresh but got ${typeof data}`,
       );
     }
-    setCache("/skills/pool", data);
+    setCache("/skills/global", data);
     return data;
   },
 
@@ -213,17 +213,17 @@ export const skillApi = {
       body: JSON.stringify(payload),
     }),
 
-  createSkillPoolSkill: (payload: {
+  createGlobalSkill: (payload: {
     name: string;
     content: string;
     config?: Record<string, unknown>;
   }) =>
-    request<{ created: boolean; name: string }>("/skills/pool/create", {
+    request<{ created: boolean; name: string }>("/skills/global/create", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
 
-  saveSkillPoolSkill: (payload: {
+  saveGlobalSkill: (payload: {
     name: string;
     content: string;
     source_name?: string;
@@ -234,7 +234,7 @@ export const skillApi = {
       success: boolean;
       mode: "edit" | "rename" | "noop";
       name: string;
-    }>("/skills/pool/save", {
+    }>("/skills/global/save", {
       method: "PUT",
       body: JSON.stringify(payload),
     }),
@@ -248,6 +248,52 @@ export const skillApi = {
     request<void>(`/skills/${encodeURIComponent(skillName)}/disable`, {
       method: "POST",
     }),
+
+  promoteSkillToGlobal: (
+    skillName: string,
+    payload: {
+      force?: boolean;
+      expected_global_hash?: string;
+      include_config?: boolean;
+      propagate?: boolean;
+    },
+    agentId?: string,
+  ) => {
+    const headers = agentId
+      ? new Headers({ "X-Agent-Id": agentId })
+      : undefined;
+    return request<{
+      success: boolean;
+      mode: "promoted" | "noop";
+      name: string;
+      global_hash: string;
+      previous_global_hash?: string;
+      created?: boolean;
+      propagated?: boolean;
+    }>("/skills/sync/push", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ skill_name: skillName, ...payload }),
+    });
+  },
+
+  resolveSkillSync: (
+    skillName: string,
+    resolution: "keep_global" | "keep_agent",
+    agentId?: string,
+  ) => {
+    const headers = agentId
+      ? new Headers({ "X-Agent-Id": agentId })
+      : undefined;
+    return request<{
+      resolved: boolean;
+      resolution: "keep_global" | "keep_agent";
+    }>("/skills/sync/resolve", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ skill_name: skillName, resolution }),
+    });
+  },
 
   batchEnableSkills: (skillNames: string[]) =>
     request<{
@@ -280,10 +326,10 @@ export const skillApi = {
       body: JSON.stringify(skillNames),
     }),
 
-  batchDeletePoolSkills: (skillNames: string[]) =>
+  batchDeleteGlobalSkills: (skillNames: string[]) =>
     request<{
       results: Record<string, { success: boolean; reason?: string }>;
-    }>("/skills/pool/batch-delete", {
+    }>("/skills/global/batch-delete", {
       method: "POST",
       body: JSON.stringify(skillNames),
     }),
@@ -312,7 +358,7 @@ export const skillApi = {
     });
   },
 
-  importPoolSkillFromHub: (payload: {
+  importGlobalSkillFromHub: (payload: {
     bundle_url: string;
     version?: string;
     target_name?: string;
@@ -322,7 +368,7 @@ export const skillApi = {
       name: string;
       enabled: boolean;
       source_url: string;
-    }>("/skills/pool/import", {
+    }>("/skills/global/import", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
@@ -347,22 +393,22 @@ export const skillApi = {
     );
   },
 
-  listPoolBuiltinSources: () =>
-    request<BuiltinImportSpec[]>("/skills/pool/builtin-sources"),
+  listGlobalBuiltinSources: () =>
+    request<BuiltinImportSpec[]>("/skills/global/builtin-sources"),
 
-  getPoolBuiltinNotice: async () => {
-    const cacheKey = "/skills/pool/builtin-notice";
+  getGlobalBuiltinNotice: async () => {
+    const cacheKey = "/skills/global/builtin-notice";
     const cached = getCached<BuiltinUpdateNotice>(cacheKey);
     if (cached) return cached;
 
     const data = await request<BuiltinUpdateNotice>(
-      "/skills/pool/builtin-notice",
+      "/skills/global/builtin-notice",
     );
     setCache(cacheKey, data);
     return data;
   },
 
-  importSelectedPoolBuiltins: (payload: {
+  importSelectedGlobalBuiltins: (payload: {
     imports: Array<{ skill_name: string; language: string }>;
     overwrite_conflicts?: boolean;
   }) =>
@@ -380,40 +426,40 @@ export const skillApi = {
         current_source?: string;
         current_language?: string;
       }>;
-    }>("/skills/pool/import-builtin", {
+    }>("/skills/global/import-builtin", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
 
-  updatePoolBuiltin: (skillName: string, language: string) =>
+  updateGlobalBuiltin: (skillName: string, language: string) =>
     request<Record<string, unknown>>(
-      `/skills/pool/${encodeURIComponent(skillName)}/update-builtin`,
+      `/skills/global/${encodeURIComponent(skillName)}/update-builtin`,
       {
         method: "POST",
         body: JSON.stringify({ language }),
       },
     ),
 
-  deleteSkillPoolSkill: (skillName: string) =>
+  deleteGlobalSkill: (skillName: string) =>
     request<{ deleted: boolean }>(
-      `/skills/pool/${encodeURIComponent(skillName)}`,
+      `/skills/global/${encodeURIComponent(skillName)}`,
       {
         method: "DELETE",
       },
     ),
 
-  uploadWorkspaceSkillToPool: (payload: {
+  uploadWorkspaceSkillToGlobal: (payload: {
     workspace_id: string;
     skill_name: string;
     overwrite?: boolean;
     preview_only?: boolean;
   }) =>
-    request<{ success: boolean; name: string }>("/skills/pool/upload", {
+    request<{ success: boolean; name: string }>("/skills/global/upload", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
 
-  downloadSkillPoolSkill: (payload: {
+  downloadGlobalSkill: (payload: {
     skill_name: string;
     targets: Array<{ workspace_id: string }>;
     all_workspaces?: boolean;
@@ -435,7 +481,7 @@ export const skillApi = {
         current_version_text?: string;
         source_version_text?: string;
       }>;
-    }>("/skills/pool/download", {
+    }>("/skills/global/download", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
@@ -458,16 +504,16 @@ export const skillApi = {
       },
     ),
 
-  updatePoolSkillTags: (skillName: string, tags: string[]) =>
+  updateGlobalSkillTags: (skillName: string, tags: string[]) =>
     request<{ updated: boolean; tags: string[] }>(
-      `/skills/pool/${encodeURIComponent(skillName)}/tags`,
+      `/skills/global/${encodeURIComponent(skillName)}/tags`,
       {
         method: "PUT",
         body: JSON.stringify(tags),
       },
     ),
 
-  updatePoolSkillAutoUpdate: (
+  updateGlobalSkillAutoUpdate: (
     skillName: string,
     payload: { enabled: boolean; targets: string[] | null },
   ) =>
@@ -475,7 +521,7 @@ export const skillApi = {
       updated: boolean;
       enabled: boolean;
       targets: string[] | null;
-    }>(`/skills/pool/${encodeURIComponent(skillName)}/auto-update`, {
+    }>(`/skills/global/${encodeURIComponent(skillName)}/auto-update`, {
       method: "PUT",
       body: JSON.stringify(payload),
     }),
@@ -500,23 +546,26 @@ export const skillApi = {
       { method: "DELETE" },
     ),
 
-  getPoolSkillConfig: (skillName: string) =>
+  getGlobalSkillConfig: (skillName: string) =>
     request<{ config: Record<string, unknown> }>(
-      `/skills/pool/${encodeURIComponent(skillName)}/config`,
+      `/skills/global/${encodeURIComponent(skillName)}/config`,
     ),
 
-  updatePoolSkillConfig: (skillName: string, config: Record<string, unknown>) =>
+  updateGlobalSkillConfig: (
+    skillName: string,
+    config: Record<string, unknown>,
+  ) =>
     request<{ updated: boolean }>(
-      `/skills/pool/${encodeURIComponent(skillName)}/config`,
+      `/skills/global/${encodeURIComponent(skillName)}/config`,
       {
         method: "PUT",
         body: JSON.stringify({ config }),
       },
     ),
 
-  deletePoolSkillConfig: (skillName: string) =>
+  deleteGlobalSkillConfig: (skillName: string) =>
     request<{ cleared: boolean }>(
-      `/skills/pool/${encodeURIComponent(skillName)}/config`,
+      `/skills/global/${encodeURIComponent(skillName)}/config`,
       { method: "DELETE" },
     ),
 
@@ -602,14 +651,14 @@ export const skillApi = {
       }>;
     }>,
 
-  uploadSkillPoolZip: (
+  uploadGlobalSkillZip: (
     file: File,
     options?: {
       target_name?: string;
       rename_map?: Record<string, string>;
     },
   ) =>
-    _uploadZip("/skills/pool/upload-zip", file, options) as Promise<{
+    _uploadZip("/skills/global/upload-zip", file, options) as Promise<{
       imported: string[];
       count: number;
       conflicts?: Array<{

@@ -3,7 +3,6 @@ import { SaveOutlined } from "@ant-design/icons";
 import { Select, Button } from "@agentscope-ai/design";
 import type { ModelSlotRequest } from "../../../../../api/types";
 import api from "../../../../../api";
-import { useTranslation } from "react-i18next";
 import { useAppMessage } from "../../../../../hooks/useAppMessage";
 import { confirmFreeModelSwitch } from "@/utils/freeModelSwitchWarning";
 import styles from "../../index.module.less";
@@ -34,8 +33,7 @@ export const ModelsSection = React.memo(function ModelsSection({
   activeModels,
   onSaved,
 }: ModelsSectionProps) {
-  const { t } = useTranslation();
-  const [saving, setSaving] = useState(false);
+    const [saving, setSaving] = useState(false);
   const [selectedProviderId, setSelectedProviderId] = useState<
     string | undefined
   >(undefined);
@@ -46,6 +44,8 @@ export const ModelsSection = React.memo(function ModelsSection({
   const { message } = useAppMessage();
 
   const currentSlot = activeModels?.active_llm;
+  const currentProviderId = currentSlot?.provider_id;
+  const currentModel = currentSlot?.model;
 
   const eligible = useMemo(
     () =>
@@ -62,12 +62,12 @@ export const ModelsSection = React.memo(function ModelsSection({
   );
 
   useEffect(() => {
-    if (currentSlot) {
-      setSelectedProviderId(currentSlot.provider_id || undefined);
-      setSelectedModel(currentSlot.model || undefined);
+    if (currentProviderId || currentModel) {
+      setSelectedProviderId(currentProviderId || undefined);
+      setSelectedModel(currentModel || undefined);
     }
     setDirty(false);
-  }, [currentSlot?.provider_id, currentSlot?.model]);
+  }, [currentModel, currentProviderId]);
 
   const chosenProvider = providers.find((p) => p.id === selectedProviderId);
   const modelOptions = [
@@ -100,7 +100,6 @@ export const ModelsSection = React.memo(function ModelsSection({
       const confirmed = await confirmFreeModelSwitch({
         provider: selectedProvider,
         model: selectedModelInfo,
-        t,
       });
       if (!confirmed) return;
     }
@@ -114,12 +113,12 @@ export const ModelsSection = React.memo(function ModelsSection({
     setSaving(true);
     try {
       await api.setActiveLlm(body);
-      message.success(t("models.llmModelUpdated"));
+      message.success("LLM 模型已更新");
       setDirty(false);
       onSaved();
     } catch (error) {
       const errMsg =
-        error instanceof Error ? error.message : t("models.failedToSave");
+        error instanceof Error ? error.message : "保存失败";
       message.error(errMsg);
     } finally {
       setSaving(false);
@@ -134,13 +133,13 @@ export const ModelsSection = React.memo(function ModelsSection({
 
   return (
     <div className={styles.defaultLlmBody}>
-      <p className={styles.llmDescription}>{t("models.llmDescription")}</p>
+      <p className={styles.llmDescription}>{"在这里设置全局默认的 LLM 模型。你也可以在聊天页面为具体 Agent 单独选择使用的模型。"}</p>
       <div className={styles.slotForm}>
         <div className={styles.slotField}>
-          <label className={styles.slotLabel}>{t("models.provider")}</label>
+          <label className={styles.slotLabel}>{"提供商"}</label>
           <Select
             style={{ width: "100%" }}
-            placeholder={t("models.selectProvider")}
+            placeholder={"选择提供商（必须已授权）"}
             value={selectedProviderId}
             onChange={handleProviderChange}
             options={eligible.map((p) => ({
@@ -151,11 +150,11 @@ export const ModelsSection = React.memo(function ModelsSection({
         </div>
 
         <div className={styles.slotField}>
-          <label className={styles.slotLabel}>{t("models.model")}</label>
+          <label className={styles.slotLabel}>{"模型"}</label>
           <Select
             style={{ width: "100%" }}
             placeholder={
-              hasModels ? t("models.selectModel") : t("models.addModelFirst")
+              hasModels ? "选择模型" : "请先添加模型"
             }
             disabled={!hasModels}
             showSearch
@@ -173,7 +172,7 @@ export const ModelsSection = React.memo(function ModelsSection({
           <label
             className={[styles.slotLabel, styles.visuallyHiddenLabel].join(" ")}
           >
-            {t("models.actions")}
+            {"操作"}
           </label>
           <Button
             type="primary"
@@ -183,7 +182,7 @@ export const ModelsSection = React.memo(function ModelsSection({
             block
             icon={<SaveOutlined />}
           >
-            {isActive ? t("models.saved") : t("models.save")}
+            {isActive ? "已保存" : "保存"}
           </Button>
         </div>
       </div>

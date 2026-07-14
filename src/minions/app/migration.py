@@ -36,7 +36,6 @@ _DEFAULT_AGENT_DESCRIPTION = "Default Minions agent"
 _WORKSPACE_ITEMS_TO_MIGRATE = [
     # Directories
     ("sessions", True),
-    ("memory", True),
     ("active_skills", True),
     ("customized_skills", True),
     # Files
@@ -292,8 +291,60 @@ def _migrate_workspace_items_from_source(
             )
 
 
+def migrate_skill_pool_to_global_skills() -> None:
+    """Rename the legacy ``skill_pool/`` directory to ``global_skills/``.
+
+    Also updates the manifest ``schema_version`` field from the legacy
+    ``skill-pool-manifest.v1`` to ``global-skills-manifest.v1``.
+
+    This migration is idempotent: if ``global_skills/`` already exists
+    (or ``skill_pool/`` does not), it does nothing.
+    """
+    from ..constant import WORKING_DIR
+
+    from ..agents.skill_system.store import (
+        get_global_skills_dir,
+        get_global_skill_manifest_path,
+    )
+
+    legacy_dir = Path(WORKING_DIR) / "skill_pool"
+    new_dir = get_global_skills_dir()
+
+    # Rename the on-disk directory if needed.
+    if legacy_dir.exists() and not new_dir.exists():
+        try:
+            legacy_dir.rename(new_dir)
+            logger.info(
+                "Renamed legacy skill_pool/ to global_skills/ at %s",
+                new_dir,
+            )
+        except OSError as e:
+            logger.warning(
+                "Failed to rename skill_pool/ to global_skills/: %s. "
+                "The app will continue using the old directory name.",
+                e,
+            )
+            return
+
+    # Update manifest schema_version if the file exists and has the old value.
+    manifest_path = get_global_skill_manifest_path()
+    if manifest_path.exists():
+        try:
+            with open(manifest_path, encoding="utf-8") as f:
+                manifest = json.load(f)
+            if manifest.get("schema_version") == "skill-pool-manifest.v1":
+                manifest["schema_version"] = "global-skills-manifest.v1"
+                with open(manifest_path, "w", encoding="utf-8") as f:
+                    json.dump(manifest, f, indent=2, ensure_ascii=False)
+                logger.info(
+                    "Updated manifest schema_version to global-skills-manifest.v1",
+                )
+        except (json.JSONDecodeError, OSError) as e:
+            logger.warning("Failed to update manifest schema_version: %s", e)
+
+
 # pylint: disable=too-many-branches,too-many-statements
-def migrate_legacy_skills_to_skill_pool() -> bool:
+def migrate_legacy_skills_to_global_skills() -> bool:
     """Migrate legacy skill layouts into workspace skills/ directories.
 
     Legacy layout had two flat directories per workspace:
@@ -317,7 +368,7 @@ def migrate_legacy_skills_to_skill_pool() -> bool:
     skills are never overwritten; ``_copy_if_missing`` skips targets that
     already exist on disk.
 
-    Users can manually upload workspace skills to the shared pool later
+    Users can manually upload workspace skills to the shared global skills later
     via the UI.
 
     Returns:
@@ -339,12 +390,12 @@ def _do_migrate_legacy_skills() -> bool:
     """Internal implementation of legacy skills migration."""
     from datetime import datetime, timezone
 
-    from ..agents.skill_system import ensure_skill_pool_initialized
+    from ..agents.skill_system import ensure_global_skills_initialized
     from ..agents.skill_system.registry import reconcile_workspace_manifest
     from ..agents.skill_system.store import (
         copy_skill_dir,
         default_workspace_manifest,
-        get_pool_skill_manifest_path,
+        get_global_skill_manifest_path,
         get_workspace_skill_manifest_path,
         get_workspace_skills_dir,
         mutate_json,
@@ -370,9 +421,9 @@ def _do_migrate_legacy_skills() -> bool:
         return digest.hexdigest()
 
     # --- Phase 0: Check if migration already completed ---
-    # If skill pool manifest exists, migration has been done
-    pool_manifest = get_pool_skill_manifest_path()
-    if pool_manifest.exists():
+    # If global skills manifest exists, migration has been done
+    global_manifest = get_global_skill_manifest_path()
+    if global_manifest.exists():
         return False
 
     def _has_legacy_skill_root(root: Path) -> bool:
@@ -422,12 +473,12 @@ def _do_migrate_legacy_skills() -> bool:
         copy_skill_dir(source_dir, target_dir)
         return True
 
-    # --- Phase 1: Initialize pool ---
+    # --- Phase 1: Initialize global skills ---
     try:
-        ensure_skill_pool_initialized()
+        ensure_global_skills_initialized()
     except Exception as e:
         logger.warning(
-            "Failed to initialize skill pool before migration: %s",
+            "Failed to initialize global skills before migration: %s",
             e,
         )
         return False
@@ -689,7 +740,7 @@ def _do_ensure_default_agent() -> None:
             description=_DEFAULT_AGENT_DESCRIPTION,
         )
 
-        # Initialize workspace md files (SOUL/PROFILE/MEMORY/AGENTS/HEARTBEAT)
+        # Initialize workspace guidance files (SOUL/PROFILE/AGENTS/HEARTBEAT)
         # and initial skills, mirroring the QA agent creation path.
         from .routers.agents import _initialize_agent_workspace
 

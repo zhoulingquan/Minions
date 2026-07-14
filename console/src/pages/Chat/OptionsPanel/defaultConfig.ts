@@ -1,5 +1,3 @@
-import type { TFunction } from "i18next";
-
 const defaultConfig = {
   theme: {
     colorPrimary: "#FF7F16",
@@ -21,19 +19,19 @@ const defaultConfig = {
     longTextUpload: {
       enabled: true,
     },
-    disclaimer: "Works for you, grows with you",
+    disclaimer: "懂你所需，伴你左右",
   },
   welcome: {
-    greeting: "Hello, how can I help you today?",
+    greeting: "你好，我今天能帮你做什么？",
     description:
-      "I am a helpful assistant that can help you with your questions.",
+      "我是一个智能助手，可以帮助你解答问题。",
     avatar: "/online.svg",
     prompts: [
       {
-        value: "Let's start a new journey!",
+        value: "让我们开启一段新的旅程吧！",
       },
       {
-        value: "Can you tell me what skills you have?",
+        value: "能告诉我你有哪些技能吗？",
       },
     ],
   },
@@ -43,45 +41,6 @@ const defaultConfig = {
   },
 } as const;
 
-class ChatConfigProvider {
-  getGreeting(t: TFunction): string {
-    return t("chat.greeting");
-  }
-
-  getDescription(t: TFunction): string {
-    return t("chat.description");
-  }
-
-  getPrompts(t: TFunction): Array<{ value: string }> {
-    return [{ value: t("chat.prompt1") }, { value: t("chat.prompt2") }];
-  }
-
-  getConfig(t: TFunction) {
-    return {
-      ...defaultConfig,
-      sender: {
-        ...defaultConfig.sender,
-        disclaimer: t("chat.disclaimer"),
-      },
-      welcome: {
-        ...defaultConfig.welcome,
-        greeting: this.getGreeting(t),
-        description: this.getDescription(t),
-        prompts: this.getPrompts(t),
-      },
-    };
-  }
-}
-
-const configProvider = new ChatConfigProvider();
-
-export function getDefaultConfig(t: TFunction) {
-  return configProvider.getConfig(t);
-}
-
 export default defaultConfig;
 
 export type DefaultConfig = typeof defaultConfig;
-
-// Export provider for extension
-export { configProvider };

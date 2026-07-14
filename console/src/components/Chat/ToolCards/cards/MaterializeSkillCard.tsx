@@ -1,5 +1,4 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { ThunderboltOutlined } from "@ant-design/icons";
 import type { ToolCallContent } from "../shared/types";
 import { ToolCardShell, DefaultBlock } from "../shared";
@@ -14,12 +13,11 @@ const MaterializeSkillCard: React.FC<MaterializeSkillCardProps> = ({
   content,
   isStreaming,
 }) => {
-  const { t } = useTranslation();
-  const params = content.params || {};
+    const params = content.params || {};
   const skill = (params.name || "") as string;
   const title = skill
-    ? t("tool.materializeSkill", { skill })
-    : t("tool.materializeSkillDefault");
+    ? `创建 ${skill}`
+    : "创建 技能";
 
   const resultText = stringifyResult(content.result);
 

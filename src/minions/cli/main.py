@@ -146,6 +146,7 @@ def _looks_like_project_path(value: str) -> bool:
             ".providers_cmd",
         ),
         "skills": ("minions.cli.skills_cmd", "skills_group", ".skills_cmd"),
+        "sage": ("minions.cli.sage_cmd", "sage_group", ".sage_cmd"),
         "tui": ("minions.cli.tui.launch", "tui_cmd", ".tui.launch"),
         "uninstall": (
             "minions.cli.uninstall_cmd",

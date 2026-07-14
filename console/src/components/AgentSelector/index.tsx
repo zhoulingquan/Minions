@@ -1,10 +1,9 @@
 import { Select, Tag, Tooltip } from "antd";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Bot, CheckCircle, EyeOff, ChevronRight } from "lucide-react";
 import { SparkDownLine, SparkUpLine } from "@agentscope-ai/icons";
 import { useAgentStore } from "../../stores/agentStore";
 import { agentsApi } from "../../api/modules/agents";
-import { useTranslation } from "react-i18next";
 import { getAgentDisplayName } from "../../utils/agentDisplayName";
 import { useNavigate } from "react-router-dom";
 import { useAppMessage } from "../../hooks/useAppMessage";
@@ -17,19 +16,14 @@ interface AgentSelectorProps {
 export default function AgentSelector({
   collapsed = false,
 }: AgentSelectorProps) {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
+    const navigate = useNavigate();
   const { selectedAgent, agents, setSelectedAgent, setAgents } =
     useAgentStore();
   const { message } = useAppMessage();
   const [loading, setLoading] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  useEffect(() => {
-    loadAgents();
-  }, []);
-
-  const loadAgents = async () => {
+  const loadAgents = useCallback(async () => {
     try {
       setLoading(true);
       const data = await agentsApi.listAgents();
@@ -41,23 +35,27 @@ export default function AgentSelector({
       setAgents(sortedAgents);
     } catch (error) {
       console.error("Failed to load agents:", error);
-      message.error(t("agent.loadFailed"));
+      message.error("加载智能体列表失败");
     } finally {
       setLoading(false);
     }
-  };
+  }, [message, setAgents]);
+
+  useEffect(() => {
+    void loadAgents();
+  }, [loadAgents]);
 
   const handleChange = (value: string) => {
     const targetAgent = agents?.find((a) => a.id === value);
 
     // Prevent switching to disabled agent
     if (targetAgent && !targetAgent.enabled) {
-      message.warning(t("agent.cannotSwitchToDisabled"));
+      message.warning("该智能体已被禁用，请先在管理页面启用");
       return;
     }
 
     setSelectedAgent(value);
-    message.success(t("agent.switchSuccess"));
+    message.success("智能体切换成功");
   };
 
   // Auto-switch to default if the selected agent was deleted or disabled
@@ -69,13 +67,13 @@ export default function AgentSelector({
     if (!currentAgent) {
       // Agent was deleted — no longer in the list
       setSelectedAgent("default");
-      message.warning(t("agent.currentAgentDeleted"));
+      message.warning("当前智能体已被删除，已自动切换到默认智能体");
     } else if (!currentAgent.enabled) {
       // Agent exists but was disabled
       setSelectedAgent("default");
-      message.warning(t("agent.currentAgentDisabled"));
+      message.warning("当前智能体已被禁用，已自动切换到默认智能体");
     }
-  }, [agents, selectedAgent, setSelectedAgent, t]);
+  }, [agents, message, selectedAgent, setSelectedAgent]);
 
   // Count only enabled agents for badge
   const enabledCount = agents?.filter((a) => a.enabled).length ?? 0;
@@ -89,7 +87,7 @@ export default function AgentSelector({
       <Tooltip
         title={
           currentAgentInfo
-            ? getAgentDisplayName(currentAgentInfo, t)
+            ? getAgentDisplayName(currentAgentInfo)
             : selectedAgent
         }
         placement="right"
@@ -106,7 +104,7 @@ export default function AgentSelector({
     <div className={styles.agentSelectorWrapper}>
       <div className={styles.agentSelectorLabel}>
         <span>
-          {t("agent.currentWorkspace")}
+          {"当前智能体"}
           {agentCount > 0 && (
             <span className={styles.agentCountBadge}> ({agentCount})</span>
           )}
@@ -117,7 +115,7 @@ export default function AgentSelector({
         onChange={handleChange}
         loading={loading}
         className={styles.agentSelector}
-        placeholder={t("agent.selectAgent")}
+        placeholder={"选择智能体"}
         optionLabelProp="label"
         popupClassName={styles.agentSelectorDropdown}
         onOpenChange={setDropdownOpen}
@@ -128,13 +126,13 @@ export default function AgentSelector({
           <>
             <div className={styles.dropdownHeader}>
               <span className={styles.dropdownHeaderTitle}>
-                {t("agent.currentWorkspace")}
+                {"当前智能体"}
               </span>
               <button
                 className={styles.managementLink}
                 onClick={() => navigate("/agents")}
               >
-                {t("agent.management")}
+                {"智能体管理"}
                 <ChevronRight size={12} strokeWidth={2.5} />
               </button>
             </div>
@@ -150,7 +148,7 @@ export default function AgentSelector({
             label={
               <div className={styles.selectedAgentLabel}>
                 <Bot size={14} strokeWidth={2} />
-                <span>{getAgentDisplayName(agent, t)}</span>
+                <span>{getAgentDisplayName(agent)}</span>
                 {!agent.enabled && <EyeOff size={12} strokeWidth={2} />}
               </div>
             }
@@ -166,7 +164,7 @@ export default function AgentSelector({
                 <div className={styles.agentOptionContent}>
                   <div className={styles.agentOptionName}>
                     <span className={styles.agentOptionNameText}>
-                      {getAgentDisplayName(agent, t)}
+                      {getAgentDisplayName(agent)}
                     </span>
                     {agent.id === selectedAgent && (
                       <CheckCircle
@@ -176,7 +174,7 @@ export default function AgentSelector({
                       />
                     )}
                     {!agent.enabled && (
-                      <Tag style={{ margin: 0 }}>{t("agent.disabled")}</Tag>
+                      <Tag style={{ margin: 0 }}>{"已禁用"}</Tag>
                     )}
                   </div>
                   {agent.description && (

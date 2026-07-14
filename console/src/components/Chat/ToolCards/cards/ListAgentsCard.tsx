@@ -1,5 +1,4 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { TeamOutlined } from "@ant-design/icons";
 import type { ToolCallContent } from "../shared/types";
 import { ToolCardShell, DefaultBlock } from "../shared";
@@ -14,8 +13,7 @@ const ListAgentsCard: React.FC<ListAgentsCardProps> = ({
   content,
   isStreaming,
 }) => {
-  const { t } = useTranslation();
-  const title = t("tool.listAgents");
+    const title = "列出 代理";
 
   // Use the raw result for formatAgentList — it expects JSON to parse.
   const rawResult =
@@ -24,7 +22,7 @@ const ListAgentsCard: React.FC<ListAgentsCardProps> = ({
       : content.result != null
       ? JSON.stringify(content.result)
       : "";
-  const formattedResult = rawResult ? formatAgentList(rawResult, t) : "";
+  const formattedResult = rawResult ? formatAgentList(rawResult) : "";
 
   return (
     <ToolCardShell

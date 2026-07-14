@@ -1,5 +1,4 @@
 import { Alert, Modal } from "antd";
-import { useTranslation } from "react-i18next";
 
 /**
  * Shared confirmation for backups that do not verify with the local signing
@@ -23,27 +22,22 @@ export default function BackupTrustDialog({
   onConfirm,
   onCancel,
 }: Props) {
-  const { t } = useTranslation();
-  const isLegacy = mode === "legacy";
+    const isLegacy = mode === "legacy";
 
   return (
     <Modal
       title={
         isLegacy
-          ? t("backup.trustLegacyTitle", {
-              defaultValue: "Trust legacy backup?",
-            })
-          : t("backup.trustForeignTitle", {
-              defaultValue: "Trust this backup?",
-            })
+          ? "信任历史备份？"
+          : "信任此备份？"
       }
       open={open}
       onOk={onConfirm}
       onCancel={onCancel}
       confirmLoading={confirmLoading}
       okButtonProps={{ danger: true }}
-      okText={t("common.confirm")}
-      cancelText={t("common.cancel")}
+      okText={"确认"}
+      cancelText={"取消"}
       centered
     >
       <Alert
@@ -51,18 +45,12 @@ export default function BackupTrustDialog({
         showIcon
         message={
           backupName ||
-          t("backup.unknownBackupName", { defaultValue: "Backup archive" })
+          "备份归档"
         }
         description={
           isLegacy
-            ? t("backup.trustLegacyDesc", {
-                defaultValue:
-                  "This older backup has no local signature. Only continue if you trust where it came from; this instance will sign it before restore.",
-              })
-            : t("backup.trustForeignDesc", {
-                defaultValue:
-                  "This backup was not signed by this instance. Only continue if you trust the source; local security and MCP settings will be preserved by default when restored.",
-              })
+            ? "此旧版备份没有本地签名。仅在信任来源时继续；确认后会使用当前实例签名再恢复。"
+            : "此备份不是由当前实例签名。仅在信任来源时继续；恢复时默认保留本地安全和 MCP 配置。"
         }
       />
     </Modal>

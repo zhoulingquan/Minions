@@ -11,11 +11,10 @@ import {
   Spin,
 } from "antd";
 import { CheckOutlined } from "@ant-design/icons";
-import { useTranslation } from "react-i18next";
 import type { AgentSummary } from "@/api/types/agents";
 import type { ProviderInfo } from "@/api/types/provider";
 import { getAgentDisplayName } from "@/utils/agentDisplayName";
-import type { PoolSkillSpec } from "@/api/types/skill";
+import type { GlobalSkillSpec } from "@/api/types/skill";
 import { skillApi } from "@/api/modules/skill";
 import { providerApi } from "@/api/modules/provider";
 import { providerIcon } from "../../Models/components/providerIcon";
@@ -50,8 +49,7 @@ export function AgentModal({
   onSave,
   onCancel,
 }: AgentModalProps) {
-  const { t } = useTranslation();
-  const [poolSkills, setPoolSkills] = useState<PoolSkillSpec[]>([]);
+    const [globalSkillsData, setGlobalSkillsData] = useState<GlobalSkillSpec[]>([]);
   const [installedSkills, setInstalledSkills] = useState<string[]>([]);
   const [loadingSkills, setLoadingSkills] = useState(false);
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
@@ -98,19 +96,19 @@ export function AgentModal({
 
     setLoadingSkills(true);
 
-    const fetchPool = skillApi.listSkillPoolSkills();
+    const fetchGlobalSkills = skillApi.listGlobalSkills();
     const fetchInstalled = editingAgent
       ? skillApi.listSkills(editingAgent.id)
       : Promise.resolve([]);
 
-    Promise.all([fetchPool, fetchInstalled])
+    Promise.all([fetchGlobalSkills, fetchInstalled])
       .then(([pool, workspaceSkills]) => {
-        const poolSkillNames = new Set(pool.map((skill) => skill.name));
+        const globalSkillNames = new Set(pool.map((skill) => skill.name));
         const installedSkills = workspaceSkills
-          .filter((skill) => poolSkillNames.has(skill.name))
+          .filter((skill) => globalSkillNames.has(skill.name))
           .map((skill) => skill.name);
 
-        setPoolSkills(pool);
+        setGlobalSkillsData(pool);
         setInstalledSkills(installedSkills);
         onInstalledSkillsLoaded(installedSkills);
         if (editingAgent) {
@@ -148,12 +146,12 @@ export function AgentModal({
   };
 
   const handleSelectAll = () => {
-    const allNames = poolSkills.map((s) => s.name);
+    const allNames = globalSkillsData.map((s) => s.name);
     onSelectedSkillsChange(allNames);
   };
 
   const handleSelectBuiltin = () => {
-    const builtinNames = poolSkills
+    const builtinNames = globalSkillsData
       .filter((s) => s.source === "builtin")
       .map((s) => s.name);
     onSelectedSkillsChange(
@@ -169,17 +167,15 @@ export function AgentModal({
     <Modal
       title={
         editingAgent
-          ? t("agent.editTitle", {
-              name: getAgentDisplayName(editingAgent, t),
-            })
-          : t("agent.createTitle")
+          ? `编辑智能体 - ${getAgentDisplayName(editingAgent)}`
+          : "创建新智能体"
       }
       open={open}
       onOk={onSave}
       onCancel={onCancel}
       width={640}
-      okText={t("common.save")}
-      cancelText={t("common.cancel")}
+      okText={"保存"}
+      cancelText={"取消"}
     >
       <Form form={form} layout="vertical" autoComplete="off">
         <Form.Item name="active_model_provider" hidden>
@@ -190,44 +186,44 @@ export function AgentModal({
         </Form.Item>
 
         {editingAgent && (
-          <Form.Item name="id" label={t("agent.id")}>
+          <Form.Item name="id" label={"ID"}>
             <Input disabled />
           </Form.Item>
         )}
         {!editingAgent && (
           <Form.Item
             name="id"
-            label={t("agent.idLabel")}
-            help={t("agent.idHelp")}
+            label={"智能体 ID（可选）"}
+            help={"留空则自动生成。仅允许字母、数字、连字符和下划线。"}
             rules={[
               {
                 pattern: /^[a-zA-Z0-9][a-zA-Z0-9_-]*[a-zA-Z0-9]$/,
-                message: t("agent.idPattern"),
+                message: "ID只能包含字母、数字、下划线和连字符",
               },
             ]}
           >
-            <Input placeholder={t("agent.idPlaceholder")} />
+            <Input placeholder={"例如：my-agent"} />
           </Form.Item>
         )}
         <Form.Item
           name="name"
-          label={t("agent.name")}
-          rules={[{ required: true, message: t("agent.nameRequired") }]}
+          label={"名称"}
+          rules={[{ required: true, message: "请输入智能体名称" }]}
         >
-          <Input placeholder={t("agent.namePlaceholder")} />
+          <Input placeholder={"例如：我的智能体"} />
         </Form.Item>
-        <Form.Item name="description" label={t("agent.description")}>
+        <Form.Item name="description" label={"描述"}>
           <Input.TextArea
-            placeholder={t("agent.descriptionPlaceholder")}
+            placeholder={"简要描述这个智能体的用途..."}
             rows={3}
           />
         </Form.Item>
-        <Form.Item label={t("agent.model")} help={t("agent.modelHelp")}>
+        <Form.Item label={"模型"} help={"为此智能体指定特定的 LLM 模型。留空则使用全局默认模型。"}>
           <Space.Compact style={{ width: "100%" }}>
             <Select
               value={selectedProviderId || undefined}
               onChange={handleProviderChange}
-              placeholder={t("agent.modelPlaceholder")}
+              placeholder={"使用全局默认"}
               allowClear
               onClear={handleClearModel}
               loading={loadingProviders}
@@ -256,7 +252,7 @@ export function AgentModal({
                 loadingProviders ? (
                   <Spin size="small" />
                 ) : (
-                  t("agent.noConfiguredModels")
+                  "暂无已配置的模型"
                 )
               }
             />
@@ -267,8 +263,8 @@ export function AgentModal({
               }
               placeholder={
                 selectedProviderId
-                  ? t("models.model")
-                  : t("agent.modelPlaceholder")
+                  ? "模型"
+                  : "使用全局默认"
               }
               disabled={!selectedProviderId}
               style={{ width: "55%" }}
@@ -283,8 +279,8 @@ export function AgentModal({
         </Form.Item>
         <Form.Item
           name="workspace_dir"
-          label={t("agent.workspace")}
-          help={!editingAgent ? t("agent.workspaceHelp") : undefined}
+          label={"工作区路径"}
+          help={!editingAgent ? "留空将自动生成在 ~/.minions/workspaces/<id> 目录" : undefined}
         >
           <Input
             placeholder="~/.minions/workspaces/my-agent"
@@ -304,18 +300,18 @@ export function AgentModal({
         >
           <Text type="secondary" style={{ fontSize: 13 }}>
             {editingAgent
-              ? t("agent.addSkillsToAgent")
-              : t("agent.initialSkills")}
+              ? "添加技能"
+              : "初始技能"}
           </Text>
           <Space size={4}>
             <Button size="small" type="primary" onClick={handleSelectAll}>
-              {t("agent.selectAll")}
+              {"全选"}
             </Button>
             <Button size="small" type="default" onClick={handleSelectBuiltin}>
-              {t("agent.selectBuiltin")}
+              {"内置"}
             </Button>
             <Button size="small" type="default" onClick={handleSelectNone}>
-              {t("agent.selectNone")}
+              {"清空"}
             </Button>
           </Space>
         </div>
@@ -324,14 +320,14 @@ export function AgentModal({
           <div style={{ textAlign: "center", padding: "16px 0" }}>
             <Spin size="small" />
           </div>
-        ) : poolSkills.length === 0 ? (
+        ) : globalSkillsData.length === 0 ? (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={t("agent.noPoolSkills")}
+            description={"全局技能中暂无可用技能"}
           />
         ) : (
           <div className={styles.pickerGrid}>
-            {poolSkills.map((skill) => {
+            {globalSkillsData.map((skill) => {
               const selected = selectedSkills.includes(skill.name);
               const isInstalled =
                 !!editingAgent && installedSkills.includes(skill.name);

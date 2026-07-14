@@ -3,7 +3,7 @@
 
 Each Workspace represents a standalone agent workspace with its own:
 - ChannelManager (communication channels)
-- BaseMemoryManager (conversation memory)
+- SageRuntime (multi-tenant business experience)
 - DriverManager (external capability runtime, currently MCP)
 - CronManager (scheduled tasks)
 - WorkspacePlugins (tool/hook/command/prompt registries)
@@ -11,6 +11,7 @@ Each Workspace represents a standalone agent workspace with its own:
 Request processing is handled by ``Runtime`` (see ``stream_query``).
 """
 import logging
+import uuid
 from pathlib import Path
 from typing import Any, AsyncGenerator, Iterable, Optional
 
@@ -41,7 +42,7 @@ class Workspace:
 
     Each Workspace is an independent agent instance with its own:
     - ChannelManager: Manages communication channels
-    - BaseMemoryManager: Manages conversation memory
+    - SageRuntime: Manages scoped business experience and growth
     - DriverManager: Manages external capabilities exposed through Drivers
     - CronManager: Manages scheduled tasks
     - WorkspacePlugins: Per-workspace pluggable registries
@@ -95,9 +96,9 @@ class Workspace:
         return self._service_manager.services.get("session")
 
     @property
-    def memory_manager(self):
-        """Get memory manager instance from ServiceManager."""
-        return self._service_manager.services.get("memory_manager")
+    def sage_runtime(self):
+        """Get the workspace's SAGE experience runtime."""
+        return self._service_manager.services.get("sage_runtime")
 
     @property
     def driver_manager(self):
@@ -261,10 +262,20 @@ class Workspace:
         Drop-in replacement for the old ``Runner.stream_query()``.
         """
         from ...runtime import Runtime
+        from ...tenancy.runtime import agent_runtime_scope
 
-        rt = Runtime(workspace=self, app_services=self._app_services)
-        async for item in rt.run(request):
-            yield item
+        run_key = f"workspace-{uuid.uuid4().hex}"
+        await self.task_tracker.register_external_task(run_key)
+        try:
+            source = (
+                f"runtime:{getattr(request, 'channel', None) or 'internal'}"
+            )
+            async with agent_runtime_scope(self.agent_id, source=source):
+                rt = Runtime(workspace=self, app_services=self._app_services)
+                async for item in rt.run(request):
+                    yield item
+        finally:
+            await self.task_tracker.unregister_external_task(run_key)
 
     def _register_services(  # pylint: disable=too-many-statements
         self,
@@ -275,9 +286,7 @@ class Workspace:
         hardcoded initialization logic.
         """
         # pylint: disable=protected-access
-        from ...agents.memory.base_memory_manager import (
-            get_memory_manager_backend,
-        )
+        from ...sage import SageRuntime, build_sage_store
 
         sm = self._service_manager
 
@@ -316,23 +325,15 @@ class Workspace:
         # Priority 20: Core services (concurrent)
         sm.register(
             ServiceDescriptor(
-                name="memory_manager",
-                service_class=lambda ws: get_memory_manager_backend(
-                    ws._config.running.memory_manager_backend,
-                ),
+                name="sage_runtime",
+                service_class=SageRuntime,
                 init_args=lambda ws: {
-                    "working_dir": str(ws.workspace_dir),
-                    "agent_id": ws.agent_id,
+                    "store": build_sage_store(ws.workspace_dir),
                 },
                 start_method="start",
                 stop_method="close",
-                reusable=True,
                 priority=20,
                 concurrent_init=True,
-                # reme depends on `agentscope.token`, which agentscope no
-                # longer ships; let the workspace boot without
-                # memory_manager when its import fails.
-                optional=True,
             ),
         )
 
@@ -434,13 +435,11 @@ class Workspace:
         Args:
             components: Dict mapping component name to instance.
                 Supported keys:
-                - 'memory_manager': BaseMemoryManager instance
                 - 'chat_manager': ChatManager instance
 
         Example:
             new_ws = Workspace("default", workspace_dir)
             await new_ws.set_reusable_components({
-                'memory_manager': old_ws.memory_manager,
                 'chat_manager': old_ws.chat_manager,
             })
             await new_ws.start()
@@ -465,14 +464,14 @@ class Workspace:
         logger.info(f"Starting workspace: {self.agent_id}")
 
         from ...agents.skill_system import (
-            ensure_skill_pool_initialized,
+            ensure_global_skills_initialized,
         )
 
         try:
-            ensure_skill_pool_initialized()
+            ensure_global_skills_initialized()
         except Exception as e:
             logger.warning(
-                f"Skill pool initialization failed (non-fatal): {e}",
+                f"Global skills initialization failed (non-fatal): {e}",
             )
 
         try:

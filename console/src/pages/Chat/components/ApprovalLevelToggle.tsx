@@ -9,7 +9,6 @@ import { Dropdown, Tag, Tooltip } from "antd";
 import type { MenuProps } from "antd";
 import { Shield, Ban, AlertTriangle, CheckCircle } from "lucide-react";
 import { DownOutlined } from "@ant-design/icons";
-import { useTranslation } from "react-i18next";
 
 export type ToolExecutionLevel = "STRICT" | "SMART" | "AUTO" | "OFF";
 
@@ -55,8 +54,7 @@ const ApprovalLevelToggle: React.FC<ApprovalLevelToggleProps> = ({
   runningConfigApprovalLevel,
   onChange,
 }) => {
-  const { t } = useTranslation();
-  const [sessionLevel, setSessionLevel] = useState<ToolExecutionLevel | null>(
+    const [sessionLevel, setSessionLevel] = useState<ToolExecutionLevel | null>(
     null,
   );
   const onChangeRef = useRef(onChange);
@@ -116,11 +114,8 @@ const ApprovalLevelToggle: React.FC<ApprovalLevelToggleProps> = ({
 
     for (const lv of LEVELS) {
       const m = LEVEL_META[lv];
-      const name = t(`agentConfig.toolExecutionLevel.${lv.toLowerCase()}`, lv);
-      const desc = t(
-        `agentConfig.toolExecutionLevel.${lv.toLowerCase()}Desc`,
-        "",
-      );
+      const name = lv === "STRICT" ? "严格模式" : lv === "SMART" ? "智能模式" : lv === "AUTO" ? "自动模式" : "关闭模式";
+      const desc = lv === "STRICT" ? "所有工具调用都需要审批，最高安全级别" : lv === "SMART" ? "低风险工具自动放行，中高风险工具需要审批" : lv === "AUTO" ? "仅被明确标记为需要审批的工具才会要求审批（默认）" : "关闭所有工具审批，所有工具自动执行";
       items.push({
         key: lv,
         label: (
@@ -141,10 +136,10 @@ const ApprovalLevelToggle: React.FC<ApprovalLevelToggleProps> = ({
     }
 
     return items;
-  }, [handleSelect, t]);
+  }, [handleSelect]);
 
   return (
-    <Tooltip title={t("agentConfig.toolExecutionLevelTitle")}>
+    <Tooltip title={"工具执行安全"}>
       <Dropdown
         menu={{ items: menuItems, selectedKeys: [effectiveLevel] }}
         trigger={["click"]}
@@ -163,10 +158,7 @@ const ApprovalLevelToggle: React.FC<ApprovalLevelToggleProps> = ({
           }}
         >
           {meta.icon}
-          {t(
-            `agentConfig.toolExecutionLevel.${effectiveLevel.toLowerCase()}`,
-            effectiveLevel,
-          )}
+          {effectiveLevel === "STRICT" ? "严格模式" : effectiveLevel === "SMART" ? "智能模式" : effectiveLevel === "AUTO" ? "自动模式" : "关闭模式"}
           <DownOutlined style={{ fontSize: 10 }} />
         </Tag>
       </Dropdown>

@@ -37,8 +37,8 @@ class ServiceDescriptor:
     managed by ServiceManager.
 
     Attributes:
-        name: Unique service identifier (e.g., 'memory_manager')
-        service_class: Class to instantiate (e.g., MemoryManager)
+        name: Unique service identifier (e.g., 'sage_runtime')
+        service_class: Class to instantiate (e.g., SageRuntime)
         init_args: Callable that returns init kwargs for the service
         post_init: Optional hook called after creation (for setup logic)
         start_method: Name of method to call after creation (e.g., 'start')

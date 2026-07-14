@@ -24,7 +24,7 @@ _BUSY_TIMEOUT_MS = 5000
 # them lets a later ``ms.search`` match the agent's own past queries (and their
 # tracebacks), drowning the real content: a self-pollution feedback loop. So
 # these rows stay durable + recallable by ``seq``, but are kept OUT of the FTS
-# index (and out of ``search`` — see ``MemorySpace``). Must match the recall
+# index (and out of ``search`` — see ``RecallSpace``). Must match the recall
 # tool names in ``repl.py`` and ``recall_tool.py``.
 _RECALL_TOOL_NAMES = (
     "recall_history_python",
@@ -56,7 +56,7 @@ class HistoryStore:
 
     Every event the agent appends is write-through-persisted here with full
     structure (blocks, tool args, state) so a later session can retrieve it.
-    The model reaches the same file *read-only* through its ``MemorySpace``
+    The model reaches the same file *read-only* through its ``RecallSpace``
     (ATTACHed ``hist`` schema), so this writer and those readers coexist under
     WAL. The file is never dropped; ``close()`` only closes this connection.
     """
@@ -200,7 +200,7 @@ class HistoryStore:
         container/distro builds) raise ``no such module: fts5`` here. We catch
         that, leave ``self._fts`` False so the write path skips FTS upkeep, and
         log one warning — search then degrades to a LIKE scan (see
-        ``MemorySpace.search``). The store itself stays fully functional.
+        ``RecallSpace.search``). The store itself stays fully functional.
         """
         try:
             existed = self._conn.execute(

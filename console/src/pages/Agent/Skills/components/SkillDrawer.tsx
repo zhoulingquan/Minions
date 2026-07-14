@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Drawer, Form, Input, Button, Select } from "@agentscope-ai/design";
 import { useAppMessage } from "../../../../hooks/useAppMessage";
-import { useTranslation } from "react-i18next";
 import { ThunderboltOutlined, StopOutlined } from "@ant-design/icons";
 import type { FormInstance } from "antd";
 import type { SkillSpec } from "../../../../api/types";
@@ -49,16 +48,12 @@ const CHANNEL_OPTIONS = [
   { label: "mqtt", value: "mqtt" },
 ];
 
-export const MAX_TAGS = 8;
-export const MAX_TAG_LENGTH = 16;
-
 export interface SkillDrawerFormValues {
   name: string;
   description?: string;
   content: string;
   enabled?: boolean;
   channels?: string[];
-  tags?: string[];
   source?: string;
   config?: Record<string, unknown>;
 }
@@ -67,7 +62,6 @@ interface SkillDrawerProps {
   open: boolean;
   editingSkill: SkillSpec | null;
   form: FormInstance<SkillDrawerFormValues>;
-  availableTags?: string[];
   onClose: () => void;
   onSubmit: (values: SkillSpec) => void;
   onContentChange?: (content: string) => void;
@@ -77,12 +71,10 @@ export function SkillDrawer({
   open,
   editingSkill,
   form,
-  availableTags = [],
   onClose,
   onSubmit,
   onContentChange,
 }: SkillDrawerProps) {
-  const { t, i18n } = useTranslation();
   const [showMarkdown, setShowMarkdown] = useState(true);
   const [contentValue, setContentValue] = useState("");
   const [optimizing, setOptimizing] = useState(false);
@@ -95,23 +87,21 @@ export function SkillDrawer({
     (_: unknown, value: string) => {
       const content = contentValue || value;
       if (!content || !content.trim()) {
-        return Promise.reject(new Error(t("skills.pleaseInputContent")));
+        return Promise.reject(new Error("请输入技能内容"));
       }
       const fm = parseFrontmatter(content);
       if (!fm) {
-        return Promise.reject(new Error(t("skills.frontmatterRequired")));
+        return Promise.reject(new Error("Skills内容必须以 --- 开头和结尾"));
       }
       if (!fm.name) {
-        return Promise.reject(new Error(t("skills.frontmatterNameRequired")));
+        return Promise.reject(new Error("Skills 中缺少必填字段：name"));
       }
       if (!fm.description) {
-        return Promise.reject(
-          new Error(t("skills.frontmatterDescriptionRequired")),
-        );
+        return Promise.reject(new Error("Skills 中缺少必填字段：description"));
       }
       return Promise.resolve();
     },
-    [contentValue, t],
+    [contentValue],
   );
 
   useEffect(() => {
@@ -128,7 +118,6 @@ export function SkillDrawer({
         name: editingSkill.name,
         content: editingSkill.content,
         channels,
-        tags: editingSkill.tags || [],
         source: editingSkill.source,
       });
       setConfigError("");
@@ -152,7 +141,7 @@ export function SkillDrawer({
       setConfigError("");
       form.resetFields();
     }
-  }, [editingSkill, form, t]);
+  }, [editingSkill, form]);
 
   const handleSubmit = async (values: SkillDrawerFormValues) => {
     let parsedConfig: Record<string, unknown> | undefined;
@@ -164,7 +153,7 @@ export function SkillDrawer({
         parsedConfig = JSON.parse(trimmed);
         setConfigError("");
       } catch {
-        setConfigError(t("skills.configInvalidJson"));
+        setConfigError("JSON 格式无效");
         return;
       }
     }
@@ -188,7 +177,7 @@ export function SkillDrawer({
 
   const handleOptimize = async () => {
     if (!contentValue.trim()) {
-      message.warning(t("skills.noContentToOptimize"));
+      message.warning("没有可优化的内容");
       return;
     }
 
@@ -208,16 +197,14 @@ export function SkillDrawer({
           });
         },
         abortControllerRef.current.signal,
-        i18n.language, // Pass current language to API
+        "zh",
       );
-      message.success(t("skills.optimizeSuccess"));
+      message.success("技能优化成功");
     } catch (error: unknown) {
       const aborted =
         error instanceof DOMException && error.name === "AbortError";
       if (!aborted) {
-        message.error(
-          error instanceof Error ? error.message : t("skills.optimizeFailed"),
-        );
+        message.error(error instanceof Error ? error.message : "技能优化失败");
       }
     } finally {
       setOptimizing(false);
@@ -233,7 +220,7 @@ export function SkillDrawer({
     }
   };
 
-  const drawerFooter = !editingSkill ? (
+  const drawerFooter = (
     <div
       style={{
         display: "flex",
@@ -249,7 +236,7 @@ export function SkillDrawer({
             onClick={handleOptimize}
             disabled={!contentValue.trim()}
           >
-            {t("skills.optimizeWithAI")}
+            {"AI优化"}
           </Button>
         ) : (
           <Button
@@ -258,23 +245,16 @@ export function SkillDrawer({
             icon={<StopOutlined />}
             onClick={handleStopOptimize}
           >
-            {t("skills.stopOptimize")}
+            {"停止"}
           </Button>
         )}
       </div>
       <div style={{ display: "flex", gap: 8 }}>
-        <Button onClick={onClose}>{t("common.cancel")}</Button>
+        <Button onClick={onClose}>{"取消"}</Button>
         <Button type="primary" onClick={() => form.submit()}>
-          {t("skills.create")}
+          {editingSkill ? "保存智能体版本" : "创建"}
         </Button>
       </div>
-    </div>
-  ) : (
-    <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-      <Button onClick={onClose}>{t("common.cancel")}</Button>
-      <Button type="primary" onClick={() => form.submit()}>
-        {t("common.save")}
-      </Button>
     </div>
   );
 
@@ -282,7 +262,7 @@ export function SkillDrawer({
     <Drawer
       width={520}
       placement="right"
-      title={editingSkill ? t("skills.viewSkill") : t("skills.createSkill")}
+      title={editingSkill ? "调优智能体技能" : "创建技能"}
       open={open}
       onClose={onClose}
       destroyOnHidden
@@ -293,9 +273,9 @@ export function SkillDrawer({
           <Form.Item
             name="name"
             label="Name"
-            rules={[{ required: true, message: t("skills.pleaseInputName") }]}
+            rules={[{ required: true, message: "请输入技能名称" }]}
           >
-            <Input placeholder={t("skills.skillNamePlaceholder")} />
+            <Input placeholder={"例如：weather_query"} />
           </Form.Item>
         ) : (
           <Form.Item name="name" label="Name">
@@ -316,48 +296,20 @@ export function SkillDrawer({
             onContentChange={handleContentChange}
             textareaProps={{
               ...(!editingSkill && {
-                placeholder: t("skills.contentPlaceholder"),
+                placeholder:
+                  "【格式要求】\n---\nname: 技能名称（必填，英文小写下划线）\ndescription: 功能描述（必填，简洁清晰）\n---\n\n技能实现内容（Markdown格式）\n\n【示例】\n---\nname: weather_query\ndescription: 查询指定城市的天气信息\n---\n\n## 功能\n查询实时天气数据。\n\n## 使用\n用户输入城市名，返回天气信息。",
               }),
               rows: 12,
             }}
           />
         </Form.Item>
 
-        <Form.Item name="channels" label={t("skills.channels")}>
+        <Form.Item name="channels" label={"适用频道"}>
           <Select mode="multiple" options={CHANNEL_OPTIONS} />
         </Form.Item>
 
         <Form.Item
-          name="tags"
-          label={t("skillPool.tags")}
-          rules={[
-            {
-              validator: (_, value: string[] | undefined) => {
-                const bad = (value || []).find(
-                  (v) => v.length > MAX_TAG_LENGTH,
-                );
-                if (bad)
-                  return Promise.reject(
-                    t("skillPool.tagTooLong", { max: MAX_TAG_LENGTH }),
-                  );
-                return Promise.resolve();
-              },
-            },
-          ]}
-        >
-          <Select
-            mode="tags"
-            options={availableTags.map((tag) => ({
-              label: tag,
-              value: tag,
-            }))}
-            placeholder={t("skillPool.tagsPlaceholder")}
-            maxCount={MAX_TAGS}
-          />
-        </Form.Item>
-
-        <Form.Item
-          label={t("skills.config")}
+          label={"配置"}
           validateStatus={configError ? "error" : undefined}
           help={configError || undefined}
         >
@@ -368,16 +320,16 @@ export function SkillDrawer({
               setConfigText(e.target.value);
               setConfigError("");
             }}
-            placeholder={t("skills.configPlaceholder")}
+            placeholder={'{"KEY": "value"}'}
           />
         </Form.Item>
 
         {editingSkill && (
           <>
-            <Form.Item name="source" label={t("skills.type")}>
+            <Form.Item name="source" label={"类型"}>
               <Input disabled />
             </Form.Item>
-            <Form.Item label={t("skills.installedFrom")}>
+            <Form.Item label={"安装来源"}>
               <Input
                 disabled
                 value={deriveInstalledFromLabel(editingSkill.installed_from)}

@@ -10,7 +10,21 @@ from starlette.middleware.base import (
     BaseHTTPMiddleware,
     RequestResponseEndpoint,
 )
-from starlette.responses import Response
+from starlette.responses import JSONResponse, Response
+
+_AGENT_CONTROL_PATHS = frozenset({"order"})
+
+
+def _agent_id_from_path(path: str) -> str | None:
+    """Extract an Agent ID without mistaking control-plane routes for IDs."""
+    path_parts = path.split("/")
+    if (
+        len(path_parts) >= 4
+        and path_parts[1:3] == ["api", "agents"]
+        and path_parts[3] not in _AGENT_CONTROL_PATHS
+    ):
+        return path_parts[3]
+    return None
 
 
 class AgentContextMiddleware(BaseHTTPMiddleware):
@@ -23,29 +37,59 @@ class AgentContextMiddleware(BaseHTTPMiddleware):
     ) -> Response:
         """Extract agentId and root_session_id from path/headers."""
         import logging
-        from ..agent_context import set_current_agent_id
+        from ..agent_context import (
+            reset_current_agent_id,
+            set_current_agent_id,
+        )
 
         logger = logging.getLogger(__name__)
         agent_id = None
 
         # Priority 1: Extract agentId from path: /api/agents/{agentId}/...
-        path_parts = request.url.path.split("/")
-        if len(path_parts) >= 4 and path_parts[1] == "api":
-            if path_parts[2] == "agents":
-                agent_id = path_parts[3]
-                request.state.agent_id = agent_id
-                logger.debug(
-                    f"AgentContextMiddleware: agent_id={agent_id} "
-                    f"from path={request.url.path}",
-                )
+        agent_id = _agent_id_from_path(request.url.path)
+        if agent_id:
+            request.state.agent_id = agent_id
+            logger.debug(
+                f"AgentContextMiddleware: agent_id={agent_id} "
+                f"from path={request.url.path}",
+            )
 
         # Priority 2: Check X-Agent-Id header
         if not agent_id:
             agent_id = request.headers.get("X-Agent-Id")
 
         # Set agent_id in context variable for use by runners
+        agent_context_token = None
         if agent_id:
-            set_current_agent_id(agent_id)
+            agent_context_token = set_current_agent_id(agent_id)
+
+            principal = getattr(request.state, "tenant_principal", None)
+            if principal is not None:
+                from ..auth import is_tenancy_auth_enabled
+                from ...tenancy.errors import AccessDenied, ResourceNotFound
+                from ...tenancy.factory import get_tenancy_service
+
+                try:
+                    get_tenancy_service().assert_agent_access(
+                        principal,
+                        agent_id,
+                    )
+                except AccessDenied as exc:
+                    if is_tenancy_auth_enabled():
+                        if agent_context_token is not None:
+                            reset_current_agent_id(agent_context_token)
+                        return JSONResponse(
+                            {"detail": str(exc)},
+                            status_code=403,
+                        )
+                except ResourceNotFound:
+                    if is_tenancy_auth_enabled() or principal.service_id:
+                        if agent_context_token is not None:
+                            reset_current_agent_id(agent_context_token)
+                        return JSONResponse(
+                            {"detail": "Agent not found"},
+                            status_code=404,
+                        )
 
         # Extract X-Root-Session-Id header for cross-session approval routing
         root_session_id = request.headers.get("X-Root-Session-Id")
@@ -60,8 +104,11 @@ class AgentContextMiddleware(BaseHTTPMiddleware):
                 root_session_id[:12],
             )
 
-        response = await call_next(request)
-        return response
+        try:
+            return await call_next(request)
+        finally:
+            if agent_context_token is not None:
+                reset_current_agent_id(agent_context_token)
 
 
 def create_agent_scoped_router() -> APIRouter:
@@ -81,6 +128,7 @@ def create_agent_scoped_router() -> APIRouter:
     from ..chats.api import router as chats_router
     from .console import router as console_router
     from .plugins import router as plugins_router
+    from .sage import router as sage_router
 
     router = APIRouter(prefix="/agents/{agentId}", tags=["agent-scoped"])
 
@@ -104,5 +152,6 @@ def create_agent_scoped_router() -> APIRouter:
     router.include_router(workspace_router)
     router.include_router(console_router)
     router.include_router(plugins_router)
+    router.include_router(sage_router)
 
     return router

@@ -98,7 +98,8 @@ export const useAgentStore = create<AgentStore>()(
       removeAgent: (agentId) => {
         const shouldRefresh = get().selectedAgent === agentId;
         set((state) => {
-          const { [agentId]: _, ...remainingChatIds } = state.lastChatIdByAgent;
+          const remainingChatIds = { ...state.lastChatIdByAgent };
+          delete remainingChatIds[agentId];
           return {
             agents: state.agents.filter((a) => a.id !== agentId),
             lastChatIdByAgent: remainingChatIds,

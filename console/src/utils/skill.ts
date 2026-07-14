@@ -1,4 +1,3 @@
-import type { TFunction } from "i18next";
 import type { SkillSyncStatus } from "../api/types";
 
 // ─── Source / Built-in helpers ────────────────────────────────────────────────
@@ -11,27 +10,26 @@ export const isSkillBuiltin = (source?: string): boolean =>
   (source?.startsWith("builtin:") ?? false) ||
   source === "system";
 
-// ─── Pool sync-status helpers ─────────────────────────────────────────────────
+// ─── Global skills sync-status helpers ─────────────────────────────────────────────────
 
-export const getPoolBuiltinStatusLabel = (
+export const getGlobalBuiltinStatusLabel = (
   status: SkillSyncStatus | "" | undefined,
-  t: TFunction,
 ) => {
   switch (status) {
     case "synced":
-      return t("skillPool.statusUpToDate");
+      return "最新";
     case "outdated":
-      return t("skillPool.statusOutdated");
+      return "已过期";
     case "not_synced":
-      return t("skillPool.statusNotSynced");
+      return "未同步";
     case "conflict":
-      return t("skillPool.statusConflict");
+      return "冲突";
     default:
       return "-";
   }
 };
 
-export const getPoolBuiltinStatusTone = (
+export const getGlobalBuiltinStatusTone = (
   status: SkillSyncStatus | "" | undefined,
 ) => {
   switch (status) {

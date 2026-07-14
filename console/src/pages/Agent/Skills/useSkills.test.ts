@@ -30,9 +30,6 @@ const hoisted = vi.hoisted(() => {
   const handleScanErrorMock = vi.fn().mockReturnValue(false);
   const checkScanWarningsMock = vi.fn().mockResolvedValue(undefined);
   const showScanErrorModalMock = vi.fn();
-  // A stable translation function so useCallback dependencies don't change on
-  // every render and trigger an infinite fetchSkills loop via useEffect.
-  const stableT = (k: string) => k;
   return {
     messageMock,
     apiMocks,
@@ -42,7 +39,6 @@ const hoisted = vi.hoisted(() => {
     handleScanErrorMock,
     checkScanWarningsMock,
     showScanErrorModalMock,
-    stableT,
   };
 });
 
@@ -70,10 +66,6 @@ vi.mock("../../../stores/agentStore", () => ({
 
 vi.mock("../../../hooks/useAppMessage", () => ({
   useAppMessage: () => ({ message: hoisted.messageMock }),
-}));
-
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: hoisted.stableT }),
 }));
 
 vi.mock("../../../api/modules/skill", () => ({
@@ -162,7 +154,7 @@ describe("useSkills", () => {
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
-    expect(messageMock.error).toHaveBeenCalledWith("skills.loadFailed");
+    expect(messageMock.error).toHaveBeenCalledWith("加载技能失败");
   });
 
   it("createSkill success: message.success + api.createSkill called + returns {success:true, name}", async () => {
@@ -187,7 +179,7 @@ describe("useSkills", () => {
       undefined,
     );
     expect(messageMock.success).toHaveBeenCalledWith(
-      "skills.createdSuccessfully",
+      "创建成功",
     );
     expect(ret).toEqual({ success: true, name: "new-skill" });
   });
@@ -268,7 +260,7 @@ describe("useSkills", () => {
       await result.current.uploadSkill(new File([], "x.zip"));
     });
 
-    expect(messageMock.warning).toHaveBeenCalledWith("skills.uploadNoChange");
+    expect(messageMock.warning).toHaveBeenCalledWith("没有导入新技能，可能已存在相同技能");
   });
 
   it("uploadSkill failure with conflicts array: returns {success:false, conflict}", async () => {
@@ -304,7 +296,7 @@ describe("useSkills", () => {
     });
 
     expect(ret).toEqual({ success: false });
-    expect(messageMock.warning).toHaveBeenCalledWith("skills.provideUrl");
+    expect(messageMock.warning).toHaveBeenCalledWith("请提供技能库 URL");
     expect(apiMocks.startHubSkillInstall).not.toHaveBeenCalled();
   });
 
@@ -320,7 +312,7 @@ describe("useSkills", () => {
     });
 
     expect(ret).toEqual({ success: false });
-    expect(messageMock.warning).toHaveBeenCalledWith("skills.validUrl");
+    expect(messageMock.warning).toHaveBeenCalledWith("请输入以 http:// 或 https:// 开头的有效 URL");
     expect(apiMocks.startHubSkillInstall).not.toHaveBeenCalled();
   });
 
@@ -421,7 +413,7 @@ describe("useSkills", () => {
 
     expect(apiMocks.disableSkill).toHaveBeenCalledWith("s1");
     expect(messageMock.success).toHaveBeenCalledWith(
-      "skills.disabledSuccessfully",
+      "已禁用",
     );
     expect(ok).toBe(true);
     const disabled = result.current.skills.find((s) => s.name === "s1");
@@ -447,7 +439,7 @@ describe("useSkills", () => {
 
     expect(apiMocks.enableSkill).toHaveBeenCalledWith("s2");
     expect(messageMock.success).toHaveBeenCalledWith(
-      "skills.enabledSuccessfully",
+      "已启用",
     );
     expect(ok).toBe(true);
   });
@@ -470,7 +462,7 @@ describe("useSkills", () => {
 
     expect(modalConfirmMock).toHaveBeenCalledTimes(1);
     expect(apiMocks.deleteSkill).toHaveBeenCalledWith("to-delete");
-    expect(messageMock.success).toHaveBeenCalledWith("skills.deleteSuccess");
+    expect(messageMock.success).toHaveBeenCalledWith("技能删除成功");
     expect(ret).toBe(true);
   });
 

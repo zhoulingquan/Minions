@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button, Card, Tag, Typography, Space } from "antd";
 import { Shield, Check, X, Clock, Copy, Info } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import { useAgentStore } from "../../stores/agentStore";
 import { getAgentDisplayName } from "../../utils/agentDisplayName";
 import styles from "./ApprovalCard.module.less";
@@ -54,11 +53,9 @@ export function ApprovalCard({
   similarTarget,
   onApprove,
   onDeny,
-  onCancel: _onCancel,
   onAcknowledge,
 }: ApprovalCardProps) {
-  const { t } = useTranslation();
-  const agents = useAgentStore((state) => state.agents);
+    const agents = useAgentStore((state) => state.agents);
   const agentsById = useMemo(
     () => new Map(agents.map((agent) => [agent.id, agent])),
     [agents],
@@ -85,21 +82,21 @@ export function ApprovalCard({
   const isTimedOut = showMsgAgentContext && remaining <= 0;
   const executionAgentDisplayName = useMemo(() => {
     const matched = agentsById.get(agentId);
-    if (matched) return getAgentDisplayName(matched, t);
-    return agentId || t("common.unknown", "Unknown");
-  }, [agentsById, agentId, t]);
+    if (matched) return getAgentDisplayName(matched);
+    return agentId || "Unknown";
+  }, [agentsById, agentId]);
   const ownerAgentDisplayName = useMemo(() => {
     const ownerId = ownerAgentId || agentId;
     const matched = agentsById.get(ownerId);
-    if (matched) return getAgentDisplayName(matched, t);
-    return ownerId || t("common.unknown", "Unknown");
-  }, [agentsById, ownerAgentId, agentId, t]);
+    if (matched) return getAgentDisplayName(matched);
+    return ownerId || "Unknown";
+  }, [agentsById, ownerAgentId, agentId]);
   const shouldShowExecutionAgent =
     showMsgAgentContext && Boolean(isCrossSession);
   const displayToolSource =
     toolSource && toolSource !== "builtin"
       ? toolSource
-      : t("approval.builtinSource", "Built-in");
+      : "内置";
 
   useEffect(() => {
     const elapsed = Date.now() / 1000 - createdAt;
@@ -171,7 +168,7 @@ export function ApprovalCard({
         <Space size={8} align="center" className={styles.titleRow}>
           <Shield size={16} className={styles.icon} />
           <Text className={styles.title}>
-            {t("approval.title", "Security Approval Required")}
+            {"安全审批"}
           </Text>
         </Space>
         <Space size={6} align="center" className={styles.timer}>
@@ -188,7 +185,7 @@ export function ApprovalCard({
           <>
             <div className={styles.infoRow}>
               <Text className={styles.label}>
-                {t("approval.ownerAgent", "Owner Agent")}:
+                {"归属Agent"}:
               </Text>
               <Tag color="success" className={styles.ownerAgentTag}>
                 {ownerAgentDisplayName}
@@ -197,7 +194,7 @@ export function ApprovalCard({
             {shouldShowExecutionAgent ? (
               <div className={styles.infoRow}>
                 <Text className={styles.label}>
-                  {t("approval.executingAgent", "Executing Agent")}:
+                  {"执行Agent"}:
                 </Text>
                 <Tag color="blue" className={styles.crossSessionTag}>
                   {executionAgentDisplayName}
@@ -208,7 +205,7 @@ export function ApprovalCard({
         ) : null}
 
         <div className={styles.infoRow}>
-          <Text className={styles.label}>{t("approval.tool", "Tool")}:</Text>
+          <Text className={styles.label}>{"工具"}:</Text>
           <Text className={styles.value} code>
             {toolName}
           </Text>
@@ -216,7 +213,7 @@ export function ApprovalCard({
 
         <div className={styles.infoRow}>
           <Text className={styles.label}>
-            {t("approval.source", "Source")}:
+            {"来源"}:
           </Text>
           <Text className={styles.value} code>
             {displayToolSource}
@@ -225,7 +222,7 @@ export function ApprovalCard({
 
         <div className={styles.infoRow}>
           <Text className={styles.label}>
-            {t("approval.severity", "Severity")}:
+            {"严重性"}:
           </Text>
           <Tag
             color={getSeverityColor(severity)}
@@ -237,7 +234,7 @@ export function ApprovalCard({
 
         <div className={styles.infoRow}>
           <Text className={styles.label}>
-            {t("approval.findings", "Findings")}:
+            {"发现"}:
           </Text>
           <Text className={styles.value}>{findingsCount}</Text>
         </div>
@@ -245,10 +242,10 @@ export function ApprovalCard({
         {isCrossSession && !showMsgAgentContext && (
           <div className={styles.infoRow}>
             <Text className={styles.label}>
-              {t("approval.source", "Source")}:
+              {"来源"}:
             </Text>
             <Tag color="blue" className={styles.crossSessionTag}>
-              {t("approval.subSession", "Sub-Agent")} ({sessionId?.slice(0, 8)})
+              {"子Agent"} ({sessionId?.slice(0, 8)})
             </Tag>
           </div>
         )}
@@ -256,18 +253,18 @@ export function ApprovalCard({
         {isGeneralized && (exactTarget || similarTarget) && (
           <div className={styles.scopeSection}>
             <Text className={styles.scopeLabel}>
-              {t("approval.approvalScope", "Approval scope")}:
+              {"批准范围"}:
             </Text>
             <div className={styles.scopeItems}>
               <div className={styles.scopeItem}>
                 <Text className={styles.scopeItemLabel}>
-                  {t("approval.approveExact", "Just Once")}:
+                  {"仅本次"}:
                 </Text>
                 <code className={styles.scopeCode}>{exactTarget}</code>
               </div>
               <div className={styles.scopeItem}>
                 <Text className={styles.scopeItemLabel}>
-                  {t("approval.approvePattern", "Always Allow")}:
+                  {"总是允许"}:
                 </Text>
                 <code className={styles.scopeCode}>{similarTarget}</code>
               </div>
@@ -278,7 +275,7 @@ export function ApprovalCard({
         {toolParams && Object.keys(toolParams).length > 0 && (
           <details className={styles.paramsDetails}>
             <summary className={styles.paramsSummary}>
-              {t("approval.parameters", "Parameters")}
+              {"参数"}
             </summary>
             <div className={styles.paramsCodeWrapper}>
               <pre className={styles.paramsCode}>
@@ -291,7 +288,7 @@ export function ApprovalCard({
                 onClick={() =>
                   handleCopy(JSON.stringify(toolParams, null, 2), "params")
                 }
-                title={t("common.copy", "Copy")}
+                title={"复制"}
               >
                 <Copy size={12} />
               </button>
@@ -303,7 +300,7 @@ export function ApprovalCard({
           <details className={styles.detailsSection}>
             <summary className={styles.detailsSummary}>
               <Info size={12} />
-              {t("approval.details", "Details")}
+              {"详细信息"}
             </summary>
             <div className={styles.detailsContent}>
               <pre className={styles.detailsText}>{findingsSummary}</pre>
@@ -312,7 +309,7 @@ export function ApprovalCard({
                   copiedField === "details" ? styles.copied : ""
                 }`}
                 onClick={() => handleCopy(findingsSummary, "details")}
-                title={t("common.copy", "Copy")}
+                title={"复制"}
               >
                 <Copy size={12} />
               </button>
@@ -325,7 +322,7 @@ export function ApprovalCard({
         {isTimedOut ? (
           <>
             <Text className={styles.timeoutHint}>
-              {t("approval.timeoutAutoDenied", "Timed out, auto denied")}
+              {"已超时，自动拒绝"}
             </Text>
             {onAcknowledge ? (
               <Button
@@ -334,7 +331,7 @@ export function ApprovalCard({
                 loading={loading === "acknowledge"}
                 disabled={loading !== null}
               >
-                {t("approval.acknowledge", "Got It")}
+                {"我知道了"}
               </Button>
             ) : null}
           </>
@@ -348,7 +345,7 @@ export function ApprovalCard({
               disabled={loading !== null}
               className={styles.denyButton}
             >
-              {t("approval.deny", "Deny")}
+              {"拒绝"}
             </Button>
             {isGeneralized ? (
               <>
@@ -358,7 +355,7 @@ export function ApprovalCard({
                   disabled={loading !== null}
                   className={styles.approveOnceButton}
                 >
-                  {t("approval.approveExact", "Just Once")}
+                  {"仅本次"}
                 </Button>
                 <Button
                   type="primary"
@@ -368,7 +365,7 @@ export function ApprovalCard({
                   disabled={loading !== null}
                   className={styles.approveAlwaysButton}
                 >
-                  {t("approval.approvePattern", "Always Allow")}
+                  {"总是允许"}
                 </Button>
               </>
             ) : (
@@ -382,7 +379,7 @@ export function ApprovalCard({
                 disabled={loading !== null}
                 className={styles.approveAlwaysButton}
               >
-                {t("approval.approve", "Approve")}
+                {"批准"}
               </Button>
             )}
           </>

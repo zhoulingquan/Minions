@@ -22,6 +22,10 @@ export type RuntimeLoadingBridgeApi = {
   setLoading?: (loading: boolean | string) => void;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object";
+}
+
 // ---------------------------------------------------------------------------
 // Text extraction utilities
 // ---------------------------------------------------------------------------
@@ -60,17 +64,23 @@ export function extractCopyableText(response: CopyableResponse): string {
 }
 
 /** Extract plain text from user message content. */
-export function extractUserMessageText(m: any): string {
-  if (typeof m.content === "string") return m.content;
-  if (!Array.isArray(m.content)) return "";
-  return m.content
-    .filter((p: any) => p.type === "text")
-    .map((p: any) => p.text || "")
+export function extractUserMessageText(message: unknown): string {
+  if (!isRecord(message)) return "";
+  const content = message.content;
+  if (typeof content === "string") return content;
+  if (!Array.isArray(content)) return "";
+  return content
+    .filter((part) => isRecord(part) && part.type === "text")
+    .map((part) => (typeof part.text === "string" ? part.text : ""))
     .join("\n");
 }
 
-export function extractTextFromMessage(msg: any): string {
-  const innerMessage = msg?.cards?.[0]?.data?.input?.[0];
+export function extractTextFromMessage(message: unknown): string {
+  if (!isRecord(message) || !Array.isArray(message.cards)) return "";
+  const firstCard = message.cards[0];
+  if (!isRecord(firstCard) || !isRecord(firstCard.data)) return "";
+  const input = firstCard.data.input;
+  const innerMessage = Array.isArray(input) ? input[0] : undefined;
   if (!innerMessage) return "";
   return extractUserMessageText(innerMessage);
 }
@@ -193,8 +203,8 @@ export function toStoredName(v: string): string {
 }
 
 /** Convert content part URLs to stored name format. */
-export function normalizeContentUrls(part: any): any {
-  const p = { ...part };
+export function normalizeContentUrls<T extends object>(part: T): T {
+  const p = { ...part } as Record<string, unknown>;
   if (p.type === "image" && typeof p.image_url === "string")
     p.image_url = toStoredName(p.image_url);
   if (p.type === "file" && typeof p.file_url === "string")
@@ -203,7 +213,7 @@ export function normalizeContentUrls(part: any): any {
     p.data = toStoredName(p.data);
   if (p.type === "video" && typeof p.video_url === "string")
     p.video_url = toStoredName(p.video_url);
-  return p;
+  return p as T;
 }
 
 /** Turn a backend content URL (path or full URL) into a full URL for display. */

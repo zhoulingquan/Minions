@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Helpers for creating backups: agents, global config, secrets, skill pool."""
+"""Helpers for creating backups: agents, global config, secrets, global skills."""
 from __future__ import annotations
 
 import logging
@@ -10,7 +10,7 @@ from typing import Any
 from .._utils.constants import (
     PREFIX_CONFIG,
     PREFIX_SECRETS,
-    PREFIX_SKILL_POOL,
+    PREFIX_GLOBAL_SKILLS,
     PREFIX_WORKSPACES,
 )
 from ...constant import CONFIG_FILE, SECRET_DIR, WORKING_DIR
@@ -129,30 +129,30 @@ def add_secrets(zf: zipfile.ZipFile, stop_event=None) -> bool:
     return True
 
 
-def add_skill_pool(zf: zipfile.ZipFile, stop_event=None) -> bool:
-    """Add all files from the skill pool directory to the zip.
+def add_global_skills(zf: zipfile.ZipFile, stop_event=None) -> bool:
+    """Add all files from the global skills directory to the zip.
 
     Returns ``False`` if *stop_event* was set before or during the operation
     (cancelled), ``True`` otherwise.
     """
-    from ...agents.skill_system.store import get_skill_pool_dir
+    from ...agents.skill_system.store import get_global_skills_dir
 
-    skill_pool_dir = get_skill_pool_dir()
-    if not skill_pool_dir.is_dir():
-        logger.warning("Skill pool directory not found: %s", skill_pool_dir)
+    global_skills_dir = get_global_skills_dir()
+    if not global_skills_dir.is_dir():
+        logger.warning("Global skills directory not found: %s", global_skills_dir)
         return True
-    logger.info("Backing up skill pool from %s", skill_pool_dir)
+    logger.info("Backing up global skills from %s", global_skills_dir)
     file_count = 0
-    for entry in sorted(skill_pool_dir.rglob("*")):
+    for entry in sorted(global_skills_dir.rglob("*")):
         if stop_event and stop_event.is_set():
             return False
         if entry.is_file():
-            rel = entry.relative_to(skill_pool_dir).as_posix()
-            arcname = f"{PREFIX_SKILL_POOL}{rel}"
+            rel = entry.relative_to(global_skills_dir).as_posix()
+            arcname = f"{PREFIX_GLOBAL_SKILLS}{rel}"
             logger.debug("  Adding %s", arcname)
             zf.write(entry, arcname)
             file_count += 1
-    logger.info("Skill pool backed up: %d file(s)", file_count)
+    logger.info("Global skills backed up: %d file(s)", file_count)
     return True
 
 
@@ -192,8 +192,8 @@ def add_files_to_zip(
     if meta.scope.include_secrets:
         if not add_secrets(zf, stop_event):
             return []
-    if meta.scope.include_skill_pool:
-        if not add_skill_pool(zf, stop_event):
+    if meta.scope.include_global_skills:
+        if not add_global_skills(zf, stop_event):
             return []
 
     return [aid for aid, _ in valid_agents]

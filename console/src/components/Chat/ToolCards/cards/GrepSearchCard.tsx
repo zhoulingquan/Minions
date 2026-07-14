@@ -1,5 +1,4 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { SearchOutlined } from "@ant-design/icons";
 import type { ToolCallContent } from "../shared/types";
 import { ToolCardShell, DefaultBlock } from "../shared";
@@ -15,12 +14,11 @@ const GrepSearchCard: React.FC<GrepSearchCardProps> = ({
   content,
   isStreaming,
 }) => {
-  const { t } = useTranslation();
-  const params = content.params || {};
+    const params = content.params || {};
   const pattern = (params.pattern || "") as string;
   const title = pattern
-    ? t("tool.grepSearch", { pattern })
-    : t("tool.grepSearchDefault");
+    ? `文本匹配 ${pattern}`
+    : "文本匹配";
 
   const resultText = stringifyResult(content.result);
   const lineCount = countLines(resultText);
@@ -28,7 +26,7 @@ const GrepSearchCard: React.FC<GrepSearchCardProps> = ({
   const badge =
     content.status === "done" && lineCount > 0 ? (
       <span className={styles.lineSearchBadge}>
-        {t("tool.lineBadge.matches", { count: lineCount })}
+        {`${lineCount}匹配`}
       </span>
     ) : null;
 

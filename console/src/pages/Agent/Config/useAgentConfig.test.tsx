@@ -24,9 +24,6 @@ const hoisted = vi.hoisted(() => {
     updateUserTimezone: vi.fn(),
   };
   const modalConfirmMock = vi.fn();
-  // A stable translation function so useCallback dependencies don't change on
-  // every render and trigger an infinite fetchConfig loop via useEffect.
-  const stableT = (k: string) => k;
   return {
     mockSetFieldsValue,
     mockValidateFields,
@@ -34,7 +31,6 @@ const hoisted = vi.hoisted(() => {
     messageMock,
     apiMocks,
     modalConfirmMock,
-    stableT,
   };
 });
 
@@ -66,10 +62,6 @@ vi.mock("../../../stores/agentStore", () => ({
 
 vi.mock("../../../hooks/useAppMessage", () => ({
   useAppMessage: () => ({ message: hoisted.messageMock }),
-}));
-
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: hoisted.stableT }),
 }));
 
 import { useAgentConfig } from "./useAgentConfig";
@@ -111,10 +103,6 @@ function makeConfig(overrides: Partial<Config> = {}): Config {
     light_context_config: {
       max_input_length: 1000,
     } as unknown as Config["light_context_config"],
-    memory_manager_backend: "remelight",
-    adbpg_memory_config: null,
-    reme_light_memory_config:
-      {} as unknown as Config["reme_light_memory_config"],
     approval_level: "AUTO",
     auto_title_config: { enabled: true, timeout_seconds: 30 },
     ...overrides,
@@ -217,20 +205,6 @@ describe("useAgentConfig", () => {
     expect(callArg.context_manager_backend).toBe("light");
   });
 
-  it("falls back memory_manager_backend to 'remelight' when not in MAPPINGS", async () => {
-    apiMocks.getAgentRunningConfig.mockResolvedValue(
-      makeConfig({ memory_manager_backend: "nope" }),
-    );
-    renderConfigHook();
-    await waitFor(() => {
-      expect(mockSetFieldsValue).toHaveBeenCalled();
-    });
-    const callArg = mockSetFieldsValue.mock.calls[0][0] as {
-      memory_manager_backend: string;
-    };
-    expect(callArg.memory_manager_backend).toBe("remelight");
-  });
-
   it("handleSave calls updateAgentRunningConfig and message.success on success", async () => {
     apiMocks.updateAgentRunningConfig.mockResolvedValue(makeConfig());
     const { result } = renderConfigHook();
@@ -243,7 +217,7 @@ describe("useAgentConfig", () => {
     });
 
     expect(apiMocks.updateAgentRunningConfig).toHaveBeenCalledTimes(1);
-    expect(messageMock.success).toHaveBeenCalledWith("agentConfig.saveSuccess");
+    expect(messageMock.success).toHaveBeenCalledWith("配置保存成功");
   });
 
   it("handleSave persists configToSave containing approval_level", async () => {
@@ -297,7 +271,7 @@ describe("useAgentConfig", () => {
     expect(apiMocks.updateUserTimezone).toHaveBeenCalledWith("Asia/Shanghai");
     expect(result.current.timezone).toBe("Asia/Shanghai");
     expect(messageMock.success).toHaveBeenCalledWith(
-      "agentConfig.timezoneSaveSuccess",
+      "时区更新成功",
     );
   });
 
@@ -327,6 +301,6 @@ describe("useAgentConfig", () => {
 
     expect(modalConfirmMock).toHaveBeenCalledTimes(1);
     const options = modalConfirmMock.mock.calls[0][0] as { title: string };
-    expect(options.title).toBe("agentConfig.languageConfirmTitle");
+    expect(options.title).toBe("切换智能体语言");
   });
 });

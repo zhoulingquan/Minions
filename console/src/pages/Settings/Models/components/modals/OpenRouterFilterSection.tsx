@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import type { CSSProperties } from "react";
-import { useTranslation } from "react-i18next";
 import { Button, Input, Switch, Tag } from "@agentscope-ai/design";
 import { FilterOutlined, GiftOutlined, PlusOutlined } from "@ant-design/icons";
 import {
@@ -33,11 +32,11 @@ interface OpenRouterFilterSectionProps {
   onAddModel: (model: ExtendedModelInfo) => void;
 }
 
-const inputModalityOptions = (t: ReturnType<typeof useTranslation>["t"]) => [
+const inputModalityOptions = () => [
   {
     label: (
       <>
-        <SparkImageuploadLine /> {t("models.modalityVision")}
+        <SparkImageuploadLine /> {"图片"}
       </>
     ),
     value: "image",
@@ -45,7 +44,7 @@ const inputModalityOptions = (t: ReturnType<typeof useTranslation>["t"]) => [
   {
     label: (
       <>
-        <SparkAudiouploadLine /> {t("models.modalityAudio")}
+        <SparkAudiouploadLine /> {"音频"}
       </>
     ),
     value: "audio",
@@ -53,7 +52,7 @@ const inputModalityOptions = (t: ReturnType<typeof useTranslation>["t"]) => [
   {
     label: (
       <>
-        <SparkVideouploadLine /> {t("models.modalityVideo")}
+        <SparkVideouploadLine /> {"视频"}
       </>
     ),
     value: "video",
@@ -61,7 +60,7 @@ const inputModalityOptions = (t: ReturnType<typeof useTranslation>["t"]) => [
   {
     label: (
       <>
-        <SparkFilePdfLine /> {t("models.modalityFile")}
+        <SparkFilePdfLine /> {"文件"}
       </>
     ),
     value: "file",
@@ -69,7 +68,6 @@ const inputModalityOptions = (t: ReturnType<typeof useTranslation>["t"]) => [
 ];
 
 function ModelPricing({ model }: { model: ExtendedModelInfo }) {
-  const { t } = useTranslation();
 
   if (!model.pricing?.prompt) {
     return null;
@@ -78,12 +76,12 @@ function ModelPricing({ model }: { model: ExtendedModelInfo }) {
   return (
     <span className={styles.price}>
       ${(parseFloat(model.pricing.prompt) * 1_000_000).toFixed(2)}
-      {t("models.perMillionIn")}
+      {"/1M 输入"}
       {model.pricing?.completion && (
         <span>
           {" "}
           · ${(parseFloat(model.pricing.completion) * 1_000_000).toFixed(2)}
-          {t("models.perMillionOut")}
+          {"/1M 输出"}
         </span>
       )}
     </span>
@@ -108,8 +106,7 @@ export function OpenRouterFilterSection({
   onFetchModels,
   onAddModel,
 }: OpenRouterFilterSectionProps) {
-  const { t } = useTranslation();
-  const [providerSearchQuery, setProviderSearchQuery] = useState("");
+    const [providerSearchQuery, setProviderSearchQuery] = useState("");
 
   const filteredProviders = useMemo(() => {
     const query = providerSearchQuery.trim().toLowerCase();
@@ -171,7 +168,7 @@ export function OpenRouterFilterSection({
           showFilters ? styles.toggleButtonExpanded : ""
         }`}
       >
-        {t("models.addModels") || "Add Models"}
+        添加模型
       </Button>
 
       {showFilters && (
@@ -180,7 +177,7 @@ export function OpenRouterFilterSection({
             <div className={styles.filterHeader}>
               <div className={styles.filterTitleBlock}>
                 <div className={styles.filterLabel}>
-                  {t("models.filterByProvider") || "Provider:"}
+                  供应商：
                 </div>
                 <div className={styles.providerControls}>
                   <Input
@@ -188,7 +185,7 @@ export function OpenRouterFilterSection({
                     onChange={(event) =>
                       setProviderSearchQuery(event.target.value)
                     }
-                    placeholder={t("models.searchProviderPlaceholder")}
+                    placeholder={"搜索供应商名称"}
                     className={styles.providerSearchInput}
                   />
                   <Button
@@ -197,7 +194,7 @@ export function OpenRouterFilterSection({
                     onClick={handleSelectAllProviders}
                     disabled={filteredProviders.length === 0}
                   >
-                    {t("models.selectAllProviders")}
+                    {"全选"}
                   </Button>
                   <Button
                     type="text"
@@ -205,7 +202,7 @@ export function OpenRouterFilterSection({
                     onClick={handleClearProviders}
                     disabled={filteredProviders.length === 0}
                   >
-                    {t("models.clearProviderSelection")}
+                    {"全不选"}
                   </Button>
                 </div>
               </div>
@@ -214,7 +211,7 @@ export function OpenRouterFilterSection({
             <div className={styles.providerList}>
               {filteredProviders.length === 0 ? (
                 <div className={styles.providerEmpty}>
-                  {t("models.noMatchingProviders")}
+                  {"没有匹配的供应商"}
                 </div>
               ) : (
                 filteredProviders.map((provider) => {
@@ -238,10 +235,10 @@ export function OpenRouterFilterSection({
 
           <div className={styles.filterGroup}>
             <div className={styles.filterLabel}>
-              {t("models.filterByModality") || "Input Modality:"}
+              输入模态：
             </div>
             <div className={styles.modalitySwitchGroup}>
-              {inputModalityOptions(t).map((option) => {
+              {inputModalityOptions().map((option) => {
                 const checked = selectedInputModalities.includes(option.value);
                 return (
                   <div key={option.value} className={styles.modalitySwitchRow}>
@@ -263,7 +260,7 @@ export function OpenRouterFilterSection({
 
           <div className={styles.freeOnlyRow}>
             <div className={styles.freeOnlyLabel}>
-              {t("models.filterFreeOnly") || "Free Models Only:"}
+              仅免费模型：
             </div>
             <Switch checked={showFreeOnly} onChange={onShowFreeOnlyChange} />
           </div>
@@ -275,13 +272,13 @@ export function OpenRouterFilterSection({
             loading={loadingFilters}
             className={styles.fetchButton}
           >
-            {t("models.filterModels") || "Filter Models"}
+            过滤模型
           </Button>
 
           {discoveredModels.length > 0 && (
             <div className={styles.results}>
               <div className={styles.resultsTitle}>
-                {t("models.discovered") || "Available Models:"}
+                可用模型：
               </div>
               {discoveredModels.map((model) => (
                 <div
@@ -305,7 +302,7 @@ export function OpenRouterFilterSection({
                           <GiftOutlined
                             style={{ fontSize: 10, marginRight: 3 }}
                           />
-                          {t("models.free")}
+                          {"免费"}
                         </Tag>
                       )}
                     </div>
@@ -347,7 +344,7 @@ export function OpenRouterFilterSection({
                     onClick={() => onAddModel(model)}
                     disabled={saving}
                   >
-                    {t("models.add") || "Add"}
+                    添加
                   </Button>
                 </div>
               ))}

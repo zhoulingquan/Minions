@@ -26,9 +26,9 @@ class BackupScope(BaseModel):
         default=False,
         description="Include secrets directory",
     )
-    include_skill_pool: bool = Field(
+    include_global_skills: bool = Field(
         default=True,
-        description="Include skill pool directory",
+        description="Include global skills directory",
     )
 
 
@@ -93,7 +93,7 @@ class RestoreBackupRequest(BaseModel):
     )
     include_global_config: bool = Field(default=True)
     include_secrets: bool = Field(default=False)
-    include_skill_pool: bool = Field(default=True)
+    include_global_skills: bool = Field(default=True)
     default_workspace_dir: Optional[str] = Field(
         default=None,
         description=(

@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Smoke tests for global /api/skills (CRUD, batch, validation)."""
+"""Smoke tests for header-scoped ``/api/skills`` endpoints."""
 from __future__ import annotations
+
+import io
+import zipfile
 
 import pytest
 
@@ -16,83 +19,108 @@ def _skill_md(name: str, description: str) -> str:
     )
 
 
-@pytest.mark.integration
-@pytest.mark.p0
-def test_skills_create_list_delete(app_server) -> None:
-    """Test purpose:
-    - Verify core workspace skill lifecycle: create, list, and delete.
+def _skill_zip(skills: dict[str, str]) -> bytes:
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for name, content in skills.items():
+            archive.writestr(f"{name}/SKILL.md", content)
+    return buffer.getvalue()
 
-    Test flow:
-    1. Create a test agent.
-    2. POST /api/skills with valid SKILL.md frontmatter.
-    3. GET /api/skills and verify created skill appears.
-    4. DELETE /api/skills/{skill_name} and verify deletion succeeds.
-    5. GET /api/skills again and verify skill no longer appears.
-    6. Delete test agent.
 
-    API endpoints:
-    - POST /api/agents
-    - POST /api/skills
-    - GET /api/skills
-    - DELETE /api/skills/{skill_name}
-    - DELETE /api/agents/{agentId}
-    """
-    agent_id = "integ_skills_crud_01"
-    headers = {"X-Agent-Id": agent_id}
-    skill_name = "integ-skill-crud-01"
-
-    create_agent = app_server.api_request(
+def _create_agent(app_server, agent_id: str) -> None:
+    response = app_server.api_request(
         "POST",
         "/api/agents",
-        json={"id": agent_id, "name": "Skills CRUD agent", "description": ""},
+        json={"id": agent_id, "name": f"Agent {agent_id}", "description": ""},
     )
-    assert create_agent.status_code == 201, app_server.logs_tail()
+    assert response.status_code == 201, app_server.logs_tail()
+
+
+def _upload_workspace_skills(
+    app_server,
+    agent_id: str,
+    skills: dict[str, str],
+    *,
+    enable: bool = False,
+) -> dict:
+    response = app_server.api_request(
+        "POST",
+        "/api/skills/upload",
+        headers={"X-Agent-Id": agent_id},
+        files={
+            "file": (
+                "skills.zip",
+                _skill_zip(skills),
+                "application/zip",
+            ),
+        },
+        data={"enable": str(enable).lower()},
+    )
+    assert response.status_code == 200, app_server.logs_tail()
+    return response.json()
+
+
+@pytest.mark.integration
+@pytest.mark.p0
+def test_skills_direct_create_delete_are_global_only(app_server) -> None:
+    """Header-scoped routes enforce the same global-only authoring policy."""
+    agent_id = "integ-skills-global-only-01"
+    skill_name = "integ-skills-global-only-skill"
+    headers = {"X-Agent-Id": agent_id}
+    _create_agent(app_server, agent_id)
 
     try:
-        create_skill = app_server.api_request(
+        create = app_server.api_request(
             "POST",
             "/api/skills",
             headers=headers,
             json={
                 "name": skill_name,
-                "content": _skill_md(skill_name, "integration CRUD skill"),
-                "enable": True,
+                "content": _skill_md(skill_name, "must be global"),
+                "enable": False,
             },
         )
-        assert create_skill.status_code == 200, app_server.logs_tail()
-        create_payload = create_skill.json()
-        assert create_payload.get("created") is True
-        assert create_payload.get("name") == skill_name
+        assert create.status_code == 403, app_server.logs_tail()
 
-        list_after_create = app_server.api_request(
-            "GET",
-            "/api/skills",
-            headers=headers,
-        )
-        assert list_after_create.status_code == 200, app_server.logs_tail()
-        names_after_create = {
-            item["name"] for item in list_after_create.json()
-        }
-        assert skill_name in names_after_create
-
-        delete_skill = app_server.api_request(
+        delete = app_server.api_request(
             "DELETE",
             f"/api/skills/{skill_name}",
             headers=headers,
         )
-        assert delete_skill.status_code == 200, app_server.logs_tail()
-        assert delete_skill.json().get("deleted") is True
+        assert delete.status_code == 403, app_server.logs_tail()
+    finally:
+        app_server.api_request("DELETE", f"/api/agents/{agent_id}")
 
-        list_after_delete = app_server.api_request(
-            "GET",
-            "/api/skills",
-            headers=headers,
+
+@pytest.mark.integration
+@pytest.mark.p0
+def test_skills_import_list_batch_delete(app_server) -> None:
+    """Imported workspace skills can be listed and batch-removed."""
+    agent_id = "integ-skills-import-01"
+    skill_name = "integ-skill-import-01"
+    headers = {"X-Agent-Id": agent_id}
+    _create_agent(app_server, agent_id)
+
+    try:
+        imported = _upload_workspace_skills(
+            app_server,
+            agent_id,
+            {skill_name: _skill_md(skill_name, "integration import skill")},
         )
-        assert list_after_delete.status_code == 200, app_server.logs_tail()
-        names_after_delete = {
-            item["name"] for item in list_after_delete.json()
-        }
-        assert skill_name not in names_after_delete
+        assert imported.get("count") == 1
+
+        listed = app_server.api_request("GET", "/api/skills", headers=headers)
+        assert listed.status_code == 200, app_server.logs_tail()
+        assert skill_name in {item["name"] for item in listed.json()}
+
+        deleted = app_server.api_request(
+            "POST",
+            "/api/skills/batch-delete",
+            headers=headers,
+            json=[skill_name],
+        )
+        assert deleted.status_code == 200, app_server.logs_tail()
+        assert deleted.json()["results"][skill_name]["success"] is True
     finally:
         app_server.api_request("DELETE", f"/api/agents/{agent_id}")
 
@@ -100,467 +128,159 @@ def test_skills_create_list_delete(app_server) -> None:
 @pytest.mark.integration
 @pytest.mark.p0
 def test_skills_disable_enable(app_server) -> None:
-    """Test purpose:
-    - Verify single-skill disable/enable endpoints update enabled state.
-
-    Test flow:
-    1. Create a test agent and one enabled skill.
-    2. POST /api/skills/{skill}/disable and assert success.
-    3. GET /api/skills and assert skill ``enabled`` is False.
-    4. POST /api/skills/{skill}/enable and assert success.
-    5. GET /api/skills and assert skill ``enabled`` is True.
-    6. Cleanup skill and agent.
-
-    API endpoints:
-    - POST /api/agents
-    - POST /api/skills
-    - POST /api/skills/{skill_name}/disable
-    - POST /api/skills/{skill_name}/enable
-    - GET /api/skills
-    - DELETE /api/skills/{skill_name}
-    - DELETE /api/agents/{agentId}
-    """
-    agent_id = "integ_skills_toggle_01"
-    headers = {"X-Agent-Id": agent_id}
+    """Single-skill enable state changes persist through header routing."""
+    agent_id = "integ-skills-toggle-01"
     skill_name = "integ-skill-toggle-01"
-
-    create_agent = app_server.api_request(
-        "POST",
-        "/api/agents",
-        json={
-            "id": agent_id,
-            "name": "Skills toggle agent",
-            "description": "",
-        },
-    )
-    assert create_agent.status_code == 201, app_server.logs_tail()
+    headers = {"X-Agent-Id": agent_id}
+    _create_agent(app_server, agent_id)
 
     try:
-        create_skill = app_server.api_request(
-            "POST",
-            "/api/skills",
-            headers=headers,
-            json={
-                "name": skill_name,
-                "content": _skill_md(skill_name, "integration toggle skill"),
-                "enable": True,
-            },
+        _upload_workspace_skills(
+            app_server,
+            agent_id,
+            {skill_name: _skill_md(skill_name, "integration toggle skill")},
+            enable=True,
         )
-        assert create_skill.status_code == 200, app_server.logs_tail()
-
-        disable_resp = app_server.api_request(
+        disabled = app_server.api_request(
             "POST",
             f"/api/skills/{skill_name}/disable",
             headers=headers,
         )
-        assert disable_resp.status_code == 200, app_server.logs_tail()
-        assert disable_resp.json().get("disabled") is True
+        assert disabled.status_code == 200, app_server.logs_tail()
+        assert disabled.json().get("disabled") is True
 
-        list_after_disable = app_server.api_request(
-            "GET",
-            "/api/skills",
-            headers=headers,
-        )
-        assert list_after_disable.status_code == 200, app_server.logs_tail()
-        by_name = {item["name"]: item for item in list_after_disable.json()}
-        assert by_name[skill_name]["enabled"] is False
-
-        enable_resp = app_server.api_request(
+        enabled = app_server.api_request(
             "POST",
             f"/api/skills/{skill_name}/enable",
             headers=headers,
         )
-        assert enable_resp.status_code == 200, app_server.logs_tail()
-        assert enable_resp.json().get("enabled") is True
-
-        list_after_enable = app_server.api_request(
-            "GET",
-            "/api/skills",
-            headers=headers,
-        )
-        assert list_after_enable.status_code == 200, app_server.logs_tail()
-        by_name = {item["name"]: item for item in list_after_enable.json()}
-        assert by_name[skill_name]["enabled"] is True
+        assert enabled.status_code == 200, app_server.logs_tail()
+        assert enabled.json().get("enabled") is True
     finally:
-        app_server.api_request(
-            "DELETE",
-            f"/api/skills/{skill_name}",
-            headers=headers,
-        )
         app_server.api_request("DELETE", f"/api/agents/{agent_id}")
 
 
 @pytest.mark.integration
 @pytest.mark.p1
-def test_skills_batch_enable_disable_delete(app_server) -> None:
-    """Test purpose:
-    - Verify batch skill operations return per-skill results and update states.
-
-    Test flow:
-    1. Create a test agent and two disabled skills.
-    2. POST /api/skills/batch-enable and verify both succeed.
-    3. POST /api/skills/batch-disable and verify both succeed.
-    4. POST /api/skills/batch-delete and verify both succeed.
-    5. GET /api/skills and verify both are removed.
-    6. Delete test agent.
-
-    API endpoints:
-    - POST /api/agents
-    - POST /api/skills
-    - POST /api/skills/batch-enable
-    - POST /api/skills/batch-disable
-    - POST /api/skills/batch-delete
-    - GET /api/skills
-    - DELETE /api/agents/{agentId}
-    """
-    agent_id = "integ_skills_batch_01"
+def test_skills_batch_enable_disable_partial_success(app_server) -> None:
+    """Batch state changes report success independently for each name."""
+    agent_id = "integ-skills-batch-state-01"
+    skill_names = ["integ-skill-batch-a", "integ-skill-batch-b"]
+    missing = "integ-skill-batch-missing"
     headers = {"X-Agent-Id": agent_id}
-    skill_names = ["integ-skill-batch-01", "integ-skill-batch-02"]
-
-    create_agent = app_server.api_request(
-        "POST",
-        "/api/agents",
-        json={"id": agent_id, "name": "Skills batch agent", "description": ""},
-    )
-    assert create_agent.status_code == 201, app_server.logs_tail()
+    _create_agent(app_server, agent_id)
 
     try:
-        for skill_name in skill_names:
-            create_skill = app_server.api_request(
-                "POST",
-                "/api/skills",
-                headers=headers,
-                json={
-                    "name": skill_name,
-                    "content": _skill_md(
-                        skill_name,
-                        "integration batch skill",
-                    ),
-                    "enable": False,
-                },
-            )
-            assert create_skill.status_code == 200, app_server.logs_tail()
-
-        batch_enable = app_server.api_request(
+        _upload_workspace_skills(
+            app_server,
+            agent_id,
+            {name: _skill_md(name, "integration batch skill") for name in skill_names},
+        )
+        enabled = app_server.api_request(
             "POST",
             "/api/skills/batch-enable",
             headers=headers,
-            json=skill_names,
+            json=[*skill_names, missing],
         )
-        assert batch_enable.status_code == 200, app_server.logs_tail()
-        enable_results = batch_enable.json().get("results", {})
-        for skill_name in skill_names:
-            assert enable_results.get(skill_name, {}).get("success") is True
+        assert enabled.status_code == 200, app_server.logs_tail()
+        enable_results = enabled.json()["results"]
+        assert all(enable_results[name]["success"] for name in skill_names)
+        assert enable_results[missing]["success"] is False
 
-        batch_disable = app_server.api_request(
+        disabled = app_server.api_request(
             "POST",
             "/api/skills/batch-disable",
             headers=headers,
-            json=skill_names,
+            json=[*skill_names, missing],
         )
-        assert batch_disable.status_code == 200, app_server.logs_tail()
-        disable_results = batch_disable.json().get("results", {})
-        for skill_name in skill_names:
-            assert disable_results.get(skill_name, {}).get("success") is True
-
-        batch_delete = app_server.api_request(
-            "POST",
-            "/api/skills/batch-delete",
-            headers=headers,
-            json=skill_names,
-        )
-        assert batch_delete.status_code == 200, app_server.logs_tail()
-        delete_results = batch_delete.json().get("results", {})
-        for skill_name in skill_names:
-            assert delete_results.get(skill_name, {}).get("success") is True
-
-        list_after_delete = app_server.api_request(
-            "GET",
-            "/api/skills",
-            headers=headers,
-        )
-        assert list_after_delete.status_code == 200, app_server.logs_tail()
-        remaining_names = {item["name"] for item in list_after_delete.json()}
-        for skill_name in skill_names:
-            assert skill_name not in remaining_names
-    finally:
-        for skill_name in skill_names:
-            app_server.api_request(
-                "DELETE",
-                f"/api/skills/{skill_name}",
-                headers=headers,
-            )
-        app_server.api_request("DELETE", f"/api/agents/{agent_id}")
-
-
-@pytest.mark.integration
-@pytest.mark.p2
-def test_skills_create_duplicate_name_rejected(app_server) -> None:
-    """Test purpose:
-    - Verify creating a workspace skill with duplicated name is rejected.
-
-    Test flow:
-    1. Create a test agent.
-    2. POST /api/skills once with a fixed skill name and assert success.
-    3. POST /api/skills again with the same name.
-    4. Assert status 409 and detail includes conflict reason metadata.
-    5. Cleanup skill and agent.
-
-    API endpoints:
-    - POST /api/agents
-    - POST /api/skills
-    - DELETE /api/skills/{skill_name}
-    - DELETE /api/agents/{agentId}
-    """
-    agent_id = "integ_skills_dup_01"
-    headers = {"X-Agent-Id": agent_id}
-    skill_name = "integ-skill-dup-01"
-
-    create_agent = app_server.api_request(
-        "POST",
-        "/api/agents",
-        json={
-            "id": agent_id,
-            "name": "Skills duplicate agent",
-            "description": "",
-        },
-    )
-    assert create_agent.status_code == 201, app_server.logs_tail()
-
-    try:
-        first_create = app_server.api_request(
-            "POST",
-            "/api/skills",
-            headers=headers,
-            json={
-                "name": skill_name,
-                "content": _skill_md(
-                    skill_name,
-                    "integration duplicate skill",
-                ),
-                "enable": True,
-            },
-        )
-        assert first_create.status_code == 200, app_server.logs_tail()
-
-        second_create = app_server.api_request(
-            "POST",
-            "/api/skills",
-            headers=headers,
-            json={
-                "name": skill_name,
-                "content": _skill_md(
-                    skill_name,
-                    "integration duplicate skill",
-                ),
-                "enable": True,
-            },
-        )
-        assert second_create.status_code == 409, app_server.logs_tail()
-        detail = second_create.json().get("detail", {})
-        assert detail.get("reason") == "conflict"
-        assert "suggested_name" in detail
-    finally:
-        app_server.api_request(
-            "DELETE",
-            f"/api/skills/{skill_name}",
-            headers=headers,
-        )
-        app_server.api_request("DELETE", f"/api/agents/{agent_id}")
-
-
-@pytest.mark.integration
-@pytest.mark.p2
-def test_skills_create_invalid_skill_md_rejected(app_server) -> None:
-    """Test purpose:
-    - Verify create skill rejects invalid SKILL.md frontmatter content.
-
-    Test flow:
-    1. Create a test agent.
-    2. POST /api/skills with invalid frontmatter (missing description).
-    3. Assert status 400 and detail mentions frontmatter requirement.
-    4. Assert the invalid skill does not appear in GET /api/skills.
-    5. Delete test agent.
-
-    API endpoints:
-    - POST /api/agents
-    - POST /api/skills
-    - GET /api/skills
-    - DELETE /api/agents/{agentId}
-    """
-    agent_id = "integ_skills_invalid_md_01"
-    headers = {"X-Agent-Id": agent_id}
-    skill_name = "integ-skill-invalid-md-01"
-    invalid_md = (
-        "---\n"
-        f"name: {skill_name}\n"
-        "---\n\n"
-        "# Invalid Skill\n"
-        "missing description in frontmatter\n"
-    )
-
-    create_agent = app_server.api_request(
-        "POST",
-        "/api/agents",
-        json={
-            "id": agent_id,
-            "name": "Skills invalid md agent",
-            "description": "",
-        },
-    )
-    assert create_agent.status_code == 201, app_server.logs_tail()
-
-    try:
-        create_invalid = app_server.api_request(
-            "POST",
-            "/api/skills",
-            headers=headers,
-            json={
-                "name": skill_name,
-                "content": invalid_md,
-                "enable": True,
-            },
-        )
-        assert create_invalid.status_code == 400, app_server.logs_tail()
-        detail = str(create_invalid.json().get("detail", ""))
-        assert "frontmatter" in detail
-
-        list_resp = app_server.api_request(
-            "GET",
-            "/api/skills",
-            headers=headers,
-        )
-        assert list_resp.status_code == 200, app_server.logs_tail()
-        names = {item["name"] for item in list_resp.json()}
-        assert skill_name not in names
+        assert disabled.status_code == 200, app_server.logs_tail()
+        disable_results = disabled.json()["results"]
+        assert all(disable_results[name]["success"] for name in skill_names)
+        assert disable_results[missing]["success"] is False
     finally:
         app_server.api_request("DELETE", f"/api/agents/{agent_id}")
 
 
 @pytest.mark.integration
 @pytest.mark.p2
-def test_skills_batch_enable_partial_success(app_server) -> None:
-    """Test purpose:
-    - Verify batch-enable returns per-skill results and allows partial success
-      when some skill names do not exist.
-
-    Test flow:
-    1. Create a test agent and one disabled skill.
-    2. POST /api/skills/batch-enable with one existing and one missing skill.
-    3. Assert existing skill success=true and missing one success=false.
-    4. GET /api/skills and verify existing skill becomes enabled.
-    5. Cleanup skill and agent.
-
-    API endpoints:
-    - POST /api/agents
-    - POST /api/skills
-    - POST /api/skills/batch-enable
-    - GET /api/skills
-    - DELETE /api/skills/{skill_name}
-    - DELETE /api/agents/{agentId}
-    """
-    agent_id = "integ_skills_batch_partial_01"
+def test_skills_upload_duplicate_name_rejected(app_server) -> None:
+    """A second ZIP import reports a conflict without overwriting."""
+    agent_id = "integ-skills-duplicate-01"
+    skill_name = "integ-skill-duplicate-01"
     headers = {"X-Agent-Id": agent_id}
-    existing_skill = "integ-skill-batch-partial-existing"
-    missing_skill = "integ-skill-batch-partial-missing"
-
-    create_agent = app_server.api_request(
-        "POST",
-        "/api/agents",
-        json={
-            "id": agent_id,
-            "name": "Skills batch partial agent",
-            "description": "",
-        },
-    )
-    assert create_agent.status_code == 201, app_server.logs_tail()
+    content = _skill_md(skill_name, "integration duplicate skill")
+    _create_agent(app_server, agent_id)
 
     try:
-        create_existing = app_server.api_request(
+        _upload_workspace_skills(
+            app_server,
+            agent_id,
+            {skill_name: content},
+        )
+        duplicate = app_server.api_request(
             "POST",
-            "/api/skills",
+            "/api/skills/upload",
             headers=headers,
-            json={
-                "name": existing_skill,
-                "content": _skill_md(
-                    existing_skill,
-                    "integration batch partial skill",
+            files={
+                "file": (
+                    "skills.zip",
+                    _skill_zip({skill_name: content}),
+                    "application/zip",
                 ),
-                "enable": False,
             },
+            data={"enable": "false"},
         )
-        assert create_existing.status_code == 200, app_server.logs_tail()
-
-        batch_enable = app_server.api_request(
-            "POST",
-            "/api/skills/batch-enable",
-            headers=headers,
-            json=[existing_skill, missing_skill],
-        )
-        assert batch_enable.status_code == 200, app_server.logs_tail()
-        results = batch_enable.json().get("results", {})
-        assert results.get(existing_skill, {}).get("success") is True
-        assert results.get(missing_skill, {}).get("success") is False
-        assert results.get(missing_skill, {}).get("reason") == "not_found"
-
-        list_resp = app_server.api_request(
-            "GET",
-            "/api/skills",
-            headers=headers,
-        )
-        assert list_resp.status_code == 200, app_server.logs_tail()
-        by_name = {item["name"]: item for item in list_resp.json()}
-        assert by_name[existing_skill]["enabled"] is True
+        assert duplicate.status_code == 409, app_server.logs_tail()
+        detail = duplicate.json().get("detail", {})
+        assert detail.get("conflicts")
     finally:
-        app_server.api_request(
-            "DELETE",
-            f"/api/skills/{existing_skill}",
+        app_server.api_request("DELETE", f"/api/agents/{agent_id}")
+
+
+@pytest.mark.integration
+@pytest.mark.p2
+def test_skills_upload_invalid_skill_md_rejected(app_server) -> None:
+    """ZIP import validates required SKILL.md frontmatter."""
+    agent_id = "integ-skills-invalid-01"
+    skill_name = "integ-skill-invalid-01"
+    headers = {"X-Agent-Id": agent_id}
+    invalid_md = f"---\nname: {skill_name}\n---\n\n# Missing description\n"
+    _create_agent(app_server, agent_id)
+
+    try:
+        invalid = app_server.api_request(
+            "POST",
+            "/api/skills/upload",
             headers=headers,
+            files={
+                "file": (
+                    "skills.zip",
+                    _skill_zip({skill_name: invalid_md}),
+                    "application/zip",
+                ),
+            },
+            data={"enable": "true"},
         )
+        assert invalid.status_code == 400, app_server.logs_tail()
+        assert "frontmatter" in str(invalid.json().get("detail", "")).lower()
+    finally:
         app_server.api_request("DELETE", f"/api/agents/{agent_id}")
 
 
 @pytest.mark.integration
 @pytest.mark.p2
 def test_skills_enable_missing_skill_returns_404(app_server) -> None:
-    """Test purpose:
-    - Verify enabling a non-existing workspace skill returns 404.
-
-    Test flow:
-    1. Create a test agent.
-    2. POST /api/skills/{skill_name}/enable with a missing skill name.
-    3. Assert status is 404 and detail indicates skill not found.
-    4. Delete test agent.
-
-    API endpoints:
-    - POST /api/agents
-    - POST /api/skills/{skill_name}/enable
-    - DELETE /api/agents/{agentId}
-    """
-    agent_id = "integ_skills_enable_missing_01"
+    agent_id = "integ-skills-enable-missing-01"
     headers = {"X-Agent-Id": agent_id}
-    missing_skill = "integ-skill-enable-missing"
-
-    create_agent = app_server.api_request(
-        "POST",
-        "/api/agents",
-        json={
-            "id": agent_id,
-            "name": "Skills enable missing agent",
-            "description": "",
-        },
-    )
-    assert create_agent.status_code == 201, app_server.logs_tail()
+    _create_agent(app_server, agent_id)
 
     try:
-        enable_resp = app_server.api_request(
+        response = app_server.api_request(
             "POST",
-            f"/api/skills/{missing_skill}/enable",
+            "/api/skills/integ-skill-missing/enable",
             headers=headers,
         )
-        assert enable_resp.status_code == 404, app_server.logs_tail()
-        detail = str(enable_resp.json().get("detail", ""))
-        assert detail in {"Skill not found", "not_found"}
+        assert response.status_code == 404, app_server.logs_tail()
     finally:
         app_server.api_request("DELETE", f"/api/agents/{agent_id}")
 
@@ -568,159 +288,27 @@ def test_skills_enable_missing_skill_returns_404(app_server) -> None:
 @pytest.mark.integration
 @pytest.mark.p2
 def test_skills_batch_delete_partial_success(app_server) -> None:
-    """Test purpose:
-    - Verify batch-delete returns per-skill results and supports partial
-      success when some skill names do not exist.
-
-    Test flow:
-    1. Create a test agent and one disabled skill.
-    2. POST /api/skills/batch-delete with one existing and one missing skill.
-    3. Assert existing skill delete result is success=true.
-    4. Assert missing skill delete result is success=false with reason.
-    5. GET /api/skills and verify existing skill is removed.
-    6. Delete test agent.
-
-    API endpoints:
-    - POST /api/agents
-    - POST /api/skills
-    - POST /api/skills/batch-delete
-    - GET /api/skills
-    - DELETE /api/agents/{agentId}
-    """
-    agent_id = "integ_skills_batch_delete_partial_01"
+    agent_id = "integ-skills-batch-delete-01"
+    existing = "integ-skill-batch-delete-existing"
+    missing = "integ-skill-batch-delete-missing"
     headers = {"X-Agent-Id": agent_id}
-    existing_skill = "integ-skill-batch-delete-existing"
-    missing_skill = "integ-skill-batch-delete-missing"
-
-    create_agent = app_server.api_request(
-        "POST",
-        "/api/agents",
-        json={
-            "id": agent_id,
-            "name": "Skills batch delete partial agent",
-            "description": "",
-        },
-    )
-    assert create_agent.status_code == 201, app_server.logs_tail()
+    _create_agent(app_server, agent_id)
 
     try:
-        create_existing = app_server.api_request(
-            "POST",
-            "/api/skills",
-            headers=headers,
-            json={
-                "name": existing_skill,
-                "content": _skill_md(
-                    existing_skill,
-                    "integration batch delete partial",
-                ),
-                "enable": False,
-            },
+        _upload_workspace_skills(
+            app_server,
+            agent_id,
+            {existing: _skill_md(existing, "integration batch delete")},
         )
-        assert create_existing.status_code == 200, app_server.logs_tail()
-
-        batch_delete = app_server.api_request(
+        response = app_server.api_request(
             "POST",
             "/api/skills/batch-delete",
             headers=headers,
-            json=[existing_skill, missing_skill],
+            json=[existing, missing],
         )
-        assert batch_delete.status_code == 200, app_server.logs_tail()
-        results = batch_delete.json().get("results", {})
-        assert results.get(existing_skill, {}).get("success") is True
-        assert results.get(missing_skill, {}).get("success") is False
-        assert results.get(missing_skill, {}).get("reason") == "delete_failed"
-
-        list_resp = app_server.api_request(
-            "GET",
-            "/api/skills",
-            headers=headers,
-        )
-        assert list_resp.status_code == 200, app_server.logs_tail()
-        names = {item["name"] for item in list_resp.json()}
-        assert existing_skill not in names
+        assert response.status_code == 200, app_server.logs_tail()
+        results = response.json()["results"]
+        assert results[existing]["success"] is True
+        assert results[missing]["success"] is False
     finally:
-        app_server.api_request("DELETE", f"/api/agents/{agent_id}")
-
-
-@pytest.mark.integration
-@pytest.mark.p2
-def test_skills_batch_disable_partial_success(app_server) -> None:
-    """Test purpose:
-    - Verify batch-disable returns per-skill results and supports partial
-      success when some skill names do not exist.
-
-    Test flow:
-    1. Create a test agent and one enabled skill.
-    2. POST /api/skills/batch-disable with one existing and one missing skill.
-    3. Assert existing skill disable result is success=true.
-    4. Assert missing skill disable result is success=false.
-    5. GET /api/skills and verify existing skill becomes disabled.
-    6. Cleanup skill and agent.
-
-    API endpoints:
-    - POST /api/agents
-    - POST /api/skills
-    - POST /api/skills/batch-disable
-    - GET /api/skills
-    - DELETE /api/skills/{skill_name}
-    - DELETE /api/agents/{agentId}
-    """
-    agent_id = "integ_skills_batch_disable_partial_01"
-    headers = {"X-Agent-Id": agent_id}
-    existing_skill = "integ-skill-batch-disable-existing"
-    missing_skill = "integ-skill-batch-disable-missing"
-
-    create_agent = app_server.api_request(
-        "POST",
-        "/api/agents",
-        json={
-            "id": agent_id,
-            "name": "Skills batch disable partial agent",
-            "description": "",
-        },
-    )
-    assert create_agent.status_code == 201, app_server.logs_tail()
-
-    try:
-        create_existing = app_server.api_request(
-            "POST",
-            "/api/skills",
-            headers=headers,
-            json={
-                "name": existing_skill,
-                "content": _skill_md(
-                    existing_skill,
-                    "integration batch disable partial",
-                ),
-                "enable": True,
-            },
-        )
-        assert create_existing.status_code == 200, app_server.logs_tail()
-
-        batch_disable = app_server.api_request(
-            "POST",
-            "/api/skills/batch-disable",
-            headers=headers,
-            json=[existing_skill, missing_skill],
-        )
-        assert batch_disable.status_code == 200, app_server.logs_tail()
-        results = batch_disable.json().get("results", {})
-        assert results.get(existing_skill, {}).get("success") is True
-        assert results.get(missing_skill, {}).get("success") is False
-
-        list_resp = app_server.api_request(
-            "GET",
-            "/api/skills",
-            headers=headers,
-        )
-        assert list_resp.status_code == 200, app_server.logs_tail()
-        by_name = {item["name"]: item for item in list_resp.json()}
-        assert by_name[existing_skill]["enabled"] is False
-    finally:
-        app_server.api_request(
-            "DELETE",
-            f"/api/skills/{existing_skill}",
-            headers=headers,
-        )
         app_server.api_request("DELETE", f"/api/agents/{agent_id}")

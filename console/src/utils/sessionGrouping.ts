@@ -52,7 +52,7 @@ export function groupSessions<
   },
 >(
   sessions: T[],
-  t: (key: string, fallback: string) => string,
+  t?: (key: string, fallback: string) => string,
 ): SessionGroup<T>[] {
   const buckets: Record<DateGroup, T[]> = {
     pinned: [],
@@ -82,7 +82,7 @@ export function groupSessions<
     .filter(({ key }) => buckets[key].length > 0)
     .map(({ key, fallback }) => ({
       key,
-      label: t(`chat.group.${key}`, fallback),
+      label: t ? t(`chat.group.${key}`, fallback) : fallback,
       sessions: buckets[key],
     }));
 }

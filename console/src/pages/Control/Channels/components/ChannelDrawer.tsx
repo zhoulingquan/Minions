@@ -10,7 +10,6 @@ import {
 import { useAppMessage } from "../../../../hooks/useAppMessage";
 import { Alert, ConfigProvider } from "antd";
 import { LinkOutlined } from "@ant-design/icons";
-import { useTranslation } from "react-i18next";
 import { useEffect } from "react";
 import type { FormInstance } from "antd";
 import { getChannelLabel, type ChannelKey } from "./constants";
@@ -123,14 +122,13 @@ export function ChannelDrawer({
   onClose,
   onSubmit,
 }: ChannelDrawerProps) {
-  const { t, i18n } = useTranslation();
-  const { selectedAgent, agents } = useAgentStore();
+    const { selectedAgent, agents } = useAgentStore();
   const currentAgent = agents.find((a) => a.id === selectedAgent);
   const defaultMediaDir = currentAgent?.workspace_dir
     ? `${currentAgent.workspace_dir}/media`
     : "~/.minions/media";
-  const currentLang = i18n.language?.startsWith("zh") ? "zh" : "en";
-  const label = activeKey ? getChannelLabel(activeKey, t) : activeLabel;
+  const currentLang = "zh";
+  const label = activeKey ? getChannelLabel(activeKey) : activeLabel;
   const { message } = useAppMessage();
   const matrixAuthMethod = Form.useWatch("auth_method", form);
   const isMatrixPasswordAuth = matrixAuthMethod === "password";
@@ -152,25 +150,25 @@ export function ChannelDrawer({
     <>
       <Form.Item
         name="access_control_dm"
-        label={t("channels.accessControlDm")}
+        label={"私聊访问控制"}
         valuePropName="checked"
-        tooltip={t("channels.accessControlDmTooltip")}
+        tooltip={"开启后，只有白名单用户可以通过私聊与机器人互动"}
       >
         <Switch />
       </Form.Item>
       <Form.Item
         name="access_control_group"
-        label={t("channels.accessControlGroup")}
+        label={"群聊访问控制"}
         valuePropName="checked"
-        tooltip={t("channels.accessControlGroupTooltip")}
+        tooltip={"开启后，只有白名单用户可以在群聊中与机器人互动"}
       >
         <Switch />
       </Form.Item>
       <Form.Item
         name="require_mention"
-        label={t("channels.requireMention")}
+        label={"需要 @提及"}
         valuePropName="checked"
-        tooltip={t("channels.requireMentionTooltip")}
+        tooltip={"开启后，群聊中仅在被 @提及 时才会回复"}
       >
         <Switch />
       </Form.Item>
@@ -255,17 +253,17 @@ export function ChannelDrawer({
             </Form.Item>
             <Form.Item
               name="dm_disabled"
-              label={t("channels.dmDisabled")}
+              label={"禁用私聊"}
               valuePropName="checked"
-              tooltip={t("channels.dmDisabledTooltip")}
+              tooltip={"开启后，机器人将完全忽略所有私聊消息"}
             >
               <Switch />
             </Form.Item>
             <Form.Item
               name="group_disabled"
-              label={t("channels.groupDisabled")}
+              label={"禁用群聊"}
               valuePropName="checked"
-              tooltip={t("channels.groupDisabledTooltip")}
+              tooltip={"开启后，机器人将完全忽略所有群聊消息"}
             >
               <Switch />
             </Form.Item>
@@ -312,13 +310,13 @@ export function ChannelDrawer({
             </Form.Item>
             <Form.Item
               name="accept_bot_messages"
-              label={t("channels.acceptBotMessages")}
+              label={"接收机器人消息"}
               valuePropName="checked"
-              tooltip={t("channels.acceptBotMessagesTooltip")}
+              tooltip={"开启后，将接收来自其他机器人的消息"}
             >
               <Switch />
             </Form.Item>
-            <Form.Item name="media_dir" label={t("channels.wechatMediaDir")}>
+            <Form.Item name="media_dir" label={"媒体文件目录"}>
               <Input placeholder={defaultMediaDir} />
             </Form.Item>
           </>
@@ -331,15 +329,15 @@ export function ChannelDrawer({
               <Alert
                 type="info"
                 showIcon
-                message={t("channels.dingtalkSetupGuide")}
+                message={"使用钉钉扫码一键创建机器人。扫码后将自动创建钉钉应用并获取 Client ID 和 Client Secret。"}
                 style={{ marginBottom: 16 }}
               />
             </ConfigProvider>
             <QrcodeAuthBlock
-              label={t("channels.dingtalkScanAuth")}
-              buttonText={t("channels.dingtalkGetQrcode")}
+              label={"扫码创建机器人"}
+              buttonText={"获取钉钉二维码"}
               imageAlt="DingTalk QR Code"
-              hintText={t("channels.dingtalkScanHint")}
+              hintText={"请使用钉钉扫描上方二维码，完成授权后 Client ID 与 Client Secret 将自动填入。"}
               channel="dingtalk"
               successStatus="success"
               successCredentialKey="client_id"
@@ -349,13 +347,13 @@ export function ChannelDrawer({
                   client_id: credentials.client_id,
                   client_secret: credentials.client_secret,
                 });
-                message.success(t("channels.dingtalkAuthSuccess"));
+                message.success("钉钉机器人创建成功，Client ID 与 Client Secret 已自动填入");
               }}
               onError={(type) => {
                 if (type === "expired") {
-                  message.warning(t("channels.dingtalkQrcodeExpired"));
+                  message.warning("二维码已过期，请重新获取");
                 } else {
-                  message.error(t("channels.dingtalkQrcodeFailed"));
+                  message.error("获取钉钉二维码失败，请稍后重试");
                 }
               }}
             />
@@ -444,15 +442,15 @@ export function ChannelDrawer({
             </Form.Item>
             <Form.Item
               name="endpoint"
-              label={t("channels.dingtalkEndpoint")}
-              tooltip={t("channels.dingtalkEndpointTooltip")}
+              label={"API 地址"}
+              tooltip={"用于钉钉私有化部署的自定义 API 地址。留空则使用官方默认地址。"}
             >
               <Input placeholder="https://api.dingtalk.com" />
             </Form.Item>
             <Form.Item
               name="at_sender_on_reply"
-              label={t("channels.atSenderOnReply")}
-              tooltip={t("channels.atSenderOnReplyTooltip")}
+              label={"回复时@发送者"}
+              tooltip={"开启后，机器人在群聊中回复时会在第一条消息中@发送者。注意：卡片模式下，@功能仅对企业内部成员生效。"}
               valuePropName="checked"
             >
               <Switch />
@@ -465,16 +463,16 @@ export function ChannelDrawer({
           <>
             <Form.Item
               name="domain"
-              label={t("channels.feishuRegion")}
+              label={"地区"}
               initialValue="feishu"
-              tooltip={t("channels.feishuRegionTooltip")}
+              tooltip={"国内用户选择飞书，海外用户选择 Lark"}
             >
               <Select>
                 <Select.Option value="feishu">
-                  {t("channels.feishuChina")}
+                  {"飞书（国内）"}
                 </Select.Option>
                 <Select.Option value="lark">
-                  {t("channels.feishuInternational")}
+                  {"Lark（海外）"}
                 </Select.Option>
               </Select>
             </Form.Item>
@@ -482,15 +480,15 @@ export function ChannelDrawer({
               <Alert
                 type="info"
                 showIcon
-                message={t("channels.feishuScanGuide")}
+                message={"使用飞书扫码一键创建机器人。扫码后将自动创建飞书应用并获取 App ID 和 App Secret。"}
                 style={{ marginBottom: 16 }}
               />
             </ConfigProvider>
             <QrcodeAuthBlock
-              label={t("channels.feishuScanLogin")}
-              buttonText={t("channels.feishuGetQrcode")}
+              label={"扫码创建机器人"}
+              buttonText={"获取飞书二维码"}
               imageAlt="Feishu QR Code"
-              hintText={t("channels.feishuScanHint")}
+              hintText={"请使用飞书扫描上方二维码，完成授权后 App ID 与 App Secret 将自动填入。"}
               channel="feishu"
               successStatus="success"
               successCredentialKey="app_id"
@@ -501,13 +499,13 @@ export function ChannelDrawer({
                   app_id: credentials.app_id,
                   app_secret: credentials.app_secret,
                 });
-                message.success(t("channels.feishuAuthSuccess"));
+                message.success("飞书机器人创建成功，App ID 与 App Secret 已自动填入");
               }}
               onError={(type) => {
                 if (type === "expired") {
-                  message.warning(t("channels.feishuQrcodeExpired"));
+                  message.warning("二维码已过期，请重新获取");
                 } else {
-                  message.error(t("channels.feishuQrcodeFailed"));
+                  message.error("获取飞书二维码失败，请稍后重试");
                 }
               }}
             />
@@ -531,14 +529,14 @@ export function ChannelDrawer({
             <Form.Item name="verification_token" label="Verification Token">
               <Input placeholder="Optional" />
             </Form.Item>
-            <Form.Item name="media_dir" label={t("channels.wechatMediaDir")}>
+            <Form.Item name="media_dir" label={"媒体文件目录"}>
               <Input placeholder={defaultMediaDir} />
             </Form.Item>
             <Form.Item
               name="share_session_in_group"
-              label={t("channels.shareSessionInGroup")}
+              label={"群聊共享上下文"}
               valuePropName="checked"
-              tooltip={t("channels.shareSessionInGroupTooltip")}
+              tooltip={"启用时，群内所有成员共享同一会话上下文；禁用时，每位成员维护各自独立的会话。"}
             >
               <Switch />
             </Form.Item>
@@ -552,15 +550,15 @@ export function ChannelDrawer({
               <Alert
                 type="info"
                 showIcon
-                message={t("channels.qqSetupGuide")}
+                message={"使用 QQ 扫码授权机器人，扫码后将自动获取 APP ID 和 Client Secret 并填入。"}
                 style={{ marginBottom: 16 }}
               />
             </ConfigProvider>
             <QrcodeAuthBlock
-              label={t("channels.qqScanAuth")}
-              buttonText={t("channels.qqGetQrcode")}
+              label={"扫码授权机器人"}
+              buttonText={"获取 QQ 二维码"}
               imageAlt="QQ QR Code"
-              hintText={t("channels.qqScanHint")}
+              hintText={"请使用 QQ 扫描上方二维码，完成授权后 APP ID 和 Client Secret 将自动填入。"}
               channel="qq"
               successStatus="success"
               successCredentialKey="app_id"
@@ -573,13 +571,13 @@ export function ChannelDrawer({
                   client_secret: credentials.client_secret,
                   user_openid: credentials.user_openid,
                 });
-                message.success(t("channels.qqAuthSuccess"));
+                message.success("QQ 机器人授权成功，APP ID 和 Client Secret 已自动填入");
               }}
               onError={(type) => {
                 if (type === "expired") {
-                  message.warning(t("channels.qqQrcodeExpired"));
+                  message.warning("二维码已过期，请重新获取");
                 } else {
-                  message.error(t("channels.qqQrcodeFailed"));
+                  message.error("获取 QQ 二维码失败，请稍后重试");
                 }
               }}
             />
@@ -602,10 +600,10 @@ export function ChannelDrawer({
             </Form.Item>
             <Form.Item
               name="ack_message"
-              label={t("channels.ackMessage")}
-              tooltip={t("channels.ackMessageTooltip")}
+              label={"即时确认消息"}
+              tooltip={"收到消息后立即发送一条确认回复，在 Agent 处理之前。留空则禁用。"}
             >
-              <Input placeholder={t("channels.ackMessagePlaceholder")} />
+              <Input placeholder={"⏳ 正在处理中..."} />
             </Form.Item>
           </>
         );
@@ -646,7 +644,7 @@ export function ChannelDrawer({
               name="bot_token"
               label="Bot Token"
               rules={[{ required: true }]}
-              tooltip={t("channels.slackBotTokenTooltip")}
+              tooltip={"Slack Bot User OAuth Token，以 xoxb- 开头"}
             >
               <Input.Password placeholder="xoxb-..." />
             </Form.Item>
@@ -654,14 +652,14 @@ export function ChannelDrawer({
               name="app_token"
               label="App Token"
               rules={[{ required: true }]}
-              tooltip={t("channels.slackAppTokenTooltip")}
+              tooltip={"Slack App-Level Token（Socket Mode），以 xapp- 开头"}
             >
               <Input.Password placeholder="xapp-..." />
             </Form.Item>
             <Form.Item
               name="proxy"
               label="HTTP Proxy"
-              tooltip={t("channels.slackProxyTooltip")}
+              tooltip={"HTTP 代理地址，用于连接 Slack API"}
             >
               <Input placeholder="http://127.0.0.1:18118" />
             </Form.Item>
@@ -786,7 +784,7 @@ export function ChannelDrawer({
             >
               <Input.Password placeholder="Mattermost bot token" />
             </Form.Item>
-            <Form.Item name="media_dir" label={t("channels.wechatMediaDir")}>
+            <Form.Item name="media_dir" label={"媒体文件目录"}>
               <Input placeholder={defaultMediaDir} />
             </Form.Item>
             <Form.Item
@@ -813,49 +811,49 @@ export function ChannelDrawer({
               <Alert
                 type="info"
                 showIcon
-                message={t("channels.voiceSetupGuide")}
+                message={"请先注册 Twilio 账户并购买电话号码，然后在下方填写凭据。Account SID 和 Auth Token 可在 Twilio 控制台首页找到。Phone Number SID 在 Phone Numbers → Active Numbers 中查看。"}
                 style={{ marginBottom: 16 }}
               />
             </ConfigProvider>
             <Form.Item
               name="twilio_account_sid"
-              label={t("channels.twilioAccountSid")}
+              label={"Twilio 账户 SID"}
               rules={[{ required: true }]}
             >
               <Input placeholder="ACxxxxxxxx" />
             </Form.Item>
             <Form.Item
               name="twilio_auth_token"
-              label={t("channels.twilioAuthToken")}
+              label={"Twilio 认证令牌"}
               rules={[{ required: true }]}
             >
               <Input.Password />
             </Form.Item>
-            <Form.Item name="phone_number" label={t("channels.phoneNumber")}>
+            <Form.Item name="phone_number" label={"电话号码"}>
               <Input placeholder="+15551234567" />
             </Form.Item>
             <Form.Item
               name="phone_number_sid"
-              label={t("channels.phoneNumberSid")}
-              tooltip={t("channels.phoneNumberSidHelp")}
+              label={"电话号码 SID"}
+              tooltip={"可在 Twilio 控制台的 Phone Numbers → Active Numbers 中找到。"}
             >
               <Input placeholder="PNxxxxxxxx" />
             </Form.Item>
-            <Form.Item name="tts_provider" label={t("channels.ttsProvider")}>
+            <Form.Item name="tts_provider" label={"TTS 提供商"}>
               <Input placeholder="google" />
             </Form.Item>
-            <Form.Item name="tts_voice" label={t("channels.ttsVoice")}>
+            <Form.Item name="tts_voice" label={"TTS 语音"}>
               <Input placeholder="en-US-Journey-D" />
             </Form.Item>
-            <Form.Item name="stt_provider" label={t("channels.sttProvider")}>
+            <Form.Item name="stt_provider" label={"STT 提供商"}>
               <Input placeholder="deepgram" />
             </Form.Item>
-            <Form.Item name="language" label={t("channels.language")}>
+            <Form.Item name="language" label={"语言"}>
               <Input placeholder="en-US" />
             </Form.Item>
             <Form.Item
               name="welcome_greeting"
-              label={t("channels.welcomeGreeting")}
+              label={"欢迎语"}
             >
               <Input.TextArea rows={2} />
             </Form.Item>
@@ -869,14 +867,14 @@ export function ChannelDrawer({
               <Alert
                 type="info"
                 showIcon
-                message={t("channels.sipSetupGuide")}
+                message={"配置 SIP 注册服务器（如 Asterisk、FreeSWITCH），然后在下方填写 SIP 凭据。Dev 模式使用 pyVoIP 在本地处理 SIP/RTP；Production 模式使用 LiveKit SIP Server。"}
                 style={{ marginBottom: 16 }}
               />
             </ConfigProvider>
             <Form.Item
               name="sip_mode"
-              label={t("channels.sipMode")}
-              tooltip={t("channels.sipModeTooltip")}
+              label={"SIP 模式"}
+              tooltip={"Dev：纯 Python pyVoIP，适合本地开发测试。Production：LiveKit SIP Server，适合高并发生产环境。"}
               initialValue="dev"
             >
               <Select
@@ -898,26 +896,26 @@ export function ChannelDrawer({
               }: {
                 getFieldValue: (name: string) => unknown;
               }) => (
-                <Form.Item name="sip_server" label={t("channels.sipServer")}>
+                <Form.Item name="sip_server" label={"SIP 服务器"}>
                   <Input
                     placeholder={
                       getFieldValue("sip_mode") === "livekit"
-                        ? t("channels.sipServerPlaceholderLivekit")
-                        : t("channels.sipServerPlaceholder")
+                        ? "LiveKit 模式无需填写"
+                        : "留空使用内置注册服务器"
                     }
                   />
                 </Form.Item>
               )}
             </Form.Item>
-            <Form.Item name="sip_username" label={t("channels.sipUsername")}>
+            <Form.Item name="sip_username" label={"SIP 用户名"}>
               <Input placeholder="1001" />
             </Form.Item>
-            <Form.Item name="sip_password" label={t("channels.sipPassword")}>
+            <Form.Item name="sip_password" label={"SIP 密码"}>
               <Input.Password />
             </Form.Item>
             <Form.Item
               name="sip_port"
-              label={t("channels.sipPort")}
+              label={"SIP 端口"}
               rules={[
                 {
                   type: "number",
@@ -935,7 +933,7 @@ export function ChannelDrawer({
             </Form.Item>
             <Form.Item
               name="sip_transport"
-              label={t("channels.sipTransport")}
+              label={"传输协议"}
               initialValue="UDP"
             >
               <Select
@@ -948,26 +946,26 @@ export function ChannelDrawer({
             </Form.Item>
             <Form.Item
               name="dashscope_api_key"
-              label={t("channels.sipDashscopeApiKey")}
-              tooltip={t("channels.sipDashscopeApiKeyTooltip")}
+              label={"DashScope API Key"}
+              tooltip={"阿里云 DashScope STT/TTS 的 API Key。留空则回退到 DASHSCOPE_API_KEY 环境变量。"}
             >
               <Input.Password placeholder="sk-..." />
             </Form.Item>
-            <Form.Item name="tts_provider" label={t("channels.ttsProvider")}>
+            <Form.Item name="tts_provider" label={"TTS 提供商"}>
               <Input placeholder="aliyun" />
             </Form.Item>
-            <Form.Item name="tts_voice" label={t("channels.ttsVoice")}>
+            <Form.Item name="tts_voice" label={"TTS 语音"}>
               <Input placeholder="longxiaochun" />
             </Form.Item>
-            <Form.Item name="stt_provider" label={t("channels.sttProvider")}>
+            <Form.Item name="stt_provider" label={"STT 提供商"}>
               <Input placeholder="aliyun" />
             </Form.Item>
-            <Form.Item name="language" label={t("channels.language")}>
+            <Form.Item name="language" label={"语言"}>
               <Input placeholder="zh-CN" />
             </Form.Item>
             <Form.Item
               name="welcome_greeting"
-              label={t("channels.welcomeGreeting")}
+              label={"欢迎语"}
             >
               <Input.TextArea rows={2} />
             </Form.Item>
@@ -981,35 +979,35 @@ export function ChannelDrawer({
                   <>
                     <Form.Item
                       name="livekit_url"
-                      label={t("channels.livekitUrl")}
+                      label={"LiveKit URL"}
                       rules={[{ required: true }]}
                     >
                       <Input placeholder="ws://localhost:7880" />
                     </Form.Item>
                     <Form.Item
                       name="livekit_api_key"
-                      label={t("channels.livekitApiKey")}
+                      label={"LiveKit API Key"}
                       rules={[{ required: true }]}
                     >
                       <Input />
                     </Form.Item>
                     <Form.Item
                       name="livekit_api_secret"
-                      label={t("channels.livekitApiSecret")}
+                      label={"LiveKit API Secret"}
                       rules={[{ required: true }]}
                     >
                       <Input.Password />
                     </Form.Item>
                     <Form.Item
                       name="livekit_sip_trunk_id"
-                      label={t("channels.livekitSipTrunkId")}
+                      label={"LiveKit SIP Trunk ID"}
                     >
                       <Input placeholder="ST_xxxx" />
                     </Form.Item>
                     <Form.Item
                       name="livekit_room_name"
-                      label={t("channels.livekitRoomName")}
-                      tooltip={t("channels.livekitRoomNameTooltip")}
+                      label={"LiveKit 房间名称"}
+                      tooltip={"Agent 连入并等待 SIP 来电的 LiveKit 房间名称，需与 SIP Dispatch Rule 中配置的房间名一致。"}
                     >
                       <Input placeholder="sip-inbound" />
                     </Form.Item>
@@ -1027,15 +1025,15 @@ export function ChannelDrawer({
               <Alert
                 type="warning"
                 showIcon
-                message={t("channels.wecomSetupGuide")}
+                message={"使用二维码创建机器人时，授权机器人可使用的能力时请选择「暂不授权」。如果选择了「确认授权」，除了机器人创建者，其他用户可能无法与机器人交互。"}
                 style={{ marginBottom: 16 }}
               />
             </ConfigProvider>
             <QrcodeAuthBlock
-              label={t("channels.wecomScanAuth")}
-              buttonText={t("channels.loginWeCom")}
+              label={"扫码授权"}
+              buttonText={"获取企业微信二维码"}
               imageAlt="WeCom QR Code"
-              hintText={t("channels.wecomAuthHint")}
+              hintText={"请使用企业微信扫描上方二维码完成授权，授权成功后 Bot ID 与 Secret 将自动填入。"}
               channel="wecom"
               successStatus="success"
               successCredentialKey="bot_id"
@@ -1045,10 +1043,10 @@ export function ChannelDrawer({
                   bot_id: credentials.bot_id,
                   secret: credentials.secret,
                 });
-                message.success(t("channels.wecomAuthSuccess"));
+                message.success("企业微信机器人授权成功，Bot ID 与 Secret 已自动填入");
               }}
               onError={() => {
-                message.error(t("channels.wecomQrcodeFailed"));
+                message.error("获取企业微信二维码失败，请重试");
               }}
             />
             <Form.Item
@@ -1065,21 +1063,21 @@ export function ChannelDrawer({
             >
               <Input.Password placeholder="Secret from WeCom backend" />
             </Form.Item>
-            <Form.Item name="media_dir" label={t("channels.wechatMediaDir")}>
+            <Form.Item name="media_dir" label={"媒体文件目录"}>
               <Input placeholder={defaultMediaDir} />
             </Form.Item>
             <Form.Item
               name="welcome_text"
-              label={t("channels.welcomeText")}
-              tooltip={t("channels.welcomeTextTooltip")}
+              label={"欢迎消息"}
+              tooltip={"用户当天首次进入机器人单聊会话时机器人自动发送的消息"}
             >
-              <Input placeholder={t("channels.welcomeTextPlaceholder")} />
+              <Input placeholder={"例如：你好！我是 Minions，有什么可以帮你的？"} />
             </Form.Item>
             <Form.Item
               name="share_session_in_group"
-              label={t("channels.shareSessionInGroup")}
+              label={"群聊共享上下文"}
               valuePropName="checked"
-              tooltip={t("channels.shareSessionInGroupTooltip")}
+              tooltip={"启用时，群内所有成员共享同一会话上下文；禁用时，每位成员维护各自独立的会话。"}
             >
               <Switch />
             </Form.Item>
@@ -1093,7 +1091,7 @@ export function ChannelDrawer({
               <Alert
                 type="info"
                 showIcon
-                message={t("channels.xiaoyiSetupGuide")}
+                message={"请在华为开发者平台创建智能体并获取 AK/SK 和 Agent ID。AK/SK 可在凭证管理页面找到。"}
                 style={{ marginBottom: 16 }}
               />
             </ConfigProvider>
@@ -1128,61 +1126,61 @@ export function ChannelDrawer({
               <Alert
                 type="info"
                 showIcon
-                message={t("channels.wechatSetupGuide")}
+                message={"微信个人账号 Bot（iLink 协议）。首次启动时若未配置 Bot Token，系统将打印二维码链接，请扫码登录；Token 将自动保存到本地文件供后续使用。"}
                 style={{ marginBottom: 16 }}
               />
               <Alert
                 type="warning"
                 showIcon
-                message={t("channels.wechatContextTokenLimit")}
+                message={"微信 iLink 平台限制：每条用户消息对应的 context_token 最多只能回复 10 条消息，这是平台侧的硬性限制。建议关闭思考及工具输出，或者使用消息合并功能以避免超出限制导致消息发送失败。"}
                 style={{ marginBottom: 16 }}
               />
             </ConfigProvider>
             <QrcodeAuthBlock
-              label={t("channels.wechatScanLogin")}
-              buttonText={t("channels.wechatGetQrcode")}
+              label={"扫码登录"}
+              buttonText={"获取登录二维码"}
               imageAlt="WeChat QR Code"
-              hintText={t("channels.wechatScanHint")}
+              hintText={"请用微信扫描二维码，扫码成功后点击保存"}
               channel="wechat"
               successStatus="confirmed"
               successCredentialKey="bot_token"
               pollInterval={2000}
               onSuccess={(credentials) => {
                 form.setFieldsValue({ bot_token: credentials.bot_token });
-                message.success(t("channels.wechatLoginSuccess"));
+                message.success("微信扫码登录成功，Token 已填入");
               }}
               onError={(type) => {
                 if (type === "expired") {
-                  message.warning(t("channels.wechatQrcodeExpired"));
+                  message.warning("二维码已过期，请重新获取");
                 } else {
-                  message.error(t("channels.wechatQrcodeFailed"));
+                  message.error("获取二维码失败，请稍后重试");
                 }
               }}
             />
             <Form.Item
               name="bot_token"
-              label={t("channels.wechatBotToken")}
-              tooltip={t("channels.wechatBotTokenTooltip")}
+              label={"Bot Token"}
+              tooltip={"扫码登录后获取的 Bearer Token。留空时将在启动时引导扫码登录。"}
             >
               <Input.Password
-                placeholder={t("channels.wechatBotTokenPlaceholder")}
+                placeholder={"扫码登录后自动填入，也可手动粘贴"}
               />
             </Form.Item>
             <Form.Item
               name="bot_token_file"
-              label={t("channels.wechatBotTokenFile")}
-              tooltip={t("channels.wechatBotTokenFileTooltip")}
+              label={"Token 文件路径"}
+              tooltip={"Token 持久化存储路径，默认为 ~/.minions/wechat_bot_token"}
             >
               <Input placeholder="~/.minions/wechat_bot_token" />
             </Form.Item>
-            <Form.Item name="media_dir" label={t("channels.wechatMediaDir")}>
+            <Form.Item name="media_dir" label={"媒体文件目录"}>
               <Input placeholder={defaultMediaDir} />
             </Form.Item>
             <Form.Item
               name="message_merge_enabled"
-              label={t("channels.wechatMessageMerge")}
+              label={"消息合并"}
               valuePropName="checked"
-              tooltip={t("channels.wechatMessageMergeTooltip")}
+              tooltip={"将多条回复消息合并为更少的消息发送，避免触发微信 context_token 10 条消息的限制。开启并设置延时为 0 时，所有文本回复将在请求结束后合并为一条消息发送。设置正数延时（毫秒）则合并该时间窗口内的相邻消息。"}
             >
               <Switch />
             </Form.Item>
@@ -1196,8 +1194,8 @@ export function ChannelDrawer({
                 getFieldValue("message_merge_enabled") ? (
                   <Form.Item
                     name="message_merge_delay_ms"
-                    label={t("channels.wechatMessageMergeDelayMs")}
-                    tooltip={t("channels.wechatMessageMergeDelayMsTooltip")}
+                    label={"合并延时（毫秒）"}
+                    tooltip={"相邻消息合并的时间窗口。设为 0 表示将所有消息合并为一条最终回复。设为正数（如 1000）则缓冲该时间段内的消息后发送。"}
                     initialValue={0}
                     rules={[
                       {
@@ -1213,9 +1211,7 @@ export function ChannelDrawer({
                           if (!Number.isInteger(num) || num < 0) {
                             return Promise.reject(
                               new Error(
-                                t(
-                                  "channels.wechatMessageMergeDelayMsValidation",
-                                ),
+                                "请输入有效的非负整数",
                               ),
                             );
                           }
@@ -1261,14 +1257,14 @@ export function ChannelDrawer({
             >
               <Input placeholder="bot.yuanbao.tencent.com" />
             </Form.Item>
-            <Form.Item name="media_dir" label={t("channels.wechatMediaDir")}>
+            <Form.Item name="media_dir" label={"媒体文件目录"}>
               <Input placeholder={defaultMediaDir} />
             </Form.Item>
             <Form.Item
               name="accept_bot_messages"
-              label={t("channels.acceptBotMessages")}
+              label={"接收机器人消息"}
               valuePropName="checked"
-              tooltip={t("channels.acceptBotMessagesTooltip")}
+              tooltip={"开启后，将接收来自其他机器人的消息"}
             >
               <Switch />
             </Form.Item>
@@ -1310,9 +1306,9 @@ export function ChannelDrawer({
             </Form.Item>
             <Form.Item
               name="share_session_in_group"
-              label={t("channels.shareSessionInGroup")}
+              label={"群聊共享上下文"}
               valuePropName="checked"
-              tooltip={t("channels.shareSessionInGroupTooltip")}
+              tooltip={"启用时，群内所有成员共享同一会话上下文；禁用时，每位成员维护各自独立的会话。"}
             >
               <Switch />
             </Form.Item>
@@ -1458,8 +1454,8 @@ export function ChannelDrawer({
     <div className={styles.drawerTitle}>
       <span>
         {label
-          ? `${label} ${t("channels.settings")}`
-          : t("channels.channelSettings")}
+          ? `${label} ${"设置"}`
+          : "频道设置"}
       </span>
       {activeKey &&
         CHANNEL_DOC_EN_URLS[activeKey] &&
@@ -1496,7 +1492,7 @@ export function ChannelDrawer({
           className={styles.dingtalkDocBtn}
           style={{ color: "#FF7F16" }}
         >
-          {t("channels.voiceSetupLink")}
+          {"打开 Twilio 控制台"}
         </Button>
       )}
     </div>
@@ -1506,9 +1502,9 @@ export function ChannelDrawer({
 
   const drawerFooter = (
     <div className={styles.formActions}>
-      <Button onClick={onClose}>{t("common.cancel")}</Button>
+      <Button onClick={onClose}>{"取消"}</Button>
       <Button type="primary" loading={saving} onClick={() => form.submit()}>
-        {t("common.save")}
+        {"保存"}
       </Button>
     </div>
   );
@@ -1544,7 +1540,7 @@ export function ChannelDrawer({
         >
           <Form.Item
             name="enabled"
-            label={t("common.enabled")}
+            label={"已启用"}
             valuePropName="checked"
           >
             <Switch />
@@ -1560,17 +1556,17 @@ export function ChannelDrawer({
             <>
               <Form.Item
                 name="filter_tool_messages"
-                label={t("channels.filterToolMessages")}
+                label={"显示工具消息"}
                 valuePropName="checked"
-                tooltip={t("channels.filterToolMessagesTooltip")}
+                tooltip={"向用户显示工具调用和输出消息（关闭则隐藏）"}
               >
                 <Switch />
               </Form.Item>
               <Form.Item
                 name="filter_thinking"
-                label={t("channels.filterThinking")}
+                label={"显示思考过程"}
                 valuePropName="checked"
-                tooltip={t("channels.filterThinkingTooltip")}
+                tooltip={"向用户显示模型的思考/推理内容（关闭则隐藏）"}
               >
                 <Switch />
               </Form.Item>
@@ -1586,13 +1582,13 @@ export function ChannelDrawer({
             activeKey === "matrix") && (
             <Form.Item
               name="streaming_enabled"
-              label={t("channels.streamingEnabled")}
+              label={"流式输出"}
               valuePropName="checked"
               tooltip={
                 activeKey === "dingtalk"
-                  ? t("channels.streamingEnabledDingtalkHint")
+                  ? "仅在消息类型为 Card 时生效"
                   : activeKey === "feishu"
-                  ? t("channels.streamingEnabledFeishuHint")
+                  ? "需要在飞书开放平台权限管理界面开通 cardkit:card:write 权限"
                   : undefined
               }
             >
@@ -1610,9 +1606,9 @@ export function ChannelDrawer({
           {activeKey !== "console" && (
             <Form.Item
               name="no_text_debounce"
-              label={t("channels.noTextDebounce")}
+              label={"无文本消息防抖"}
               valuePropName="checked"
-              tooltip={t("channels.noTextDebounceTooltip")}
+              tooltip={"开启后，仅含媒体（图片/视频/文件）的消息会暂存，等待后续文本消息合并处理；关闭则所有消息立即处理。语音消息始终立即处理"}
               initialValue={true}
             >
               <Switch />

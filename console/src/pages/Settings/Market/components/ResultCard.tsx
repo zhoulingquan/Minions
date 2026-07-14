@@ -1,7 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Card, Tooltip } from "@agentscope-ai/design";
 import { Download, Eye, Heart, Star } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import type { MarketResult } from "../../../../api/modules/market";
 import { SkillIcon, sourceLabel } from "./SkillIcon";
 import styles from "./ResultCard.module.less";
@@ -34,8 +33,7 @@ export const ResultCard = memo(function ResultCard({
   onInstall,
   onOpenDetail,
 }: ResultCardProps) {
-  const { t } = useTranslation();
-  const [hover, setHover] = useState(false);
+    const [hover, setHover] = useState(false);
   const isMobile = useIsMobile();
 
   const stats = useMemo(() => {
@@ -57,10 +55,10 @@ export const ResultCard = memo(function ResultCard({
       .map((r) => ({
         key: r.key,
         Icon: r.Icon,
-        label: t(`market.stats.${r.key}`),
+        label: r.key === "downloads" ? "下载量" : r.key === "stars" ? "星标" : r.key === "likes" ? "点赞" : "浏览量",
         value: fmt(r.value),
       }));
-  }, [item.stats, t]);
+  }, [item.stats]);
 
   const showFooter = useCallback(() => setHover(true), []);
   const hideFooter = useCallback(() => setHover(false), []);
@@ -90,7 +88,7 @@ export const ResultCard = memo(function ResultCard({
       </div>
 
       <p className={styles.descriptionText}>
-        {item.description || t("market.noDescription")}
+        {item.description || "暂无描述"}
       </p>
 
       <div className={styles.statsRow}>
@@ -116,7 +114,7 @@ export const ResultCard = memo(function ResultCard({
             onClick={onInstall}
             className={styles.installButton}
           >
-            {t("common.save")}
+            {"保存"}
           </Button>
         </div>
       )}

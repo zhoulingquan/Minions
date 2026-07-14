@@ -24,7 +24,6 @@ import {
 import { PackageOpen, Bell } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/PageHeader";
 import { ApprovalCard as GlobalApprovalCard } from "../../components/ApprovalCard/ApprovalCard";
 import { useApprovalContext } from "../../contexts/ApprovalContext";
@@ -51,9 +50,9 @@ const MSG_TAB_STORAGE_KEY = "minions.msg.activeTab";
 const PUSH_MESSAGES_PAGE_SIZE = 5;
 
 const SOURCE_TYPE_LABEL_KEYS: Record<string, string> = {
-  cron: "msg.sourceTypeCron",
-  heartbeat: "msg.sourceTypeHeartbeat",
-  memory: "msg.sourceTypeMemory",
+  cron: "定时任务",
+  heartbeat: "心跳",
+  memory: "记忆",
 };
 
 const resolveInitialTab = (): TabKey => {
@@ -74,8 +73,7 @@ const renderMarkdownText = (text: string, className: string) => (
 );
 
 export default function MsgPage() {
-  const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<TabKey>(resolveInitialTab);
+    const [activeTab, setActiveTab] = useState<TabKey>(resolveInitialTab);
   const [markAllReading, setMarkAllReading] = useState(false);
   const [selectedAgentFilter, setSelectedAgentFilter] = useState<
     string | undefined
@@ -98,8 +96,8 @@ export default function MsgPage() {
   } = useMsgData();
   const agentDisplayNameById = useMemo(
     () =>
-      new Map(agents.map((agent) => [agent.id, getAgentDisplayName(agent, t)])),
-    [agents, t],
+      new Map(agents.map((agent) => [agent.id, getAgentDisplayName(agent)])),
+    [agents],
   );
   const filteredPushMessages = useMemo(() => {
     return pushMessages.filter((message) => {
@@ -134,10 +132,10 @@ export default function MsgPage() {
         value: id,
         label:
           agentDisplayNameById.get(id) ||
-          (id === DEFAULT_AGENT_ID ? t("agent.defaultDisplayName") : id),
+          (id === DEFAULT_AGENT_ID ? "默认智能体" : id),
       }));
     return options;
-  }, [agentDisplayNameById, filteredPushMessages, pushMessages, t]);
+  }, [agentDisplayNameById, filteredPushMessages, pushMessages]);
   const sourceTypeOptions = useMemo(() => {
     const types = new Set<string>(
       pushMessages
@@ -148,9 +146,9 @@ export default function MsgPage() {
       .sort((a, b) => a.localeCompare(b))
       .map((type) => ({
         value: type,
-        label: t(SOURCE_TYPE_LABEL_KEYS[type] || type),
+        label: SOURCE_TYPE_LABEL_KEYS[type] || type,
       }));
-  }, [pushMessages, t]);
+  }, [pushMessages]);
   const urgentApprovalCount = useMemo(
     () =>
       pendingApprovals.filter((item) =>
@@ -192,7 +190,7 @@ export default function MsgPage() {
     setApprovals((prev) =>
       prev.filter((item) => item.request_id !== requestId),
     );
-    message.success(t("approval.approved"));
+    message.success("已批准工具调用");
   };
 
   const handleRejectRequest = async (
@@ -203,7 +201,7 @@ export default function MsgPage() {
     setApprovals((prev) =>
       prev.filter((item) => item.request_id !== requestId),
     );
-    message.success(t("approval.denied"));
+    message.success("已拒绝工具调用");
   };
 
   const handleCancelTask = async (rootSessionId: string) => {
@@ -252,7 +250,7 @@ export default function MsgPage() {
   const handleViewMessage = (messageId: string) => {
     const found = pushMessages.find((item) => item.id === messageId);
     if (!found) {
-      message.warning(t("msg.messageNotFound"));
+      message.warning("未找到该消息");
       return;
     }
     openMessageDetail(found);
@@ -260,15 +258,15 @@ export default function MsgPage() {
 
   const handleMarkAllRead = async () => {
     if (summary.pushMessages.unread <= 0) {
-      message.info(t("msg.markAllReadNoUnread"));
+      message.info("当前没有未读消息");
       return;
     }
     setMarkAllReading(true);
     try {
       const updated = await markAllMessagesAsRead();
-      message.success(t("msg.markAllReadSuccess", { count: updated }));
+      message.success(`已将 ${updated} 条消息标记为已读`);
     } catch {
-      message.error(t("common.operationFailed"));
+      message.error("操作失败");
     } finally {
       setMarkAllReading(false);
     }
@@ -304,7 +302,7 @@ export default function MsgPage() {
     const deletedCount = await deleteMessages(selectedMessageIds);
     setSelectedMessageIds([]);
     if (deletedCount > 0) {
-      message.success(t("msg.batchDeleteSuccess", { count: deletedCount }));
+      message.success(`已删除 ${deletedCount} 条推送消息`);
     }
   };
 
@@ -314,7 +312,7 @@ export default function MsgPage() {
       label: (
         <span className={styles.tabLabel}>
           <Bell size={16} />
-          {t("msg.tabPushMessages")}
+          {"推送消息"}
           {summary.pushMessages.unread > 0 && (
             <Badge count={summary.pushMessages.unread} color="#ff7f16" />
           )}
@@ -331,7 +329,7 @@ export default function MsgPage() {
                 allowClear
                 options={pushMessageAgentOptions}
                 style={{ width: 180 }}
-                placeholder={t("msg.filterByAgent")}
+                placeholder={"按 Agent 筛选"}
               />
               <Select
                 size="middle"
@@ -340,7 +338,7 @@ export default function MsgPage() {
                 allowClear
                 options={sourceTypeOptions}
                 style={{ width: 160 }}
-                placeholder={t("msg.filterBySourceType")}
+                placeholder={"按来源筛选"}
               />
             </div>
             <div className={styles.messagesSelectionTools}>
@@ -353,24 +351,20 @@ export default function MsgPage() {
                     }
                     disabled={currentPageMessageIds.length <= 0}
                   >
-                    {t("msg.selectAllCurrentPage")}
+                    {"全选当前页"}
                   </Checkbox>
                   <span className={styles.selectedCountText}>
-                    {t("msg.selectedItems", {
-                      count: selectedMessageIds.length,
-                    })}
+                    {`已选 ${selectedMessageIds.length} 项`}
                   </span>
                   <Popconfirm
-                    title={t("msg.batchDeleteConfirm", {
-                      count: selectedMessageIds.length,
-                    })}
+                    title={`确定删除选中的 ${selectedMessageIds.length} 条推送消息吗？`}
                     onConfirm={() => void handleBatchDeleteMessages()}
-                    okText={t("common.confirm")}
-                    cancelText={t("common.cancel")}
+                    okText={"确认"}
+                    cancelText={"取消"}
                     disabled={selectedMessageIds.length <= 0}
                   >
                     <Button danger disabled={selectedMessageIds.length <= 0}>
-                      {t("msg.batchDeleteButton")}
+                      {"批量删除"}
                     </Button>
                   </Popconfirm>
                   <Button
@@ -379,20 +373,20 @@ export default function MsgPage() {
                       setSelectedMessageIds([]);
                     }}
                   >
-                    {t("msg.exitBatch")}
+                    {"退出批量"}
                   </Button>
                 </>
               ) : (
                 <>
                   <Button onClick={() => setBatchMode(true)}>
-                    {t("msg.batchOperation")}
+                    {"批量操作"}
                   </Button>
                   <Button
                     onClick={() => void handleMarkAllRead()}
                     loading={markAllReading}
                     disabled={summary.pushMessages.unread <= 0}
                   >
-                    {t("msg.markAllRead")}
+                    {"全部标记已读"}
                   </Button>
                 </>
               )}
@@ -424,7 +418,7 @@ export default function MsgPage() {
               </div>
             </div>
           ) : (
-            <Empty description={t("msg.emptyPush")} />
+            <Empty description={"暂无推送消息"} />
           )}
         </div>
       ),
@@ -434,7 +428,7 @@ export default function MsgPage() {
       label: (
         <span className={styles.tabLabel}>
           <PackageOpen size={16} />
-          {t("msg.tabApprovals")}
+          {"审批"}
           {urgentApprovalCount > 0 && (
             <Badge count={urgentApprovalCount} color="#ff7f16" />
           )}
@@ -498,7 +492,7 @@ export default function MsgPage() {
               ))}
             </div>
           ) : (
-            <Empty description={t("msg.emptyApprovals")} />
+            <Empty description={"暂无待审批项"} />
           )}
         </div>
       ),
@@ -507,7 +501,7 @@ export default function MsgPage() {
 
   return (
     <div className={styles.msgPage}>
-      <PageHeader items={[{ title: t("msg.title") }]} extra={null} />
+      <PageHeader items={[{ title: "消息" }]} extra={null} />
 
       <div className={styles.pageContent}>
         <Tabs
@@ -522,7 +516,7 @@ export default function MsgPage() {
         onCancel={closeDetail}
         footer={null}
         width={820}
-        title={getDetailModalTitle(selectedMessage, t)}
+        title={getDetailModalTitle(selectedMessage)}
       >
         {selectedMessage ? (
           <div className={styles.messageDetail}>
@@ -532,7 +526,7 @@ export default function MsgPage() {
               bordered
               className={styles.messageDetailMeta}
             >
-              <Descriptions.Item label={t("msg.detailStatus")}>
+              <Descriptions.Item label={"执行状态"}>
                 <Tag
                   color={
                     selectedMessage.metadata?.status === "error"
@@ -543,29 +537,29 @@ export default function MsgPage() {
                   {selectedMessage.metadata?.status || "success"}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label={t("msg.detailAgent")}>
+              <Descriptions.Item label={"所属 Agent"}>
                 {(() => {
                   const agentId =
                     selectedMessage.metadata?.agentId || DEFAULT_AGENT_ID;
                   return (
                     agentDisplayNameById.get(agentId) ||
                     (agentId === DEFAULT_AGENT_ID
-                      ? t("agent.defaultDisplayName")
+                      ? "默认智能体"
                       : agentId)
                   );
                 })()}
               </Descriptions.Item>
-              <Descriptions.Item label={t("msg.detailReceivedAt")}>
+              <Descriptions.Item label={"收件时间"}>
                 {selectedMessage.createdAt.toLocaleString()}
               </Descriptions.Item>
-              <Descriptions.Item label={t("msg.detailTaskId")}>
+              <Descriptions.Item label={"任务 ID"}>
                 {selectedMessage.id || "-"}
               </Descriptions.Item>
             </Descriptions>
 
             <div className={styles.messageDetailBlock}>
               <div className={styles.messageDetailLabel}>
-                {t("msg.detailExecutionTrace")}
+                {"执行轨迹"}
               </div>
               {traceLoading ? (
                 <div className={styles.traceLoading}>
@@ -684,7 +678,7 @@ export default function MsgPage() {
                                                     ),
                                                   )
                                                 }
-                                                title={t("common.copy")}
+                                                title={"复制"}
                                               >
                                                 <CopyOutlined />
                                               </button>
@@ -722,7 +716,7 @@ export default function MsgPage() {
                                                     ),
                                                   )
                                                 }
-                                                title={t("common.copy")}
+                                                title={"复制"}
                                               >
                                                 <CopyOutlined />
                                               </button>
@@ -769,7 +763,7 @@ export default function MsgPage() {
                 </div>
               ) : (
                 <div className={styles.traceEmpty}>
-                  {t("msg.detailTraceEmpty")}
+                  {"暂无执行轨迹"}
                 </div>
               )}
             </div>

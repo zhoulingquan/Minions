@@ -2,7 +2,7 @@ export interface BackupScope {
   include_agents: boolean;
   include_global_config: boolean;
   include_secrets: boolean;
-  include_skill_pool: boolean;
+  include_global_skills: boolean;
 }
 
 export type BackupTrustMode = "legacy" | "foreign";
@@ -37,7 +37,7 @@ export interface RestoreBackupRequest {
   agent_ids: string[];
   include_global_config: boolean;
   include_secrets: boolean;
-  include_skill_pool: boolean;
+  include_global_skills: boolean;
   default_workspace_dir?: string | null;
   mode?: "full" | "custom";
   preserve_local_protected_config?: boolean | null;
@@ -54,14 +54,14 @@ export interface RestoreBackupResponse {
  * A full backup must have all of:
  * - include_agents is true
  * - include_global_config is true
- * - include_skill_pool is true
+ * - include_global_skills is true
  * - include_secrets is true
  */
 export function isFullBackup(scope: BackupScope): boolean {
   return (
     scope.include_agents === true &&
     scope.include_global_config === true &&
-    scope.include_skill_pool === true &&
+    scope.include_global_skills === true &&
     scope.include_secrets === true
   );
 }

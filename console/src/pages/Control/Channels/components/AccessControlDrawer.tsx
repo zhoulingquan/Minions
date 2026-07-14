@@ -12,7 +12,6 @@ import {
   Typography,
 } from "antd";
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
-import { useTranslation } from "react-i18next";
 import type React from "react";
 import { useAppMessage } from "../../../../hooks/useAppMessage";
 import {
@@ -42,8 +41,7 @@ export function AccessControlDrawer({
   open,
   onClose,
 }: AccessControlDrawerProps) {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const [allACLs, setAllACLs] = useState<Record<string, ACLData>>({});
   const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -96,13 +94,13 @@ export function AccessControlDrawer({
           username: newUsername.trim(),
         },
       ]);
-      message.success(t("channels.userAdded"));
+      message.success("用户添加成功");
       setNewUserId("");
       setNewUsername("");
       setNewRemark("");
       await fetchACLs();
     } catch {
-      message.error(t("channels.operationFailed"));
+      message.error("操作失败");
     }
   };
 
@@ -114,10 +112,10 @@ export function AccessControlDrawer({
         : accessControlApi.removeAclBlacklist;
     try {
       await removeApi([{ channel: selectedChannel, user_id: userId }]);
-      message.success(t("channels.userRemoved"));
+      message.success("用户删除成功");
       await fetchACLs();
     } catch {
-      message.error(t("channels.operationFailed"));
+      message.error("操作失败");
     }
   };
 
@@ -142,7 +140,7 @@ export function AccessControlDrawer({
         };
       });
     } catch {
-      message.error(t("channels.operationFailed"));
+      message.error("操作失败");
     }
   };
 
@@ -161,12 +159,12 @@ export function AccessControlDrawer({
         })),
       );
       message.success(
-        t("channels.batchSuccess", { count: selectedRowKeys.length }),
+        `已成功处理 ${selectedRowKeys.length} 位用户`,
       );
       setSelectedRowKeys([]);
       await fetchACLs();
     } catch {
-      message.error(t("channels.operationFailed"));
+      message.error("操作失败");
     } finally {
       setBatchLoading(false);
     }
@@ -197,13 +195,13 @@ export function AccessControlDrawer({
         };
       });
     } catch {
-      message.error(t("channels.operationFailed"));
+      message.error("操作失败");
     }
   };
 
   const columns = [
     {
-      title: t("channels.username"),
+      title: "用户名",
       dataIndex: "username",
       key: "username",
       width: 120,
@@ -219,7 +217,7 @@ export function AccessControlDrawer({
       ),
     },
     {
-      title: t("channels.userId"),
+      title: "用户 ID",
       dataIndex: "userId",
       key: "userId",
       ellipsis: { showTitle: false },
@@ -236,7 +234,7 @@ export function AccessControlDrawer({
       ),
     },
     {
-      title: t("channels.remark"),
+      title: "备注",
       dataIndex: "remark",
       key: "remark",
       width: 160,
@@ -252,7 +250,7 @@ export function AccessControlDrawer({
       ),
     },
     {
-      title: t("channels.actions"),
+      title: "操作",
       key: "actions",
       width: 80,
       render: (_: unknown, record: ACLUserEntry) => (
@@ -261,7 +259,7 @@ export function AccessControlDrawer({
           onConfirm={() => handleRemove(record.userId)}
         >
           <Button type="text" danger size="small">
-            {t("channels.batchRemove")}
+            {"删除"}
           </Button>
         </Popconfirm>
       ),
@@ -271,7 +269,7 @@ export function AccessControlDrawer({
   return (
     <Drawer
       width={700}
-      title={t("channels.manageAccessControl")}
+      title={"访问控制"}
       open={open}
       onClose={onClose}
       destroyOnHidden
@@ -283,8 +281,8 @@ export function AccessControlDrawer({
           setSelectedRowKeys([]);
         }}
         items={[
-          { key: "whitelist", label: t("channels.whitelist") },
-          { key: "blacklist", label: t("channels.blacklist") },
+          { key: "whitelist", label: "白名单" },
+          { key: "blacklist", label: "黑名单" },
         ]}
         tabBarExtraContent={
           <Button
@@ -293,7 +291,7 @@ export function AccessControlDrawer({
             onClick={() => setAddModalOpen(true)}
             disabled={!selectedChannel}
           >
-            {t("channels.addUser")}
+            {"添加用户"}
           </Button>
         }
       />
@@ -314,22 +312,20 @@ export function AccessControlDrawer({
           }}
           style={{ width: 180 }}
           disabled={channelKeys.length === 0}
-          placeholder={t("channels.filterByChannel")}
+          placeholder={"按渠道筛选"}
           options={channelKeys.map((key) => ({
-            label: getChannelLabel(key as ChannelKey, t),
+            label: getChannelLabel(key as ChannelKey),
             value: key,
           }))}
         />
         <Space>
           {selectedRowKeys.length > 0 && (
             <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-              {t("channels.selectedCount", { count: selectedRowKeys.length })}
+              {`已选 ${selectedRowKeys.length} 项`}
             </Typography.Text>
           )}
           <Popconfirm
-            title={t("channels.batchRemoveConfirm", {
-              count: selectedRowKeys.length,
-            })}
+            title={`确认删除 ${selectedRowKeys.length} 位用户？`}
             onConfirm={handleBatchRemove}
             disabled={selectedRowKeys.length === 0}
           >
@@ -340,7 +336,7 @@ export function AccessControlDrawer({
               disabled={selectedRowKeys.length === 0}
               loading={batchLoading}
             >
-              {t("channels.batchRemove")}
+              {"删除"}
             </Button>
           </Popconfirm>
         </Space>
@@ -361,15 +357,15 @@ export function AccessControlDrawer({
           emptyText: (
             <div style={{ padding: "48px 0" }}>
               {activeTab === "whitelist"
-                ? t("channels.noWhitelistUsers")
-                : t("channels.noBlacklistUsers")}
+                ? "暂无白名单用户"
+                : "暂无黑名单用户"}
             </div>
           ),
         }}
       />
 
       <Modal
-        title={t("channels.addUser")}
+        title={"添加用户"}
         open={addModalOpen}
         onCancel={() => {
           setAddModalOpen(false);
@@ -390,10 +386,10 @@ export function AccessControlDrawer({
               strong
               style={{ display: "block", marginBottom: 6 }}
             >
-              {t("channels.userId")}
+              {"用户 ID"}
             </Typography.Text>
             <Input
-              placeholder={t("channels.addUserPlaceholder")}
+              placeholder={"输入用户 ID"}
               value={newUserId}
               onChange={(e) => setNewUserId(e.target.value)}
             />
@@ -403,10 +399,10 @@ export function AccessControlDrawer({
               strong
               style={{ display: "block", marginBottom: 6 }}
             >
-              {t("channels.username")}
+              {"用户名"}
             </Typography.Text>
             <Input
-              placeholder={t("channels.usernamePlaceholder")}
+              placeholder={"输入用户名称（可选）"}
               value={newUsername}
               onChange={(e) => setNewUsername(e.target.value)}
             />
@@ -416,10 +412,10 @@ export function AccessControlDrawer({
               strong
               style={{ display: "block", marginBottom: 6 }}
             >
-              {t("channels.remark")}
+              {"备注"}
             </Typography.Text>
             <Input
-              placeholder={t("channels.remarkPlaceholder")}
+              placeholder={"输入备注（可选）"}
               value={newRemark}
               onChange={(e) => setNewRemark(e.target.value)}
             />

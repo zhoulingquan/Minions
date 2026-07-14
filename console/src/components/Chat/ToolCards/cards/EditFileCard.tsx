@@ -1,5 +1,4 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { EditOutlined } from "@ant-design/icons";
 import type { ToolCallContent } from "../shared/types";
 import { ToolCardShell } from "../shared";
@@ -15,10 +14,9 @@ const EditFileCard: React.FC<EditFileCardProps> = ({
   content,
   isStreaming,
 }) => {
-  const { t } = useTranslation();
-  const params = content.params || {};
+    const params = content.params || {};
   const file = shortFileName((params.file_path || params.path || "") as string);
-  const title = file ? t("tool.editFile", { file }) : t("tool.editFileDefault");
+  const title = file ? `编辑 ${file}` : "编辑 文件";
 
   const oldText = (params.old_text as string) || "";
   const newText = (params.new_text as string) || "";
@@ -27,14 +25,10 @@ const EditFileCard: React.FC<EditFileCardProps> = ({
   const badges = !isLoading ? (
     <>
       <span className={styles.diffAddBadge}>
-        {t("tool.lineBadge.addLines", {
-          count: newText.split("\n").length,
-        })}
+        {`+${newText.split("\n").length}行`}
       </span>
       <span className={styles.diffDelBadge}>
-        {t("tool.lineBadge.delLines", {
-          count: oldText.split("\n").length,
-        })}
+        {`-${oldText.split("\n").length}行`}
       </span>
     </>
   ) : null;

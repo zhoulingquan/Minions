@@ -860,6 +860,7 @@ async def test_setup_server_falls_back_on_windows_not_implemented(
         return True
 
     downloader.os_name = "windows"
+    monkeypatch.setattr(downloader, "_find_free_port", lambda: 43110)
     monkeypatch.setattr(
         downloader,
         "check_llamacpp_installation",
@@ -1018,6 +1019,7 @@ async def test_setup_server_passes_mmproj_argument(
     async def fake_server_ready(*_args, **_kwargs) -> bool:
         return True
 
+    monkeypatch.setattr(downloader, "_find_free_port", lambda: 43110)
     monkeypatch.setattr(
         downloader,
         "check_llamacpp_installation",

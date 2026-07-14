@@ -10,7 +10,6 @@ import {
   ExternalLink,
   Info,
 } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import api from "../../../../api";
 import type { MCPClientOAuthStatus } from "../../../../api/types";
 import { openExternalLink } from "../../../../utils/openExternalLink";
@@ -63,7 +62,6 @@ export const MCPOAuthSection: React.FC<MCPOAuthSectionProps> = ({
   onAuthEndpointChange,
   onTokenEndpointChange,
 }) => {
-  const { t } = useTranslation();
 
   const [phase, setPhase] = useState<OAuthPhase>("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -105,11 +103,11 @@ export const MCPOAuthSection: React.FC<MCPOAuthSectionProps> = ({
 
   const handleStartOAuth = useCallback(async () => {
     if (!url.trim()) {
-      setErrorMsg(t("mcp.oauth.noUrl"));
+      setErrorMsg("请先填写服务器 URL");
       return;
     }
     if (!clientKey) {
-      setErrorMsg(t("mcp.oauth.noClientKey"));
+      setErrorMsg("请先创建客户端");
       return;
     }
 
@@ -130,11 +128,11 @@ export const MCPOAuthSection: React.FC<MCPOAuthSectionProps> = ({
       // The existing useEffect polls backend every 2s while phase === "waiting"
     } catch (err: unknown) {
       const msg =
-        err instanceof Error ? err.message : t("mcp.oauth.startFailed");
+        err instanceof Error ? err.message : "启动 OAuth 流程失败";
       setPhase("error");
       setErrorMsg(msg);
     }
-  }, [url, clientKey, scope, clientId, authEndpoint, tokenEndpoint, t]);
+  }, [url, clientKey, scope, clientId, authEndpoint, tokenEndpoint]);
 
   const handleRevoke = useCallback(async () => {
     if (!clientKey) return;
@@ -159,31 +157,31 @@ export const MCPOAuthSection: React.FC<MCPOAuthSectionProps> = ({
         {isExpired ? (
           <OAuthBadge
             icon={<ShieldAlert size={14} />}
-            label={t("mcp.oauth.expired")}
+            label={"授权已过期"}
             color="#e67e22"
           />
         ) : isAuthorized ? (
           <OAuthBadge
             icon={<ShieldCheck size={14} />}
-            label={t("mcp.oauth.authorized")}
+            label={"已授权"}
             color="#27ae60"
           />
         ) : phase === "waiting" ? (
           <OAuthBadge
             icon={<KeyRound size={14} />}
-            label={t("mcp.oauth.waiting")}
+            label={"等待授权中..."}
             color="#2980b9"
           />
         ) : phase === "error" ? (
           <OAuthBadge
             icon={<ShieldX size={14} />}
-            label={t("mcp.oauth.failed")}
+            label={"授权失败"}
             color="#c0392b"
           />
         ) : (
           <OAuthBadge
             icon={<ShieldX size={14} />}
-            label={t("mcp.oauth.notAuthorized")}
+            label={"未授权"}
             color="#7f8c8d"
           />
         )}
@@ -195,7 +193,7 @@ export const MCPOAuthSection: React.FC<MCPOAuthSectionProps> = ({
                 style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
               >
                 <Unlink size={12} />
-                {t("mcp.oauth.revoke")}
+                {"撤销授权"}
               </span>
             </Button>
           )}
@@ -211,8 +209,8 @@ export const MCPOAuthSection: React.FC<MCPOAuthSectionProps> = ({
             >
               <ExternalLink size={12} />
               {isAuthorized && !isExpired
-                ? t("mcp.oauth.reauthorize")
-                : t("mcp.oauth.authorize")}
+                ? "重新授权"
+                : "点击授权"}
             </span>
           </Button>
         </div>
@@ -227,33 +225,33 @@ export const MCPOAuthSection: React.FC<MCPOAuthSectionProps> = ({
       >
         <Info size={11} style={{ verticalAlign: "middle", marginRight: 4 }} />
         {showAdvanced
-          ? t("mcp.oauth.hideAdvanced")
-          : t("mcp.oauth.showAdvanced")}
+          ? "收起高级选项"
+          : "高级选项"}
       </div>
 
       {showAdvanced && (
         <div style={advancedStyle}>
-          <label style={labelStyle}>{t("mcp.oauth.clientId")}</label>
+          <label style={labelStyle}>{"Client ID（可选）"}</label>
           <Input
             size="small"
-            placeholder={t("mcp.oauth.clientIdPlaceholder")}
+            placeholder={"留空则使用动态客户端注册"}
             value={clientId}
             onChange={(e) => onClientIdChange?.(e.target.value)}
           />
 
           <label style={{ ...labelStyle, marginTop: 8 }}>
-            {t("mcp.oauth.scope")}
+            {"Scope（可选）"}
           </label>
           <Input
             size="small"
-            placeholder={t("mcp.oauth.scopePlaceholder")}
+            placeholder={"openid profile email"}
             value={scope}
             onChange={(e) => onScopeChange?.(e.target.value)}
           />
 
-          <Tooltip title={t("mcp.oauth.endpointHint")}>
+          <Tooltip title={"留空将自动从 MCP 服务器发现端点，填写后将跳过自动发现"}>
             <label style={{ ...labelStyle, marginTop: 8 }}>
-              {t("mcp.oauth.authEndpoint")}
+              {"Authorization Endpoint（手动覆盖）"}
             </label>
           </Tooltip>
           <Input
@@ -264,7 +262,7 @@ export const MCPOAuthSection: React.FC<MCPOAuthSectionProps> = ({
           />
 
           <label style={{ ...labelStyle, marginTop: 8 }}>
-            {t("mcp.oauth.tokenEndpoint")}
+            {"Token Endpoint（手动覆盖）"}
           </label>
           <Input
             size="small"
@@ -307,12 +305,11 @@ export const OAuthToggleRow: React.FC<OAuthToggleRowProps> = ({
   onChange,
   label,
 }) => {
-  const { t } = useTranslation();
-  return (
+    return (
     <div style={toggleRowStyle}>
       <KeyRound size={14} style={{ color: "#888" }} />
       <span style={{ marginLeft: 6, fontSize: 13, color: "#555" }}>
-        {label ?? t("mcp.oauth.enableOAuth")}
+        {label ?? "使用 OAuth 授权"}
       </span>
       <Switch
         size="small"

@@ -283,7 +283,7 @@ def test_startup_cleanup_recovers_all_restore_targets(
     tmp_path: Path,
 ) -> None:
     targets = [
-        tmp_path / "skill_pool",
+        tmp_path / "global_skills",
         tmp_path / "workspace",
     ]
     for target in targets:

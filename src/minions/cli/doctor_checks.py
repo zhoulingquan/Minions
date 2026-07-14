@@ -46,7 +46,6 @@ from ..config.utils import (
 from ..constant import (
     HEARTBEAT_FILE,
     JOBS_FILE,
-    MEMORY_DIR,
     PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH_ENV,
     PROJECT_NAME,
     SECRET_DIR,
@@ -640,39 +639,8 @@ def security_baseline_notes(cfg: Config) -> list[str]:
     return notes
 
 
-def _embedding_has_credentials(backend: str, emb_api_key: str) -> bool:
-    if backend == "ollama":
-        return True
-    return bool((emb_api_key or "").strip())
-
-
-def memory_embedding_notes(cfg: Config) -> list[str]:
-    """Embedding / vector memory readiness (per agent ``agent.json``)."""
-    notes: list[str] = []
-    for agent_id in cfg.agents.profiles:
-        try:
-            ac = load_agent_config(agent_id)
-        except Exception:  # pylint: disable=broad-exception-caught
-            continue
-        emb = ac.running.reme_light_memory_config.embedding_model_config
-        ms = ac.running.reme_light_memory_config.auto_memory_search_config
-        if ms.enabled and not _embedding_has_credentials(
-            emb.backend,
-            emb.api_key,
-        ):
-            notes.append(
-                f"{agent_id}: "
-                "reme_light_memory_config.auto_memory_search_config.enabled "
-                "is on but no embedding API key is set in "
-                "reme_light_memory_config.embedding_model_config.api_key "
-                "and no matching provider API key environment variable "
-                "was found.",
-            )
-    return notes
-
-
 def workspace_hygiene_notes(cfg: Config) -> list[str]:
-    """Large prompt files, heavy tool_results/dialog dirs; memory tree size."""
+    """Report large prompt files and heavy runtime cache directories."""
     notes: list[str] = []
     bootstrap_names = (
         "AGENTS.md",
@@ -732,16 +700,6 @@ def workspace_hygiene_notes(cfg: Config) -> list[str]:
         #         "safe to inspect.",
         #     )
 
-    if MEMORY_DIR.is_dir():
-        try:
-            mcount = sum(1 for p in MEMORY_DIR.rglob("*") if p.is_file())
-        except OSError:
-            mcount = 0
-        if mcount > 5000:
-            notes.append(
-                f"global memory tree {MEMORY_DIR} has many files "
-                f"({mcount}+) — expect slower indexing or backup size.",
-            )
     return notes
 
 

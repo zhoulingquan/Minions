@@ -10,7 +10,6 @@ import {
 } from "@agentscope-ai/design";
 import { DatePicker, TimePicker } from "antd";
 import { useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
 import type { FormInstance } from "antd";
 import type {
   CronDispatchTargetItem,
@@ -48,8 +47,7 @@ export function JobDrawer({
   onClose,
   onSubmit,
 }: JobDrawerProps) {
-  const { t } = useTranslation();
-  const timezoneOptions = useTimezoneOptions();
+    const timezoneOptions = useTimezoneOptions();
   const [saveMsgTouched, setSaveMsgTouched] = useState(false);
   const [channelSearch, setChannelSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
@@ -130,15 +128,15 @@ export function JobDrawer({
     <Drawer
       width={600}
       placement="right"
-      title={editingJob ? t("cronJobs.editJob") : t("cronJobs.createJob")}
+      title={editingJob ? "编辑任务" : "创建任务"}
       open={open}
       onClose={onClose}
       destroyOnHidden
       footer={
         <div className={styles.formActions}>
-          <Button onClick={onClose}>{t("common.cancel")}</Button>
+          <Button onClick={onClose}>{"取消"}</Button>
           <Button type="primary" loading={saving} onClick={() => form.submit()}>
-            {t("common.save")}
+            {"保存"}
           </Button>
         </div>
       }
@@ -152,25 +150,25 @@ export function JobDrawer({
         {isEdit && (
           <Form.Item
             name="id"
-            label={t("cronJobs.id")}
-            tooltip={t("cronJobs.idTooltip")}
+            label={"任务ID"}
+            tooltip={"任务的唯一标识符（UUID）由系统在创建时自动分配，不可修改。"}
           >
-            <Input disabled placeholder={t("cronJobs.jobIdPlaceholder")} />
+            <Input disabled placeholder={"例如：daily-report-job"} />
           </Form.Item>
         )}
 
         <Form.Item
           name="name"
-          label={t("cronJobs.name")}
-          rules={[{ required: true, message: t("cronJobs.pleaseInputName") }]}
-          tooltip={t("cronJobs.nameTooltip")}
+          label={"任务名称"}
+          rules={[{ required: true, message: "请输入任务名称" }]}
+          tooltip={"任务的友好名称，便于识别。"}
         >
-          <Input placeholder={t("cronJobs.jobNamePlaceholder")} />
+          <Input placeholder={"例如：每日早报"} />
         </Form.Item>
 
         <Form.Item
           name="enabled"
-          label={t("cronJobs.enabled")}
+          label={"启用状态"}
           valuePropName="checked"
         >
           <Switch />
@@ -201,26 +199,26 @@ export function JobDrawer({
 
         <Form.Item
           name="save_result_to_msg"
-          label={t("cronJobs.saveResultToMsg")}
+          label={"运行结果存进消息"}
           valuePropName="checked"
-          tooltip={t("cronJobs.saveResultToMsgTooltip")}
+          tooltip={"开启后，任务执行成功且投递成功时，会将结果写入消息；若投递失败，系统会自动兜底写入消息。"}
         >
           <Switch onChange={() => setSaveMsgTouched(true)} />
         </Form.Item>
 
         <Form.Item
           name="scheduleType"
-          label={t("cronJobs.scheduleType")}
+          label={"调度类型"}
           rules={[
-            { required: true, message: t("cronJobs.pleaseSelectScheduleType") },
+            { required: true, message: "请选择调度类型" },
           ]}
         >
           <Select>
             <Select.Option value="cron">
-              {t("cronJobs.scheduleTypeRecurring")}
+              {"循环任务"}
             </Select.Option>
             <Select.Option value="once">
-              {t("cronJobs.scheduleTypeOnce")}
+              {"日程任务"}
             </Select.Option>
           </Select>
         </Form.Item>
@@ -234,9 +232,9 @@ export function JobDrawer({
               <>
                 <Form.Item
                   name="onceRunAt"
-                  label={t("cronJobs.onceRunAt")}
+                  label={"执行时间"}
                   rules={[
-                    { required: true, message: t("cronJobs.pleaseInputRunAt") },
+                    { required: true, message: "请选择执行时间" },
                   ]}
                 >
                   <DatePicker
@@ -247,9 +245,9 @@ export function JobDrawer({
                 </Form.Item>
                 <Form.Item
                   name="onceRepeatEnabled"
-                  label={t("cronJobs.repeatEnabled")}
+                  label={"重复执行"}
                   valuePropName="checked"
-                  tooltip={t("cronJobs.repeatEnabledTooltip")}
+                  tooltip={"从该开始时间按固定天数重复执行"}
                 >
                   <Switch />
                 </Form.Item>
@@ -276,56 +274,56 @@ export function JobDrawer({
             const endType = getFieldValue("onceRepeatEndType") || "never";
             return (
               <>
-                <Form.Item label={t("cronJobs.repeatFrequency")}>
+                <Form.Item label={"重复频率"}>
                   <div
                     style={{ display: "flex", alignItems: "center", gap: 8 }}
                   >
-                    <span>{t("cronJobs.repeatEveryPrefix")}</span>
+                    <span>{"每"}</span>
                     <Form.Item
                       name="onceRepeatEveryDays"
                       noStyle
                       rules={[
                         {
                           required: true,
-                          message: t("cronJobs.pleaseInputRepeatEveryDays"),
+                          message: "请输入重复频率（天）",
                         },
                       ]}
                     >
                       <InputNumber min={1} style={{ width: 120 }} />
                     </Form.Item>
-                    <span>{t("cronJobs.repeatEverySuffix")}</span>
+                    <span>{"天"}</span>
                   </div>
                 </Form.Item>
                 <Form.Item
                   name="onceRepeatEndType"
-                  label={t("cronJobs.repeatEndType")}
+                  label={"结束重复"}
                   rules={[
                     {
                       required: true,
-                      message: t("cronJobs.pleaseSelectRepeatEndType"),
+                      message: "请选择结束方式",
                     },
                   ]}
                 >
                   <Select>
                     <Select.Option value="never">
-                      {t("cronJobs.repeatEndNever")}
+                      {"无限重复"}
                     </Select.Option>
                     <Select.Option value="until">
-                      {t("cronJobs.repeatEndUntil")}
+                      {"终止于某天"}
                     </Select.Option>
                     <Select.Option value="count">
-                      {t("cronJobs.repeatEndCount")}
+                      {"限定次数"}
                     </Select.Option>
                   </Select>
                 </Form.Item>
                 {endType === "until" && (
                   <Form.Item
                     name="onceRepeatUntil"
-                    label={t("cronJobs.repeatUntil")}
+                    label={"截止时间"}
                     rules={[
                       {
                         required: true,
-                        message: t("cronJobs.pleaseInputRepeatUntil"),
+                        message: "请选择截止时间",
                       },
                     ]}
                   >
@@ -339,11 +337,11 @@ export function JobDrawer({
                 {endType === "count" && (
                   <Form.Item
                     name="onceRepeatCount"
-                    label={t("cronJobs.repeatCount")}
+                    label={"执行次数"}
                     rules={[
                       {
                         required: true,
-                        message: t("cronJobs.pleaseInputRepeatCount"),
+                        message: "请输入执行次数",
                       },
                     ]}
                   >
@@ -370,23 +368,23 @@ export function JobDrawer({
             return (
               <>
                 <Form.Item
-                  label={t("cronJobs.scheduleCronLabel")}
+                  label={"执行时间（Cron）"}
                   required
-                  tooltip={t("cronJobs.cronTooltip")}
+                  tooltip={"定义任务执行时间"}
                 >
                   <Form.Item name="cronType" noStyle>
                     <Select>
                       <Select.Option value="hourly">
-                        {t("cronJobs.cronTypeHourly")}
+                        {"每小时"}
                       </Select.Option>
                       <Select.Option value="daily">
-                        {t("cronJobs.cronTypeDaily")}
+                        {"每天"}
                       </Select.Option>
                       <Select.Option value="weekly">
-                        {t("cronJobs.cronTypeWeekly")}
+                        {"每周"}
                       </Select.Option>
                       <Select.Option value="custom">
-                        {t("cronJobs.cronTypeCustom")}
+                        {"自定义"}
                       </Select.Option>
                     </Select>
                   </Form.Item>
@@ -394,7 +392,7 @@ export function JobDrawer({
                 {(cronType === "daily" || cronType === "weekly") && (
                   <Form.Item
                     name="cronTime"
-                    label={t("cronJobs.cronTime")}
+                    label={"执行时间"}
                     rules={[{ required: true }]}
                   >
                     <TimePicker
@@ -426,18 +424,18 @@ export function JobDrawer({
               return (
                 <Form.Item
                   name="cronDaysOfWeek"
-                  label={t("cronJobs.cronDaysOfWeek")}
+                  label={"星期"}
                   rules={[{ required: true, message: "请选择至少一天" }]}
                 >
                   <Checkbox.Group
                     options={[
-                      { label: t("cronJobs.cronDayMon"), value: "mon" },
-                      { label: t("cronJobs.cronDayTue"), value: "tue" },
-                      { label: t("cronJobs.cronDayWed"), value: "wed" },
-                      { label: t("cronJobs.cronDayThu"), value: "thu" },
-                      { label: t("cronJobs.cronDayFri"), value: "fri" },
-                      { label: t("cronJobs.cronDaySat"), value: "sat" },
-                      { label: t("cronJobs.cronDaySun"), value: "sun" },
+                      { label: "周一", value: "mon" },
+                      { label: "周二", value: "tue" },
+                      { label: "周三", value: "wed" },
+                      { label: "周四", value: "thu" },
+                      { label: "周五", value: "fri" },
+                      { label: "周六", value: "sat" },
+                      { label: "周日", value: "sun" },
                     ]}
                   />
                 </Form.Item>
@@ -464,24 +462,24 @@ export function JobDrawer({
               return (
                 <Form.Item
                   name="cronCustom"
-                  label={t("cronJobs.cronCustomExpression")}
+                  label={"Cron 表达式"}
                   rules={[
-                    { required: true, message: t("cronJobs.pleaseInputCron") },
+                    { required: true, message: "请输入Cron表达式" },
                   ]}
                   extra={
                     <div className={styles.formExtraText}>
                       <div style={{ marginBottom: 4 }}>
-                        {t("cronJobs.cronExample")}
+                        {"常用示例：'0 9 * * *' = 每天9点 | '*/30 * * * *' = 每30分钟 | '0 */2 * * *' = 每2小时 | '0 0 * * 0' = 每周日0点"}
                       </div>
                       <div>
-                        {t("cronJobs.cronHelper")}{" "}
+                        {"不熟悉 Cron 表达式？"}{" "}
                         <a
                           href="https://crontab.guru/"
                           target="_blank"
                           rel="noopener noreferrer"
                           className={styles.formHelperLink}
                         >
-                          {t("cronJobs.cronHelperLink")} →
+                          {"使用在线工具生成"} →
                         </a>
                       </div>
                     </div>
@@ -501,12 +499,12 @@ export function JobDrawer({
 
         <Form.Item
           name={["schedule", "timezone"]}
-          label={t("cronJobs.scheduleTimezone")}
-          tooltip={t("cronJobs.timezoneTooltip")}
+          label={"时区"}
+          tooltip={"Cron 计划使用的时区。默认：UTC"}
         >
           <Select
             showSearch
-            placeholder={t("cronJobs.selectTimezone")}
+            placeholder={"选择时区"}
             filterOption={(input, option) =>
               (option?.label?.toString() || "")
                 .toLowerCase()
@@ -518,11 +516,11 @@ export function JobDrawer({
 
         <Form.Item
           name="task_type"
-          label={t("cronJobs.taskType")}
+          label={"任务类型"}
           rules={[
-            { required: true, message: t("cronJobs.pleaseSelectTaskType") },
+            { required: true, message: "请选择任务类型" },
           ]}
-          tooltip={t("cronJobs.taskTypeTooltip")}
+          tooltip={"选择 'text' 用于简单消息任务，选择 'agent' 用于复杂的智能体工作流。"}
         >
           <Select>
             <Select.Option value="text">text</Select.Option>
@@ -543,36 +541,36 @@ export function JobDrawer({
               <>
                 <Form.Item
                   name="text"
-                  label={t("cronJobs.text")}
+                  label={"消息内容"}
                   required={textRequired}
                   rules={
                     textRequired
                       ? [
                           {
                             required: true,
-                            message: t("cronJobs.pleaseInputMessageContent"),
+                            message: "请输入消息内容",
                           },
                         ]
                       : []
                   }
-                  tooltip={t("cronJobs.textTooltip")}
+                  tooltip={"简单消息任务：此处为实际的消息正文，任务类型为'text'时必填。"}
                 >
                   <Input.TextArea
                     rows={3}
-                    placeholder={t("cronJobs.taskDescriptionPlaceholder")}
+                    placeholder={"简单消息任务时填写实际发送的正文..."}
                   />
                 </Form.Item>
 
                 <Form.Item
                   name={["request", "input"]}
-                  label={t("cronJobs.requestInput")}
+                  label={"请求内容"}
                   required={agentRequired}
                   rules={[
                     ...(agentRequired
                       ? [
                           {
                             required: true,
-                            message: t("cronJobs.pleaseInputRequest"),
+                            message: "请输入请求内容",
                           },
                         ]
                       : []),
@@ -584,16 +582,16 @@ export function JobDrawer({
                           return Promise.resolve();
                         } catch {
                           return Promise.reject(
-                            new Error(t("cronJobs.invalidJsonFormat")),
+                            new Error("JSON格式无效"),
                           );
                         }
                       },
                     },
                   ]}
-                  tooltip={t("cronJobs.requestInputTooltip")}
+                  tooltip={"JSON 格式的消息内容。这是智能体将接收和处理的内容，任务类型为'agent'时必填。"}
                   extra={
                     <span className={styles.formExtraText}>
-                      {t("cronJobs.requestInputExample")}
+                      {"格式：[{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"您的消息内容\"}]}]"}
                     </span>
                   }
                 >
@@ -614,11 +612,11 @@ export function JobDrawer({
 
         <Form.Item
           name={["dispatch", "channel"]}
-          label={t("cronJobs.dispatchChannel")}
+          label={"目标频道"}
           rules={[
-            { required: true, message: t("cronJobs.pleaseInputChannel") },
+            { required: true, message: "请输入目标频道" },
           ]}
-          tooltip={t("cronJobs.dispatchChannelTooltip")}
+          tooltip={"响应将发送到的目标频道（例如：'console'、'discord'、'imessage'）。"}
         >
           <Select
             showSearch
@@ -638,9 +636,9 @@ export function JobDrawer({
 
         <Form.Item
           name={["dispatch", "target", "user_id"]}
-          label={t("cronJobs.dispatchTargetUserId")}
-          rules={[{ required: true, message: t("cronJobs.pleaseInputUserId") }]}
-          tooltip={t("cronJobs.dispatchTargetUserIdTooltip")}
+          label={"目标用户ID"}
+          rules={[{ required: true, message: "请输入目标用户ID" }]}
+          tooltip={"在目标频道中接收响应的用户ID。"}
         >
           <Select
             showSearch
@@ -660,11 +658,11 @@ export function JobDrawer({
 
         <Form.Item
           name={["dispatch", "target", "session_id"]}
-          label={t("cronJobs.dispatchTargetSessionId")}
+          label={"目标会话ID"}
           rules={[
-            { required: true, message: t("cronJobs.pleaseInputSessionId") },
+            { required: true, message: "请输入目标会话ID" },
           ]}
-          tooltip={t("cronJobs.dispatchTargetSessionIdTooltip")}
+          tooltip={"在目标频道中传递响应的会话ID。"}
         >
           <Select
             showSearch
@@ -684,8 +682,8 @@ export function JobDrawer({
 
         <Form.Item
           name={["dispatch", "mode"]}
-          label={t("cronJobs.dispatchMode")}
-          tooltip={t("cronJobs.dispatchModeTooltip")}
+          label={"分发模式"}
+          tooltip={"选择 'stream' 获取实时响应，或选择 'final' 仅获取完整响应。"}
         >
           <Select>
             <Select.Option value="stream">stream</Select.Option>
@@ -695,42 +693,42 @@ export function JobDrawer({
 
         <Form.Item
           name={["runtime", "share_session"]}
-          label={t("cronJobs.runtimeShareSession")}
+          label={"共用会话"}
           valuePropName="checked"
-          tooltip={t("cronJobs.shareSessionTooltip")}
+          tooltip={"开启时，与目标用户共用会话。关闭时，每次运行创建独立的会话上下文，互不影响。适用于不需要记忆历史的独立任务。默认：开启"}
         >
           <Switch defaultChecked />
         </Form.Item>
 
         <Form.Item
           name={["runtime", "tool_safety"]}
-          label={t("cronJobs.runtimeToolSafety")}
+          label={"工具执行安全检查"}
           valuePropName="checked"
-          tooltip={t("cronJobs.toolSafetyTooltip")}
+          tooltip={"开启时，高风险工具调用需要用户审批（可能阻塞无人值守的定时任务）。关闭时，所有工具调用直接执行，不弹审批窗口，适用于可信的自动化任务。默认：关闭"}
         >
           <Switch />
         </Form.Item>
 
         <Form.Item
           name={["runtime", "max_concurrency"]}
-          label={t("cronJobs.runtimeMaxConcurrency")}
-          tooltip={t("cronJobs.maxConcurrencyTooltip")}
+          label={"最大并发数"}
+          tooltip={"此任务可以同时运行的最大数量。默认：1"}
         >
           <InputNumber min={1} style={{ width: "100%" }} placeholder="1" />
         </Form.Item>
 
         <Form.Item
           name={["runtime", "timeout_seconds"]}
-          label={t("cronJobs.runtimeTimeoutSeconds")}
-          tooltip={t("cronJobs.timeoutSecondsTooltip")}
+          label={"超时时间（秒）"}
+          tooltip={"最大执行时间（秒）。超时将终止任务。"}
         >
           <InputNumber min={1} style={{ width: "100%" }} placeholder="300" />
         </Form.Item>
 
         <Form.Item
           name={["runtime", "misfire_grace_seconds"]}
-          label={t("cronJobs.runtimeMisfireGraceSeconds")}
-          tooltip={t("cronJobs.misfireGraceSecondsTooltip")}
+          label={"错过执行宽限期（秒）"}
+          tooltip={"错过执行的宽限期。如果任务错过计划时间超过此时长，将不会执行。"}
         >
           <InputNumber min={0} style={{ width: "100%" }} placeholder="600" />
         </Form.Item>

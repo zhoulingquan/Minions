@@ -1,6 +1,4 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
-import type { TFunction } from "i18next";
 import { ChromeOutlined } from "@ant-design/icons";
 import type { ToolCallContent } from "../shared/types";
 import { ToolCardShell, DefaultBlock } from "../shared";
@@ -105,7 +103,6 @@ export const BROWSER_TOOL_NAMES = new Set([
 function getBrowserTitle(
   name: string,
   params: Record<string, unknown>,
-  t: TFunction,
 ): string {
   if (name === "browser_use") {
     const action = (params.action || "") as string;
@@ -124,102 +121,96 @@ function getBrowserTitle(
       switch (action) {
         case "start":
           return params.headed
-            ? t("tool.browserAction.startHeaded")
-            : t("tool.browserAction.start");
+            ? "启动浏览器(有界面)"
+            : "启动浏览器";
         case "stop":
-          return t("tool.browserAction.stop");
+          return "关闭浏览器";
         case "open":
           return url
-            ? t("tool.browserAction.open", { url })
-            : t("tool.browserAction.openDefault");
+            ? `打开 ${url}`
+            : "打开页面";
         case "navigate":
           return url
-            ? t("tool.browserAction.navigate", { url })
-            : t("tool.browserAction.navigateDefault");
+            ? `导航 ${url}`
+            : "导航页面";
         case "navigate_back":
-          return t("tool.browserAction.navigateBack");
+          return "返回上一页";
         case "click":
           return selector
-            ? t("tool.browserAction.click", { selector })
-            : t("tool.browserAction.clickDefault");
+            ? `点击 ${selector}`
+            : "点击元素";
         case "type":
           return text
-            ? t("tool.browserAction.type", {
-                text: text.length > 20 ? text.slice(0, 20) + "…" : text,
-              })
-            : t("tool.browserAction.typeDefault");
+            ? `输入 ${text.length > 20 ? text.slice(0, 20) + "…" : text}`
+            : "输入文本";
         case "snapshot":
-          return t("tool.browserAction.snapshot");
+          return "获取快照";
         case "screenshot":
           return path
-            ? t("tool.browserAction.screenshot", { path })
-            : t("tool.browserAction.screenshotDefault");
+            ? `截图 ${path}`
+            : "截图";
         case "eval":
         case "evaluate":
           return code
-            ? t("tool.browserAction.eval", {
-                code: code.length > 30 ? code.slice(0, 30) + "…" : code,
-              })
-            : t("tool.browserAction.evalDefault");
+            ? `执行 ${code.length > 30 ? code.slice(0, 30) + "…" : code}`
+            : "执行代码";
         case "run_code":
           return code
-            ? t("tool.browserAction.runCode", {
-                code: code.length > 30 ? code.slice(0, 30) + "…" : code,
-              })
-            : t("tool.browserAction.runCodeDefault");
+            ? `运行 ${code.length > 30 ? code.slice(0, 30) + "…" : code}`
+            : "运行代码";
         case "close":
-          return t("tool.browserAction.closePage");
+          return "关闭页面";
         case "tabs":
           return tabAction
-            ? t("tool.browserAction.tabs", { action: tabAction })
-            : t("tool.browserAction.tabsDefault");
+            ? `标签页 ${tabAction}`
+            : "管理标签页";
         case "fill_form":
-          return t("tool.browserAction.fillForm");
+          return "填写表单";
         case "file_upload":
           return filename
-            ? t("tool.browserAction.fileUpload", { filename })
-            : t("tool.browserAction.fileUploadDefault");
+            ? `上传 ${filename}`
+            : "上传文件";
         case "file_download":
           return filename
-            ? t("tool.browserAction.fileDownload", { target: filename })
+            ? `下载 ${filename}`
             : url
-            ? t("tool.browserAction.fileDownload", { target: url })
-            : t("tool.browserAction.fileDownloadDefault");
+            ? `下载 ${url}`
+            : "下载文件";
         case "press_key":
           return key
-            ? t("tool.browserAction.pressKey", { key })
-            : t("tool.browserAction.pressKeyDefault");
+            ? `按键 ${key}`
+            : "按键";
         case "hover":
           return selector
-            ? t("tool.browserAction.hover", { selector })
-            : t("tool.browserAction.hoverDefault");
+            ? `悬停 ${selector}`
+            : "悬停元素";
         case "drag":
-          return t("tool.browserAction.drag");
+          return "拖拽";
         case "select_option":
-          return t("tool.browserAction.selectOption");
+          return "选择选项";
         case "wait_for":
           return text
-            ? t("tool.browserAction.waitFor", { target: text })
+            ? `等待 ${text}`
             : selector
-            ? t("tool.browserAction.waitFor", { target: selector })
-            : t("tool.browserAction.waitForDefault");
+            ? `等待 ${selector}`
+            : "等待元素";
         case "resize":
           return width && height
-            ? t("tool.browserAction.resize", { w: width, h: height })
-            : t("tool.browserAction.resizeDefault");
+            ? `调整大小 ${width}x${height}`
+            : "调整窗口大小";
         case "pdf":
           return path
-            ? t("tool.browserAction.pdf", { path })
-            : t("tool.browserAction.pdfDefault");
+            ? `导出PDF ${path}`
+            : "导出PDF";
         case "install":
-          return t("tool.browserAction.install");
+          return "安装";
         case "batch":
-          return t("tool.browserAction.batch");
+          return "批量操作";
         default:
           return action;
       }
     })();
-    return t("tool.browserUse", { detail });
+    return `浏览 ${detail}`;
   }
 
   switch (name) {
@@ -227,21 +218,21 @@ function getBrowserTitle(
     case "navigate": {
       const url = (params.url || "") as string;
       return url
-        ? t("tool.browserNavigate", { url })
-        : t("tool.browserNavigateDefault");
+        ? `浏览 打开 ${url}`
+        : "浏览 打开页面";
     }
     case "browser_click":
     case "click":
-      return t("tool.browserClick");
+      return "浏览 点击";
     case "browser_type":
     case "type":
-      return t("tool.browserType");
+      return "浏览 输入";
     case "browser_snapshot":
     case "snapshot":
-      return t("tool.browserSnapshot");
+      return "浏览 快照";
     case "browser_scroll":
     case "scroll":
-      return t("tool.browserScroll");
+      return "浏览 滚动";
     default:
       return name;
   }
@@ -256,8 +247,7 @@ const BrowserUseCard: React.FC<BrowserUseCardProps> = ({
   content,
   isStreaming,
 }) => {
-  const { t } = useTranslation();
-  const title = getBrowserTitle(content.name, content.params || {}, t);
+    const title = getBrowserTitle(content.name, content.params || {});
   const resultText = formatBrowserResult(content.result);
 
   return (

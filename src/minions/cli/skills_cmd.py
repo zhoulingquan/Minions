@@ -9,19 +9,19 @@ import click
 
 from ..agents.skill_system import (
     SkillConflictError,
-    SkillPoolService,
+    GlobalSkillService,
     SkillService,
     get_workspace_skills_dir,
-    read_skill_pool_manifest,
+    read_global_skills_manifest,
     read_skill_manifest,
-    reconcile_pool_manifest,
+    reconcile_global_skills_manifest,
     reconcile_workspace_manifest,
 )
 from ..agents.skill_system.registry import list_workspaces
 from ..agents.skill_system.store import validate_skill_content
 from ..agents.skill_system.hub import (
     aclose_hub_client,
-    import_pool_skill_from_hub,
+    import_global_skill_from_hub,
     install_skill_from_hub,
 )
 from ..agents.utils.file_handling import read_text_file_with_encoding_fallback
@@ -162,18 +162,18 @@ def _run_skill_test(skill_dir: Path) -> str:
 
 def _apply_skill_changes(
     skill_service: SkillService,
-    pool_service: SkillPoolService | None,
+    global_svc: GlobalSkillService | None,
     working_dir: Path,
     to_install: set[str],
     to_enable: set[str],
     to_disable: set[str],
     installed_names: set[str],
 ) -> None:
-    """Install from pool, enable, and disable skills."""
+    """Install from global skills, enable, and disable skills."""
     installed_now = set(installed_names)
-    if to_install and pool_service is not None:
+    if to_install and global_svc is not None:
         for name in sorted(to_install):
-            result = pool_service.download_to_workspace(
+            result = global_svc.download_to_workspace(
                 name,
                 working_dir,
                 overwrite=False,
@@ -219,7 +219,7 @@ def _apply_skill_changes(
 def configure_skills_interactive(
     agent_id: str = "default",
     working_dir: Path | None = None,
-    include_pool_candidates: bool = False,
+    include_global_candidates: bool = False,
 ) -> None:
     """Interactively select which skills to enable (multi-select)."""
     if working_dir is None:
@@ -231,17 +231,17 @@ def configure_skills_interactive(
     skill_service = SkillService(working_dir)
     installed_skills = skill_service.list_all_skills()
     installed_by_name = {skill.name: skill for skill in installed_skills}
-    pool_candidates = {}
-    pool_service = SkillPoolService() if include_pool_candidates else None
-    if pool_service is not None:
-        reconcile_pool_manifest()
-        pool_candidates = {
+    global_candidates = {}
+    global_svc = GlobalSkillService() if include_global_candidates else None
+    if global_svc is not None:
+        reconcile_global_skills_manifest()
+        global_candidates = {
             skill.name: skill
-            for skill in pool_service.list_all_skills()
+            for skill in global_svc.list_all_skills()
             if skill.name not in installed_by_name
         }
 
-    if not installed_by_name and not pool_candidates:
+    if not installed_by_name and not global_candidates:
         click.echo("No skills found. Nothing to configure.")
         return
 
@@ -253,7 +253,7 @@ def configure_skills_interactive(
         if entry.get("enabled", False)
     }
     installed_names = set(installed_by_name)
-    candidate_names = installed_names | set(pool_candidates)
+    candidate_names = installed_names | set(global_candidates)
 
     default_checked = enabled if enabled else candidate_names
 
@@ -264,8 +264,8 @@ def configure_skills_interactive(
             status = "✓" if skill_name in enabled else "✗"
             label = f"{skill.name}  [{status}] ({skill.source})"
         else:
-            skill = pool_candidates[skill_name]
-            label = f"{skill.name}  [pool] ({skill.source})"
+            skill = global_candidates[skill_name]
+            label = f"{skill.name}  [global] ({skill.source})"
         options.append((label, skill.name))
 
     click.echo("\n=== Skills Configuration ===")
@@ -300,7 +300,7 @@ def configure_skills_interactive(
 
     _apply_skill_changes(
         skill_service,
-        pool_service,
+        global_svc,
         working_dir,
         to_install,
         to_enable,
@@ -434,7 +434,7 @@ def install_cmd(
 ) -> None:
     """Install a skill from a URL.
 
-    Without ``--agent-id``, the skill is imported into the local skill pool.
+    Without ``--agent-id``, the skill is imported into global skills.
     With ``--agent-id``, the skill is imported directly into that workspace.
     """
     normalized_agent_id = str(agent_id or "").strip()
@@ -452,7 +452,7 @@ def install_cmd(
                     bundle_url=bundle_url,
                     enable=enable,
                 )
-            return await import_pool_skill_from_hub(bundle_url=bundle_url)
+            return await import_global_skill_from_hub(bundle_url=bundle_url)
         finally:
             await aclose_hub_client()
 
@@ -469,7 +469,7 @@ def install_cmd(
             click.echo(f"Workspace: {workspace_dir}")
             return
 
-        click.echo(f"✓ Installed skill '{result.name}' to the skill pool.")
+        click.echo(f"✓ Installed skill '{result.name}' to global skills.")
         click.echo(f"Source: {result.source_url}")
     except SkillConflictError as exc:
         _raise_conflict(exc)
@@ -491,7 +491,7 @@ def uninstall_cmd(
     skill_name: str,
     agent_id: str,
 ) -> None:
-    """Uninstall a skill from the skill pool or one agent workspace."""
+    """Uninstall a skill from global skills or one agent workspace."""
     normalized_skill_name = str(skill_name or "").strip()
     if not normalized_skill_name:
         raise click.ClickException("Skill name cannot be empty.")
@@ -532,23 +532,23 @@ def uninstall_cmd(
             )
             return
 
-        manifest = read_skill_pool_manifest().get("skills", {})
+        manifest = read_global_skills_manifest().get("skills", {})
         if normalized_skill_name not in manifest:
             raise click.ClickException(
                 f"Skill '{normalized_skill_name}' was not found "
-                "in the skill pool.",
+                "in global skills.",
             )
 
-        deleted = SkillPoolService().delete_skill(normalized_skill_name)
+        deleted = GlobalSkillService().delete_skill(normalized_skill_name)
         if not deleted:
             raise click.ClickException(
                 f"Failed to uninstall skill '{normalized_skill_name}' "
-                "from the skill pool.",
+                "from global skills.",
             )
 
         click.echo(
             f"✓ Uninstalled skill '{normalized_skill_name}' "
-            "from the skill pool.",
+            "from global skills.",
         )
     except click.ClickException:
         raise

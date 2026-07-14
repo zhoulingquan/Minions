@@ -6,7 +6,6 @@
  */
 
 import React from "react";
-import { useTranslation } from "react-i18next";
 import type { ToolCallContent } from "./types";
 import styles from "./toolCards.module.less";
 
@@ -36,8 +35,7 @@ const ToolCardShell: React.FC<ToolCardShellProps> = ({
   badges,
   children,
 }) => {
-  const { t } = useTranslation();
-  const isLoading = content.status === "calling" && isStreaming;
+    const isLoading = content.status === "calling" && isStreaming;
   const isError = content.status === "error";
 
   return (
@@ -60,7 +58,7 @@ const ToolCardShell: React.FC<ToolCardShellProps> = ({
         )}
         <span className={styles.toolCallLabel} title={title}>
           {title}
-          {isLoading && ` ${t("tool.loading")}`}
+          {isLoading && ` ${"处理中..."}`}
         </span>
         {!isLoading && badges}
         {inlineResult && (

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Write query-handler error log and agent/memory state to a temp JSON file."""
+"""Write query-handler error details and agent state to a temp JSON file."""
 from __future__ import annotations
 
 import json
@@ -50,7 +50,7 @@ def write_query_error_dump(
     exc: BaseException,
     locals_: dict,
 ) -> str | None:
-    """Write error log, traceback and agent/memory state to a temp JSON file.
+    """Write error log, traceback and agent state to a temp JSON file.
 
     Returns the temp file path, or None if write failed.
     """

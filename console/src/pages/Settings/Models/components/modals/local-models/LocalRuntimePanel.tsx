@@ -2,7 +2,6 @@ import { memo } from "react";
 import { Button, Modal, Tooltip } from "@agentscope-ai/design";
 import { CloseOutlined, DownloadOutlined } from "@ant-design/icons";
 import { Progress } from "antd";
-import { useTranslation } from "react-i18next";
 import type {
   LocalDownloadProgress,
   LocalServerStatus,
@@ -31,8 +30,7 @@ export const LocalRuntimePanel = memo(function LocalRuntimePanel({
   onStart,
   onCancel,
 }: LocalRuntimePanelProps) {
-  const { t } = useTranslation();
-  const installable = serverStatus?.installable ?? true;
+    const installable = serverStatus?.installable ?? true;
   const installed = Boolean(serverStatus?.installed);
   const isDownloading = isDownloadActive(progress);
   const isCanceling = progress?.status === "canceling";
@@ -41,36 +39,36 @@ export const LocalRuntimePanel = memo(function LocalRuntimePanel({
   const installBadge = hasUpdate
     ? {
         className: styles.localStatusBadgeInstalled,
-        label: t("models.localRuntimeUpdateAvailable"),
+        label: "可更新",
       }
     : installed
     ? {
         className: styles.localStatusBadgeInstalled,
-        label: t("models.localRuntimeInstalled"),
+        label: "已安装",
       }
     : !installable
     ? {
         className: styles.localStatusBadgeDead,
-        label: t("models.localRuntimeUnsupported"),
+        label: "当前环境不支持",
       }
     : {
         className: styles.localStatusBadgeMuted,
-        label: t("models.localRuntimeMissing"),
+        label: "未安装",
       };
   const runBadge =
     serverStatus?.message && !serverStatus.available
       ? {
           className: styles.localStatusBadgeDead,
-          label: t("models.localServerIdle"),
+          label: "不可用",
         }
       : isRunning
       ? {
           className: styles.localStatusBadgeRunning,
-          label: t("models.localServerOnline"),
+          label: "运行中",
         }
       : {
           className: styles.localStatusBadgeDead,
-          label: t("models.localServerIdle"),
+          label: "不可用",
         };
   const progressPercent = getProgressPercent(progress);
   const progressText = isDownloading ? formatProgressText(progress) : null;
@@ -78,14 +76,12 @@ export const LocalRuntimePanel = memo(function LocalRuntimePanel({
 
   const handleConfirmUpdate = () => {
     Modal.confirm({
-      title: t("models.localRuntimeUpdateConfirmTitle"),
+      title: "确认更新 llama.cpp",
       content: isRunning
-        ? t("models.localRuntimeUpdateConfirmContentWithServer", {
-            model: serverStatus?.model_name ?? t("models.localLlamacppName"),
-          })
-        : t("models.localRuntimeUpdateConfirmContent"),
-      okText: t("common.confirm"),
-      cancelText: t("common.cancel"),
+        ? `更新会覆盖当前已安装的 llama.cpp 版本，并关闭当前正在运行的模型服务（${serverStatus?.model_name ?? "推理引擎"}）。确认后将开始下载并安装最新版本。`
+        : "更新会覆盖当前已安装的 llama.cpp 版本。确认后将开始下载并安装最新版本。",
+      okText: "确认",
+      cancelText: "取消",
       onOk: onStart,
     });
   };
@@ -95,25 +91,25 @@ export const LocalRuntimePanel = memo(function LocalRuntimePanel({
       <div className={styles.localRuntimePanelHeader}>
         <div className={styles.modelListItemInfo}>
           <span className={styles.modelListItemName}>
-            {t("models.localLlamacppName")}
+            {"推理引擎"}
           </span>
           <span className={styles.modelListItemId}>
-            {t("models.localRuntimeSectionDescription")}
+            {"Powered by Llama.cpp"}
           </span>
         </div>
       </div>
 
       <div className={styles.localSectionNotice}>
-        {t("models.localRuntimeComputeHint")}
+        {"默认使用 CPU，如需 GPU 加速功能，请使用 Ollama 或 LM Studio"}
       </div>
 
       <div className={styles.localEngineStatusRow}>
         <div className={styles.localEngineStatusItem}>
           <span className={styles.localEngineMetricLabel}>
-            {t("models.localEngineInstallStateLabel")}
+            {"安装"}
           </span>
           {canTriggerUpdate ? (
-            <Tooltip title={t("models.localRuntimeUpdateAction")}>
+            <Tooltip title={"点击下载最新版本"}>
               <button
                 type="button"
                 className={`${styles.localStatusBadge} ${styles.localStatusBadgeAction} ${styles.localStatusBadgeButton}`}
@@ -140,7 +136,7 @@ export const LocalRuntimePanel = memo(function LocalRuntimePanel({
         </div>
         <div className={styles.localEngineStatusItem}>
           <span className={styles.localEngineMetricLabel}>
-            {t("models.localEngineRunStateLabel")}
+            {"状态"}
           </span>
           {serverStatus?.message && !serverStatus.available ? (
             <Tooltip title={serverStatus.message}>
@@ -173,8 +169,8 @@ export const LocalRuntimePanel = memo(function LocalRuntimePanel({
           {showFooterHint ? (
             <span className={styles.localStatusHint}>
               {isDownloading
-                ? t("models.localDownloadNavigateHint")
-                : t("models.localEngineStatusHint")}
+                ? "您可以离开此页面，下载将在后台继续进行。"
+                : "请在下方列表中下载并启动合适的模型"}
             </span>
           ) : null}
           {!isDownloading && !installed ? (
@@ -184,7 +180,7 @@ export const LocalRuntimePanel = memo(function LocalRuntimePanel({
               onClick={onStart}
               disabled={!installable}
             >
-              {t("models.localInstallLlamacpp")}
+              {"安装 llama.cpp"}
             </Button>
           ) : null}
         </div>
@@ -202,7 +198,7 @@ export const LocalRuntimePanel = memo(function LocalRuntimePanel({
                 strokeColor="#ff7f16"
                 strokeWidth={10}
               />
-              <Tooltip title={t("models.localCancelDownloadAction")}>
+              <Tooltip title={"取消下载"}>
                 <Button
                   danger
                   size="small"

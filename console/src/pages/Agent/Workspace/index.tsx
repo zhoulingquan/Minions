@@ -4,21 +4,17 @@ import { UploadOutlined, DownloadOutlined } from "@ant-design/icons";
 import { Button, Tooltip } from "@agentscope-ai/design";
 import { workspaceApi } from "../../../api/modules/workspace";
 import { useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/PageHeader";
 import { useAppMessage } from "../../../hooks/useAppMessage";
 import { useUploadLimitStore } from "../../../stores/uploadLimitStore";
 import { DownloadCancelledError } from "../../../utils/downloadFileFromUrl";
-import type { MarkdownFile, DailyMemoryFile } from "../../../api/types";
+import type { MarkdownFile } from "../../../api/types";
 
 export default function WorkspacePage() {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const {
     files,
     selectedFile,
-    dailyMemories,
-    expandedMemory,
     fileContent,
     workspacePath,
     hasChanges,
@@ -26,8 +22,6 @@ export default function WorkspacePage() {
     setFileContent,
     fetchFiles,
     handleFileClick,
-    handleDailyMemoryClick,
-    toggleExpandedMemory,
     handleSave,
     handleReset,
     handleToggleFileEnabled,
@@ -61,13 +55,6 @@ export default function WorkspacePage() {
     }
   };
 
-  const handleDailyMemoryClickMobile = (daily: DailyMemoryFile) => {
-    void handleDailyMemoryClick(daily);
-    if (isMobile) {
-      setMobileShowEditor(true);
-    }
-  };
-
   const handleBackToFileList = () => {
     setMobileShowEditor(false);
   };
@@ -85,14 +72,14 @@ export default function WorkspacePage() {
     if (downloading) return;
     setDownloading(true);
     message.loading({
-      content: t("workspace.downloadPreparing"),
+      content: "正在准备工作区下载...",
       key: "workspace-download",
       duration: 0,
     });
     try {
       await workspaceApi.downloadWorkspace();
       message.success({
-        content: t("workspace.downloadSuccess"),
+        content: "工作区下载成功",
         key: "workspace-download",
       });
     } catch (error) {
@@ -103,7 +90,7 @@ export default function WorkspacePage() {
       console.error("Download failed:", error);
       message.error({
         content:
-          t("workspace.downloadFailed") + ": " + (error as Error).message,
+          "工作区下载失败" + ": " + (error as Error).message,
         key: "workspace-download",
       });
     } finally {
@@ -119,7 +106,7 @@ export default function WorkspacePage() {
 
     // Check if file is zip format
     if (!file.name.toLowerCase().endsWith(".zip")) {
-      message.error(t("workspace.zipOnly"));
+      message.error("仅支持上传 .zip 文件");
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -129,10 +116,7 @@ export default function WorkspacePage() {
     const uploadLimit = useUploadLimitStore.getState().uploadMaxSizeMb;
     if (uploadLimit !== null && file.size > uploadLimit * 1024 * 1024) {
       message.error(
-        t("workspace.fileSizeExceeded", {
-          limit: uploadLimit,
-          size: (file.size / (1024 * 1024)).toFixed(2),
-        }),
+        `文件大小超过 ${uploadLimit}MB 限制。当前文件：${(file.size / (1024 * 1024)).toFixed(2)}MB`,
       );
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -143,14 +127,14 @@ export default function WorkspacePage() {
     try {
       const result = await workspaceApi.uploadFile(file);
       if (result.success) {
-        message.success(t("workspace.uploadSuccess"));
+        message.success("文件上传成功");
       } else {
-        message.error(t("workspace.uploadFailed") + ": " + result.message);
+        message.error("文件上传失败" + ": " + result.message);
       }
     } catch (error) {
       console.error("Upload failed:", error);
       message.error(
-        t("workspace.uploadFailed") + ": " + (error as Error).message,
+        "文件上传失败" + ": " + (error as Error).message,
       );
     } finally {
       // Clear input value to allow re-uploading the same file
@@ -168,13 +152,13 @@ export default function WorkspacePage() {
     <div className={styles.workspacePage}>
       <PageHeader
         className={styles.pageHeader}
-        items={[{ title: t("nav.agent") }, { title: t("workspace.title") }]}
+        items={[{ title: "工作区" }, { title: "文件" }]}
         afterBreadcrumb={
           <p className={styles.workspacePath}>
-            {t("workspace.workspacePath")}{" "}
+            {"工作区路径："}{" "}
             {workspacePath === null
-              ? t("common.loading")
-              : workspacePath || t("workspace.noFiles")}
+              ? "加载中..."
+              : workspacePath || "没有文件"}
           </p>
         }
         extra={
@@ -189,12 +173,10 @@ export default function WorkspacePage() {
                 title=""
               />
               <Tooltip
-                title={`${t("workspace.coreFilesDesc")} (${
+                title={`${"引导角色、身份和工具指南。"} (${
                   useUploadLimitStore.getState().uploadMaxSizeMb !== null
-                    ? t("workspace.uploadTooltipWithLimit", {
-                        limit: useUploadLimitStore.getState().uploadMaxSizeMb,
-                      })
-                    : t("workspace.uploadTooltip")
+                    ? `仅支持 ZIP 文件，最大 ${useUploadLimitStore.getState().uploadMaxSizeMb}MB`
+                    : "仅支持 ZIP 文件"
                 })`}
                 placement="top"
                 mouseEnterDelay={0.5}
@@ -204,7 +186,7 @@ export default function WorkspacePage() {
                   onClick={handleUploadClick}
                   icon={<UploadOutlined />}
                 >
-                  {t("common.upload")}
+                  {"上传"}
                 </Button>
               </Tooltip>
               <Button
@@ -214,7 +196,7 @@ export default function WorkspacePage() {
                 disabled={downloading}
                 icon={<DownloadOutlined />}
               >
-                {t("common.download")}
+                {"下载"}
               </Button>
             </div>
           </div>
@@ -231,14 +213,9 @@ export default function WorkspacePage() {
         <FileListPanel
           files={files}
           selectedFile={selectedFile}
-          dailyMemories={dailyMemories}
-          expandedMemory={expandedMemory}
-          workspacePath={workspacePath}
           enabledFiles={enabledFiles}
           onRefresh={fetchFiles}
           onFileClick={handleFileClickMobile}
-          onDailyMemoryClick={handleDailyMemoryClickMobile}
-          onMemoryExpand={toggleExpandedMemory}
           onToggleEnabled={handleToggleFileEnabled}
           onReorder={handleReorderFiles}
         />

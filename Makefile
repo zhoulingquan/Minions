@@ -1,6 +1,6 @@
 # Minions Test & Coverage Makefile
 
-.PHONY: test test-unit test-contract test-integration test-channel test-channel-contract coverage-full clean
+.PHONY: test test-unit test-contract test-integration test-channel test-channel-contract coverage-full clean dev dev-server dev-build
 
 # Python path
 PYTHON := python
@@ -54,3 +54,25 @@ test-channel-contract:
 # BaseChannel core unit tests (optional, not enforced)
 test-base-core:
 	$(PYTEST) tests/unit/channels/test_base_core.py -v
+
+# ─── Development ───────────────────────────────────────────────────────────────
+# Start backend (FastAPI :8088) + frontend Vite dev server (:5173) together.
+# HMR: edit files under console/src and see changes instantly in the browser
+# at http://localhost:5173 — no rebuild, no restart, no browser-cache issues.
+# Requires macOS/Linux with built-in trap to stop both on Ctrl+C.
+dev:
+	@echo "Starting backend (:8088) + Vite dev server (:5173)..."
+	@echo "Open http://localhost:5173  (Ctrl+C to stop both)"
+	@trap 'kill 0' INT; \
+	minions app & BACKEND=$$!; \
+	cd console && npm run dev & FRONTEND=$$!; \
+	wait $$BACKEND $$FRONTEND
+
+# Start only the Vite dev server (assumes backend already running on :8088).
+dev-server:
+	@echo "Vite dev server on http://localhost:5173 (proxy /api -> :8088)"
+	cd console && npm run dev
+
+# Production-style rebuild of the console bundle into console/dist.
+dev-build:
+	cd console && npm run build

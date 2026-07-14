@@ -23,21 +23,11 @@ _CHANNEL_HTTP_TIMEOUT = default_http_timeout(15.0)
 
 _EXPECTED_BUILTIN_TYPES = {
     "console",
-    "discord",
     "dingtalk",
     "feishu",
-    "telegram",
     "qq",
     "wecom",
     "wechat",
-    "matrix",
-    "mattermost",
-    "mqtt",
-    "onebot",
-    "imessage",
-    "voice",
-    "sip",
-    "xiaoyi",
     "yuanbao",
 }
 
@@ -51,12 +41,12 @@ _EXPECTED_BUILTIN_TYPES = {
 @pytest.mark.p1
 def test_channel_types_returns_all_builtin(app_server) -> None:
     """Test purpose:
-    - Verify GET /api/config/channels/types lists all 17 builtin
+    - Verify GET /api/config/channels/types lists all current builtin
       channel types.
 
     Test flow:
     1. GET /api/config/channels/types.
-    2. Assert response is a list containing at least the 17 known
+    2. Assert response is a list containing the known
        builtin channel keys.
 
     API endpoints:
@@ -355,11 +345,11 @@ def test_channel_restart_unknown_returns_404(app_server) -> None:
 @pytest.mark.p1
 def test_channel_put_disabled_channel_config(app_server) -> None:
     """Test purpose:
-    - Verify PUT for a disabled channel (telegram) persists
+    - Verify PUT for a disabled channel (dingtalk) persists
       enabled=false without side effects.
 
     Test flow:
-    1. GET /api/config/channels/telegram baseline.
+    1. GET /api/config/channels/dingtalk baseline.
     2. PUT with enabled=false explicitly.
     3. GET and verify enabled=false persisted.
     4. Restore baseline.
@@ -370,7 +360,7 @@ def test_channel_put_disabled_channel_config(app_server) -> None:
     """
     get_before = app_server.api_request(
         "GET",
-        "/api/config/channels/telegram",
+        "/api/config/channels/dingtalk",
         timeout=_CHANNEL_HTTP_TIMEOUT,
     )
     assert get_before.status_code == 200, app_server.logs_tail()
@@ -383,7 +373,7 @@ def test_channel_put_disabled_channel_config(app_server) -> None:
     try:
         put_resp = app_server.api_request(
             "PUT",
-            "/api/config/channels/telegram",
+            "/api/config/channels/dingtalk",
             json=updated,
             timeout=_CHANNEL_HTTP_TIMEOUT,
         )
@@ -391,7 +381,7 @@ def test_channel_put_disabled_channel_config(app_server) -> None:
 
         get_after = app_server.api_request(
             "GET",
-            "/api/config/channels/telegram",
+            "/api/config/channels/dingtalk",
             timeout=_CHANNEL_HTTP_TIMEOUT,
         )
         assert get_after.status_code == 200, app_server.logs_tail()
@@ -400,7 +390,7 @@ def test_channel_put_disabled_channel_config(app_server) -> None:
     finally:
         app_server.api_request(
             "PUT",
-            "/api/config/channels/telegram",
+            "/api/config/channels/dingtalk",
             json=before,
             timeout=_CHANNEL_HTTP_TIMEOUT,
         )
@@ -489,7 +479,7 @@ def test_channel_bulk_put_preserves_unmodified_channels(
     3. PUT /api/config/channels with modified payload.
     4. GET /api/config/channels.
     5. Assert console.bot_prefix changed.
-    6. Assert every field of telegram and discord configs
+    6. Assert every field of dingtalk and feishu configs
        matches baseline exactly (side-effect assertion).
     7. Restore baseline.
 
@@ -528,7 +518,7 @@ def test_channel_bulk_put_preserves_unmodified_channels(
         after = get_after.json()
         assert after["console"].get("bot_prefix") == "side-effect-test"
 
-        for ch_name in ("telegram", "discord"):
+        for ch_name in ("dingtalk", "feishu"):
             if ch_name not in before:
                 continue
             for k, v in before[ch_name].items():

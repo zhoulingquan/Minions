@@ -7,7 +7,6 @@ import {
   CompressOutlined,
   MoreOutlined,
 } from "@ant-design/icons";
-import { useTranslation } from "react-i18next";
 import { Dropdown, Flex, Tooltip } from "antd";
 import type { MenuProps } from "antd";
 import { useCreateNewSession } from "../../hooks/useCreateNewSession";
@@ -28,7 +27,6 @@ const ChatActionGroup: React.FC<ChatActionGroupProps> = ({
   isWideMode = false,
   onToggleWideMode,
 }) => {
-  const { t } = useTranslation();
 
   const createNewSession = useCreateNewSession();
 
@@ -44,7 +42,7 @@ const ChatActionGroup: React.FC<ChatActionGroupProps> = ({
       icon: <SparkHistoryLine />,
       label: (
         <div style={{ textAlign: "center" }}>
-          {t("chat.chatHistoryTooltip")}
+          {"聊天历史"}
         </div>
       ),
       onClick: () => onToggleHistory(),
@@ -56,7 +54,7 @@ const ChatActionGroup: React.FC<ChatActionGroupProps> = ({
       icon: isWideMode ? <CompressOutlined /> : <ExpandAltOutlined />,
       label: (
         <div style={{ textAlign: "center" }}>
-          {isWideMode ? t("chat.normalModeTooltip") : t("chat.wideModeTooltip")}
+          {isWideMode ? "正常模式" : "宽屏模式"}
         </div>
       ),
       onClick: () => onToggleWideMode(),
@@ -66,7 +64,7 @@ const ChatActionGroup: React.FC<ChatActionGroupProps> = ({
   return (
     <Flex gap={8} align="center">
       {/* Essential actions always visible */}
-      <Tooltip title={t("chat.newChatTooltip")} mouseEnterDelay={0.5}>
+      <Tooltip title={"新建聊天"} mouseEnterDelay={0.5}>
         <IconButton
           bordered={false}
           icon={<SparkNewChatFill />}
@@ -76,7 +74,7 @@ const ChatActionGroup: React.FC<ChatActionGroupProps> = ({
 
       {/* History + WideMode: inline when NOT compact */}
       {!isCompact && onToggleHistory && (
-        <Tooltip title={t("chat.chatHistoryTooltip")} mouseEnterDelay={0.5}>
+        <Tooltip title={"聊天历史"} mouseEnterDelay={0.5}>
           <IconButton
             bordered={false}
             icon={<SparkHistoryLine />}
@@ -92,7 +90,7 @@ const ChatActionGroup: React.FC<ChatActionGroupProps> = ({
       {!isCompact && onToggleWideMode && (
         <Tooltip
           title={
-            isWideMode ? t("chat.normalModeTooltip") : t("chat.wideModeTooltip")
+            isWideMode ? "正常模式" : "宽屏模式"
           }
           mouseEnterDelay={0.5}
         >

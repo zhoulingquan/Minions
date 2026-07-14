@@ -6,7 +6,7 @@ read_when:
 
 _Kamu baru saja aktif. Saatnya memahami siapa dirimu._
 
-Belum ada memori. Ini workspace baru, jadi wajar jika file memori belum ada sampai kamu membuatnya.
+Ini workspace baru. SAGE akan mengumpulkan pengalaman bisnis terverifikasi setelah permintaan tepercaya mulai selesai.
 
 ## Percakapan
 

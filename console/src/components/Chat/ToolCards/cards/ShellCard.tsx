@@ -4,7 +4,6 @@
  */
 
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { CodeOutlined } from "@ant-design/icons";
 import type { ToolCallContent } from "../shared/types";
 import { ToolCardShell } from "../shared";
@@ -17,8 +16,7 @@ export interface ShellCardProps {
 }
 
 const ShellCard: React.FC<ShellCardProps> = ({ content, isStreaming }) => {
-  const { t } = useTranslation();
-  const command =
+    const command =
     (content.params?.command as string) ||
     (content.params?.cmd as string) ||
     "";
@@ -27,7 +25,7 @@ const ShellCard: React.FC<ShellCardProps> = ({ content, isStreaming }) => {
   return (
     <ToolCardShell
       icon={<CodeOutlined />}
-      title={command ? t("tool.shell", { command }) : t("tool.shellDefault")}
+      title={command ? `执行 ${command}` : "执行 命令"}
       content={content}
       isStreaming={isStreaming}
     >

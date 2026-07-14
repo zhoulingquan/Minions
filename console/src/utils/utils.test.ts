@@ -6,42 +6,40 @@ import { stripFrontmatter } from "./markdown";
 // getAgentDisplayName
 // ---------------------------------------------------------------------------
 
-const t = (key: string) => key; // test t function: returns the key as-is
-
 describe("getAgentDisplayName", () => {
-  it('returns i18n key when id is "default" and name is the default placeholder', () => {
+  it('returns default display name when id is "default" and name is the default placeholder', () => {
     expect(
-      getAgentDisplayName({ id: "default", name: "Default Agent" }, t as any),
-    ).toBe("agent.defaultDisplayName");
+      getAgentDisplayName({ id: "default", name: "Default Agent" }),
+    ).toBe("默认智能体");
   });
 
-  it('returns i18n key when id is "default" and name is empty', () => {
-    expect(getAgentDisplayName({ id: "default", name: "" }, t as any)).toBe(
-      "agent.defaultDisplayName",
+  it('returns default display name when id is "default" and name is empty', () => {
+    expect(getAgentDisplayName({ id: "default", name: "" })).toBe(
+      "默认智能体",
     );
   });
 
   it('returns custom name when id is "default" but name is customized', () => {
     expect(
-      getAgentDisplayName({ id: "default", name: "My Custom Name" }, t as any),
+      getAgentDisplayName({ id: "default", name: "My Custom Name" }),
     ).toBe("My Custom Name");
   });
 
   it('returns name when id is not "default"', () => {
     expect(
-      getAgentDisplayName({ id: "agent-1", name: "My Agent" }, t as any),
+      getAgentDisplayName({ id: "agent-1", name: "My Agent" }),
     ).toBe("My Agent");
   });
 
   it("falls back to id when name is empty", () => {
-    expect(getAgentDisplayName({ id: "agent-1", name: "" }, t as any)).toBe(
+    expect(getAgentDisplayName({ id: "agent-1", name: "" })).toBe(
       "agent-1",
     );
   });
 
   it("falls back to id when name is undefined", () => {
     expect(
-      getAgentDisplayName({ id: "agent-1", name: undefined as any }, t as any),
+      getAgentDisplayName({ id: "agent-1", name: undefined as any }),
     ).toBe("agent-1");
   });
 });

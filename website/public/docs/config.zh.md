@@ -30,10 +30,9 @@ $MINIONS_WORKING_DIR/                      # 默认 ~/.minions
 │   │   ├── SOUL.md                      # 人设文件
 │   │   ├── PROFILE.md                   # 人设文件
 │   │   ├── BOOTSTRAP.md                 # 首次引导文件（完成后自动删除）
-│   │   ├── MEMORY.md                    # 长期记忆
+│   │   ├── sage/                        # SAGE 开发数据（SQLite 模式）
 │   │   ├── skills/                      # 本地技能目录
 │   │   ├── skill.json                   # 技能启用状态与配置
-│   │   ├── memory/                      # 每日记忆文件
 │   │   └── browser/                     # 浏览器数据（cookies、缓存等）
 │   └── abc123/                          # 其他智能体工作区
 │       └── ...
@@ -304,7 +303,7 @@ MCP（模型上下文协议）允许智能体连接外部服务（如 Filesystem
 
 #### `running` — 运行时配置
 
-控制智能体的运行行为、重试策略、上下文管理和记忆配置。
+控制智能体的运行行为、重试策略和上下文管理。
 
 **基础运行参数：**
 
@@ -336,9 +335,7 @@ MCP（模型上下文协议）允许智能体连接外部服务（如 Filesystem
 | `max_input_length`         | int    | `131072` (128K) | 模型上下文窗口的最大输入长度（token 数，必须 ≥ 1000） |
 | `history_max_length`       | int    | `10000`         | `/history` 命令输出的最大长度（字符数）               |
 | `context_manager_backend`  | string | `"light"`       | 上下文管理器后端类型                                  |
-| `memory_manager_backend`   | string | `"remelight"`   | 记忆管理器后端类型                                    |
 | `light_context_config`     | object | _（见下方）_    | Light 上下文管理器配置                                |
-| `reme_light_memory_config` | object | _（见下方）_    | ReMeLight 记忆管理器配置                              |
 
 **Light 上下文配置（`light_context_config` 对象）：**
 
@@ -364,59 +361,6 @@ MCP（模型上下文协议）允许智能体连接外部服务（如 Filesystem
 | `pruning_old_msg_max_bytes`    | int  | `3000`  | 旧消息的工具结果字节阈值   |
 | `pruning_recent_msg_max_bytes` | int  | `50000` | 最近消息的工具结果字节阈值 |
 | `offload_retention_days`       | int  | `5`     | 工具结果文件保留天数       |
-
-**ReMeLight 记忆配置（`reme_light_memory_config` 对象）：**
-
-| 字段                            | 类型        | 默认值           | 说明                                                                 |
-| ------------------------------- | ----------- | ---------------- | -------------------------------------------------------------------- |
-| `metadata_dir`                  | string      | `"mem_metadata"` | ReMe 持久状态子目录                                                  |
-| `session_dir`                   | string      | `"mem_session"`  | ReMe auto-memory 使用的来源对话日志子目录                            |
-| `mem_session_dir`               | string      | `"mem_agent"`    | ReMe 内部 memory-agent 会话子目录                                    |
-| `resource_dir`                  | string      | `"resource"`     | 外部资源子目录                                                       |
-| `daily_dir`                     | string      | `"memory"`       | 每日记忆子目录                                                       |
-| `digest_dir`                    | string      | `"digest"`       | digest 记忆子目录                                                    |
-| `enable_search_raw_log`         | bool        | `false`          | 是否启用原始日志搜索                                                 |
-| `summarize_when_compact`        | bool        | `true`           | 是否在上下文压缩时启用记忆总结                                       |
-| `auto_memory_interval`          | int \| null | `5`              | 每隔 N 次用户查询触发自动记忆。`None` 或 `<= 0` 表示禁用周期自动记忆 |
-| `dream_cron`                    | string      | `"0 23 * * *"`   | 梦境记忆优化任务的 Cron 表达式（空字符串禁用）                       |
-| `auto_memory_search_config`     | object      | _（见下方）_     | 自动记忆搜索配置                                                     |
-| `embedding_model_config`        | object      | _（见下方）_     | Embedding 模型配置                                                   |
-| `rebuild_memory_index_on_start` | bool        | `false`          | Agent 启动时是否清空并重建记忆搜索索引；否则只监控并索引新的文件变化 |
-
-**自动记忆搜索配置（`reme_light_memory_config.auto_memory_search_config` 对象）：**
-
-| 字段          | 类型 | 默认值  | 说明                             |
-| ------------- | ---- | ------- | -------------------------------- |
-| `enabled`     | bool | `false` | 是否在每轮对话时自动执行记忆搜索 |
-| `max_results` | int  | `2`     | 自动搜索时最多返回的结果数       |
-
-**Embedding 配置（`reme_light_memory_config.embedding_model_config` 对象）：**
-
-| 字段               | 类型   | 默认值     | 说明                                                                                  |
-| ------------------ | ------ | ---------- | ------------------------------------------------------------------------------------- |
-| `backend`          | string | `"openai"` | Embedding 后端类型：`openai`、`dashscope`、`dashscope_multimodal`、`gemini`、`ollama` |
-| `api_key`          | string | `""`       | Embedding 提供商的 API Key。OpenAI 兼容和 Gemini 后端必填                             |
-| `base_url`         | string | `""`       | OpenAI 兼容后端的可选自定义 API 地址；Ollama 后端会作为 host 传递                     |
-| `model_name`       | string | `""`       | Embedding 模型名称（如 `"text-embedding-3-small"`）                                   |
-| `dimensions`       | int    | `1024`     | Embedding 向量维度                                                                    |
-| `enable_cache`     | bool   | `true`     | 是否启用 Embedding 缓存                                                               |
-| `use_dimensions`   | bool   | `false`    | 是否使用自定义维度                                                                    |
-| `max_cache_size`   | int    | `10000`    | 最大缓存大小                                                                          |
-| `max_input_length` | int    | `8192`     | Embedding 的最大输入长度                                                              |
-| `max_batch_size`   | int    | `10`       | 批处理的最大批量大小                                                                  |
-
-向量检索只有在当前后端具备最低可运行配置时才会启用；这些条件与 AgentScope credential 要求保持一致：
-
-| 后端                                            | 启用条件                         | Credential 映射                |
-| ----------------------------------------------- | -------------------------------- | ------------------------------ |
-| `openai` / `dashscope` / `dashscope_multimodal` | `model_name` 和 `api_key` 均非空 | `api_key`；可选 `base_url`     |
-| `gemini`                                        | `model_name` 和 `api_key` 均非空 | `api_key`                      |
-| `ollama`                                        | `model_name` 非空                | 可选 `host`（来自 `base_url`） |
-
-不满足启用条件时，ReMe 仍会保留关键词索引和 wikilink 图谱索引，但不会启用 embedding 向量索引。
-
-这些配置也可以在控制台的 **智能体 → 运行配置** 页面中修改。直接从 `agent.json` 读取的字段，例如自动记忆间隔和自动搜索条数，
-保存后会在后续对话轮次生效。目录和 Embedding 等嵌入式 ReMe 组件配置需要重启 Agent 进程，让 ReMe 应用用新配置重新构造。
 
 ---
 
@@ -581,16 +525,9 @@ Minions 需要 LLM 提供商才能运行。配置存储在 `$MINIONS_SECRET_DIR/
 
 ---
 
-## 记忆（Memory）
+## SAGE 业务经验
 
-记忆系统为智能体提供长期记忆和每日记忆，存储在智能体工作区：
-
-- **`MEMORY.md`** — 长期记忆（重要信息、用户偏好、项目上下文）
-- **`memory/YYYY-MM-DD.md`** — 每日记忆（当天对话的关键信息）
-
-记忆的写入和读取由智能体自动完成，用户通常无需手动干预。
-
-> **完整配置说明：** Embedding 配置、全文检索配置、记忆压缩参数等请参见 [记忆](./memory)。
+SAGE 是唯一的长期业务经验系统。开发环境默认使用工作区中的 `sage/sage.db`，生产环境使用 PostgreSQL。SAGE 的身份、隔离、成长与召回策略不属于 `agent.json` 的运行时后端选择项，部署方式见 [SAGE 业务经验](./sage)。
 
 ---
 
@@ -613,6 +550,6 @@ Minions 需要 LLM 提供商才能运行。配置存储在 `$MINIONS_SECRET_DIR/
 - [频道配置](./channels) — 如何配置各个消息频道
 - [心跳](./heartbeat) — 定时自检配置
 - [多智能体](./multi-agent) — 多智能体配置、管理与协作
-- [记忆](./memory) — 记忆系统详解
+- [SAGE](./sage) — 多租户业务经验、自动学习与成长治理
 - [技能](./skills) — 技能系统详解
 - [MCP](./mcp) — MCP 客户端配置

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Card, Button, Checkbox, Tooltip } from "@agentscope-ai/design";
+import { Card, Button, Checkbox, Switch, Tooltip } from "@agentscope-ai/design";
 import {
   CalendarFilled,
   FileTextFilled,
@@ -10,13 +10,21 @@ import {
   FilePptFilled,
   FileImageFilled,
   CodeFilled,
-  EyeOutlined,
-  EyeInvisibleOutlined,
+  CloudUploadOutlined,
+  CloudDownloadOutlined,
+  LinkOutlined,
+  WarningOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import type { SkillSpec } from "../../../../api/types";
-import { useTranslation } from "react-i18next";
 import styles from "../index.module.less";
+import {
+  getWorkspaceSyncAction,
+  getWorkspaceSyncActionHint,
+  getWorkspaceSyncActionLabel,
+  getWorkspaceSyncLabel,
+  getWorkspaceSyncTone,
+} from "./skillSync";
 
 interface SkillCardProps {
   skill: SkillSpec;
@@ -25,8 +33,10 @@ interface SkillCardProps {
   onClick: () => void;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
-  onToggleEnabled: (e: React.MouseEvent) => void;
+  onToggleEnabled: () => void | Promise<void>;
   onDelete?: (e?: React.MouseEvent) => void;
+  onSync?: () => void;
+  syncing?: boolean;
 }
 
 const useIsMobile = () => {
@@ -146,16 +156,12 @@ export const SkillCard = React.memo(function SkillCard({
   onMouseLeave,
   onToggleEnabled,
   onDelete,
+  onSync,
+  syncing = false,
 }: SkillCardProps) {
-  const { t } = useTranslation();
   const batchMode = selected !== undefined;
   const [isHover, setIsHover] = useState(false);
   const isMobile = useIsMobile();
-
-  const handleToggleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onToggleEnabled(e);
-  };
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -179,6 +185,19 @@ export const SkillCard = React.memo(function SkillCard({
     skill.source === "builtin" ||
     skill.source?.startsWith("builtin:") ||
     skill.source === "system";
+  const syncLabel = getWorkspaceSyncLabel(skill.sync_status);
+  const syncTone = getWorkspaceSyncTone(skill.sync_status);
+  const syncAction = getWorkspaceSyncAction(skill);
+  const syncActionIcon =
+    syncAction === "pull" ? (
+      <CloudDownloadOutlined />
+    ) : syncAction === "resolve" ? (
+      <WarningOutlined />
+    ) : syncAction === "link" ? (
+      <LinkOutlined />
+    ) : (
+      <CloudUploadOutlined />
+    );
 
   return (
     <Card
@@ -201,14 +220,20 @@ export const SkillCard = React.memo(function SkillCard({
           {getSkillVisual(skill.name, skill.emoji)}
         </span>
         <div className={styles.cardTopRight}>
-          <span
-            className={`${styles.statusBadge} ${
-              skill.enabled ? styles.status_enabled : styles.status_disabled
-            }`}
-          >
-            <span className={styles.statusDot} />
-            {skill.enabled ? t("common.enabled") : t("common.disabled")}
-          </span>
+          <Tooltip title={skill.enabled ? "禁用技能" : "启用技能"}>
+            <span
+              className={styles.skillEnableSwitch}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <Switch
+                size="small"
+                checked={Boolean(skill.enabled)}
+                disabled={batchMode}
+                aria-label={`启用技能 ${skill.name}`}
+                onChange={() => void onToggleEnabled()}
+              />
+            </span>
+          </Tooltip>
           {batchMode && (
             <Checkbox checked={selected} onClick={handleSelectClick} />
           )}
@@ -221,9 +246,18 @@ export const SkillCard = React.memo(function SkillCard({
           <h3 className={styles.skillTitle}>
             {skill.name}{" "}
             {isBuiltin ? (
-              <span className={styles.builtinTag}>{t("skills.builtin")}</span>
+              <span className={styles.builtinTag}>{"内置"}</span>
             ) : (
-              <span className={styles.customTag}>{t("skills.custom")}</span>
+              <span className={styles.customTag}>{"自定义"}</span>
+            )}
+            {syncLabel && (
+              <span
+                className={`${styles.workspaceSyncTag} ${
+                  styles[`workspaceSync_${syncTone}`]
+                }`}
+              >
+                {syncLabel}
+              </span>
             )}
           </h3>
         </Tooltip>
@@ -231,10 +265,10 @@ export const SkillCard = React.memo(function SkillCard({
 
       {/* Channels row */}
       <div className={styles.metaInfoRow}>
-        <span className={styles.metaInfoLabel}>{t("skills.channels")}</span>
+        <span className={styles.metaInfoLabel}>{"适用频道"}</span>
         <span className={styles.metaInfoValue}>
           {(skill.channels || ["all"])
-            .map((ch) => (ch === "all" ? t("skills.allChannels") : ch))
+            .map((ch) => (ch === "all" ? "所有" : ch))
             .join(", ")}
         </span>
       </div>
@@ -242,58 +276,60 @@ export const SkillCard = React.memo(function SkillCard({
       {/* Updated row */}
       {skill.last_updated && (
         <div className={styles.metaInfoRow}>
-          <span className={styles.metaInfoLabel}>
-            {t("skills.lastUpdated")}
-          </span>
+          <span className={styles.metaInfoLabel}>{"更新时间"}</span>
           <span className={styles.metaInfoValue}>
             {dayjs(skill.last_updated).fromNow()}
           </span>
         </div>
       )}
 
-      {/* Tags row */}
-      <div className={styles.metaInfoRow}>
-        <span className={styles.metaInfoLabel}>{t("skills.tags")}</span>
-        {!!skill.tags?.length ? (
-          <div className={styles.tagChips}>
-            {skill.tags.map((tag) => (
-              <span key={tag} className={styles.tagChip}>
-                {tag}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <span style={{ color: "rgba(20,20,19,0.35)" }}>-</span>
-        )}
-      </div>
-
       {/* Description */}
       <div className={styles.descriptionSection}>
         <p className={styles.descriptionText}>{skill.description || "-"}</p>
       </div>
 
-      {/* Footer - only show on hover or batch mode, always on mobile */}
-      {(isHover || batchMode || isMobile) && (
-        <div className={styles.cardFooter}>
+      {onSync && syncAction && (
+        <div
+          className={`${styles.workspaceSyncActionRow} ${
+            styles[`workspaceSyncAction_${syncTone}`]
+          }`}
+        >
+          <span className={styles.workspaceSyncActionHint}>
+            {getWorkspaceSyncActionHint(skill)}
+          </span>
           <Button
-            type="default"
-            className={styles.actionButton}
+            type={syncAction === "resolve" ? "default" : "primary"}
+            danger={skill.sync_status === "conflict"}
+            size="small"
+            className={styles.workspaceSyncActionButton}
             disabled={batchMode}
-            onClick={handleToggleClick}
-            icon={skill.enabled ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+            loading={syncing}
+            icon={syncActionIcon}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSync();
+            }}
           >
-            {skill.enabled ? t("common.disable") : t("common.enable")}
+            {getWorkspaceSyncActionLabel(skill)}
           </Button>
-          {onDelete && (
-            <Button
-              danger
-              className={styles.deleteButton}
-              disabled={batchMode}
-              onClick={handleDeleteClick}
-            >
-              {t("common.delete")}
-            </Button>
-          )}
+        </div>
+      )}
+
+      {/* Delete remains a secondary hover action; enablement lives in the switch. */}
+      {onDelete && (isHover || batchMode || isMobile) && (
+        <div
+          className={`${styles.cardFooter} ${
+            syncAction ? styles.cardFooterWithSyncAction : ""
+          }`}
+        >
+          <Button
+            danger
+            className={styles.deleteButton}
+            disabled={batchMode}
+            onClick={handleDeleteClick}
+          >
+            {"删除"}
+          </Button>
         </div>
       )}
     </Card>

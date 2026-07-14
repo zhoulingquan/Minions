@@ -12,7 +12,6 @@
  * Kept separate from useRestoreFlow so each hook has a single responsibility.
  */
 import { useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import api from "@/api";
 import { useAppMessage } from "@/hooks/useAppMessage";
 import type { BackupConflictResponse, BackupMeta } from "@/api/types/backup";
@@ -28,8 +27,7 @@ type ImportTrustPrompt = {
 };
 
 export function useImportFlow({ onSuccess }: UseImportFlowOptions) {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const [conflictMeta, setConflictMeta] = useState<BackupMeta | null>(null);
   const [trustPrompt, setTrustPrompt] = useState<ImportTrustPrompt | null>(
     null,
@@ -41,7 +39,7 @@ export function useImportFlow({ onSuccess }: UseImportFlowOptions) {
   const handleImport = async (file: File) => {
     try {
       await api.importBackup(file);
-      message.success(t("backup.importSuccess"));
+      message.success("备份导入成功");
       onSuccess();
     } catch (err: unknown) {
       const conflict = (err as { conflict?: BackupConflictResponse }).conflict;
@@ -53,7 +51,7 @@ export function useImportFlow({ onSuccess }: UseImportFlowOptions) {
         if (trustMode) {
           setTrustPrompt({ file, mode: trustMode });
         } else {
-          message.error(t("backup.importFailed"));
+          message.error("备份导入失败");
         }
       }
     }
@@ -67,10 +65,10 @@ export function useImportFlow({ onSuccess }: UseImportFlowOptions) {
     if (!token) return;
     try {
       await api.resolveImportConflict(token);
-      message.success(t("backup.importSuccess"));
+      message.success("备份导入成功");
       onSuccess();
     } catch {
-      message.error(t("backup.importFailed"));
+      message.error("备份导入失败");
     }
   };
 
@@ -88,7 +86,7 @@ export function useImportFlow({ onSuccess }: UseImportFlowOptions) {
       await api.importBackup(trustPrompt.file, {
         trustMode: trustPrompt.mode,
       });
-      message.success(t("backup.importSuccess"));
+      message.success("备份导入成功");
       setTrustPrompt(null);
       onSuccess();
     } catch (err: unknown) {
@@ -98,7 +96,7 @@ export function useImportFlow({ onSuccess }: UseImportFlowOptions) {
         setConflictMeta(conflict.existing);
         setTrustPrompt(null);
       } else {
-        message.error(t("backup.importFailed"));
+        message.error("备份导入失败");
       }
     } finally {
       setTrustLoading(false);

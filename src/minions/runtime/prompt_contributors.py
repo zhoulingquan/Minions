@@ -40,7 +40,7 @@ _HEARTBEAT_PATTERN = re.compile(
     r"<!-- heartbeat:start -->.*?<!-- heartbeat:end -->",
     re.DOTALL,
 )
-_MEMORY_PATTERN = re.compile(
+_RETIRED_EXPERIENCE_PATTERN = re.compile(
     r"<!-- memory:start -->.*?<!-- memory:end -->",
     re.DOTALL,
 )
@@ -107,18 +107,10 @@ def _process_heartbeat_section(content: str, enabled: bool) -> str:
     return _HEARTBEAT_PATTERN.sub("", content).strip()
 
 
-def _process_memory_section(
-    content: str,
-    memory_manager: Any | None,
-) -> str:
+def _strip_retired_experience_section(content: str) -> str:
     if "<!-- memory:start -->" in content:
-        content = _MEMORY_PATTERN.sub("", content).strip()
-    memory_section = ""
-    if memory_manager is not None:
-        memory_section = memory_manager.get_memory_prompt()
-    if content and memory_section:
-        return (content + "\n\n" + memory_section).strip()
-    return (content or memory_section).strip()
+        content = _RETIRED_EXPERIENCE_PATTERN.sub("", content).strip()
+    return content.strip()
 
 
 # ---------------------------------------------------------------------------
@@ -162,14 +154,10 @@ class AgentsMdContributor(SyncPromptContributor):
             content = _process_heartbeat_section(content, heartbeat_enabled)
         except Exception as e:
             logger.warning("Failed to process heartbeat: %s", e)
-        memory_manager = extras.get("memory_manager")
         try:
-            content = _process_memory_section(
-                content,
-                memory_manager,
-            )
+            content = _strip_retired_experience_section(content)
         except Exception as e:
-            logger.warning("Failed to process memory section: %s", e)
+            logger.warning("Failed to remove retired experience section: %s", e)
         if not content:
             return None
         return f"# AGENTS.md\n\n{content}"
@@ -239,14 +227,10 @@ class WorkspacePromptFilesContributor(SyncPromptContributor):
             content = _process_heartbeat_section(content, heartbeat_enabled)
         except Exception as e:
             logger.warning("Failed to process heartbeat: %s", e)
-        memory_manager = extras.get("memory_manager")
         try:
-            content = _process_memory_section(
-                content,
-                memory_manager,
-            )
+            content = _strip_retired_experience_section(content)
         except Exception as e:
-            logger.warning("Failed to process memory section: %s", e)
+            logger.warning("Failed to remove retired experience section: %s", e)
         return content
 
 
@@ -264,7 +248,7 @@ class MultimodalHintContributor(SyncPromptContributor):
 
 
 class ScrollContextContributor(SyncPromptContributor):
-    """Inject memory/recall guidance when the scroll context strategy is on."""
+    """Inject history-recall guidance when the scroll strategy is on."""
 
     name = "scroll_context"
     priority = 86

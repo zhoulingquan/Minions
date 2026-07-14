@@ -120,12 +120,14 @@ function AppInner() {
         prefixCls="minions"
         locale={zhCN}
         theme={{
-          ...(selectedTheme as any)?.theme,
+          ...selectedTheme.theme,
           algorithm: isDark
             ? antdTheme.darkAlgorithm
             : antdTheme.defaultAlgorithm,
           token: {
             colorPrimary: "#FF7F16",
+            fontFamily:
+              '"PingFang SC", -apple-system, BlinkMacSystemFont, "Microsoft YaHei", "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
           },
         }}
       >

@@ -77,6 +77,10 @@ from ...config.config import ModelSlotConfig
 from ...exceptions import AppBaseException
 from ...providers.provider_manager import ProviderManager
 from ...agents.command_handler import SYSTEM_COMMAND_DESCRIPTIONS
+from .meta import (
+    ACP_APPROVAL_EXPIRES_AT_META_KEY,
+    ACP_EPHEMERAL_META_KEY,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -313,6 +317,8 @@ class MinionsACPAgent(Agent):
             "user_id": f"acp_{session_id[:8]}",
             "mode": MinionsACPAgent.MODE_DEFAULT,
         }
+        if meta.get(ACP_EPHEMERAL_META_KEY) is True:
+            info[ACP_EPHEMERAL_META_KEY] = True
         return info
 
     async def _ensure_app_services(self) -> Any:
@@ -392,6 +398,12 @@ class MinionsACPAgent(Agent):
                 SkillEnvCleanupHook,
                 SkillEnvHook,
             )
+            from ...sage.lifecycle import (
+                SageBeginHook,
+                SageCompleteHook,
+                SageErrorHook,
+                SageIdentityHook,
+            )
 
             kwargs["builtin_hook_clses"] = [
                 CronContextHook,
@@ -402,6 +414,10 @@ class MinionsACPAgent(Agent):
                 SkillEnvCleanupHook,
                 ContextVarsSetupHook,
                 MediaProcessHook,
+                SageIdentityHook,
+                SageBeginHook,
+                SageCompleteHook,
+                SageErrorHook,
                 ErrorNormalizeHook,
                 CancelCleanupHook,
             ]
@@ -521,8 +537,7 @@ class MinionsACPAgent(Agent):
     async def new_session(  # pylint: disable=unused-argument
         self,
         cwd: str,
-        mcp_servers: list[HttpMcpServer | SseMcpServer | McpServerStdio]
-        | None = None,
+        mcp_servers: list[HttpMcpServer | SseMcpServer | McpServerStdio] | None = None,
         **kwargs: Any,
     ) -> NewSessionResponse:
         session_id = uuid4().hex
@@ -547,8 +562,7 @@ class MinionsACPAgent(Agent):
         self,
         cwd: str,
         session_id: str,
-        mcp_servers: list[HttpMcpServer | SseMcpServer | McpServerStdio]
-        | None = None,
+        mcp_servers: list[HttpMcpServer | SseMcpServer | McpServerStdio] | None = None,
         **kwargs: Any,
     ) -> LoadSessionResponse | None:
         self._sessions[session_id] = self._session_info(
@@ -597,9 +611,11 @@ class MinionsACPAgent(Agent):
         )
 
         session_mode = session_info.get("mode", self.MODE_DEFAULT)
-        request_context: dict[str, str] = {}
+        request_context: dict[str, Any] = {}
         if session_mode == self.MODE_BYPASS:
             request_context["_headless_tool_guard"] = "false"
+        if session_info.get(ACP_EPHEMERAL_META_KEY) is True:
+            request_context[ACP_EPHEMERAL_META_KEY] = True
 
         request = AgentRequest(
             input=[
@@ -685,8 +701,7 @@ class MinionsACPAgent(Agent):
         self,
         cwd: str,
         session_id: str,
-        mcp_servers: list[HttpMcpServer | SseMcpServer | McpServerStdio]
-        | None = None,
+        mcp_servers: list[HttpMcpServer | SseMcpServer | McpServerStdio] | None = None,
         **kwargs: Any,
     ) -> ResumeSessionResponse:
         logger.info(
@@ -817,34 +832,50 @@ class MinionsACPAgent(Agent):
     ) -> None:
         """Ask the ACP client to approve/deny a Minions pending approval."""
         from ...app.approvals import get_approval_service
-        from ...security.tool_guard.approval import ApprovalDecision
+        from ...security.tool_guard.approval import (
+            ApprovalDecision,
+            ApprovalScope,
+        )
 
         svc = get_approval_service()
         try:
-            response = await self._conn.request_permission(
-                session_id=session_id,
-                tool_call=ToolCallUpdate(
-                    tool_call_id=pending.request_id,
-                    title=(
-                        f"{pending.tool_name} requires approval "
-                        f"({pending.severity})"
+            permission_task = asyncio.create_task(
+                self._conn.request_permission(
+                    session_id=session_id,
+                    tool_call=ToolCallUpdate(
+                        _meta=self._approval_tool_meta(pending),
+                        tool_call_id=pending.request_id,
+                        title=(
+                            f"{pending.tool_name} requires approval "
+                            f"({pending.severity})"
+                        ),
+                        kind=self._approval_tool_kind(pending.tool_name),
+                        raw_input=self._approval_tool_input(pending),
                     ),
-                    kind=self._approval_tool_kind(pending.tool_name),
-                    raw_input=self._approval_tool_input(pending),
+                    options=self._approval_options(pending),
                 ),
-                options=[
-                    PermissionOption(
-                        option_id="approve",
-                        name="Approve",
-                        kind="allow_once",
-                    ),
-                    PermissionOption(
-                        option_id="deny",
-                        name="Deny",
-                        kind="reject_once",
-                    ),
-                ],
             )
+            pending_future = getattr(pending, "future", None)
+            if isinstance(pending_future, asyncio.Future):
+                done, _pending_tasks = await asyncio.wait(
+                    {permission_task, pending_future},
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+                if pending_future in done and not permission_task.done():
+                    cancel_reason = self._pending_cancel_reason(pending_future)
+                    logger.info(
+                        "ACP approval request %s before client response: request=%s",
+                        cancel_reason,
+                        pending.request_id[:8],
+                    )
+                    permission_task.cancel(cancel_reason)
+                    try:
+                        await permission_task
+                    except asyncio.CancelledError:
+                        pass
+                    return
+
+            response = await permission_task
         except Exception:
             logger.exception(
                 "ACP approval bridge failed for request=%s",
@@ -856,12 +887,83 @@ class MinionsACPAgent(Agent):
             )
             return
 
-        decision = (
-            ApprovalDecision.APPROVED
-            if self._permission_option_id(response) == "approve"
-            else ApprovalDecision.DENIED
-        )
-        await svc.resolve_request(pending.request_id, decision)
+        option_id = self._permission_option_id(response)
+        if option_id in {"allow_once", "approve"}:
+            decision = ApprovalDecision.APPROVED
+            scope = ApprovalScope.EXACT
+        elif option_id == "allow_always":
+            decision = ApprovalDecision.APPROVED
+            scope = ApprovalScope.SIMILAR
+        else:
+            decision = ApprovalDecision.DENIED
+            scope = None
+        await svc.resolve_request(pending.request_id, decision, scope=scope)
+
+    @staticmethod
+    def _pending_cancel_reason(pending_future: asyncio.Future) -> str:
+        """Explain why a pending approval resolved before the ACP client."""
+        from ...security.tool_guard.approval import ApprovalDecision
+
+        if pending_future.cancelled():
+            return "timeout"
+        try:
+            if pending_future.result() == ApprovalDecision.TIMEOUT:
+                return "timeout"
+        except Exception:  # noqa: BLE001 - best-effort UX hint
+            pass
+        return "resolved"
+
+    @staticmethod
+    def _approval_options(pending: Any) -> list[PermissionOption]:
+        """Build exact or generalized session-scoped approval options."""
+        display = MinionsACPAgent._approval_display(pending)
+        if (
+            display.get("is_generalized")
+            and display.get("similar_target")
+            and display.get("similar_target") != display.get("exact_target")
+        ):
+            return [
+                PermissionOption(
+                    option_id="allow_once",
+                    name="Allow Exact This Session",
+                    kind="allow_once",
+                ),
+                PermissionOption(
+                    option_id="allow_always",
+                    name="Allow Pattern This Session",
+                    kind="allow_always",
+                ),
+                PermissionOption(
+                    option_id="deny",
+                    name="Deny",
+                    kind="reject_once",
+                ),
+            ]
+        return [
+            PermissionOption(
+                option_id="allow_once",
+                name="Allow Exact This Session",
+                kind="allow_once",
+            ),
+            PermissionOption(
+                option_id="deny",
+                name="Deny",
+                kind="reject_once",
+            ),
+        ]
+
+    @staticmethod
+    def _approval_tool_meta(pending: Any) -> dict[str, Any]:
+        created_at = getattr(pending, "created_at", None)
+        timeout_seconds = getattr(pending, "timeout_seconds", None)
+        if not isinstance(created_at, (int, float)) or not isinstance(
+            timeout_seconds,
+            (int, float),
+        ):
+            return {}
+        return {
+            ACP_APPROVAL_EXPIRES_AT_META_KEY: created_at + timeout_seconds,
+        }
 
     @staticmethod
     def _approval_tool_input(pending: Any) -> dict[str, Any] | None:
@@ -873,7 +975,29 @@ class MinionsACPAgent(Agent):
         if not isinstance(tool_call, dict):
             return None
         raw_input = tool_call.get("input")
-        return raw_input if isinstance(raw_input, dict) else None
+        if not isinstance(raw_input, dict):
+            return None
+        result = dict(raw_input)
+        display = MinionsACPAgent._approval_display(pending)
+        if display.get("is_generalized") and (
+            display.get("exact_target") or display.get("similar_target")
+        ):
+            result.setdefault("approve_exact_target", display["exact_target"])
+            result.setdefault(
+                "approve_pattern_target",
+                display["similar_target"],
+            )
+        return result
+
+    @staticmethod
+    def _approval_display(pending: Any) -> dict[str, Any]:
+        try:
+            from ...app.approvals.display import approval_display_fields
+
+            return approval_display_fields(pending)
+        except Exception:
+            logger.debug("failed to read approval display metadata")
+            return {}
 
     @staticmethod
     def _permission_option_id(response: Any) -> str | None:
@@ -1028,10 +1152,7 @@ class MinionsACPAgent(Agent):
         descriptions: dict[str, str] = {
             **SYSTEM_COMMAND_DESCRIPTIONS,
             "model": "Show or switch AI model",
-            "skills": (
-                "List chat-available skills"
-                " and expose explicit skill commands"
-            ),
+            "skills": ("List chat-available skills and expose explicit skill commands"),
         }
         seen: set[str] = set()
         result: list[AvailableCommand] = []
@@ -1183,8 +1304,7 @@ class MinionsACPAgent(Agent):
                 )
             if not provider.has_model(model_id):
                 raise ValueError(
-                    f"Model {model_id!r} not found in "
-                    f"provider {provider_id!r}",
+                    f"Model {model_id!r} not found in provider {provider_id!r}",
                 )
         else:
             all_infos = await manager.list_provider_info()

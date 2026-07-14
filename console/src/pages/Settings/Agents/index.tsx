@@ -2,7 +2,6 @@ import { useState, useRef, useCallback } from "react";
 import { Card, Button, Form } from "antd";
 import { useAppMessage } from "../../../hooks/useAppMessage";
 import { PlusOutlined } from "@ant-design/icons";
-import { useTranslation } from "react-i18next";
 import { agentsApi } from "../../../api/modules/agents";
 import { invalidateSkillCache, skillApi } from "../../../api/modules/skill";
 import type { AgentSummary } from "../../../api/types/agents";
@@ -14,8 +13,7 @@ import { reorderAgents } from "./reorder";
 import styles from "./index.module.less";
 
 export default function AgentsPage() {
-  const { t, i18n } = useTranslation();
-  const { agents, loading, deleteAgent, toggleAgent, loadAgents, setAgents } =
+    const { agents, loading, deleteAgent, toggleAgent, loadAgents, setAgents } =
     useAgents();
   const { selectedAgent, setSelectedAgent } = useAgentStore();
   const [modalVisible, setModalVisible] = useState(false);
@@ -54,7 +52,7 @@ export default function AgentsPage() {
       setModalVisible(true);
     } catch (error) {
       console.error("Failed to load agent config:", error);
-      message.error(t("agent.loadConfigFailed"));
+      message.error("加载智能体配置失败");
     }
   };
 
@@ -64,10 +62,10 @@ export default function AgentsPage() {
 
       if (selectedAgent === agentId) {
         setSelectedAgent("default");
-        message.info(t("agent.switchedToDefault"));
+        message.info("已自动切换到默认智能体");
       }
     } catch {
-      message.error(t("agent.deleteFailed"));
+      message.error("智能体删除失败");
     }
   };
 
@@ -78,7 +76,7 @@ export default function AgentsPage() {
 
       if (!newEnabled && selectedAgent === agentId) {
         setSelectedAgent("default");
-        message.info(t("agent.switchedToDefault"));
+        message.info("已自动切换到默认智能体");
       }
     } catch {
       // Error already handled in hook
@@ -105,7 +103,9 @@ export default function AgentsPage() {
           ? { provider_id: providerId, model: modelId }
           : null;
 
-      const { active_model_provider, active_model_model, ...rest } = values;
+      const rest = { ...values };
+      delete rest.active_model_provider;
+      delete rest.active_model_model;
       const payload = { ...rest, workspace_dir, active_model };
 
       if (editingAgent) {
@@ -115,7 +115,7 @@ export default function AgentsPage() {
         );
 
         for (const skill of newSkills) {
-          await skillApi.downloadSkillPoolSkill({
+          await skillApi.downloadGlobalSkill({
             skill_name: skill,
             targets: [{ workspace_id: editingAgent.id }],
           });
@@ -128,24 +128,26 @@ export default function AgentsPage() {
           ),
         ];
         invalidateSkillCache({ agentId: editingAgent.id });
-        message.success(t("agent.updateSuccess"));
+        message.success("智能体更新成功");
       } else {
         const result = await agentsApi.createAgent({
           ...payload,
-          language: i18n.language,
+          language: "zh",
           skill_names: selectedSkills,
         });
-        message.success(`${t("agent.createSuccess")} (ID: ${result.id})`);
+        message.success(`${"智能体创建成功"} (ID: ${result.id})`);
       }
 
       setModalVisible(false);
       await loadAgents();
-    } catch (error: any) {
+    } catch (error) {
       console.error("Failed to save agent:", error);
       if (editingAgent) {
         invalidateSkillCache({ agentId: editingAgent.id });
       }
-      message.error(error.message || t("agent.saveFailed"));
+      message.error(
+        error instanceof Error ? error.message : "保存智能体失败",
+      );
     }
   };
 
@@ -161,11 +163,11 @@ export default function AgentsPage() {
 
     try {
       await agentsApi.reorderAgents(nextAgents.map((agent) => agent.id));
-      message.success(t("agent.reorderSuccess"));
+      message.success("智能体顺序已保存");
     } catch (error) {
       console.error("Failed to reorder agents:", error);
       setAgents(previousAgents);
-      message.error(t("agent.reorderFailed"));
+      message.error("保存智能体顺序失败");
     } finally {
       setReordering(false);
     }
@@ -174,8 +176,8 @@ export default function AgentsPage() {
   return (
     <div className={styles.agentsPage}>
       <PageHeader
-        parent={t("agent.parent")}
-        current={t("agent.agents")}
+        parent={"设置"}
+        current={"智能体"}
         extra={
           <div className={styles.headerRight}>
             <Button
@@ -183,7 +185,7 @@ export default function AgentsPage() {
               icon={<PlusOutlined />}
               onClick={handleCreate}
             >
-              {t("agent.create")}
+              {"创建智能体"}
             </Button>
           </div>
         }

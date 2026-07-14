@@ -10,11 +10,9 @@ import { useIsMobile } from "../../hooks/useIsMobile";
 import { ExclamationCircleOutlined, SettingOutlined } from "@ant-design/icons";
 import { SparkCopyLine, SparkAttachmentLine } from "@agentscope-ai/icons";
 import { usePlugins } from "../../plugins/PluginContext";
-import { useTranslation } from "react-i18next";
-import i18n from "../../i18n";
 import { useLocation, useNavigate } from "react-router-dom";
 import sessionApi from "./sessionApi";
-import defaultConfig, { getDefaultConfig } from "./OptionsPanel/defaultConfig";
+import defaultConfig from "./OptionsPanel/defaultConfig";
 import { chatApi } from "../../api/modules/chat";
 import { agentApi } from "../../api/modules/agent";
 import { skillApi } from "../../api/modules/skill";
@@ -50,8 +48,10 @@ import {
 import { PluginSlotBoundary } from "../../plugins/registry/PluginSlotBoundary";
 import {
   resolveLocalized,
+  type ChatActionSpec,
   type WelcomeRenderProps,
 } from "../../plugins/registry/types";
+import type { ToolRenderer } from "../../plugins/hostExternals";
 import { ChatScalar, ChatList } from "../../plugins/registry/slotKeys";
 import { HostRequestCard, HostResponseCard } from "./HostBubbles";
 import { withGenericFallback } from "../../components/Chat/ToolCards/adapters/v1Adapter";
@@ -121,6 +121,7 @@ import {
 // ---------------------------------------------------------------------------
 
 const _bgAborts = new Map<string, AbortController>();
+const EMPTY_MESSAGE_QUEUE: QueueItem[] = [];
 
 function stopBackgroundQueue(queueKey?: string) {
   if (queueKey) {
@@ -382,7 +383,7 @@ async function startBackgroundQueue(
             queueKey,
             item.id,
             "failed",
-            i18n.t("chat.queue.sendFailed"),
+            "发送失败",
           );
         break;
       }
@@ -474,6 +475,10 @@ interface CommandSuggestion {
   command: string;
   value: string;
   description: string;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object";
 }
 
 function messageRequestsHistoryClear(message: unknown): boolean {
@@ -576,7 +581,7 @@ function useIMEComposition(isChatActive: () => boolean) {
       if (target?.tagName === "TEXTAREA" && e.key === "Enter" && !e.shiftKey) {
         // e.isComposing is the standard flag; isComposingRef covers the
         // post-compositionend grace period needed by Safari.
-        if (isComposingRef.current || (e as any).isComposing) {
+        if (isComposingRef.current || e.isComposing) {
           e.stopPropagation();
           e.stopImmediatePropagation();
           e.preventDefault();
@@ -753,30 +758,33 @@ function useMessageHistoryNavigation(
     text: string;
   }
 
-  const findMessageInDirection = (
-    messages: string[],
-    startIndex: number,
-    direction: 1 | -1,
-  ): MessageResult | null => {
-    const MAX_LOOKUP = 100;
-    let lookupIndex = startIndex;
-    let steps = 0;
+  const findMessageInDirection = useCallback(
+    (
+      messages: string[],
+      startIndex: number,
+      direction: 1 | -1,
+    ): MessageResult | null => {
+      const MAX_LOOKUP = 100;
+      let lookupIndex = startIndex;
+      let steps = 0;
 
-    while (
-      lookupIndex >= 0 &&
-      lookupIndex < messages.length &&
-      steps < MAX_LOOKUP
-    ) {
-      const messageText = messages[messages.length - 1 - lookupIndex];
-      if (messageText) {
-        return { index: lookupIndex, text: messageText };
+      while (
+        lookupIndex >= 0 &&
+        lookupIndex < messages.length &&
+        steps < MAX_LOOKUP
+      ) {
+        const messageText = messages[messages.length - 1 - lookupIndex];
+        if (messageText) {
+          return { index: lookupIndex, text: messageText };
+        }
+        lookupIndex += direction;
+        steps += 1;
       }
-      lookupIndex += direction;
-      steps += 1;
-    }
 
-    return null;
-  };
+      return null;
+    },
+    [],
+  );
 
   const isSuggestionPopupOpen = (textarea: HTMLTextAreaElement): boolean =>
     textarea.value.startsWith("/");
@@ -792,7 +800,7 @@ function useMessageHistoryNavigation(
         target?.closest('[class*="sender"]') !== null;
 
       if (!isChatSender) return;
-      if (isComposingRef.current || (e as any).isComposing) return;
+      if (isComposingRef.current || e.isComposing) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
 
       const textarea = target as HTMLTextAreaElement;
@@ -868,7 +876,12 @@ function useMessageHistoryNavigation(
       document.removeEventListener("keydown", handleKeyDown, true);
       document.removeEventListener("focusin", handleFocus, true);
     };
-  }, [isChatActive, isComposingRef, getUserMessagesWithText]);
+  }, [
+    findMessageInDirection,
+    getUserMessagesWithText,
+    isChatActive,
+    isComposingRef,
+  ]);
 }
 
 // ---------------------------------------------------------------------------
@@ -1024,8 +1037,7 @@ const timestampStyle: React.CSSProperties = {
 const HISTORY_PANEL_STORAGE_KEY = "minions_history_panel_open";
 
 export default function ChatPage() {
-  const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
+    const navigate = useNavigate();
   const location = useLocation();
   const { isDark } = useTheme();
   const loopSelectedSkill = useLoopStore((s) => s.selectedSkill);
@@ -1078,7 +1090,7 @@ export default function ChatPage() {
   const queueSessionIdRef = useRef(queueSessionId);
   queueSessionIdRef.current = queueSessionId;
   const messageQueue =
-    useMessageQueueStore((s) => s.queues[queueSessionId]) ?? [];
+    useMessageQueueStore((s) => s.queues[queueSessionId]) ?? EMPTY_MESSAGE_QUEUE;
   const messageQueueRef = useRef(messageQueue);
   messageQueueRef.current = messageQueue;
   const autoSendTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1266,7 +1278,7 @@ export default function ChatPage() {
     if (newQueue.length > 0) {
       scheduleNextSend();
     }
-  }, [queueSessionId, scheduleNextSend]);
+  }, [messageQueue.length, queueSessionId, scheduleNextSend]);
   const [chatLoading, setChatLoading] = useState<boolean | string>(false);
   const chatLoadingRef = useRef<boolean | string>(false);
   chatLoadingRef.current = chatLoading;
@@ -1455,7 +1467,7 @@ export default function ChatPage() {
         setApprovals((prev) =>
           prev.filter((item) => item.request_id !== requestId),
         );
-        message.success(t("approval.approved"));
+        message.success("已批准工具调用");
 
         // Delay removal to let exit animation complete
         setTimeout(() => {
@@ -1466,11 +1478,11 @@ export default function ChatPage() {
           });
         }, 300);
       } catch (error) {
-        message.error(t("approval.approveFailed"));
+        message.error("批准失败");
         console.error("Failed to approve:", error);
       }
     },
-    [approvalRequests, chatId, t, message, setApprovals],
+    [approvalRequests, chatId, message, setApprovals],
   );
 
   const handleDeny = useCallback(
@@ -1494,7 +1506,7 @@ export default function ChatPage() {
         setApprovals((prev) =>
           prev.filter((item) => item.request_id !== requestId),
         );
-        message.success(t("approval.denied"));
+        message.success("已拒绝工具调用");
 
         // Delay removal to let animation complete
         // Backend will remove from pending list, next poll will update UI
@@ -1506,11 +1518,11 @@ export default function ChatPage() {
           });
         }, 300); // Match animation duration
       } catch (error) {
-        message.error(t("approval.denyFailed"));
+        message.error("拒绝失败");
         console.error("Failed to deny:", error);
       }
     },
-    [approvalRequests, chatId, t, message, setApprovals],
+    [approvalRequests, chatId, message, setApprovals],
   );
 
   // Use custom hooks for better separation of concerns
@@ -1743,7 +1755,7 @@ export default function ChatPage() {
         useMessageQueueStore.getState().currentSendingId !== null;
       if (!hasCtrl && !chatLoadingRef.current && !queueBusy) return;
       if (!hasCtrl && e.altKey) return;
-      if (isComposingRef.current || (e as any).isComposing) return;
+      if (isComposingRef.current || e.isComposing) return;
       const textarea = hasCtrl
         ? (document
             .querySelector('[class*="sender"]')
@@ -1762,7 +1774,7 @@ export default function ChatPage() {
       }
       const currentQ = useMessageQueueStore.getState().getQueue(queueSessionId);
       if (currentQ.length >= MAX_QUEUE_SIZE) {
-        message.warning(t("chat.queue.queueFull", { max: MAX_QUEUE_SIZE }));
+        message.warning(`队列已满（最多 ${MAX_QUEUE_SIZE} 条），请先发送或删除部分消息`);
         return;
       }
       useMessageQueueStore.getState().enqueue(queueSessionId, {
@@ -1790,7 +1802,7 @@ export default function ChatPage() {
     document.addEventListener("keydown", handleEnterEnqueue, true);
     return () =>
       document.removeEventListener("keydown", handleEnterEnqueue, true);
-  }, [isChatActive, queueSessionId]);
+  }, [chatId, isChatActive, isComposingRef, message, queueSessionId]);
 
   const handleQueueRemove = useCallback(
     (id: string) => {
@@ -2135,12 +2147,12 @@ export default function ChatPage() {
     async (response: CopyableResponse) => {
       try {
         await copyText(extractCopyableText(response));
-        message.success(t("common.copied"));
+        message.success("已复制到剪贴板");
       } catch {
-        message.error(t("common.copyFailed"));
+        message.error("复制到剪贴板失败");
       }
     },
-    [t],
+    [message],
   );
 
   const customFetch = useCallback(
@@ -2219,17 +2231,18 @@ export default function ChatPage() {
         chatIdRef.current ??
         String(requestBody.session_id || "");
       if (backendChatId) {
-        const userText = rewrittenInput
-          .filter((m: any) => m.role === "user")
+        const userMessages = (rewrittenInput as unknown[]).filter(
+          (item): item is Record<string, unknown> =>
+            isRecord(item) && item.role === "user",
+        );
+        const userText = userMessages
           .map(extractUserMessageText)
           .join("\n")
           .trim();
         if (userText) {
           // Also pass the full content array so patchLastUserMessage can
           // rebuild user card with images/files when reconnecting.
-          const lastUserMsg = rewrittenInput
-            .filter((m: any) => m.role === "user")
-            .slice(-1)[0];
+          const lastUserMsg = userMessages[userMessages.length - 1];
           const contentArr = Array.isArray(lastUserMsg?.content)
             ? (lastUserMsg.content as Array<{
                 type: string;
@@ -2268,23 +2281,20 @@ export default function ChatPage() {
       try {
         // Warn when model has no multimodal support
         if (!multimodalCaps.supportsMultimodal) {
-          message.warning(t("chat.attachments.multimodalWarning"));
+          message.warning("当前模型未检测到多模态能力，图片或视频可能无法被正确处理");
         } else if (
           multimodalCaps.supportsImage &&
           !multimodalCaps.supportsVideo &&
           !file.type.startsWith("image/")
         ) {
           // Warn (not block) when only image is supported
-          message.warning(t("chat.attachments.imageOnlyWarning"));
+          message.warning("当前模型仅检测到图片支持，视频等非图片文件可能无法被正确处理");
         }
         const sizeMb = file.size / 1024 / 1024;
         const uploadLimit = useUploadLimitStore.getState().uploadMaxSizeMb;
         if (uploadLimit !== null && sizeMb > uploadLimit) {
           message.error(
-            t("chat.attachments.fileSizeExceeded", {
-              limit: uploadLimit,
-              size: sizeMb.toFixed(2),
-            }),
+            `文件大小超过 ${uploadLimit}MB 限制。当前文件：${sizeMb.toFixed(2)}MB`,
           );
           onError?.(new Error(`File size exceeds ${uploadLimit}MB`));
           return;
@@ -2309,36 +2319,36 @@ export default function ChatPage() {
         onError?.(e instanceof Error ? e : new Error(String(e)));
       }
     },
-    [multimodalCaps, t],
+    [message, multimodalCaps],
   );
 
   const options = useMemo(() => {
-    const i18nConfig = getDefaultConfig(t);
+    const i18nConfig = defaultConfig;
     const commandSuggestions: CommandSuggestion[] = [
       {
         command: "/clear",
         value: "clear",
-        description: t("chat.commands.clear.description"),
+        description: "清空对话上下文",
       },
       {
         command: "/compact",
         value: "compact",
-        description: t("chat.commands.compact.description"),
+        description: "压缩对话上下文并生成摘要，支持附带说明",
       },
       {
         command: "/mission",
         value: "__loop__mission",
-        description: t("chat.commands.mission.description"),
+        description: "Mission模式 — 分解任务委派子Agent，独立上下文不污染主会话",
       },
       {
         command: "/skills",
         value: "skills",
-        description: t("chat.commands.skills.description"),
+        description: "列出当前对话可用的技能，并显示可显式调用的技能命令",
       },
       {
         command: "/goal",
         value: "__loop__goal",
-        description: t("chat.commands.goal.description"),
+        description: "Goal循环 — Agent围绕目标持续执行，通过Rubric评估自动判断完成",
       },
     ];
     const reservedCommands = new Set(
@@ -2388,7 +2398,7 @@ export default function ChatPage() {
           .getState()
           .getQueue(queueSessionId);
         if (currentQ.length >= MAX_QUEUE_SIZE) {
-          message.warning(t("chat.queue.queueFull", { max: MAX_QUEUE_SIZE }));
+          message.warning(`队列已满（最多 ${MAX_QUEUE_SIZE} 条），请先发送或删除部分消息`);
           return false;
         }
         const loopSkill = useLoopStore.getState().selectedSkill;
@@ -2443,7 +2453,7 @@ export default function ChatPage() {
     };
 
     // ── Resolve plugin extension snapshots ────────────────────────────────
-    const locale = i18n.language;
+    const locale = "zh";
     const extGreeting = resolveLocalized(
       extScalar[ChatScalar.welcomeGreeting]?.value,
       locale,
@@ -2532,7 +2542,7 @@ export default function ChatPage() {
     const wrapActionSpec = (
       pluginId: string,
       slot: string,
-      spec: { id: string; icon?: any; render?: any; onClick?: any },
+      spec: ChatActionSpec,
     ) => ({
       icon: spec.icon,
       render: spec.render
@@ -2563,12 +2573,12 @@ export default function ChatPage() {
       wrapActionSpec(e.pluginId, ChatList.requestActions, e.item.item),
     );
 
-    const wrapToolFC = (
+    const wrapToolFC = <P extends Record<string, unknown>>(
       pluginId: string,
       toolName: string,
-      FC: React.FC<any>,
+      FC: React.FC<P>,
     ) => {
-      const Wrapped: React.FC<any> = (props) => (
+      const Wrapped: React.FC<P> = (props) => (
         <PluginSlotBoundary
           slot={`customToolRender:${toolName}`}
           pluginId={pluginId}
@@ -2578,7 +2588,7 @@ export default function ChatPage() {
       );
       return Wrapped;
     };
-    const pluginToolRenderers: Record<string, React.FC<any>> = {};
+    const pluginToolRenderers: Record<string, ToolRenderer> = {};
     for (const e of extLists[ChatList.customToolRender]) {
       pluginToolRenderers[e.item.toolName] = wrapToolFC(
         e.pluginId,
@@ -2586,12 +2596,12 @@ export default function ChatPage() {
         e.item.render,
       );
     }
-    const mergedToolRenderers: Record<string, React.FC<any>> = {
+    const mergedToolRenderers: Record<string, ToolRenderer> = {
       ...toolRenderConfig,
       ...pluginToolRenderers,
     };
 
-    const pluginCards: Record<string, React.FC<any>> = {};
+    const pluginCards: Record<string, ToolRenderer> = {};
     for (const e of extLists[ChatList.cards]) {
       pluginCards[e.item.cardName] = wrapToolFC(
         e.pluginId,
@@ -2614,7 +2624,7 @@ export default function ChatPage() {
     };
 
     // leftHeader: whole-section render wins, otherwise partial merge {logo, title}.
-    const mergedLeftHeader: any =
+    const mergedLeftHeader =
       extLeftHeaderRender !== undefined ? (
         <PluginSlotBoundary
           slot={ChatScalar.headerLeftHeaderRender}
@@ -2676,7 +2686,7 @@ export default function ChatPage() {
         ...(wrappedWelcomeRender ? { render: wrappedWelcomeRender } : {}),
       },
       sender: {
-        ...(i18nConfig as any)?.sender,
+        ...i18nConfig.sender,
         beforeSubmit: handleBeforeSubmit,
         allowSpeech: whisperChecked && !whisperEnabled,
         beforeUI: showSenderBeforeUI ? (
@@ -2686,7 +2696,7 @@ export default function ChatPage() {
                 type="info"
                 showIcon
                 banner
-                message={t("chat.queue.otherTabOwner")}
+                message={"当前标签页仅入队，发送由其他标签页完成"}
               />
             )}
             {hasQueueItems ? (
@@ -2715,7 +2725,7 @@ export default function ChatPage() {
             ) : null}
             <LoopCommandChip />
             {loopSelectedSkill ? (
-              <Tooltip title={t("loop.gotoSettings", "Agent Loop Settings")}>
+              <Tooltip title={"智能体 Loop 设置"}>
                 <SettingOutlined
                   style={{
                     fontSize: 14,
@@ -2741,19 +2751,17 @@ export default function ChatPage() {
         ),
         attachments: {
           multiple: true,
-          trigger: function (props: any) {
+          trigger: function (props: { disabled?: boolean }) {
             const uploadLimit = useUploadLimitStore.getState().uploadMaxSizeMb;
-            const tooltipKey = multimodalCaps.supportsMultimodal
+            const tooltipBase = multimodalCaps.supportsMultimodal
               ? multimodalCaps.supportsImage && !multimodalCaps.supportsVideo
-                ? "chat.attachments.tooltipImageOnly"
-                : "chat.attachments.tooltip"
-              : "chat.attachments.tooltipNoMultimodal";
+                ? "仅支持图片"
+                : "支持图片和文件"
+              : "仅支持文本";
             const tooltipTitle =
               uploadLimit !== null
-                ? `${t(tooltipKey)}, ${t("chat.attachments.fileSizeLimit", {
-                    limit: uploadLimit,
-                  })}`
-                : t(tooltipKey);
+                ? `${tooltipBase}，单文件不超过 ${uploadLimit}MB`
+                : tooltipBase;
             return (
               <Tooltip title={tooltipTitle}>
                 <IconButton
@@ -2767,15 +2775,12 @@ export default function ChatPage() {
           customRequest: handleFileUpload,
         },
         longTextUpload: {
-          ...((i18nConfig as any)?.sender?.longTextUpload ?? {}),
+          ...i18nConfig.sender.longTextUpload,
           customRequest: handleFileUpload,
           prompt: () =>
-            t(
-              "chat.longTextUploadPrompt",
-              "Please read the uploaded prompt file and answer it.",
-            ),
+            "请读取已上传的提示词文件，并根据文件内容回答。",
         },
-        placeholder: extPlaceholder ?? t("chat.inputPlaceholder"),
+        placeholder: extPlaceholder ?? "\"↑↓\" 浏览消息 · \"/\" 快捷指令（审批时 \"/approve\" 或 \"/deny\"）",
         ...(extDisclaimer !== undefined ? { disclaimer: extDisclaimer } : {}),
         suggestions: [...baseSuggestions, ...pluginSuggestions],
       },
@@ -2793,8 +2798,11 @@ export default function ChatPage() {
           if (payloadCompletesResponse(payload)) {
             const output = payload.output;
             if (!output || (Array.isArray(output) && output.length === 0)) {
+              const error = payload.error;
               const errorMsg =
-                (payload.error as any)?.message || t("chat.emptyOutputError");
+                isRecord(error) && typeof error.message === "string"
+                  ? error.message
+                  : "助手返回了空响应。";
               payload.output = [
                 {
                   type: "message",
@@ -2813,7 +2821,7 @@ export default function ChatPage() {
             const alts =
               (payload.alternatives as typeof rateLimitAlternatives) || [];
             setRateLimitAlternatives(alts);
-            message.warning(t("chat.rateLimitHit"));
+            message.warning("当前模型已触发限流，请尝试切换其他免费模型。");
             return null;
           }
 
@@ -2824,7 +2832,7 @@ export default function ChatPage() {
             }
           }
 
-          return payload as any;
+          return payload;
         },
         replaceMediaURL: (url: string) => {
           return toDisplayUrl(url);
@@ -2881,7 +2889,7 @@ export default function ChatPage() {
           },
           {
             icon: (
-              <span title={t("common.copy")}>
+              <span title={"复制"}>
                 <SparkCopyLine />
               </span>
             ),
@@ -2921,15 +2929,15 @@ export default function ChatPage() {
           },
           {
             icon: <SparkCopyLine />,
-            onClick: ({ data }: { data: { input?: any[] } }) => {
+            onClick: ({ data }: { data: { input?: unknown[] } }) => {
               const text = (data?.input || [])
                 .map(extractUserMessageText)
                 .join("\n")
                 .trim();
               if (text) {
                 void copyText(text)
-                  .then(() => message.success(t("common.copied")))
-                  .catch(() => message.error(t("common.copyFailed")));
+                  .then(() => message.success("已复制到剪贴板"))
+                  .catch(() => message.error("复制到剪贴板失败"));
               }
             },
           },
@@ -2938,27 +2946,36 @@ export default function ChatPage() {
       },
     } as unknown as IAgentScopeRuntimeWebUIOptions;
   }, [
+    chatId,
     customFetch,
     copyResponse,
     handleFileUpload,
-    t,
-    i18n.language,
+    effectiveIsFullMode,
+    hasQueueItems,
+    historyPanelOpen,
     isDark,
+    isComposingRef,
+    isQueueOnlyTab,
     multimodalCaps,
     toolRenderConfig,
     extScalar,
     extLists,
     scheduleHistoryClear,
     consoleSkills,
+    loopSelectedSkill,
+    message,
+    navigate,
     selectedAgent,
     runningConfigApprovalLevel,
     queueSessionId,
     onFileCardClick,
+    showSenderBeforeUI,
     whisperChecked,
     whisperEnabled,
     handleWhisperTranscription,
     isWideMode,
     toggleWideMode,
+    toggleHistoryPanel,
     messageQueue,
     handleQueueRemove,
     handleQueueEdit,
@@ -2969,7 +2986,6 @@ export default function ChatPage() {
     handleQueueRetry,
     handleQueueSkip,
     runState,
-    isOwner,
   ]);
 
   return (
@@ -2994,7 +3010,7 @@ export default function ChatPage() {
         {rateLimitAlternatives.length > 0 && (
           <div className={styles.rateLimitBanner}>
             <span className={styles.rateLimitText}>
-              {t("chat.rateLimitMessage")}
+              {"已触发限流，切换其他免费模型："}
             </span>
             <div className={styles.rateLimitActions}>
               {rateLimitAlternatives.slice(0, 3).map((alt) => (
@@ -3012,11 +3028,11 @@ export default function ChatPage() {
                       });
                       window.dispatchEvent(new CustomEvent("model-switched"));
                       message.success(
-                        t("chat.rateLimitSwitched", { model: alt.model_name }),
+                        `已切换至 ${alt.model_name}`,
                       );
                       setRateLimitAlternatives([]);
                     } catch {
-                      message.error(t("modelSelector.switchFailed"));
+                      message.error("切换模型失败");
                     }
                   }}
                 >
@@ -3028,7 +3044,7 @@ export default function ChatPage() {
                 type="link"
                 onClick={() => setRateLimitAlternatives([])}
               >
-                {t("common.close")}
+                {"关闭"}
               </Button>
             </div>
           </div>
@@ -3119,19 +3135,19 @@ export default function ChatPage() {
               <span
                 style={{ color: isDark ? "rgba(255,255,255,0.88)" : undefined }}
               >
-                {t("modelConfig.promptTitle")}
+                {"需要配置 LLM 模型，配置模型后在 Chat 页面选择"}
               </span>
             }
             subTitle={
               <span
                 style={{ color: isDark ? "rgba(255,255,255,0.55)" : undefined }}
               >
-                {t("modelConfig.promptMessage")}
+                {"聊天功能需要 LLM 模型才能运行。请先配置模型，配置完成后在 Chat 页面顶部的模型选择器中选择即可使用。"}
               </span>
             }
             extra={[
               <Button key="skip" onClick={() => setShowModelPrompt(false)}>
-                {t("modelConfig.skipButton")}
+                {"跳过"}
               </Button>,
               <Button
                 key="configure"
@@ -3142,7 +3158,7 @@ export default function ChatPage() {
                   navigate("/models");
                 }}
               >
-                {t("modelConfig.configureButton")}
+                {"配置模型"}
               </Button>,
             ]}
           />

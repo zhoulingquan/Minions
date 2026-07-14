@@ -2,7 +2,6 @@ import { Checkbox, Input } from "@agentscope-ai/design";
 import { SparkDeleteLine, SparkPlusLine } from "@agentscope-ai/icons";
 import { EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
 import styles from "../index.module.less";
 
 export interface Row {
@@ -32,8 +31,7 @@ export function EnvRow({
   onInsert,
   onRemove,
 }: EnvRowProps) {
-  const { t } = useTranslation();
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+    const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   return (
     <div className={`${styles.envRow} ${checked ? styles.envRowSelected : ""}`}>
@@ -75,8 +73,8 @@ export function EnvRow({
                 type="button"
                 title={
                   isPasswordVisible
-                    ? t("environments.hideValue")
-                    : t("environments.showValue")
+                    ? "隐藏值"
+                    : "显示值"
                 }
               >
                 {isPasswordVisible ? <EyeOutlined /> : <EyeInvisibleOutlined />}
@@ -90,14 +88,14 @@ export function EnvRow({
         <button
           className={styles.rowIconBtn}
           onClick={() => onInsert(idx)}
-          title={t("environments.insertRowBelow")}
+          title={"在下方插入行"}
         >
           <SparkPlusLine />
         </button>
         <button
           className={`${styles.rowIconBtn} ${styles.rowIconBtnDanger}`}
           onClick={() => onRemove(idx)}
-          title={t("environments.deleteRow")}
+          title={"删除行"}
         >
           <SparkDeleteLine />
         </button>

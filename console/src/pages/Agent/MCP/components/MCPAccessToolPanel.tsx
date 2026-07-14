@@ -1,7 +1,6 @@
 import React from "react";
 import { PlusOutlined } from "@ant-design/icons";
 import { Button, Tag } from "@agentscope-ai/design";
-import { useTranslation } from "react-i18next";
 import type {
   MCPAccessEffect,
   MCPAccessPrincipalOption,
@@ -38,13 +37,12 @@ export const MCPAccessToolPanel: React.FC<MCPAccessToolPanelProps> = ({
   deleteRule,
   effectLabel,
 }) => {
-  const { t } = useTranslation();
 
   return (
     <div className={styles.accessToolsPanel}>
       <div className={styles.accessSectionHeader}>
         <div className={styles.accessSectionTitle}>
-          {t("mcp.access.toolSection")}
+          {"工具权限"}
         </div>
       </div>
       <div className={styles.accessToolGroups}>
@@ -57,13 +55,13 @@ export const MCPAccessToolPanel: React.FC<MCPAccessToolPanelProps> = ({
                     {group.toolName}
                   </Tag>
                   {group.stale && (
-                    <Tag color="orange">{t("mcp.access.stale")}</Tag>
+                    <Tag color="orange">{"当前不存在"}</Tag>
                   )}
                 </div>
               </div>
               <div className={styles.accessToolDefault}>
                 <span className={styles.accessDefaultLabel}>
-                  {t("mcp.access.default")}
+                  {"默认策略"}
                 </span>
                 <MCPAccessPolicySegmented
                   value={group.defaultEffect}
@@ -78,7 +76,7 @@ export const MCPAccessToolPanel: React.FC<MCPAccessToolPanelProps> = ({
                 icon={<PlusOutlined />}
                 onClick={() => addRule(group.toolName)}
               >
-                {t("mcp.access.addRule")}
+                {"新增规则"}
               </Button>
             </div>
 
@@ -86,7 +84,7 @@ export const MCPAccessToolPanel: React.FC<MCPAccessToolPanelProps> = ({
               (group.inputSchema &&
                 Object.keys(group.inputSchema).length > 0)) && (
               <details className={styles.toolSchema}>
-                <summary>{t("mcp.toolSchema")}</summary>
+                <summary>{"描述与参数"}</summary>
                 {group.description && (
                   <div className={styles.toolSchemaDescription}>
                     {group.description}
@@ -108,7 +106,7 @@ export const MCPAccessToolPanel: React.FC<MCPAccessToolPanelProps> = ({
               updateRule={updateRule}
               setRuleEffect={setRuleEffect}
               deleteRule={deleteRule}
-              emptyText={t("mcp.access.noRules")}
+              emptyText={"暂无规则，使用默认策略"}
               effectLabel={effectLabel}
             />
           </div>

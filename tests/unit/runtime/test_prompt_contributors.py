@@ -22,7 +22,6 @@ def _ctx(tmp_path, system_prompt_files):
             ),
             "heartbeat_enabled": False,
             "language": "en",
-            "memory_manager": None,
         },
     )
 

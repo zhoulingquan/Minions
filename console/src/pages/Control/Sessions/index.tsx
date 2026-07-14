@@ -2,7 +2,6 @@ import { useEffect, useState, useDeferredValue } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, Form, Modal, Table, Button } from "@agentscope-ai/design";
 import { useAppMessage } from "../../../hooks/useAppMessage";
-import { useTranslation } from "react-i18next";
 import {
   createColumns,
   FilterBar,
@@ -17,8 +16,7 @@ import { ChannelIcon } from "../Channels/components";
 import styles from "./index.module.less";
 
 function SessionsPage() {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
+    const navigate = useNavigate();
   const {
     sessions,
     loading,
@@ -96,17 +94,17 @@ function SessionsPage() {
 
   const handleEdit = (session: Session) => {
     setEditingSession(session);
-    form.setFieldsValue(session as any);
+    form.setFieldsValue(session as Parameters<typeof form.setFieldsValue>[0]);
     setDrawerOpen(true);
   };
 
   const handleDelete = (sessionId: string) => {
     Modal.confirm({
-      title: t("sessions.confirmDelete"),
-      content: t("sessions.deleteConfirm"),
-      okText: t("cronJobs.deleteText"),
+      title: "确认删除",
+      content: "确定要删除此会话吗？",
+      okText: "删除",
       okType: "primary",
-      cancelText: t("cronJobs.cancelText"),
+      cancelText: "取消",
       onOk: async () => {
         await deleteSession(sessionId);
       },
@@ -119,18 +117,16 @@ function SessionsPage() {
 
   const handleBatchDelete = () => {
     if (selectedRowKeys.length === 0) {
-      message.warning(t("sessions.batchDeleteConfirm", { count: 0 }));
+      message.warning("请先选择要删除的会话");
       return;
     }
 
     Modal.confirm({
-      title: t("sessions.confirmDelete"),
-      content: t("sessions.batchDeleteConfirm", {
-        count: selectedRowKeys.length,
-      }),
-      okText: t("cronJobs.deleteText"),
+      title: "确认删除",
+      content: `确定要删除选中的 ${selectedRowKeys.length} 个会话吗？`,
+      okText: "删除",
       okType: "danger",
-      cancelText: t("cronJobs.cancelText"),
+      cancelText: "取消",
       onOk: async () => {
         const success = await batchDeleteSessions(selectedRowKeys as string[]);
         if (success) {
@@ -166,7 +162,6 @@ function SessionsPage() {
     onEdit: handleEdit,
     onDelete: handleDelete,
     onView: handleView,
-    t,
   });
 
   const rowSelection = {
@@ -181,7 +176,7 @@ function SessionsPage() {
   return (
     <div className={styles.sessionsPage}>
       <PageHeader
-        items={[{ title: t("nav.control") }, { title: t("sessions.title") }]}
+        items={[{ title: "控制" }, { title: "会话" }]}
         extra={
           <div className={styles.headerRight}>
             <FilterBar
@@ -196,7 +191,7 @@ function SessionsPage() {
             />
             {selectedRowKeys.length > 0 && (
               <Button type="primary" danger onClick={handleBatchDelete}>
-                {t("sessions.batchDeleteButton")} ({selectedRowKeys.length})
+                {"批量删除"} ({selectedRowKeys.length})
               </Button>
             )}
           </div>
@@ -231,14 +226,14 @@ function SessionsPage() {
                   className={styles.mobileActionBtn}
                   onClick={() => handleEdit(session)}
                 >
-                  {t("common.edit")}
+                  {"编辑"}
                 </Button>
                 <Button
                   size="small"
                   className={styles.mobileActionBtn}
                   onClick={() => handleView(session)}
                 >
-                  {t("common.view")}
+                  {"查看"}
                 </Button>
                 <Button
                   size="small"
@@ -246,7 +241,7 @@ function SessionsPage() {
                   danger
                   onClick={() => handleDelete(session.id)}
                 >
-                  {t("common.delete")}
+                  {"删除"}
                 </Button>
               </div>
             </Card>

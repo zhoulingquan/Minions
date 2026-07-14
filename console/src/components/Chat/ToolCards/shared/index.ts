@@ -12,7 +12,6 @@ export {
   getFileExtFromPath,
   getMediaInfo,
   extractUrlFromText,
-  formatMemorySearch,
   formatAgentList,
   looksLikeMarkdown,
   stringifyResult,

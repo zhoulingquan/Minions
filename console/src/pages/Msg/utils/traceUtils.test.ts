@@ -7,7 +7,7 @@
  * multi-step buildTraceDisplayItems pipeline (tool_call/tool_output pairing,
  * response_completed filtering, multi-block splitting).
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import type { PushMessage } from "../types";
 import {
   buildContentFallbackTrace,
@@ -362,17 +362,8 @@ describe("normalizeDetailTaskName", () => {
 });
 
 describe("getDetailModalTitle", () => {
-  const t = vi.fn((key: string, opts?: Record<string, unknown>) =>
-    opts ? `${key}:${JSON.stringify(opts)}` : key,
-  );
-
-  beforeEach(() => {
-    t.mockClear();
-  });
-
   it("returns messageDetailTitle for null message", () => {
-    expect(getDetailModalTitle(null, t)).toBe("msg.messageDetailTitle");
-    expect(t).toHaveBeenCalledWith("msg.messageDetailTitle");
+    expect(getDetailModalTitle(null)).toBe("执行详情");
   });
 
   it("returns detailCronTitle with normalized name for cron source", () => {
@@ -380,14 +371,12 @@ describe("getDetailModalTitle", () => {
       title: "cron result: Job A",
       metadata: { sourceType: "cron" },
     });
-    expect(getDetailModalTitle(msg, t)).toBe(
-      `msg.detailCronTitle:${JSON.stringify({ name: "Job A" })}`,
-    );
+    expect(getDetailModalTitle(msg)).toBe("定时任务：Job A");
   });
 
   it("returns detailHeartbeatTitle for heartbeat source", () => {
     const msg = makeMessage({ metadata: { sourceType: "heartbeat" } });
-    expect(getDetailModalTitle(msg, t)).toBe("msg.detailHeartbeatTitle");
+    expect(getDetailModalTitle(msg)).toBe("心跳");
   });
 
   it("returns title for other sources", () => {
@@ -395,12 +384,12 @@ describe("getDetailModalTitle", () => {
       title: "Hey",
       metadata: { sourceType: "wechat" },
     });
-    expect(getDetailModalTitle(msg, t)).toBe("Hey");
+    expect(getDetailModalTitle(msg)).toBe("Hey");
   });
 
   it("falls back to messageDetailTitle when title empty and unknown source", () => {
     const msg = makeMessage({ title: "", metadata: { sourceType: "wechat" } });
-    expect(getDetailModalTitle(msg, t)).toBe("msg.messageDetailTitle");
+    expect(getDetailModalTitle(msg)).toBe("执行详情");
   });
 });
 

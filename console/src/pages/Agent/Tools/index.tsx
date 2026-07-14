@@ -1,114 +1,69 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Spin } from "antd";
+import { Empty, Button, Modal, Input, Popconfirm } from "@agentscope-ai/design";
 import {
-  Card,
-  Switch,
-  Empty,
-  Button,
-  Modal,
-  Form,
-  Input,
-  InputNumber,
-  Select,
-} from "@agentscope-ai/design";
-import api from "../../../api";
-import {
-  EyeInvisibleOutlined,
-  ThunderboltOutlined,
-  ClockCircleOutlined,
-  SettingOutlined,
+  PlusOutlined,
+  DeleteOutlined,
+  ReloadOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
 import { useTools } from "./useTools";
-import { useTranslation } from "react-i18next";
 import type { ToolInfo } from "../../../api/modules/tools";
 import { PageHeader } from "@/components/PageHeader";
+import { ToolCard } from "./ToolCard";
+import { ToolConfigDrawer } from "./ToolConfigDrawer";
 import styles from "./index.module.less";
+import channelsStyles from "../../Control/Channels/index.module.less";
 
-/** Stable background colours for the initial-letter fallback icon. */
-const ICON_PALETTE = [
-  "#f56a00",
-  "#7265e6",
-  "#ffbf00",
-  "#00a2ae",
-  "#87d068",
-  "#1890ff",
-  "#eb2f96",
-  "#722ed1",
-];
+type FilterType = "all" | "builtin" | "custom";
 
-function hashStringToIndex(value: string, mod: number): number {
-  let hash = 0;
-  for (let i = 0; i < value.length; i++) {
-    hash = (hash * 31 + value.charCodeAt(i)) | 0;
-  }
-  return Math.abs(hash) % mod;
-}
-
-/** Renders the emoji icon or a coloured initial-letter badge as fallback. */
-function ToolIcon({ icon, name }: { icon: string; name: string }) {
-  if (icon) {
-    return <span>{icon}</span>;
-  }
-  const letter = name.charAt(0).toUpperCase();
-  const backgroundColor =
-    ICON_PALETTE[hashStringToIndex(name, ICON_PALETTE.length)];
-  return (
-    <span className={styles.toolIconFallback} style={{ backgroundColor }}>
-      {letter}
-    </span>
-  );
-}
-
-/** Configuration modal for tools that require configuration */
-function ToolConfigModal({
-  tool,
+/** Modal for creating a custom tool by uploading a .py file. */
+function AddToolModal({
   visible,
   onClose,
-  onSave,
+  onCreate,
 }: {
-  tool: ToolInfo;
   visible: boolean;
   onClose: () => void;
-  onSave: (values: Record<string, any>) => Promise<void>;
+  onCreate: (name: string, content: string) => Promise<void>;
 }) {
-  const [form] = Form.useForm();
+  const [name, setName] = useState("");
+  const [content, setContent] = useState("");
+  const [fileName, setFileName] = useState("");
   const [saving, setSaving] = useState(false);
-  const [loadingConfig, setLoadingConfig] = useState(false);
-  const { t } = useTranslation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch latest config from backend whenever the modal opens.
-  // Cleanup cancels stale in-flight requests on rapid tool switches.
   useEffect(() => {
-    if (!visible || !tool) return;
-    form.resetFields();
-    setLoadingConfig(true);
-    let cancelled = false;
-    api
-      .getToolConfig(tool.name)
-      .then((config) => {
-        if (!cancelled) form.setFieldsValue(config || {});
-      })
-      .catch(() => {
-        // Leave form empty on error
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingConfig(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [visible, tool.name, form]);
+    if (visible) {
+      setName("");
+      setContent("");
+      setFileName("");
+    }
+  }, [visible]);
 
-  const handleSave = async () => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.name.toLowerCase().endsWith(".py")) return;
+    setFileName(file.name);
+    const stem = file.name.replace(/\.py$/i, "");
+    setName(stem);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result;
+      if (typeof text === "string") setContent(text);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleCreate = async () => {
+    const trimmed = name.trim();
+    if (!trimmed || !content) return;
     try {
-      const values = await form.validateFields();
       setSaving(true);
-      await onSave(values);
-      // Success message is shown in useTools.saveToolConfig
+      await onCreate(trimmed, content);
       onClose();
     } catch (error) {
-      console.error("Failed to save config:", error);
-      // Error is already handled and shown in useTools
+      console.error("Failed to create custom tool:", error);
     } finally {
       setSaving(false);
     }
@@ -116,325 +71,344 @@ function ToolConfigModal({
 
   return (
     <Modal
-      title={`${t("tools.configure")} - ${tool.name}`}
+      title={"新增工具"}
       open={visible}
       onCancel={onClose}
-      onOk={handleSave}
-      confirmLoading={saving || loadingConfig}
-      okButtonProps={{ disabled: loadingConfig }}
-      okText={t("common.save")}
-      cancelText={t("common.cancel")}
+      onOk={handleCreate}
+      confirmLoading={saving}
+      okButtonProps={{ disabled: !name.trim() || !content }}
+      okText={"创建"}
+      cancelText={"取消"}
+      width={640}
+      destroyOnClose
     >
-      <Spin spinning={loadingConfig}>
-        <Form form={form} layout="vertical">
-          {tool.config_fields?.map((field) => {
-            // Render different input types based on field type
-            const renderInput = () => {
-              switch (field.type) {
-                case "password":
-                  return (
-                    <Input.Password
-                      placeholder={field.placeholder}
-                      autoComplete="off"
-                    />
-                  );
+      <div className={styles.toolForm}>
+        <div className={styles.formField}>
+          <label className={styles.formLabel}>{"选择 .py 文件"}</label>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+            accept=".py"
+            style={{ display: "none" }}
+          />
+          <Button
+            icon={<UploadOutlined />}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {"选择文件"}
+          </Button>
+          {fileName && <span className={styles.fileName}>{fileName}</span>}
+        </div>
+        <div className={styles.formField}>
+          <label className={styles.formLabel}>{"工具名称"}</label>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={"例如：my_tool"}
+          />
+        </div>
+        {content && (
+          <div className={styles.formField}>
+            <label className={styles.formLabel}>
+              {"工具代码"} ({content.length} chars)
+            </label>
+            <Input.TextArea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              rows={15}
+              className={styles.codeEditor}
+              spellCheck={false}
+            />
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}
 
-                case "number":
-                  return (
-                    <InputNumber
-                      placeholder={field.placeholder}
-                      min={field.min}
-                      max={field.max}
-                      style={{ width: "100%" }}
-                    />
-                  );
+/** Modal for editing a custom tool's code with reload action. */
+function EditToolModal({
+  visible,
+  toolName,
+  onClose,
+  onLoad,
+  onSave,
+  onReload,
+  onDelete,
+}: {
+  visible: boolean;
+  toolName: string | null;
+  onClose: () => void;
+  onLoad: (name: string) => Promise<{ content: string }>;
+  onSave: (name: string, content: string) => Promise<void>;
+  onReload: (name: string) => Promise<void>;
+  onDelete: () => void;
+}) {
+  const [content, setContent] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [reloading, setReloading] = useState(false);
 
-                case "boolean":
-                  return <Switch />;
+  useEffect(() => {
+    if (!visible || !toolName) return;
+    setLoading(true);
+    setContent("");
+    onLoad(toolName)
+      .then((data) => setContent(data.content))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [visible, toolName, onLoad]);
 
-                case "select":
-                  return (
-                    <Select placeholder={field.placeholder}>
-                      {field.options?.map((option) => (
-                        <Select.Option key={option} value={option}>
-                          {option}
-                        </Select.Option>
-                      ))}
-                    </Select>
-                  );
+  const handleSave = async () => {
+    if (!toolName) return;
+    try {
+      setSaving(true);
+      await onSave(toolName, content);
+      onClose();
+    } catch (error) {
+      console.error("Failed to save:", error);
+    } finally {
+      setSaving(false);
+    }
+  };
 
-                case "textarea":
-                  return (
-                    <Input.TextArea
-                      placeholder={field.placeholder}
-                      rows={4}
-                      autoSize={{ minRows: 2, maxRows: 8 }}
-                    />
-                  );
+  const handleReload = async () => {
+    if (!toolName) return;
+    try {
+      setReloading(true);
+      await onReload(toolName);
+    } catch (error) {
+      console.error("Failed to reload:", error);
+    } finally {
+      setReloading(false);
+    }
+  };
 
-                case "text":
-                default:
-                  return <Input placeholder={field.placeholder} />;
-              }
-            };
-
-            return (
-              <Form.Item
-                key={field.name}
-                name={field.name}
-                label={field.label}
-                rules={[
-                  {
-                    required: field.required,
-                    message: `${field.label} is required`,
-                  },
-                ]}
-                help={field.help}
-                valuePropName={field.type === "boolean" ? "checked" : "value"}
+  return (
+    <Modal
+      title={`${"编辑代码"} - ${toolName ?? ""}`}
+      open={visible}
+      onCancel={onClose}
+      footer={
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <Popconfirm
+            title={"确定要删除此自定义工具吗？此操作不可撤销。"}
+            onConfirm={onDelete}
+            okText={"删除"}
+            cancelText={"取消"}
+            okButtonProps={{ danger: true }}
+          >
+            <Button danger icon={<DeleteOutlined />}>
+              {"删除"}
+            </Button>
+          </Popconfirm>
+          <div style={{ display: "flex", gap: 8 }}>
+            <Button onClick={onClose}>{"取消"}</Button>
+            <Button
+              type="primary"
+              loading={saving || loading}
+              disabled={loading}
+              onClick={handleSave}
+            >
+              {"保存"}
+            </Button>
+          </div>
+        </div>
+      }
+      width={720}
+      destroyOnClose
+    >
+      <Spin spinning={loading}>
+        <div className={styles.toolForm}>
+          <div className={styles.formField}>
+            <div className={styles.editHeader}>
+              <label className={styles.formLabel}>{"工具代码"}</label>
+              <Button
+                size="small"
+                icon={<ReloadOutlined />}
+                onClick={handleReload}
+                loading={reloading}
+                disabled={loading || !toolName}
               >
-                {renderInput()}
-              </Form.Item>
-            );
-          })}
-        </Form>
+                {"重新加载"}
+              </Button>
+            </div>
+            <Input.TextArea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              rows={15}
+              className={styles.codeEditor}
+              spellCheck={false}
+            />
+          </div>
+        </div>
       </Spin>
     </Modal>
   );
 }
 
 export default function ToolsPage() {
-  const { t } = useTranslation();
   const {
     tools,
     loading,
-    batchLoading,
     customToolNames,
-    toggleEnabled,
-    toggleAsyncExecution,
-    enableAll,
-    disableAll,
-    loadTools,
     saveToolConfig,
+    loadTools,
+    createCustomTool,
+    getCustomTool,
+    updateCustomTool,
+    deleteCustomTool,
+    reloadCustomTool,
   } = useTools();
-  const [configModalVisible, setConfigModalVisible] = useState(false);
+  const [filter, setFilter] = useState<FilterType>("all");
+  const [configDrawerOpen, setConfigDrawerOpen] = useState(false);
   const [currentTool, setCurrentTool] = useState<ToolInfo | null>(null);
+  const [addModalVisible, setAddModalVisible] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editToolName, setEditToolName] = useState<string | null>(null);
 
-  const handleConfigure = (tool: ToolInfo) => {
-    setCurrentTool(tool);
-    setConfigModalVisible(true);
+  const handleCardClick = (tool: ToolInfo) => {
+    const isCustom = customToolNames.includes(tool.name);
+    if (isCustom) {
+      setEditToolName(tool.name);
+      setEditModalVisible(true);
+    } else {
+      setCurrentTool(tool);
+      setConfigDrawerOpen(true);
+    }
   };
 
-  const handleSaveConfig = async (values: Record<string, any>) => {
+  const handleSaveConfig = async (values: Record<string, unknown>) => {
     if (!currentTool) return;
     await saveToolConfig(currentTool.name, values);
     await loadTools();
   };
 
-  const { enabledTools, disabledTools } = useMemo(() => {
-    // Custom tools have their own page (Agent/CustomTools); only show
-    // built-in tools here so the two lists never overlap.
-    const builtin = tools.filter(
-      (tool) => !customToolNames.includes(tool.name),
-    );
-    const enabled = builtin.filter((tool) => tool.enabled);
-    const disabled = builtin.filter((tool) => !tool.enabled);
-    return { enabledTools: enabled, disabledTools: disabled };
-  }, [tools, customToolNames]);
-
-  const isToolConfigured = (tool: ToolInfo) =>
-    !tool.requires_config ||
-    (tool.config_values && Object.keys(tool.config_values).length > 0);
-
-  const handleAvailableItemClick = (tool: ToolInfo) => {
-    if (tool.requires_config && !isToolConfigured(tool)) {
-      handleConfigure(tool);
-    } else {
-      toggleEnabled(tool);
-    }
+  const handleDeleteTool = async () => {
+    if (!editToolName) return;
+    await deleteCustomTool(editToolName);
+    setEditModalVisible(false);
+    setEditToolName(null);
   };
 
+  // Unified card list: built-in first, then custom (alphabetical);
+  // within each group enabled tools come before disabled ones.
+  const cards = useMemo(() => {
+    const isCustom = (name: string) => customToolNames.includes(name);
+    const builtin = tools.filter((tool) => !isCustom(tool.name));
+    const custom = tools
+      .filter((tool) => isCustom(tool.name))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    const sortByEnabled = (a: ToolInfo, b: ToolInfo) =>
+      Number(b.enabled) - Number(a.enabled);
+
+    let list: ToolInfo[];
+    if (filter === "builtin") {
+      list = [...builtin].sort(sortByEnabled);
+    } else if (filter === "custom") {
+      list = [...custom].sort(sortByEnabled);
+    } else {
+      list = [
+        ...builtin.sort(sortByEnabled),
+        ...custom.sort(sortByEnabled),
+      ];
+    }
+    return list.map((tool) => ({
+      tool,
+      isCustom: isCustom(tool.name),
+    }));
+  }, [tools, customToolNames, filter]);
+
+  const FILTER_TABS: { key: FilterType; label: string }[] = [
+    { key: "all", label: "全部" },
+    { key: "builtin", label: "内置工具" },
+    { key: "custom", label: "自定义工具" },
+  ];
+
   return (
-    <div className={styles.toolsPage}>
+    <div className={channelsStyles.channelsPage}>
       <PageHeader
-        items={[{ title: t("nav.agent") }, { title: t("tools.title") }]}
-        extra={
-          <div className={styles.headerAction}>
-            <Switch
-              checked={enabledTools.length > 0 && disabledTools.length === 0}
-              onChange={() =>
-                disabledTools.length > 0 ? enableAll() : disableAll()
-              }
-              disabled={batchLoading || loading}
-              checkedChildren={t("tools.enableAll")}
-              unCheckedChildren={t("tools.disableAll")}
-            />
+        className={channelsStyles.pageHeader}
+        items={[{ title: "工作区" }, { title: "工具" }]}
+        center={
+          <div className={channelsStyles.filterTabs}>
+            {FILTER_TABS.map(({ key, label }) => (
+              <button
+                key={key}
+                className={`${channelsStyles.filterTab} ${
+                  filter === key ? channelsStyles.filterTabActive : ""
+                }`}
+                onClick={() => setFilter(key)}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         }
+        extra={
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setAddModalVisible(true)}
+          >
+            {"新增工具"}
+          </Button>
+        }
       />
-      <div className={styles.toolsContainer}>
+      <div className={channelsStyles.channelsContainer}>
         {loading ? (
-          <div className={styles.loading}>
-            <p>{t("common.loading")}</p>
+          <div className={channelsStyles.loading}>
+            <span className={channelsStyles.loadingText}>
+              {"加载中..."}
+            </span>
           </div>
-        ) : tools.length === 0 ? (
-          <Empty description={t("tools.emptyState")} />
+        ) : cards.length === 0 ? (
+          <Empty description={"暂无工具配置"} />
         ) : (
-          <>
-            {/* Enabled Section */}
-            <div className={styles.panelSection}>
-              <div className={styles.panelTitle}>
-                <span className={styles.panelDotGreen} />
-                {t("common.enabled")}
-                <span className={styles.panelCount}>
-                  {enabledTools.length} {t("tools.active")}
-                </span>
-              </div>
-
-              {enabledTools.length > 0 ? (
-                <div className={styles.toolsGrid}>
-                  {enabledTools.map((tool) => (
-                    <Card
-                      key={tool.name}
-                      className={`${styles.toolCard} ${styles.enabledCard}`}
-                    >
-                      <div className={styles.cardHeader}>
-                        <h3 className={styles.toolName} title={tool.name}>
-                          <ToolIcon icon={tool.icon} name={tool.name} />{" "}
-                          <span className={styles.toolNameText}>
-                            {tool.name}
-                          </span>
-                        </h3>
-                        <div className={styles.statusContainer}>
-                          <span className={styles.statusDot} />
-                          <span className={styles.statusText}>
-                            {t("common.enabled")}
-                          </span>
-                        </div>
-                      </div>
-
-                      <p className={styles.toolDescription}>
-                        {tool.description}
-                      </p>
-
-                      {/* Show config status */}
-                      {tool.requires_config && (
-                        <div className={styles.configStatus}>
-                          {tool.config_values &&
-                          Object.keys(tool.config_values).length > 0 ? (
-                            <span className={styles.configured}>
-                              ✓ {t("tools.configured")}
-                            </span>
-                          ) : (
-                            <span className={styles.notConfigured}>
-                              ⚠ {t("tools.requiresConfig")}
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      <div className={styles.cardFooter}>
-                        {[
-                          "execute_shell_command",
-                          "delegate_external_agent",
-                        ].includes(tool.name) && (
-                          <Button
-                            className={styles.toggleButton}
-                            onClick={() => toggleAsyncExecution(tool)}
-                            disabled={!tool.enabled}
-                            icon={
-                              tool.async_execution ? (
-                                <ThunderboltOutlined />
-                              ) : (
-                                <ClockCircleOutlined />
-                              )
-                            }
-                          >
-                            {tool.async_execution
-                              ? t("tools.asyncExecutionEnabled")
-                              : t("tools.asyncExecutionDisabled")}
-                          </Button>
-                        )}
-                        {/* Add configure button */}
-                        {tool.requires_config && (
-                          <Button
-                            className={styles.toggleButton}
-                            onClick={() => handleConfigure(tool)}
-                            icon={<SettingOutlined />}
-                          >
-                            {t("tools.configure")}
-                          </Button>
-                        )}
-                        <Button
-                          className={styles.toggleButton}
-                          onClick={() => toggleEnabled(tool)}
-                          icon={<EyeInvisibleOutlined />}
-                        >
-                          {t("common.disable")}
-                        </Button>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className={styles.emptyEnabled}>
-                  <p>{t("tools.noEnabled")}</p>
-                  <Button
-                    type="primary"
-                    onClick={() => {
-                      document
-                        .getElementById("available-tools")
-                        ?.scrollIntoView({ behavior: "smooth" });
-                    }}
-                  >
-                    {t("tools.goEnableBtn")}
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            {/* Available Section */}
-            {disabledTools.length > 0 && (
-              <div id="available-tools" className={styles.panelSectionDashed}>
-                <div className={styles.panelTitle}>
-                  <span className={styles.panelDotGray} />
-                  {t("tools.available")}
-                </div>
-                <div className={styles.availableGrid}>
-                  {disabledTools.map((tool) => (
-                    <div
-                      key={tool.name}
-                      className={styles.availableItem}
-                      onClick={() => handleAvailableItemClick(tool)}
-                    >
-                      <ToolIcon icon={tool.icon} name={tool.name} />
-                      <span
-                        className={styles.availableItemName}
-                        title={tool.name}
-                      >
-                        {tool.name}
-                      </span>
-                      <span className={styles.availableItemAction}>
-                        {tool.requires_config && !isToolConfigured(tool)
-                          ? t("tools.configureAction")
-                          : t("tools.enableAction")}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
+          <div className={channelsStyles.channelsGrid}>
+            {cards.map(({ tool, isCustom }) => (
+              <ToolCard
+                key={tool.name}
+                tool={tool}
+                isCustom={isCustom}
+                onClick={() => handleCardClick(tool)}
+              />
+            ))}
+          </div>
         )}
       </div>
 
-      {/* Config modal — key forces remount when switching tools */}
-      {currentTool && (
-        <ToolConfigModal
-          key={currentTool.name}
-          tool={currentTool}
-          visible={configModalVisible}
-          onClose={() => setConfigModalVisible(false)}
-          onSave={handleSaveConfig}
+      {/* Built-in tool config drawer */}
+      <ToolConfigDrawer
+        tool={currentTool}
+        open={configDrawerOpen}
+        onClose={() => setConfigDrawerOpen(false)}
+        onSave={handleSaveConfig}
+      />
+
+      {/* Add custom tool modal */}
+      <AddToolModal
+        visible={addModalVisible}
+        onClose={() => setAddModalVisible(false)}
+        onCreate={createCustomTool}
+      />
+
+      {/* Edit custom tool modal */}
+      {editToolName && (
+        <EditToolModal
+          key={editToolName}
+          visible={editModalVisible}
+          toolName={editToolName}
+          onClose={() => {
+            setEditModalVisible(false);
+            setEditToolName(null);
+          }}
+          onLoad={getCustomTool}
+          onSave={updateCustomTool}
+          onReload={reloadCustomTool}
+          onDelete={handleDeleteTool}
         />
       )}
     </div>

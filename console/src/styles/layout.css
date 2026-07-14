@@ -961,7 +961,6 @@ html.dark-mode .minions-sender-content {
 /* Group title (一级菜单) in light mode */
 .minions-menu-submenu-title,
 .ant-menu-submenu-title {
-  font-family: "PingFang SC", sans-serif !important;
   font-size: 12px !important;
   font-weight: 500 !important;
   line-height: 32px !important;

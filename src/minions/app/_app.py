@@ -44,7 +44,8 @@ from ..providers.provider_manager import ProviderManager
 from ..local_models.manager import LocalModelManager
 from .migration import (
     migrate_legacy_workspace_to_default_agent,
-    migrate_legacy_skills_to_skill_pool,
+    migrate_legacy_skills_to_global_skills,
+    migrate_skill_pool_to_global_skills,
     ensure_default_agent_exists,
     ensure_qa_agent_exists,
 )
@@ -85,7 +86,7 @@ class DynamicMultiAgentRunner:
         """Set the WorkspaceRegistry (sole workspace manager)."""
         self._workspace_registry = workspace_registry
 
-    async def _get_workspace(self, request):
+    async def _get_workspace(self, request, run_key: str | None = None):
         """Get the correct Workspace based on request."""
         from .agent_context import get_current_agent_id
 
@@ -95,7 +96,13 @@ class DynamicMultiAgentRunner:
         if self._workspace_registry is None:
             raise RuntimeError("WorkspaceRegistry not initialized")
 
-        workspace = await self._workspace_registry.get_agent(agent_id)
+        if run_key is None:
+            workspace = await self._workspace_registry.get_agent(agent_id)
+        else:
+            workspace = await self._workspace_registry.acquire_agent_task(
+                agent_id,
+                run_key,
+            )
         logger.debug("Got workspace: %s", workspace.agent_id)
         return workspace
 
@@ -110,12 +117,8 @@ class DynamicMultiAgentRunner:
         workspace = None
         run_key = None
         try:
-            workspace = await self._get_workspace(request)
-
             run_key = f"ext-{uuid.uuid4().hex}"
-            await workspace.task_tracker.register_external_task(
-                run_key,
-            )
+            workspace = await self._get_workspace(request, run_key)
 
             from ..runtime.runtime import Runtime
 
@@ -198,8 +201,16 @@ async def lifespan(  # pylint: disable=too-many-statements,too-many-branches
     logger.debug("Checking for legacy config migration...")
     migrate_legacy_workspace_to_default_agent()
     ensure_default_agent_exists()
-    migrate_legacy_skills_to_skill_pool()
+    migrate_legacy_skills_to_global_skills()
+    migrate_skill_pool_to_global_skills()
     ensure_qa_agent_exists()
+
+    # Tenancy 2.1 is initialized after Agent config migration so the control
+    # plane can idempotently bind every existing runtime Agent. Production and
+    # tenant modes fail closed here when PostgreSQL is unavailable/misconfigured.
+    from ..tenancy.migration import initialize_tenancy_control_plane
+
+    app.state.tenancy_service = initialize_tenancy_control_plane()
 
     # Migrate old conversations from sessions/*.json into each scroll agent's
     # history.db, so chats from before scroll existed stay recallable. This is
@@ -351,6 +362,12 @@ async def lifespan(  # pylint: disable=too-many-statements,too-many-branches
                 ErrorNormalizeHook,
                 CancelCleanupHook,
             )
+            from ..sage.lifecycle import (
+                SageBeginHook,
+                SageCompleteHook,
+                SageErrorHook,
+                SageIdentityHook,
+            )
 
             # pylint: disable-next=protected-access
             workspace_registry._bootstrap_kwargs["builtin_hook_clses"] = [
@@ -364,6 +381,10 @@ async def lifespan(  # pylint: disable=too-many-statements,too-many-branches
                 SkillEnvCleanupHook,
                 ContextVarsSetupHook,
                 MediaProcessHook,
+                SageIdentityHook,
+                SageBeginHook,
+                SageCompleteHook,
+                SageErrorHook,
                 ErrorNormalizeHook,
                 CancelCleanupHook,
             ]
@@ -628,16 +649,16 @@ async def lifespan(  # pylint: disable=too-many-statements,too-many-branches
             except Exception as e:
                 logger.warning(f"Approval service setup skipped: {e}")
 
-            # ---- Skill pool auto-update sync ----
+            # ---- Global skills auto-update sync ----
             try:
-                from ..agents.skill_system import run_pool_auto_update_sync
+                from ..agents.skill_system import run_global_auto_update_sync
                 from .routers.skills import post_auto_update_msg
 
-                au_result = await asyncio.to_thread(run_pool_auto_update_sync)
+                au_result = await asyncio.to_thread(run_global_auto_update_sync)
                 await post_auto_update_msg(au_result)
             except Exception:
                 logger.warning(
-                    "Skill pool auto-update sync skipped on startup",
+                    "Global skills auto-update sync skipped on startup",
                     exc_info=True,
                 )
 

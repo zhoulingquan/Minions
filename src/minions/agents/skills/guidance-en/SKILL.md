@@ -32,17 +32,6 @@ If the above returns a non-empty path and the directory exists, use it directly 
 
 If it fails (e.g., older version without DOCS_DIR), fall back in the following order:
 
-**Check for documentation directory in memory**
-
-First, check whether there is a documentation directory in memory. If found, use it directly; otherwise, proceed to the next step.
-
-```bash
-# Get the documentation directory from memory
-DOCS_DIR=$(find ~/.minions/memory/ -type d -name "docs")
-```
-
-If there is no documentation directory in memory, continue with the following logic.
-
 **Check the documentation directory in the project source code**
 
 Run the following script logic to obtain the variable $MINIONS_ROOT:

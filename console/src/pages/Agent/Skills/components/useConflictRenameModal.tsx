@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Input, Modal } from "@agentscope-ai/design";
-import { useTranslation } from "react-i18next";
 
 export interface ConflictItem {
   key: string;
@@ -18,8 +17,7 @@ export function useConflictRenameModal(): {
   ) => Promise<Record<string, string> | null>;
   conflictRenameModal: React.ReactNode;
 } {
-  const { t } = useTranslation();
-  const [items, setItems] = useState<InternalItem[]>([]);
+    const [items, setItems] = useState<InternalItem[]>([]);
   const [resolver, setResolver] = useState<
     ((result: Record<string, string> | null) => void) | null
   >(null);
@@ -55,16 +53,16 @@ export function useConflictRenameModal(): {
   const conflictRenameModal = (
     <Modal
       open={items.length > 0}
-      title={t("skillPool.multiConflictTitle")}
+      title={"检测到多个冲突"}
       onOk={handleOk}
       onCancel={handleCancel}
       zIndex={2100}
     >
-      <p>{t("skillPool.multiConflictDesc")}</p>
+      <p>{"以下技能已存在，请逐一解决冲突后重试："}</p>
       {items.map((item, i) => (
         <div key={item.key} style={{ marginBottom: 12 }}>
           <div style={{ marginBottom: 4 }}>
-            {t("skillPool.renameEntry", { name: item.label })}
+            {`"${item.label}" 的新名称：`}
           </div>
           <Input
             value={item.new_name}

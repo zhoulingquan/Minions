@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from ...constant import EnvVarLoader
 from ..auth import (
     authenticate,
     has_registered_users,
     is_auth_enabled,
+    is_tenancy_auth_enabled,
     register_user,
     revoke_all_tokens,
     revoke_token,
@@ -25,6 +25,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 class LoginRequest(BaseModel):
     username: str
     password: str
+    tenant_slug: str | None = None
     expires_in: int | None = (
         None  # Token expiry in seconds, -1/0 for permanent
     )
@@ -33,11 +34,18 @@ class LoginRequest(BaseModel):
 class LoginResponse(BaseModel):
     token: str
     username: str
+    tenant_id: str | None = None
+    tenant_slug: str | None = None
+    role: str | None = None
+    permissions: list[str] = Field(default_factory=list)
 
 
 class RegisterRequest(BaseModel):
     username: str
     password: str
+    tenant_name: str = "默认企业空间"
+    tenant_slug: str = "default"
+    display_name: str | None = None
     expires_in: int | None = (
         None  # Token expiry in seconds, -1/0 for permanent
     )
@@ -46,6 +54,7 @@ class RegisterRequest(BaseModel):
 class AuthStatusResponse(BaseModel):
     enabled: bool
     has_users: bool
+    multitenant: bool = False
 
 
 @router.post("/login")
@@ -84,7 +93,29 @@ async def login(request: Request, req: LoginRequest):
         )
 
     # Attempt authentication
-    token = authenticate(req.username, req.password, req.expires_in)
+    principal = None
+    if is_tenancy_auth_enabled():
+        from ...tenancy.errors import (
+            AmbiguousTenant,
+            AuthenticationFailed,
+        )
+        from ...tenancy.factory import get_tenancy_service
+
+        try:
+            token, principal = get_tenancy_service().login(
+                username=req.username,
+                password=req.password,
+                tenant_slug=req.tenant_slug,
+            )
+        except AmbiguousTenant as exc:
+            raise HTTPException(
+                status_code=409,
+                detail="请选择要进入的企业空间",
+            ) from exc
+        except AuthenticationFailed:
+            token = None
+    else:
+        token = authenticate(req.username, req.password, req.expires_in)
     if token is None:
         # Record failed attempt
         rate_limiter.record_login_attempt(
@@ -100,7 +131,14 @@ async def login(request: Request, req: LoginRequest):
     # Record successful attempt
     rate_limiter.record_login_attempt(client_ip, req.username, success=True)
 
-    return LoginResponse(token=token, username=req.username)
+    return LoginResponse(
+        token=token,
+        username=req.username,
+        tenant_id=str(principal.tenant_id) if principal else None,
+        tenant_slug=req.tenant_slug if principal else None,
+        role=principal.role.value if principal else None,
+        permissions=sorted(principal.permissions) if principal else [],
+    )
 
 
 @router.post("/register")
@@ -112,11 +150,43 @@ async def register(req: RegisterRequest):
     - 0 or -1: permanent token (100 years)
     - None/omitted: default 7 days
     """
-    env_flag = EnvVarLoader.get_str("MINIONS_AUTH_ENABLED", "").strip().lower()
-    if env_flag not in ("true", "1", "yes"):
+    if not is_auth_enabled():
         raise HTTPException(
             status_code=403,
             detail="Authentication is not enabled",
+        )
+
+    if is_tenancy_auth_enabled():
+        from ...tenancy.errors import Conflict
+        from ...tenancy.factory import get_tenancy_service
+
+        service = get_tenancy_service()
+        if service.has_login_users():
+            raise HTTPException(
+                status_code=403,
+                detail="企业空间已完成初始化",
+            )
+        try:
+            token, principal = service.bootstrap_owner(
+                username=req.username.strip(),
+                password=req.password,
+                tenant_name=req.tenant_name,
+                tenant_slug=req.tenant_slug,
+                display_name=req.display_name,
+            )
+        except (Conflict, ValueError) as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+        from ...tenancy.migration import import_configured_agents
+
+        import_configured_agents(service, principal)
+        return LoginResponse(
+            token=token,
+            username=principal.username,
+            tenant_id=str(principal.tenant_id),
+            tenant_slug=req.tenant_slug,
+            role=principal.role.value,
+            permissions=sorted(principal.permissions),
         )
 
     if has_registered_users():
@@ -144,10 +214,48 @@ async def register(req: RegisterRequest):
 @router.get("/status")
 async def auth_status():
     """Check if authentication is enabled and whether a user exists."""
+    multitenant = is_tenancy_auth_enabled()
+    if multitenant:
+        from ...tenancy.factory import get_tenancy_service
+
+        has_users = get_tenancy_service().has_login_users()
+    else:
+        has_users = has_registered_users()
     return AuthStatusResponse(
         enabled=is_auth_enabled(),
-        has_users=has_registered_users(),
+        has_users=has_users,
+        multitenant=multitenant,
     )
+
+
+@router.post("/tenant-options")
+async def tenant_options(req: LoginRequest, request: Request):
+    """List selectable spaces only after validating the supplied password."""
+    if not is_tenancy_auth_enabled():
+        return {"items": []}
+    from ...tenancy.errors import AuthenticationFailed
+    from ...tenancy.factory import get_tenancy_service
+
+    client_ip = resolve_client_ip(request)
+    if rate_limiter.is_user_locked(req.username) or rate_limiter.is_ip_locked(
+        client_ip,
+    ):
+        raise HTTPException(status_code=423, detail="Too many login attempts")
+    if rate_limiter.is_ip_rate_limited(client_ip):
+        raise HTTPException(status_code=429, detail="Too many requests")
+    try:
+        values = get_tenancy_service().list_login_tenants(
+            req.username,
+            req.password,
+        )
+    except AuthenticationFailed as exc:
+        rate_limiter.record_login_attempt(client_ip, req.username, success=False)
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid username or password",
+        ) from exc
+    rate_limiter.record_login_attempt(client_ip, req.username, success=True)
+    return {"items": values}
 
 
 @router.get("/verify")
@@ -155,6 +263,18 @@ async def verify(request: Request):
     """Verify that the caller's Bearer token is still valid."""
     if not is_auth_enabled():
         return {"valid": True, "username": ""}
+
+    if is_tenancy_auth_enabled():
+        principal = getattr(request.state, "tenant_principal", None)
+        if principal is None:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        return {
+            "valid": True,
+            "username": principal.username,
+            "tenant_id": str(principal.tenant_id),
+            "role": principal.role.value,
+            "permissions": sorted(principal.permissions),
+        }
 
     auth_header = request.headers.get("Authorization", "")
     token = auth_header[7:] if auth_header.startswith("Bearer ") else ""
@@ -187,6 +307,39 @@ async def update_profile(req: UpdateProfileRequest, request: Request):
         raise HTTPException(
             status_code=403,
             detail="Authentication is not enabled",
+        )
+
+    if is_tenancy_auth_enabled():
+        from ...tenancy.errors import AuthenticationFailed, Conflict
+        from ...tenancy.factory import get_tenancy_service
+
+        principal = getattr(request.state, "tenant_principal", None)
+        if principal is None:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        if not req.new_username and not req.new_password:
+            raise HTTPException(status_code=400, detail="Nothing to update")
+        try:
+            token, updated = get_tenancy_service().update_profile(
+                principal,
+                current_password=req.current_password,
+                new_username=req.new_username,
+                new_password=req.new_password,
+            )
+        except AuthenticationFailed as exc:
+            raise HTTPException(
+                status_code=401,
+                detail="Current password is incorrect",
+            ) from exc
+        except Conflict as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return LoginResponse(
+            token=token,
+            username=updated.username,
+            tenant_id=str(updated.tenant_id),
+            role=updated.role.value,
+            permissions=sorted(updated.permissions),
         )
 
     if not has_registered_users():
@@ -259,6 +412,24 @@ async def revoke_single_token(req: RevokeTokenRequest, request: Request):
             detail="Authentication is not enabled",
         )
 
+    if is_tenancy_auth_enabled():
+        from ...tenancy.factory import get_tenancy_service
+
+        principal = getattr(request.state, "tenant_principal", None)
+        if principal is None:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        if req.token:
+            raise HTTPException(
+                status_code=400,
+                detail="只能退出当前会话；其他成员会话请通过成员停用撤销",
+            )
+        get_tenancy_service().logout(principal)
+        return {
+            "message": "Current token has been revoked. Please login again.",
+            "revoked": True,
+            "revoked_current_token": True,
+        }
+
     # Get current token for authentication
     auth_header = request.headers.get("Authorization", "")
     caller_token = auth_header[7:] if auth_header.startswith("Bearer ") else ""
@@ -305,6 +476,19 @@ async def revoke_all_sessions(request: Request):
             status_code=403,
             detail="Authentication is not enabled",
         )
+
+    if is_tenancy_auth_enabled():
+        from ...tenancy.factory import get_tenancy_service
+
+        principal = getattr(request.state, "tenant_principal", None)
+        if principal is None:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        count = get_tenancy_service().revoke_all_user_sessions(principal)
+        return {
+            "message": "All sessions have been revoked. Please login again.",
+            "revoked": True,
+            "count": count,
+        }
 
     # Verify caller is authenticated
     auth_header = request.headers.get("Authorization", "")

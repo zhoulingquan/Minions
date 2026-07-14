@@ -1,4 +1,3 @@
-import { useTranslation } from "react-i18next";
 import { Button, Empty, Spin, Table, Tabs } from "antd";
 import { ExternalLink, Package, Plus } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
@@ -11,7 +10,6 @@ import { MarketPluginList } from "./components/MarketPluginList";
 import styles from "./index.module.less";
 
 export default function PluginManagerPage() {
-  const { t } = useTranslation();
 
   const { plugins, loading, refresh, uninstallingId, handleUninstall } =
     usePluginManager();
@@ -26,13 +24,13 @@ export default function PluginManagerPage() {
   const tabItems = [
     {
       key: "installed",
-      label: t("pluginManager.installed"),
+      label: "已安装插件",
       children: (
         <Spin spinning={loading}>
           {!loading && (!plugins || plugins.length === 0) ? (
             <Empty
               image={<Package size={48} strokeWidth={1} />}
-              description={t("pluginManager.noPlugins")}
+              description={"暂无已安装插件"}
               style={{ marginTop: 24 }}
             />
           ) : (
@@ -49,12 +47,12 @@ export default function PluginManagerPage() {
     },
     {
       key: "official",
-      label: t("pluginManager.officialTitle"),
+      label: "官方插件",
       children: <OfficialPluginList onInstalled={refresh} />,
     },
     {
       key: "market",
-      label: t("pluginManager.marketTitle"),
+      label: "插件市场",
       children: <MarketPluginList onInstalled={refresh} />,
     },
   ];
@@ -62,8 +60,8 @@ export default function PluginManagerPage() {
   return (
     <div className={styles.page}>
       <PageHeader
-        parent={t("nav.settings")}
-        current={t("nav.pluginManager")}
+        parent={"设置"}
+        current={"插件管理"}
         extra={
           <>
             <Button
@@ -72,14 +70,14 @@ export default function PluginManagerPage() {
                 window.open("https://platform.agentscope.io/plugins", "_blank")
               }
             >
-              {t("pluginManager.publishBtn")}
+              {"发布插件"}
             </Button>
             <Button
               type="primary"
               icon={<Plus size={16} />}
               onClick={installModal.openModal}
             >
-              {t("pluginManager.installBtn")}
+              {"安装插件"}
             </Button>
           </>
         }

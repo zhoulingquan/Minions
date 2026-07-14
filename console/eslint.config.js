@@ -21,8 +21,53 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": [
         "warn",
-        { allowConstantExport: true },
+        {
+          allowConstantExport: true,
+          allowExportNames: [
+            "ACPRedirect",
+            "BUILTIN_ROUTES",
+            "DefaultRedirect",
+            "SOURCE_LABELS",
+            "getFileIcon",
+            "getSkillVisual",
+            "mermaidComponents",
+            "normalizeLevel",
+            "parseArgsText",
+            "parseEnvText",
+            "parseFrontmatter",
+            "sourceLabel",
+            "stringifyArgs",
+            "stringifyEnv",
+            "useApprovalContext",
+            "useContextMenu",
+            "usePlugins",
+            "useTheme",
+          ],
+        },
       ],
+    },
+  },
+  {
+    files: [
+      "src/components/MermaidCodeBlock/mermaidComponents.tsx",
+      "src/layouts/registry/builtinRoutes.tsx",
+    ],
+    rules: {
+      // These modules intentionally export component registries rather than
+      // renderable component entry points, so Fast Refresh cannot track them.
+      "react-refresh/only-export-components": "off",
+    },
+  },
+  {
+    files: [
+      "**/*.test.{ts,tsx}",
+      "**/__tests__/**/*.{ts,tsx}",
+      "src/test/**/*.{ts,tsx}",
+    ],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-require-imports": "off",
+      "react-refresh/only-export-components": "off",
     },
   },
 );

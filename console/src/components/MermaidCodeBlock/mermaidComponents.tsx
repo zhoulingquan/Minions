@@ -34,6 +34,8 @@ function CodeWithMermaid({
   streamStatus: _streamStatus,
   ...rest
 }: ComponentProps) {
+  void _domNode;
+  void _streamStatus;
   if (block && lang === "mermaid") {
     const chartSource = extractText(children);
     if (chartSource.trim()) {

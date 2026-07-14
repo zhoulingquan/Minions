@@ -1,0 +1,137 @@
+.listItem {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 92px;
+  padding: 14px 16px;
+  border: 1px solid var(--ant-color-border-secondary, #eae8e7);
+  border-radius: 10px;
+  background: var(--ant-color-bg-container, #fff);
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    border-color: var(--ant-color-primary-border, #ffb47a);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+  }
+}
+
+.listItemLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.listItemInfo {
+  min-width: 0;
+  flex: 1;
+}
+
+.listItemHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.skillTitle {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ant-color-text, rgba(20, 20, 19, 0.88));
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 22px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sourceBadge {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border: 1px solid var(--ant-color-primary-border, #ffb47a);
+  border-radius: 4px;
+  background: var(--ant-color-primary-bg, rgba(255, 127, 22, 0.08));
+  color: var(--ant-color-primary, #FF7F16);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.description {
+  display: -webkit-box;
+  margin: 4px 0 0;
+  overflow: hidden;
+  color: var(--ant-color-text-secondary, rgba(20, 20, 19, 0.65));
+  font-size: 13px;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.statsRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 6px;
+  color: var(--ant-color-text-tertiary, rgba(20, 20, 19, 0.5));
+  font-size: 12px;
+}
+
+.statItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.listItemRight {
+  flex-shrink: 0;
+}
+
+:global(.dark-mode) {
+  .listItem {
+    background: #1f1f1f;
+    border-color: rgba(255, 255, 255, 0.15);
+
+    &:hover {
+      background: #2a2a2a;
+      border-color: rgba(255, 157, 77, 0.45);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    }
+  }
+
+  .skillTitle {
+    color: rgba(255, 255, 255, 0.88);
+  }
+
+  .description {
+    color: rgba(255, 255, 255, 0.65);
+  }
+
+  .statsRow {
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  .sourceBadge {
+    border-color: rgba(255, 157, 77, 0.4);
+    background: rgba(255, 127, 22, 0.16);
+    color: #ffb47a;
+  }
+}
+
+@media (max-width: 768px) {
+  .listItem {
+    align-items: flex-start;
+  }
+
+  .listItemLeft {
+    align-items: flex-start;
+  }
+
+  .statsRow {
+    flex-wrap: wrap;
+    gap: 4px 12px;
+  }
+}

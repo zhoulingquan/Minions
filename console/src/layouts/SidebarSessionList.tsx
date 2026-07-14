@@ -7,7 +7,6 @@ import React, {
 } from "react";
 import { Input, Spin } from "antd";
 import { VariableSizeList, type ListChildComponentProps } from "react-window";
-import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 import { SparkPlusLine, SparkDownArrowLine } from "@agentscope-ai/icons";
 import { getChannelLabel } from "../pages/Control/Channels/components";
@@ -49,7 +48,7 @@ interface VirtualRowData {
   currentSessionId: string | undefined;
   editingSessionId: string | null;
   editValue: string;
-  t: ReturnType<typeof useTranslation>["t"];
+
   handleSessionClick: (sessionId: string) => void;
   handleEditStart: (sessionId: string, currentName: string) => void;
   handleDelete: (sessionId: string) => void;
@@ -93,7 +92,7 @@ const VirtualRow = React.memo(function VirtualRow({
   const session = row.session;
   const channelKey = session.channel?.trim() || "";
   const channelLabel = channelKey
-    ? getChannelLabel(channelKey, data.t)
+    ? getChannelLabel(channelKey)
     : undefined;
   const isEditing = data.editingSessionId === session.id;
 
@@ -138,8 +137,7 @@ export default function SidebarSessionList({
   onNewChat,
   onSessionClick: onSessionClickProp,
 }: SidebarSessionListProps = {}) {
-  const { t } = useTranslation();
-  const location = useLocation();
+    const location = useLocation();
   const currentSessionId = getSessionIdFromPath(location.pathname) ?? undefined;
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -211,8 +209,8 @@ export default function SidebarSessionList({
   }, [sortedSessions, searchQuery]);
 
   const groups = useMemo(
-    () => (searchQuery.trim() ? null : groupSessions(sortedSessions, t)),
-    [sortedSessions, searchQuery, t],
+    () => (searchQuery.trim() ? null : groupSessions(sortedSessions)),
+    [sortedSessions, searchQuery],
   );
 
   const toggleGroup = useCallback((key: DateGroup) => {
@@ -300,7 +298,6 @@ export default function SidebarSessionList({
       currentSessionId,
       editingSessionId,
       editValue,
-      t,
       handleSessionClick,
       handleEditStart,
       handleDelete,
@@ -315,7 +312,6 @@ export default function SidebarSessionList({
       currentSessionId,
       editingSessionId,
       editValue,
-      t,
       handleSessionClick,
       handleEditStart,
       handleDelete,
@@ -334,7 +330,7 @@ export default function SidebarSessionList({
         {/* New Chat button */}
         <button className={styles.newChatBtn} onClick={handleNewChat}>
           <SparkPlusLine size={14} />
-          <span>{t("chat.newChatTooltip")}</span>
+          <span>{"新建聊天"}</span>
         </button>
 
         {/* Conversation history header (collapsible) */}
@@ -343,7 +339,7 @@ export default function SidebarSessionList({
           onClick={() => setHistoryCollapsed((c) => !c)}
         >
           <span className={styles.historyLabel}>
-            {t("chat.conversationHistory", "Conversation History")}
+            {"历史对话"}
           </span>
           <span
             className={styles.historyChevron}
@@ -361,10 +357,7 @@ export default function SidebarSessionList({
             <Input
               size="small"
               allowClear
-              placeholder={t(
-                "chat.sessionPanel.searchConversations",
-                "Search…",
-              )}
+              placeholder={"搜索对话…"}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={styles.searchInput}
@@ -383,7 +376,7 @@ export default function SidebarSessionList({
           )}
           {!loading && sortedSessions.length === 0 && (
             <div className={styles.emptyState}>
-              {t("chat.sessionPanel.noConversations", "No conversations")}
+              {"暂无对话"}
             </div>
           )}
 

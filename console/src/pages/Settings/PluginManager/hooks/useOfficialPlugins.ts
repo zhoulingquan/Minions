@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { useAppMessage } from "@/hooks/useAppMessage";
 import {
   fetchPluginCatalog,
@@ -12,8 +11,7 @@ interface UseOfficialPluginsOptions {
 }
 
 export function useOfficialPlugins({ onInstalled }: UseOfficialPluginsOptions) {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const [loading, setLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [plugins, setPlugins] = useState<OfficialPluginCatalogEntry[]>([]);
@@ -34,13 +32,13 @@ export function useOfficialPlugins({ onInstalled }: UseOfficialPluginsOptions) {
       const msg =
         err instanceof Error
           ? err.message
-          : t("pluginManager.catalogLoadFailed");
+          : "加载官方插件列表失败";
       setCatalogError(msg);
       setPlugins([]);
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, []);
 
   useEffect(() => {
     void loadCatalog();
@@ -53,18 +51,18 @@ export function useOfficialPlugins({ onInstalled }: UseOfficialPluginsOptions) {
         const result = await installPlugin(entry.install_url, {
           force: entry.installed || entry.upgrade_available,
         });
-        message.success(`${t("pluginManager.installSuccess")}: ${result.name}`);
+        message.success(`${"插件安装成功"}: ${result.name}`);
         onInstalled();
         setTimeout(() => window.location.reload(), 800);
       } catch (err) {
         const msg =
-          err instanceof Error ? err.message : t("pluginManager.installFailed");
+          err instanceof Error ? err.message : "插件安装失败";
         message.error(msg);
       } finally {
         setInstallingId(null);
       }
     },
-    [loadCatalog, message, onInstalled, t],
+    [message, onInstalled],
   );
 
   return {

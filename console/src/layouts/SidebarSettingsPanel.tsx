@@ -1,5 +1,4 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 
 import { SunMoon } from "lucide-react";
 import {
@@ -19,8 +18,7 @@ interface SidebarSettingsPanelProps {
 export default function SidebarSettingsPanel({
   onClose,
 }: SidebarSettingsPanelProps) {
-  const { t } = useTranslation();
-  const { themeMode, setThemeMode } = useTheme();
+    const { themeMode, setThemeMode } = useTheme();
   const { mode: sidebarMode, toggleMode: toggleSidebarMode } =
     useSidebarModeStore();
 
@@ -31,17 +29,17 @@ export default function SidebarSettingsPanel({
   }[] = [
     {
       key: "light",
-      label: t("theme.light", "Light"),
+      label: "浅色",
       icon: <SparkSunLine size={14} />,
     },
     {
       key: "dark",
-      label: t("theme.dark", "Dark"),
+      label: "深色",
       icon: <SparkMoonLine size={14} />,
     },
     {
       key: "system",
-      label: t("theme.system", "System"),
+      label: "跟随系统",
       icon: <SunMoon size={14} />,
     },
   ];
@@ -51,7 +49,7 @@ export default function SidebarSettingsPanel({
       {/* ── Theme ────────────────────────────────────────── */}
       <div className={styles.row}>
         <span className={styles.label}>
-          {t("sidebar.settings.theme", "Theme")}
+          {"主题"}
         </span>
         <div className={styles.options}>
           {themeOptions.map(({ key, label, icon }) => (
@@ -73,7 +71,7 @@ export default function SidebarSettingsPanel({
       {/* ── Mode ─────────────────────────────────────────── */}
       <div className={styles.row}>
         <span className={styles.label}>
-          {t("sidebar.settings.mode", "Mode")}
+          {"模式"}
         </span>
         <button
           className={`${styles.optBtn} ${styles.optBtnBlock}`}
@@ -86,14 +84,14 @@ export default function SidebarSettingsPanel({
             <>
               <SparkFullscreenLine size={14} />
               <span className={styles.optLabel}>
-                {t("sidebar.fullMode", "Full Mode")}
+                {"完整模式"}
               </span>
             </>
           ) : (
             <>
               <SparkExitFullscreenLine size={14} />
               <span className={styles.optLabel}>
-                {t("sidebar.simpleMode", "Simple Mode")}
+                {"精简模式"}
               </span>
             </>
           )}

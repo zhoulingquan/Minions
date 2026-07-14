@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { CHANNEL_LABELS, getChannelLabel } from "./constants";
 
 describe("CHANNEL_LABELS", () => {
@@ -10,7 +10,7 @@ describe("CHANNEL_LABELS", () => {
 });
 
 describe("getChannelLabel", () => {
-  it("returns the English label for a known channel without t", () => {
+  it("returns the English label for a known channel", () => {
     expect(getChannelLabel("discord")).toBe("Discord");
   });
 
@@ -20,16 +20,5 @@ describe("getChannelLabel", () => {
 
   it("formats kebab-case custom channel key to Title Case", () => {
     expect(getChannelLabel("my-bot")).toBe("My Bot");
-  });
-
-  it("calls t with the correct key and defaultValue when t is provided", () => {
-    const t = vi.fn(
-      (key: string, opts?: { defaultValue?: string }) =>
-        opts?.defaultValue ?? key,
-    );
-    getChannelLabel("discord", t as any);
-    expect(t).toHaveBeenCalledWith("channels.channelNames.discord", {
-      defaultValue: "Discord",
-    });
   });
 });

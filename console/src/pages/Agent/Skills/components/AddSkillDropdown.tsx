@@ -7,12 +7,11 @@ import {
   PlusOutlined,
   UploadOutlined,
 } from "@ant-design/icons";
-import { useTranslation } from "react-i18next";
 
 interface AddSkillDropdownProps {
   onCreate: () => void;
-  /** Skills page only — omitted on the pool page (it IS the pool). */
-  onFromPool?: () => void;
+  /** Skills page only — omitted on the global skills page (it IS the pool). */
+  onFromGlobal?: () => void;
   onUploadZip: () => void;
   onFromUrl: () => void;
   onBrowseMarket: () => void;
@@ -21,52 +20,51 @@ interface AddSkillDropdownProps {
 
 /**
  * Single entry point for every way of adding a skill: create, pull from the
- * skill pool, upload a zip, import from a hub URL, or browse the market.
+ * global skills, upload a zip, import from a hub URL, or browse the market.
  */
 export function AddSkillDropdown({
   onCreate,
-  onFromPool,
+  onFromGlobal,
   onUploadZip,
   onFromUrl,
   onBrowseMarket,
   uploading,
 }: AddSkillDropdownProps) {
-  const { t } = useTranslation();
 
   const items: MenuProps["items"] = [
     {
       key: "create",
-      label: t("skills.createSkill"),
+      label: "创建技能",
       icon: <PlusOutlined />,
       onClick: onCreate,
     },
-    ...(onFromPool
+    ...(onFromGlobal
       ? [
           {
-            key: "from-pool",
-            label: t("skills.downloadFromPool"),
+            key: "from-global",
+            label: "从全局技能载入",
             icon: <DownloadOutlined />,
-            onClick: onFromPool,
+            onClick: onFromGlobal,
           },
         ]
       : []),
     {
       key: "upload-zip",
-      label: t("skills.uploadZip"),
+      label: "通过Zip上传",
       icon: <UploadOutlined />,
       disabled: uploading,
       onClick: onUploadZip,
     },
     {
       key: "from-url",
-      label: t("skills.importHub"),
+      label: "通过URL上传",
       icon: <ImportOutlined />,
       onClick: onFromUrl,
     },
     { type: "divider" },
     {
       key: "market",
-      label: t("market.browseMarket"),
+      label: "浏览市场",
       icon: <AppstoreOutlined />,
       onClick: onBrowseMarket,
     },
@@ -75,7 +73,7 @@ export function AddSkillDropdown({
   return (
     <Dropdown menu={{ items }} placement="bottomRight">
       <Button type="primary" icon={<PlusOutlined />} loading={uploading}>
-        {t("skills.addSkill")}
+        {"添加技能"}
       </Button>
     </Dropdown>
   );

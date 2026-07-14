@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { marketApi } from "../../../api/modules/market";
 import type {
   MarketCategory,
@@ -56,8 +55,7 @@ function errorMessage(err: unknown): string {
 }
 
 export function useMarketSearch(): MarketSearchState {
-  const { i18n } = useTranslation();
-  const lang = i18n.language || "en";
+    const lang = "zh";
   const [providers, setProviders] = useState<MarketProviderInfo[]>([]);
   const [selectedProviderKeys, setSelectedProviderKeys] = useState<Set<string>>(
     resolveInitialProviders,

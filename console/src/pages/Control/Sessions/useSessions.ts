@@ -4,11 +4,9 @@ import api from "../../../api";
 import type { ChatUpdateRequest } from "../../../api/types";
 import type { Session } from "./components/constants";
 import { useAgentStore } from "../../../stores/agentStore";
-import { useTranslation } from "react-i18next";
 
 export function useSessions() {
-  const { t } = useTranslation();
-  const [sessions, setSessions] = useState<Session[]>([]);
+    const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const { selectedAgent } = useAgentStore();
   const { message } = useAppMessage();
@@ -50,11 +48,11 @@ export function useSessions() {
     try {
       const result = await api.updateSession(sessionId, values);
       setSessions(sessions.map((s) => (s.id === sessionId ? result : s)));
-      message.success(t("sessions.saveSuccess"));
+      message.success("会话保存成功");
       return true;
     } catch (error) {
       console.error("❌ Failed to save session:", error);
-      message.error(t("sessions.saveFailed"));
+      message.error("会话保存失败");
       return false;
     }
   };
@@ -63,11 +61,11 @@ export function useSessions() {
     try {
       await api.deleteSession(sessionId);
       setSessions(sessions.filter((s) => s.id !== sessionId));
-      message.success(t("sessions.deleteSuccess"));
+      message.success("会话删除成功");
       return true;
     } catch (error) {
       console.error("❌ Failed to delete session:", error);
-      message.error(t("sessions.deleteFailed"));
+      message.error("会话删除失败");
       return false;
     }
   };
@@ -77,12 +75,12 @@ export function useSessions() {
       await api.batchDeleteSessions(sessionIds);
       setSessions(sessions.filter((s) => !sessionIds.includes(s.id)));
       message.success(
-        t("sessions.batchDeleteSuccess", { count: sessionIds.length }),
+        `成功删除 ${sessionIds.length} 个会话`,
       );
       return true;
     } catch (error) {
       console.error("❌ Failed to batch delete sessions:", error);
-      message.error(t("sessions.batchDeleteFailed"));
+      message.error("批量删除会话失败");
       return false;
     }
   };

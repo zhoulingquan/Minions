@@ -1,15 +1,6 @@
 import { renderHook } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { useTimezoneOptions } from "./useTimezoneOptions";
-
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({
-    i18n: {
-      resolvedLanguage: "en",
-      language: "en",
-    },
-  }),
-}));
 
 describe("useTimezoneOptions", () => {
   it("returns an array of TimezoneOption objects with value and label string properties", () => {

@@ -7,7 +7,6 @@ import React, {
 } from "react";
 import { Drawer, Empty, Input, Spin, Tooltip } from "antd";
 import { VariableSizeList, type ListChildComponentProps } from "react-window";
-import { useTranslation } from "react-i18next";
 import { useNavigate, useLocation } from "react-router-dom";
 import { IconButton } from "@agentscope-ai/design";
 import {
@@ -69,7 +68,7 @@ interface VirtualRowData {
   switchingSessionId: string | null;
   editingSessionId: string | null;
   editValue: string;
-  t: ReturnType<typeof useTranslation>["t"];
+
   handleSessionClick: (sessionId: string) => void;
   handleEditStart: (sessionId: string, currentName: string) => void;
   handleDelete: (sessionId: string) => void;
@@ -116,7 +115,7 @@ const VirtualRow = React.memo(function VirtualRow({
   const session = row.session;
   const channelKey = session.channel?.trim() || "";
   const channelLabel = channelKey
-    ? getChannelLabel(channelKey, data.t)
+    ? getChannelLabel(channelKey)
     : undefined;
   const isEditing = data.editingSessionId === session.id;
 
@@ -225,8 +224,7 @@ const getBackendId = (session: ExtendedChatSession): string | null => {
 };
 
 const ChatSessionDrawer: React.FC<ChatSessionDrawerProps> = (props) => {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
+    const navigate = useNavigate();
   const location = useLocation();
   const sdkState = useChatAnywhereSessionsState();
 
@@ -559,26 +557,26 @@ const ChatSessionDrawer: React.FC<ChatSessionDrawerProps> = (props) => {
     return [
       {
         key: "open",
-        label: t("chat.contextMenu.open", "Open"),
+        label: "打开",
         onClick: () => handleSessionClick(contextMenuSessionId),
       },
       {
         key: "rename",
-        label: t("chat.contextMenu.rename", "Rename"),
+        label: "重命名",
         onClick: () =>
           handleEditStart(contextMenuSessionId, session?.name || "New Chat"),
       },
       {
         key: "pin",
         label: session?.pinned
-          ? t("chat.contextMenu.unpin", "Unpin")
-          : t("chat.contextMenu.pin", "Pin"),
+          ? "取消置顶"
+          : "置顶",
         onClick: () => handlePinToggle(contextMenuSessionId),
       },
       { key: "divider-1", label: "", divider: true },
       {
         key: "delete",
-        label: t("chat.contextMenu.delete", "Delete"),
+        label: "删除",
         danger: true,
         onClick: () => handleDelete(contextMenuSessionId),
       },
@@ -586,7 +584,6 @@ const ChatSessionDrawer: React.FC<ChatSessionDrawerProps> = (props) => {
   }, [
     contextMenuSessionId,
     sessions,
-    t,
     handleSessionClick,
     handleEditStart,
     handlePinToggle,
@@ -609,8 +606,8 @@ const ChatSessionDrawer: React.FC<ChatSessionDrawerProps> = (props) => {
     () =>
       searchQuery.trim()
         ? null
-        : groupSessions(sortedSessions as ExtendedChatSession[], t),
-    [sortedSessions, searchQuery, t],
+        : groupSessions(sortedSessions as ExtendedChatSession[]),
+    [sortedSessions, searchQuery],
   );
 
   /** Toggle a date group's collapsed state */
@@ -700,7 +697,6 @@ const ChatSessionDrawer: React.FC<ChatSessionDrawerProps> = (props) => {
       switchingSessionId,
       editingSessionId,
       editValue,
-      t,
       handleSessionClick,
       handleEditStart,
       handleDelete,
@@ -717,7 +713,6 @@ const ChatSessionDrawer: React.FC<ChatSessionDrawerProps> = (props) => {
       switchingSessionId,
       editingSessionId,
       editValue,
-      t,
       handleSessionClick,
       handleEditStart,
       handleDelete,
@@ -735,15 +730,15 @@ const ChatSessionDrawer: React.FC<ChatSessionDrawerProps> = (props) => {
       {/* Header bar */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <span className={styles.headerTitle}>{t("chat.allChats")}</span>
+          <span className={styles.headerTitle}>{"全部聊天"}</span>
         </div>
         <div className={styles.headerRight}>
           {!props.embedded && (
             <Tooltip
               title={
                 props.pinned
-                  ? t("chat.unpinDrawer", "Unpin")
-                  : t("chat.pinDrawer", "Pin")
+                  ? "取消固定"
+                  : "固定"
               }
               mouseEnterDelay={0.5}
             >
@@ -766,7 +761,7 @@ const ChatSessionDrawer: React.FC<ChatSessionDrawerProps> = (props) => {
       {/* Create new chat button */}
       <div className={styles.createSection}>
         <div className={styles.createButton} onClick={handleCreateSession}>
-          {t("chat.createNewChat")}
+          {"创建新聊天"}
         </div>
       </div>
 
@@ -775,7 +770,7 @@ const ChatSessionDrawer: React.FC<ChatSessionDrawerProps> = (props) => {
         <Input
           size="small"
           allowClear
-          placeholder={t("chat.sessionPanel.searchConversations", "Search…")}
+          placeholder={"搜索对话…"}
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           className={styles.searchInput}
@@ -797,12 +792,12 @@ const ChatSessionDrawer: React.FC<ChatSessionDrawerProps> = (props) => {
           </div>
         ) : sortedSessions.length === 0 ? (
           <Empty
-            description={t("chat.history.empty", "No chat history")}
+            description={"暂无聊天记录"}
             style={{ marginTop: 80 }}
           />
         ) : flatRows.length === 0 ? (
           <div className={styles.emptyState}>
-            {t("chat.sessionPanel.noResults", "No results")}
+            {"无匹配结果"}
           </div>
         ) : (
           <VariableSizeList

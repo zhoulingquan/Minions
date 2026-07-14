@@ -30,7 +30,6 @@ export {
 export { default as GetCurrentTimeCard } from "./GetCurrentTimeCard";
 export { default as SetTimezoneCard } from "./SetTimezoneCard";
 export { default as TokenUsageCard } from "./TokenUsageCard";
-export { default as MemorySearchCard } from "./MemorySearchCard";
 export { default as ListAgentsCard } from "./ListAgentsCard";
 export { default as ChatWithAgentCard } from "./ChatWithAgentCard";
 export { default as SubmitToAgentCard } from "./SubmitToAgentCard";
@@ -55,7 +54,6 @@ import BrowserUseCard from "./BrowserUseCard";
 import GetCurrentTimeCard from "./GetCurrentTimeCard";
 import SetTimezoneCard from "./SetTimezoneCard";
 import TokenUsageCard from "./TokenUsageCard";
-import MemorySearchCard from "./MemorySearchCard";
 import ListAgentsCard from "./ListAgentsCard";
 import ChatWithAgentCard from "./ChatWithAgentCard";
 import SubmitToAgentCard from "./SubmitToAgentCard";
@@ -111,9 +109,6 @@ export const BUILTIN_CARD_REGISTRY: Record<string, BuiltinCardComponent> = {
 
   // Token usage
   get_token_usage: TokenUsageCard,
-
-  // Memory
-  memory_search: MemorySearchCard,
 
   // Agent management
   list_agents: ListAgentsCard,

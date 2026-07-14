@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import type { IAgentScopeRuntimeWebUISession } from "@agentscope-ai/chat";
 import type { ChatStatus } from "../../../../api/types/chat";
 import { chatApi } from "../../../../api/modules/chat";
@@ -94,7 +93,7 @@ export interface SessionListData {
   switchingSessionId: string | null;
   editingSessionId: string | null;
   editValue: string;
-  t: ReturnType<typeof useTranslation>["t"];
+
   handleSessionClick: (sessionId: string) => void;
   handleEditStart: (sessionId: string, currentName: string) => void;
   handleDelete: (sessionId: string) => void;
@@ -122,8 +121,7 @@ export function useSessionListData(
   setSessions: (s: ExtendedChatSession[]) => void,
   opts: UseSessionListDataOptions,
 ): SessionListData {
-  const { t } = useTranslation();
-  const { active, currentSessionId, onSessionClick } = opts;
+    const { active, currentSessionId, onSessionClick } = opts;
 
   const [loading, setLoading] = useState(true);
   const [switchingSessionId, setSwitchingSessionId] = useState<string | null>(
@@ -336,26 +334,26 @@ export function useSessionListData(
     return [
       {
         key: "open",
-        label: t("chat.contextMenu.open", "Open"),
+        label: "打开",
         onClick: () => handleSessionClick(contextMenuSessionId),
       },
       {
         key: "rename",
-        label: t("chat.contextMenu.rename", "Rename"),
+        label: "重命名",
         onClick: () =>
           handleEditStart(contextMenuSessionId, session?.name || "New Chat"),
       },
       {
         key: "pin",
         label: session?.pinned
-          ? t("chat.contextMenu.unpin", "Unpin")
-          : t("chat.contextMenu.pin", "Pin"),
+          ? "取消置顶"
+          : "置顶",
         onClick: () => handlePinToggle(contextMenuSessionId),
       },
       { key: "divider-1", label: "", divider: true },
       {
         key: "delete",
-        label: t("chat.contextMenu.delete", "Delete"),
+        label: "删除",
         danger: true,
         onClick: () => handleDelete(contextMenuSessionId),
       },
@@ -363,7 +361,6 @@ export function useSessionListData(
   }, [
     contextMenuSessionId,
     sessions,
-    t,
     handleSessionClick,
     handleEditStart,
     handlePinToggle,
@@ -376,7 +373,6 @@ export function useSessionListData(
     switchingSessionId,
     editingSessionId,
     editValue,
-    t,
     handleSessionClick,
     handleEditStart,
     handleDelete,

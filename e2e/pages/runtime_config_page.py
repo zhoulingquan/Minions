@@ -41,8 +41,6 @@ class RuntimeConfigPage(BasePage):
     LLM_RATE_LIMITER_TAB = '[data-node-key="llmRateLimiter"] .minions-tabs-tab-btn'
     CONTEXT_COMPACT_TAB = '[data-node-key="lightContext"] .minions-tabs-tab-btn'
     TOOL_RESULT_COMPACT_TAB = '[data-node-key="lightContext"] .minions-tabs-tab-btn'  # Merged into the Context Management tab
-    MEMORY_SUMMARY_TAB = '[data-node-key="remeLightMemory"] .minions-tabs-tab-btn'
-    EMBEDDING_CONFIG_TAB = '[data-node-key="remeLightMemory"] .minions-tabs-tab-btn'  # Embedding model config merged into the Long-term Memory tab
     TOOL_EXECUTION_LEVEL_TAB = '[data-node-key="toolExecutionLevel"] .minions-tabs-tab-btn'
 
     # Active panel
@@ -57,7 +55,6 @@ class RuntimeConfigPage(BasePage):
     # ReAct tab form fields
     MAX_ITERS_INPUT = '#max_iters'
     AUTO_CONTINUE_SWITCH = '#auto_continue_on_text_only'
-    MEMORY_BACKEND_SELECT = '#memory_manager_backend'
     MAX_INPUT_LENGTH_INPUT = '#max_input_length'
 
     # Save button
@@ -159,32 +156,6 @@ class RuntimeConfigPage(BasePage):
         logger.info("Switched to Tool Result Compaction Config tab")
         return self
 
-    def switch_to_memory_summary_tab(self) -> "RuntimeConfigPage":
-        """Switch to the Long-term Memory Config tab."""
-        tab = self.page.locator(self.MEMORY_SUMMARY_TAB).first
-        expect(tab).to_be_visible(timeout=self.timeout)
-        tab.click()
-        self.page.wait_for_timeout(1500)
-
-        active_panel = self.page.locator(self.ACTIVE_PANEL).first
-        expect(active_panel).to_be_visible(timeout=self.timeout)
-
-        logger.info("Switched to Long-term Memory Config tab")
-        return self
-
-    def switch_to_embedding_config_tab(self) -> "RuntimeConfigPage":
-        """Switch to the Embedding Model Config tab."""
-        tab = self.page.locator(self.EMBEDDING_CONFIG_TAB).first
-        expect(tab).to_be_visible(timeout=self.timeout)
-        tab.click()
-        self.page.wait_for_timeout(1500)
-
-        active_panel = self.page.locator(self.ACTIVE_PANEL).first
-        expect(active_panel).to_be_visible(timeout=self.timeout)
-
-        logger.info("Switched to Embedding Model Config tab")
-        return self
-
     def switch_to_tab(self, tab_key: str) -> "RuntimeConfigPage":
         """
         Generic tab-switch method.
@@ -234,14 +205,6 @@ class RuntimeConfigPage(BasePage):
         self.page.wait_for_timeout(500)
         logger.info("Toggled auto-continue switch")
         return self
-
-    def get_memory_backend(self) -> str:
-        """Get the current memory manager backend."""
-        select = self.page.locator(self.MEMORY_BACKEND_SELECT).first
-        if select.is_visible():
-            selection = select.locator('.minions-select-selection-item').first
-            return selection.inner_text() if selection.is_visible() else ""
-        return ""
 
     def get_max_input_length(self) -> str:
         """Get the max context length."""

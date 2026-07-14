@@ -5,7 +5,7 @@ Per the issue acceptance criteria the focus is on:
 
 - ``GET /skills`` — list workspace skills
 - ``GET /skills/hub/search`` — hub search wrapper
-- ``GET /skills/pool`` — pool listing
+- ``GET /skills/global`` — global skills listing
 - Hub install task lifecycle: start → status → cancel
 - ``GET /skills/hub/install/status/{id}`` 404 for unknown task
 
@@ -134,16 +134,16 @@ def test_search_hub_returns_mapped_specs(client):
 
 
 # ---------------------------------------------------------------------------
-# GET /skills/pool
+# GET /skills/global
 # ---------------------------------------------------------------------------
 
 
-def test_list_pool_skills_returns_pool_specs(client):
+def test_list_global_skills_returns_global_specs(client):
     with patch(
-        "minions.app.routers.skills._build_pool_skill_specs",
+        "minions.app.routers.skills._build_global_skill_specs",
         return_value=[],
     ) as build_mock:
-        response = client.get("/api/skills/pool")
+        response = client.get("/api/skills/global")
 
     assert response.status_code == 200
     assert response.json() == []
@@ -247,3 +247,105 @@ def test_start_install_422_on_missing_bundle_url(client, patch_get_agent):
     )
 
     assert response.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# Workspace editing + promotion
+# ---------------------------------------------------------------------------
+
+
+def test_save_workspace_skill_uses_workspace_service(
+    client,
+    patch_get_agent,
+):
+    service = MagicMock()
+    service.save_skill.return_value = {
+        "success": True,
+        "mode": "edit",
+        "name": "demo",
+    }
+    with (
+        patch(
+            "minions.app.routers.skills.SkillService",
+            return_value=service,
+        ),
+        patch(
+            "minions.app.routers.skills.schedule_agent_reload",
+        ) as reload_mock,
+    ):
+        response = client.put(
+            "/api/skills/save",
+            json={"name": "demo", "content": "---\nname: demo\n"},
+        )
+
+    assert response.status_code == 200, response.text
+    service.save_skill.assert_called_once_with(
+        skill_name="demo",
+        target_name="demo",
+        content="---\nname: demo\n",
+        config=None,
+        overwrite=False,
+    )
+    reload_mock.assert_called_once()
+
+
+def test_promote_workspace_skill_passes_optimistic_lock_fields(
+    client,
+    patch_get_agent,
+):
+    service = MagicMock()
+    service.promote_workspace_skill_to_global.return_value = {
+        "success": True,
+        "mode": "promoted",
+        "name": "demo",
+        "global_hash": "new-hash",
+        "propagated": False,
+    }
+    with patch(
+        "minions.app.routers.skills.GlobalSkillService",
+        return_value=service,
+    ):
+        response = client.post(
+            "/api/skills/sync/push",
+            json={
+                "skill_name": "demo",
+                "force": True,
+                "expected_global_hash": "old-hash",
+                "propagate": False,
+            },
+        )
+
+    assert response.status_code == 200, response.text
+    service.promote_workspace_skill_to_global.assert_called_once()
+    assert service.promote_workspace_skill_to_global.call_args.kwargs == {
+        "force": True,
+        "expected_global_hash": "old-hash",
+        "include_config": False,
+        "propagate": False,
+    }
+
+
+def test_promote_workspace_skill_returns_409_for_conflict(
+    client,
+    patch_get_agent,
+):
+    service = MagicMock()
+    service.promote_workspace_skill_to_global.return_value = {
+        "success": False,
+        "reason": "conflict",
+        "skill_name": "demo",
+        "global_hash": "global-v2",
+        "agent_hash": "agent-v2",
+        "last_synced_hash": "v1",
+    }
+    with patch(
+        "minions.app.routers.skills.GlobalSkillService",
+        return_value=service,
+    ):
+        response = client.post(
+            "/api/skills/sync/push",
+            json={"skill_name": "demo"},
+        )
+
+    assert response.status_code == 409
+    assert response.json()["detail"]["reason"] == "conflict"

@@ -1,5 +1,4 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { FileAddOutlined } from "@ant-design/icons";
 import type { ToolCallContent } from "../shared/types";
 import { ToolCardShell, DefaultBlock } from "../shared";
@@ -15,12 +14,11 @@ const WriteFileCard: React.FC<WriteFileCardProps> = ({
   content,
   isStreaming,
 }) => {
-  const { t } = useTranslation();
-  const params = content.params || {};
+    const params = content.params || {};
   const file = shortFileName((params.file_path || params.path || "") as string);
   const title = file
-    ? t("tool.writeFile", { file })
-    : t("tool.writeFileDefault");
+    ? `创建 ${file}`
+    : "创建 文件";
 
   const writtenContent = (params.content as string) || "";
   const lineCount = countLines(writtenContent);
@@ -28,7 +26,7 @@ const WriteFileCard: React.FC<WriteFileCardProps> = ({
   const badge =
     !content.status?.startsWith("call") && lineCount > 0 ? (
       <span className={styles.diffAddBadge}>
-        {t("tool.lineBadge.lines", { count: lineCount })}
+        {`${lineCount}行`}
       </span>
     ) : null;
 

@@ -1,5 +1,4 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { FolderOpenOutlined } from "@ant-design/icons";
 import type { ToolCallContent } from "../shared/types";
 import { ToolCardShell, DefaultBlock } from "../shared";
@@ -15,12 +14,11 @@ const GlobSearchCard: React.FC<GlobSearchCardProps> = ({
   content,
   isStreaming,
 }) => {
-  const { t } = useTranslation();
-  const params = content.params || {};
+    const params = content.params || {};
   const pattern = (params.pattern || "") as string;
   const title = pattern
-    ? t("tool.globSearch", { pattern })
-    : t("tool.globSearchDefault");
+    ? `文件匹配 ${pattern}`
+    : "文件匹配";
 
   const resultText = stringifyResult(content.result);
   const lineCount = countLines(resultText);
@@ -28,7 +26,7 @@ const GlobSearchCard: React.FC<GlobSearchCardProps> = ({
   const badge =
     content.status === "done" && lineCount > 0 ? (
       <span className={styles.lineSearchBadge}>
-        {t("tool.lineBadge.files", { count: lineCount })}
+        {`${lineCount}文件`}
       </span>
     ) : null;
 

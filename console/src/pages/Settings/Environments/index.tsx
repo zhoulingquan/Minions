@@ -1,6 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
 import { Button, Modal } from "@agentscope-ai/design";
-import { useTranslation } from "react-i18next";
 
 import api from "../../../api";
 import { useEnvVars } from "./useEnvVars";
@@ -28,8 +27,7 @@ function shiftIndices(prev: Set<number>, removedIdx: number): Set<number> {
 /* ------------------------------------------------------------------ */
 
 function EnvironmentsPage() {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const { envVars, loading, error, fetchAll } = useEnvVars();
   const [rows, setRows] = useState<Row[] | null>(null);
   const [saving, setSaving] = useState(false);
@@ -127,15 +125,15 @@ function EnvironmentsPage() {
 
       // Persisted row — confirm then call DELETE API immediately
       Modal.confirm({
-        title: t("environments.deleteVariable"),
-        content: t("environments.deleteConfirm", { name: row.key }),
-        okText: t("common.delete"),
+        title: "删除变量",
+        content: `删除 "${row.key}"?`,
+        okText: "删除",
         okButtonProps: { danger: true },
-        cancelText: t("common.cancel"),
+        cancelText: "取消",
         onOk: async () => {
           try {
             await api.deleteEnv(row.key);
-            message.success(t("environments.deleteSuccess", { name: row.key }));
+            message.success(`"${row.key}" 已删除`);
             // Refresh from server so local state is in sync
             setRows(null);
             setSelected(new Set());
@@ -145,13 +143,13 @@ function EnvironmentsPage() {
             const errMsg =
               err instanceof Error
                 ? err.message
-                : t("environments.deleteFailed");
+                : "删除失败";
             message.error(errMsg);
           }
         },
       });
     },
-    [workingRows, ensureLocal, envVars.length, fetchAll, message, t],
+    [workingRows, ensureLocal, envVars.length, fetchAll, message],
   );
 
   const removeSelected = useCallback(() => {
@@ -174,11 +172,11 @@ function EnvironmentsPage() {
         : `${names.length} variables`;
 
     Modal.confirm({
-      title: t("environments.deleteSelected"),
-      content: t("environments.deleteSelectedConfirm", { label }),
-      okText: t("common.delete"),
+      title: "删除选中项",
+      content: `删除 ${label}?`,
+      okText: "删除",
       okButtonProps: { danger: true },
-      cancelText: t("common.cancel"),
+      cancelText: "取消",
       onOk: async () => {
         try {
           const persistedKeysToDelete = indices
@@ -193,19 +191,26 @@ function EnvironmentsPage() {
             );
           }
 
-          message.success(t("environments.deleteSuccess", { name: label }));
+          message.success(`"${label}" 已删除`);
           setRows(null);
           setSelected(new Set());
           setKeyErrors({});
           fetchAll();
         } catch (err) {
           const errMsg =
-            err instanceof Error ? err.message : t("environments.deleteFailed");
+            err instanceof Error ? err.message : "删除失败";
           message.error(errMsg);
         }
       },
     });
-  }, [selected, workingRows, ensureLocal, envVars.length, fetchAll]);
+  }, [
+    selected,
+    workingRows,
+    ensureLocal,
+    envVars.length,
+    fetchAll,
+    message,
+  ]);
 
   /* ---- validate & save ---- */
 
@@ -215,11 +220,11 @@ function EnvironmentsPage() {
     for (let i = 0; i < workingRows.length; i++) {
       const k = workingRows[i].key.trim();
       if (!k) {
-        errors[i] = t("environments.keyRequired");
+        errors[i] = "键为必填项";
       } else if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(k)) {
-        errors[i] = t("environments.invalidKeyFormat");
+        errors[i] = "键格式无效";
       } else if (seen.has(k)) {
-        errors[i] = t("environments.duplicateKey");
+        errors[i] = "键重复";
       }
       seen.add(k);
     }
@@ -236,19 +241,19 @@ function EnvironmentsPage() {
     setSaving(true);
     try {
       await api.saveEnvs(dict);
-      message.success(t("environments.saveSuccess"));
+      message.success("环境变量已保存");
       setRows(null);
       setKeyErrors({});
       setSelected(new Set());
       fetchAll();
     } catch (err) {
       const errMsg =
-        err instanceof Error ? err.message : t("environments.saveFailed");
+        err instanceof Error ? err.message : "保存失败";
       message.error(errMsg);
     } finally {
       setSaving(false);
     }
-  }, [validate, workingRows, fetchAll]);
+  }, [fetchAll, message, validate, workingRows]);
 
   const handleReset = useCallback(() => {
     setRows(null);
@@ -262,21 +267,21 @@ function EnvironmentsPage() {
     <div className={styles.environmentsPage}>
       {/* ---- Page header ---- */}
       <PageHeader
-        parent={t("environments.parent")}
-        current={t("environments.environments")}
+        parent={"设置"}
+        current={"环境变量"}
         className={styles.pageHeader}
       />
 
       {/* ---- Content ---- */}
       {loading ? (
         <div className={styles.centerState}>
-          <span className={styles.stateText}>{t("environments.loading")}</span>
+          <span className={styles.stateText}>{"加载中…"}</span>
         </div>
       ) : error ? (
         <div className={styles.centerState}>
           <span className={styles.stateTextError}>{error}</span>
           <Button size="small" onClick={fetchAll} style={{ marginTop: 12 }}>
-            {t("environments.retry")}
+            {"重试"}
           </Button>
         </div>
       ) : (

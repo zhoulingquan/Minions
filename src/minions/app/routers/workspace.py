@@ -30,7 +30,7 @@ from ...config import (
     AgentsRunningConfig,
 )
 from ...config.config import load_agent_config, save_agent_config
-from ...agents.memory.agent_md_manager import AgentMdManager
+from ...agents.workspace_markdown import WorkspaceMarkdownManager
 from ...agents.templates import get_workspace_md_template_id
 from ...agents.utils import copy_workspace_md_files
 from ...constant import BUILTIN_QA_AGENT_ID, SUPPORTED_AGENT_LANGUAGES
@@ -103,13 +103,10 @@ async def list_working_files(
     """List working directory markdown files."""
     try:
         workspace = await get_agent_for_request(request)
-        workspace_manager = AgentMdManager(
-            str(workspace.workspace_dir),
-            agent_id=workspace.agent_id,
-        )
+        workspace_manager = WorkspaceMarkdownManager(workspace.workspace_dir)
         files = [
             MdFileInfo.model_validate(file)
-            for file in workspace_manager.list_working_mds()
+            for file in workspace_manager.list_documents()
         ]
         return files
     except Exception as exc:
@@ -129,11 +126,8 @@ async def read_working_file(
     """Read a working directory markdown file."""
     try:
         workspace = await get_agent_for_request(request)
-        workspace_manager = AgentMdManager(
-            str(workspace.workspace_dir),
-            agent_id=workspace.agent_id,
-        )
-        content = workspace_manager.read_working_md(md_name)
+        workspace_manager = WorkspaceMarkdownManager(workspace.workspace_dir)
+        content = workspace_manager.read_document(md_name)
         return MdFileContent(content=content)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -155,90 +149,8 @@ async def write_working_file(
     """Write a working directory markdown file."""
     try:
         workspace = await get_agent_for_request(request)
-        workspace_manager = AgentMdManager(
-            str(workspace.workspace_dir),
-            agent_id=workspace.agent_id,
-        )
-        workspace_manager.write_working_md(md_name, body.content)
-        return {"written": True}
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
-
-
-@router.get(
-    "/memory",
-    response_model=list[MdFileInfo],
-    summary="List memory files",
-    description="List all memory files (uses active agent)",
-)
-async def list_memory_files(
-    request: Request,
-) -> list[MdFileInfo]:
-    """List memory directory markdown files."""
-    try:
-        workspace = await get_agent_for_request(request)
-        workspace_manager = AgentMdManager(
-            str(workspace.workspace_dir),
-            agent_id=workspace.agent_id,
-        )
-        raw_files = await asyncio.to_thread(workspace_manager.list_memory_mds)
-        files = [MdFileInfo.model_validate(file) for file in raw_files]
-        return files
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
-
-
-@router.get(
-    "/memory/{md_path:path}",
-    response_model=MdFileContent,
-    summary="Read a memory file",
-    description="Read a memory markdown file (uses active agent)",
-)
-async def read_memory_file(
-    md_path: str,
-    request: Request,
-) -> MdFileContent:
-    """Read a memory directory markdown file."""
-    try:
-        workspace = await get_agent_for_request(request)
-        workspace_manager = AgentMdManager(
-            str(workspace.workspace_dir),
-            agent_id=workspace.agent_id,
-        )
-        content = await asyncio.to_thread(
-            workspace_manager.read_memory_md,
-            md_path,
-        )
-        return MdFileContent(content=content)
-    except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
-
-
-@router.put(
-    "/memory/{md_path:path}",
-    response_model=dict,
-    summary="Write a memory file",
-    description="Create or update a memory file (uses active agent)",
-)
-async def write_memory_file(
-    md_path: str,
-    body: MdFileContent,
-    request: Request,
-) -> dict:
-    """Write a memory directory markdown file."""
-    try:
-        workspace = await get_agent_for_request(request)
-        workspace_manager = AgentMdManager(
-            str(workspace.workspace_dir),
-            agent_id=workspace.agent_id,
-        )
-        await asyncio.to_thread(
-            workspace_manager.write_memory_md,
-            md_path,
-            body.content,
-        )
+        workspace_manager = WorkspaceMarkdownManager(workspace.workspace_dir)
+        workspace_manager.write_document(md_name, body.content)
         return {"written": True}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc

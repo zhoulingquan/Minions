@@ -956,8 +956,8 @@ async def delegate_external_agent(
             request. First ask the user which option to choose, then pass the
             exact selected option id in `message`.
         runner (`str`):
-            ACP runner name, for example `qwen_code`, `opencode`,
-            `claude_code` or `codex`. Not required for `action="list"` or
+            ACP runner name, for example `opencode`. Use `action="list"`
+            to see available runners. Not required for `action="list"` or
             `action="status"` without a specific runner.
         message (`str`):
             The message to send to the external agent. Used for `start` and

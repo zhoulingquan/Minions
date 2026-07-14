@@ -723,7 +723,7 @@ minions --host 0.0.0.0 --port 9090 cron list
     │   ├── chats.json       # 对话历史
     │   ├── jobs.json        # 定时任务
     │   ├── AGENTS.md        # 人设文件
-    │   └── memory/          # 记忆文件
+    │   └── sage/            # SAGE 开发数据（SQLite 模式）
     └── abc123/              # 其他智能体工作区
         └── ...
 ```

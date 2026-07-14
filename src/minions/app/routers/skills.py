@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Workspace and skill-pool APIs."""
+"""Workspace and global-skills APIs."""
 
 from __future__ import annotations
 
@@ -26,41 +26,41 @@ from minions.exceptions import (
 from ...agents.skill_system.hub import (
     SkillImportCancelled,
     search_hub_skills,
-    import_pool_skill_from_hub,
+    import_global_skill_from_hub as import_global_skill_from_hub_service,
     install_skill_from_hub,
 )
 from ...agents.skill_system import (
     SkillConflictError,
-    SkillPoolService,
+    GlobalSkillService,
     SkillService,
-    run_pool_auto_update_sync,
+    run_global_auto_update_sync,
 )
 from ...agents.skill_system.models import SkillInfo
 from ...agents.skill_system.registry import (
     BUILTIN_SKILL_LANGUAGES,
-    get_pool_builtin_sync_status,
-    get_pool_builtin_update_notice,
+    get_global_builtin_sync_status,
+    get_global_builtin_update_notice,
     import_builtin_skills,
     list_builtin_import_candidates,
     list_workspaces,
-    reconcile_pool_manifest,
+    reconcile_global_skills_manifest,
     reconcile_workspace_manifest,
     update_single_builtin,
 )
 from ...agents.skill_system.store import (
-    default_pool_manifest,
+    default_global_skills_manifest,
     default_workspace_manifest,
-    get_pool_skill_manifest_path,
+    get_global_skill_manifest_path,
     get_skill_mtime,
-    get_skill_pool_dir,
+    get_global_skills_dir,
     get_workspace_skill_manifest_path,
     get_workspace_skills_dir,
     mutate_json,
     normalize_skill_manifest_entry,
     read_skill_from_dir,
     read_skill_manifest,
-    read_skill_pool_manifest,
-    resolve_pool_skill_dir,
+    read_global_skills_manifest,
+    resolve_global_skill_dir,
     suggest_conflict_name,
 )
 from ...security.skill_scanner import SkillScanError
@@ -93,12 +93,14 @@ async def post_auto_update_msg(
         item for item in (result.get("synced") or []) if item.get("agents")
     ]
     failed = result.get("failed") or []
-    if not synced and not failed:
+    conflicts = result.get("conflicts") or []
+    if not synced and not failed and not conflicts:
         return
 
     synced_names = [str(item["skill"]) for item in synced]
     failed_names = [str(item["skill"]) for item in failed]
-    has_failure = bool(failed_names)
+    conflict_names = [str(item["skill"]) for item in conflicts]
+    has_failure = bool(failed_names) or bool(conflict_names)
 
     lines: list[str] = []
     for item in synced:
@@ -107,11 +109,14 @@ async def post_auto_update_msg(
     for item in failed:
         agents = ", ".join(item.get("agents") or []) or "unknown"
         lines.append(f"{item['skill']} (failed) → {agents}")
+    for item in conflicts:
+        agents = ", ".join(item.get("agents") or []) or "unknown"
+        lines.append(f"{item['skill']} (conflict) → {agents}")
 
     if has_failure:
         title = (
             f"Auto-update: {len(synced_names)} updated, "
-            f"{len(failed_names)} failed"
+            f"{len(failed_names)} failed, {len(conflict_names)} conflicts"
         )
     else:
         title = f"Auto-update: {len(synced_names)} skill(s) updated"
@@ -125,12 +130,16 @@ async def post_auto_update_msg(
         severity="error" if has_failure else "info",
         title=title,
         body="; ".join(lines),
-        payload={"synced": synced, "failed": failed},
+        payload={
+            "synced": synced,
+            "failed": failed,
+            "conflicts": conflicts,
+        },
     )
 
 
 async def _follow_auto_update(skill_name: str | None = None) -> None:
-    """Propagate + notify after any pool-content change.
+    """Propagate + notify after any global-skills-content change.
 
     Called by the content-mutating endpoints (edit / rename / builtin update /
     builtin import) so auto-update skills sync to their workspaces immediately
@@ -139,7 +148,7 @@ async def _follow_auto_update(skill_name: str | None = None) -> None:
     """
     try:
         result = await asyncio.to_thread(
-            run_pool_auto_update_sync,
+            run_global_auto_update_sync,
             skill_name=skill_name,
         )
         await post_auto_update_msg(result)
@@ -197,9 +206,15 @@ class SkillSpec(SkillInfo):
     config: dict[str, Any] = Field(default_factory=dict)
     last_updated: str = ""
     installed_from: str = ""
+    in_global: bool = False
+    sync_status: str = "not_synced"
+    global_hash: str = ""
+    agent_hash: str = ""
+    last_synced_hash: str = ""
+    last_synced_at: str = ""
 
 
-class PoolSkillSpec(SkillInfo):
+class GlobalSkillSpec(SkillInfo):
     protected: bool = False
     external: bool = False
     external_path: str = ""
@@ -289,20 +304,20 @@ class CreateSkillRequest(BaseModel):
     enable: bool = True
 
 
-class UploadToPoolRequest(BaseModel):
+class UploadToGlobalRequest(BaseModel):
     workspace_id: str
     skill_name: str
     overwrite: bool = False
     preview_only: bool = False
 
 
-class PoolDownloadTarget(BaseModel):
+class GlobalDownloadTarget(BaseModel):
     workspace_id: str
 
 
-class DownloadFromPoolRequest(BaseModel):
+class DownloadFromGlobalRequest(BaseModel):
     skill_name: str
-    targets: list[PoolDownloadTarget] = Field(default_factory=list)
+    targets: list[GlobalDownloadTarget] = Field(default_factory=list)
     all_workspaces: bool = False
     overwrite: bool = False
     preview_only: bool = False
@@ -317,7 +332,7 @@ class AutoUpdateRequest(BaseModel):
     targets: list[str] | None = None
 
 
-class SavePoolSkillRequest(BaseModel):
+class SaveGlobalSkillRequest(BaseModel):
     name: str
     content: str
     source_name: str | None = None
@@ -592,6 +607,17 @@ def _build_workspace_skill_specs(workspace_dir: Path) -> list[SkillSpec]:
     manifest = read_skill_manifest(workspace_dir)
     entries = manifest.get("skills", {})
     skill_root = get_workspace_skills_dir(workspace_dir)
+    try:
+        sync_details = GlobalSkillService().get_sync_status(
+            workspace_dir,
+        ).get("skills", {})
+    except Exception:
+        logger.warning(
+            "Failed to build workspace skill sync status for '%s'",
+            workspace_dir,
+            exc_info=True,
+        )
+        sync_details = {}
     specs: list[SkillSpec] = []
     for skill_name, raw_entry in sorted(entries.items()):
         entry = normalize_skill_manifest_entry(raw_entry)
@@ -608,6 +634,7 @@ def _build_workspace_skill_specs(workspace_dir: Path) -> list[SkillSpec]:
                 continue
             dump = skill.model_dump()
             dump["tags"] = entry.get("tags") or []
+            sync = sync_details.get(skill_name) or {}
             specs.append(
                 SkillSpec(
                     **dump,
@@ -617,6 +644,19 @@ def _build_workspace_skill_specs(workspace_dir: Path) -> list[SkillSpec]:
                     last_updated=get_skill_mtime(skill_dir),
                     installed_from=str(
                         entry.get("installed_from", "") or "",
+                    ),
+                    in_global=bool(sync.get("in_global", False)),
+                    sync_status=str(
+                        sync.get("sync_status", "not_synced")
+                        or "not_synced",
+                    ),
+                    global_hash=str(sync.get("global_hash", "") or ""),
+                    agent_hash=str(sync.get("agent_hash", "") or ""),
+                    last_synced_hash=str(
+                        sync.get("last_synced_hash", "") or "",
+                    ),
+                    last_synced_at=str(
+                        sync.get("last_synced_at", "") or "",
                     ),
                 ),
             )
@@ -629,23 +669,23 @@ def _build_workspace_skill_specs(workspace_dir: Path) -> list[SkillSpec]:
     return specs
 
 
-def _build_pool_skill_specs() -> list[PoolSkillSpec]:
-    manifest = read_skill_pool_manifest()
+def _build_global_skill_specs() -> list[GlobalSkillSpec]:
+    manifest = read_global_skills_manifest()
     entries = manifest.get("skills", {})
-    pool_dir = get_skill_pool_dir()
-    sync_info = get_pool_builtin_sync_status(pool_skills=entries)
-    specs: list[PoolSkillSpec] = []
+    global_dir = get_global_skills_dir()
+    sync_info = get_global_builtin_sync_status(global_skills_data=entries)
+    specs: list[GlobalSkillSpec] = []
     for skill_name, raw_entry in sorted(entries.items()):
         entry = normalize_skill_manifest_entry(raw_entry)
         if raw_entry not in (None, entry):
             logger.warning(
-                "Skipping malformed pool skill entry '%s' in manifest",
+                "Skipping malformed global skill entry '%s' in manifest",
                 skill_name,
             )
         try:
             source = entry.get("source", "customized")
-            skill_dir = resolve_pool_skill_dir(skill_name) or (
-                pool_dir / skill_name
+            skill_dir = resolve_global_skill_dir(skill_name) or (
+                global_dir / skill_name
             )
             skill = read_skill_from_dir(skill_dir, source)
             if skill is None:
@@ -655,7 +695,7 @@ def _build_pool_skill_specs() -> list[PoolSkillSpec]:
             dump["tags"] = entry.get("tags") or []
             is_external = bool(entry.get("external", False))
             specs.append(
-                PoolSkillSpec(
+                GlobalSkillSpec(
                     **dump,
                     protected=bool(entry.get("protected", False)),
                     external=is_external,
@@ -696,7 +736,7 @@ def _build_pool_skill_specs() -> list[PoolSkillSpec]:
             )
         except Exception:
             logger.warning(
-                "Skipping pool skill '%s': failed to build spec",
+                "Skipping global skill '%s': failed to build spec",
                 skill_name,
                 exc_info=True,
             )
@@ -814,29 +854,29 @@ async def cancel_hub_install(task_id: str) -> dict[str, Any]:
     return {"task_id": task_id, "status": "cancelled"}
 
 
-@router.get("/pool")
-async def list_pool_skills() -> list[PoolSkillSpec]:
-    return _build_pool_skill_specs()
+@router.get("/global")
+async def list_global_skills() -> list[GlobalSkillSpec]:
+    return _build_global_skill_specs()
 
 
-@router.post("/pool/refresh")
-async def refresh_pool_skills() -> list[PoolSkillSpec]:
-    """Force reconcile and return updated pool skill list."""
-    reconcile_pool_manifest()
+@router.post("/global/refresh")
+async def refresh_global_skills() -> list[GlobalSkillSpec]:
+    """Force reconcile and return updated global skill list."""
+    reconcile_global_skills_manifest()
     await _follow_auto_update()
-    return _build_pool_skill_specs()
+    return _build_global_skill_specs()
 
 
-@router.get("/pool/builtin-sources")
-async def list_pool_builtin_sources() -> list[BuiltinImportSpec]:
+@router.get("/global/builtin-sources")
+async def list_global_builtin_sources() -> list[BuiltinImportSpec]:
     return [
         BuiltinImportSpec(**item) for item in list_builtin_import_candidates()
     ]
 
 
-@router.get("/pool/builtin-notice")
-async def get_pool_builtin_notice() -> BuiltinUpdateNotice:
-    notice = get_pool_builtin_update_notice()
+@router.get("/global/builtin-notice")
+async def get_global_builtin_notice() -> BuiltinUpdateNotice:
+    notice = get_global_builtin_update_notice()
     return BuiltinUpdateNotice(
         fingerprint=str(notice.get("fingerprint", "") or ""),
         has_updates=bool(notice.get("has_updates", False)),
@@ -864,34 +904,10 @@ async def create_skill(
     request: Request,
     body: CreateSkillRequest,
 ) -> dict[str, Any]:
-    from ..agent_context import get_agent_for_request
-
-    workspace = await get_agent_for_request(request)
-    workspace_dir = Path(workspace.workspace_dir)
-    try:
-        created = SkillService(workspace_dir).create_skill(
-            name=body.name,
-            content=body.content,
-            references=body.references,
-            scripts=body.scripts,
-            config=body.config,
-            enable=body.enable,
-        )
-    except SkillScanError as exc:
-        return _scan_error_response(exc)
-    except (ValueError, AppBaseException) as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    if not created:
-        raise HTTPException(
-            status_code=409,
-            detail={
-                "reason": "conflict",
-                "suggested_name": suggest_conflict_name(body.name),
-            },
-        )
-    if body.enable:
-        schedule_agent_reload(request, workspace.agent_id)
-    return {"created": True, "name": created}
+    raise HTTPException(
+        status_code=403,
+        detail="技能只能在全局技能中新建。请切换到全局技能标签页创建。",
+    )
 
 
 @router.post("/upload")
@@ -940,10 +956,10 @@ async def upload_skill_zip(
     return result
 
 
-@router.post("/pool/create")
-async def create_pool_skill(body: CreateSkillRequest) -> dict[str, Any]:
+@router.post("/global/create")
+async def create_global_skill(body: CreateSkillRequest) -> dict[str, Any]:
     try:
-        created = SkillPoolService().create_skill(
+        created = GlobalSkillService().create_skill(
             name=body.name,
             content=body.content,
             references=body.references,
@@ -965,16 +981,16 @@ async def create_pool_skill(body: CreateSkillRequest) -> dict[str, Any]:
     return {"created": True, "name": created}
 
 
-@router.put("/pool/save")
-async def save_pool_skill(body: SavePoolSkillRequest) -> dict[str, Any]:
-    """Save one pool skill.
+@router.put("/global/save")
+async def save_global_skill(body: SaveGlobalSkillRequest) -> dict[str, Any]:
+    """Save one global skill.
 
     ``overwrite`` only matters when the save would replace an existing target
     skill during rename/save-as.
     """
-    service = SkillPoolService()
+    service = GlobalSkillService()
     try:
-        result = service.save_pool_skill(
+        result = service.save_global_skill(
             skill_name=body.source_name or body.name,
             target_name=body.name,
             content=body.content,
@@ -993,8 +1009,8 @@ async def save_pool_skill(body: SavePoolSkillRequest) -> dict[str, Any]:
     return result
 
 
-@router.post("/pool/upload-zip")
-async def upload_skill_pool_zip(
+@router.post("/global/upload-zip")
+async def upload_global_skill_zip(
     file: UploadFile = File(...),
     target_name: str = "",
     rename_map: str = "",
@@ -1016,7 +1032,7 @@ async def upload_skill_pool_zip(
             )
     try:
         result = await asyncio.to_thread(
-            SkillPoolService().import_from_zip,
+            GlobalSkillService().import_from_zip,
             data=data,
             target_name=target_name,
             rename_map=parsed_rename,
@@ -1031,12 +1047,12 @@ async def upload_skill_pool_zip(
     return result
 
 
-@router.post("/pool/import")
-async def import_skill_pool_from_hub(
+@router.post("/global/import")
+async def import_global_skill_from_hub(
     body: HubInstallRequest,
 ) -> dict[str, Any]:
     try:
-        result = await import_pool_skill_from_hub(
+        result = await import_global_skill_from_hub_service(
             bundle_url=body.bundle_url,
             version=body.version,
             target_name=body.target_name,
@@ -1059,13 +1075,13 @@ async def import_skill_pool_from_hub(
     }
 
 
-@router.post("/pool/upload")
-async def upload_workspace_skill_to_pool(
-    body: UploadToPoolRequest,
+@router.post("/global/upload")
+async def upload_workspace_skill_to_global(
+    body: UploadToGlobalRequest,
 ) -> dict[str, Any]:
     workspace_dir = _workspace_dir_for_agent(body.workspace_id)
     try:
-        result = SkillPoolService().upload_from_workspace(
+        result = GlobalSkillService().upload_from_workspace(
             workspace_dir=workspace_dir,
             skill_name=body.skill_name,
             overwrite=body.overwrite,
@@ -1084,8 +1100,8 @@ async def upload_workspace_skill_to_pool(
 
 
 def _preflight_download_conflicts(
-    hub_service: SkillPoolService,
-    targets: list[PoolDownloadTarget],
+    global_svc: GlobalSkillService,
+    targets: list[GlobalDownloadTarget],
     skill_name: str,
     overwrite: bool,
 ) -> list[dict[str, Any]]:
@@ -1093,7 +1109,7 @@ def _preflight_download_conflicts(
     conflicts: list[dict[str, Any]] = []
     for target in targets:
         workspace_dir = _workspace_dir_for_agent(target.workspace_id)
-        result = hub_service.preflight_download_to_workspace(
+        result = global_svc.preflight_download_to_workspace(
             skill_name=skill_name,
             workspace_dir=workspace_dir,
             overwrite=overwrite,
@@ -1106,13 +1122,13 @@ def _preflight_download_conflicts(
 
 
 def _resolve_and_preflight(
-    body: DownloadFromPoolRequest,
-) -> tuple[list[PoolDownloadTarget], SkillPoolService]:
+    body: DownloadFromGlobalRequest,
+) -> tuple[list[GlobalDownloadTarget], GlobalSkillService]:
     """Resolve targets and reject if any conflicts exist."""
     targets = list(body.targets)
     if body.all_workspaces:
         targets = [
-            PoolDownloadTarget(workspace_id=workspace["agent_id"])
+            GlobalDownloadTarget(workspace_id=workspace["agent_id"])
             for workspace in list_workspaces()
         ]
     if not targets:
@@ -1120,10 +1136,10 @@ def _resolve_and_preflight(
             status_code=400,
             detail="No workspace targets provided",
         )
-    hub_service = SkillPoolService()
+    global_svc = GlobalSkillService()
     try:
         conflicts = _preflight_download_conflicts(
-            hub_service,
+            global_svc,
             targets,
             body.skill_name,
             body.overwrite,
@@ -1141,11 +1157,11 @@ def _resolve_and_preflight(
                 "conflicts": conflicts,
             },
         )
-    return targets, hub_service
+    return targets, global_svc
 
 
 def _build_download_plan(
-    targets: list[PoolDownloadTarget],
+    targets: list[GlobalDownloadTarget],
     skill_name: str,
 ) -> list[dict[str, Any]]:
     """Build execution plan with rollback snapshots."""
@@ -1167,7 +1183,7 @@ def _build_download_plan(
 
 
 def _download_one_or_raise(
-    hub_service: SkillPoolService,
+    global_svc: GlobalSkillService,
     plan: dict[str, Any],
     execution_plan: list[dict[str, Any]],
     *,
@@ -1176,10 +1192,10 @@ def _download_one_or_raise(
 ) -> dict[str, str]:
     """Download into one workspace; on failure roll back all and raise.
 
-    A missing pool skill is a target-independent 404; any other failure is
+    A missing global skill is a target-independent 404; any other failure is
     a per-target 409 conflict.
     """
-    result = hub_service.download_to_workspace(
+    result = global_svc.download_to_workspace(
         skill_name=skill_name,
         workspace_dir=plan["workspace_dir"],
         overwrite=overwrite,
@@ -1200,15 +1216,15 @@ def _download_one_or_raise(
     }
 
 
-@router.post("/pool/download")
-async def download_pool_skill_to_workspaces(
-    body: DownloadFromPoolRequest,
+@router.post("/global/download")
+async def download_global_skill_to_workspaces(
+    body: DownloadFromGlobalRequest,
 ) -> dict[str, Any]:
-    """Download one pool skill into one or more workspaces.
+    """Download one global skill into one or more workspaces.
 
     All-or-nothing: if any target conflicts, reject everything.
     """
-    targets, hub_service = _resolve_and_preflight(body)
+    targets, global_svc = _resolve_and_preflight(body)
     if body.preview_only:
         return {"downloaded": []}
 
@@ -1219,7 +1235,7 @@ async def download_pool_skill_to_workspaces(
         for plan in execution_plan:
             downloaded.append(
                 _download_one_or_raise(
-                    hub_service,
+                    global_svc,
                     plan,
                     execution_plan,
                     skill_name=body.skill_name,
@@ -1245,8 +1261,8 @@ async def download_pool_skill_to_workspaces(
     return {"downloaded": downloaded}
 
 
-@router.post("/pool/import-builtin")
-async def import_pool_builtins(
+@router.post("/global/import-builtin")
+async def import_global_builtins(
     body: ImportBuiltinRequest,
 ) -> dict[str, Any]:
     imports: list[dict[str, Any]] = (
@@ -1264,8 +1280,8 @@ async def import_pool_builtins(
     return result
 
 
-@router.post("/pool/{skill_name}/update-builtin")
-async def update_pool_builtin(
+@router.post("/global/{skill_name}/update-builtin")
+async def update_global_builtin(
     skill_name: str,
     body: UpdateBuiltinRequest | None = Body(default=None),
 ) -> dict[str, Any]:
@@ -1284,32 +1300,41 @@ async def update_pool_builtin(
     return result
 
 
-@router.delete("/pool/{skill_name}")
-async def delete_pool_skill(skill_name: str) -> dict[str, Any]:
-    deleted = SkillPoolService().delete_skill(skill_name)
+@router.delete("/global/{skill_name}")
+async def delete_global_skill(skill_name: str) -> dict[str, Any]:
+    deleted = GlobalSkillService().delete_skill(skill_name)
     if not deleted:
         raise HTTPException(
             status_code=409,
-            detail="Skill pool entry cannot be deleted",
+            detail="Global skills entry cannot be deleted",
         )
+    # Remove the skill from every workspace since the content source is gone.
+    try:
+        cleanup = await asyncio.to_thread(
+            GlobalSkillService().remove_skill_from_all_workspaces,
+            skill_name,
+        )
+        logger.info("global delete cleanup '%s': %s", skill_name, cleanup)
+    except Exception:
+        logger.warning("global delete cleanup failed", exc_info=True)
     return {"deleted": True}
 
 
-@router.get("/pool/{skill_name}/config")
-async def get_pool_skill_config(skill_name: str) -> dict[str, Any]:
-    manifest = read_skill_pool_manifest()
+@router.get("/global/{skill_name}/config")
+async def get_global_skill_config(skill_name: str) -> dict[str, Any]:
+    manifest = read_global_skills_manifest()
     entry = manifest.get("skills", {}).get(skill_name)
     if entry is None:
-        raise HTTPException(status_code=404, detail="Pool skill not found")
+        raise HTTPException(status_code=404, detail="Global skill not found")
     return {"config": entry.get("config", {})}
 
 
-@router.put("/pool/{skill_name}/config")
-async def update_pool_skill_config(
+@router.put("/global/{skill_name}/config")
+async def update_global_skill_config(
     skill_name: str,
     body: SkillConfigRequest,
 ) -> dict[str, Any]:
-    manifest_path = get_pool_skill_manifest_path()
+    manifest_path = get_global_skill_manifest_path()
 
     def _update(payload: dict[str, Any]) -> bool:
         entry = payload.get("skills", {}).get(skill_name)
@@ -1318,15 +1343,15 @@ async def update_pool_skill_config(
         entry["config"] = dict(body.config)
         return True
 
-    updated = mutate_json(manifest_path, default_pool_manifest(), _update)
+    updated = mutate_json(manifest_path, default_global_skills_manifest(), _update)
     if not updated:
-        raise HTTPException(status_code=404, detail="Pool skill not found")
+        raise HTTPException(status_code=404, detail="Global skill not found")
     return {"updated": True}
 
 
-@router.delete("/pool/{skill_name}/config")
-async def delete_pool_skill_config(skill_name: str) -> dict[str, Any]:
-    manifest_path = get_pool_skill_manifest_path()
+@router.delete("/global/{skill_name}/config")
+async def delete_global_skill_config(skill_name: str) -> dict[str, Any]:
+    manifest_path = get_global_skill_manifest_path()
 
     def _update(payload: dict[str, Any]) -> bool:
         entry = payload.get("skills", {}).get(skill_name)
@@ -1335,9 +1360,9 @@ async def delete_pool_skill_config(skill_name: str) -> dict[str, Any]:
         entry.pop("config", None)
         return True
 
-    updated = mutate_json(manifest_path, default_pool_manifest(), _update)
+    updated = mutate_json(manifest_path, default_global_skills_manifest(), _update)
     if not updated:
-        raise HTTPException(status_code=404, detail="Pool skill not found")
+        raise HTTPException(status_code=404, detail="Global skill not found")
     return {"cleared": True}
 
 
@@ -1355,31 +1380,31 @@ def _validate_tags(tags: list[str]) -> list[str]:
     return cleaned
 
 
-@router.put("/pool/{skill_name}/tags")
-async def update_pool_skill_tags(
+@router.put("/global/{skill_name}/tags")
+async def update_global_skill_tags(
     skill_name: str,
     tags: list[str],
 ) -> dict[str, Any]:
     tags = _validate_tags(tags)
-    updated = SkillPoolService().set_pool_skill_tags(skill_name, tags)
+    updated = GlobalSkillService().set_global_skill_tags(skill_name, tags)
     if not updated:
         raise HTTPException(
             status_code=404,
-            detail="Pool skill not found",
+            detail="Global skill not found",
         )
     return {"updated": True, "tags": tags}
 
 
-@router.put("/pool/{skill_name}/auto-update")
-async def update_pool_skill_auto_update(
+@router.put("/global/{skill_name}/auto-update")
+async def update_global_skill_auto_update(
     skill_name: str,
     body: AutoUpdateRequest,
 ) -> dict[str, Any]:
-    """Toggle auto-update for a pool skill and persist its target agents.
+    """Toggle auto-update for a global skill and persist its target agents.
 
     Enabling triggers an immediate sync of the configured workspaces.
     """
-    result = SkillPoolService().set_skill_auto_update(
+    result = GlobalSkillService().set_skill_auto_update(
         skill_name,
         enabled=body.enabled,
         targets=body.targets,
@@ -1387,7 +1412,7 @@ async def update_pool_skill_auto_update(
     if result is None:
         raise HTTPException(
             status_code=404,
-            detail="Pool skill not found",
+            detail="Global skill not found",
         )
     await post_auto_update_msg(result)
     return {
@@ -1422,12 +1447,12 @@ async def batch_delete_skills(
     return {"results": results}
 
 
-@router.post("/pool/batch-delete")
-async def batch_delete_pool_skills(
+@router.post("/global/batch-delete")
+async def batch_delete_global_skills(
     skills: list[str],
 ) -> dict[str, Any]:
-    """Delete multiple pool skills. Per-skill results."""
-    service = SkillPoolService()
+    """Delete multiple global skills. Per-skill results."""
+    service = GlobalSkillService()
     results: dict[str, Any] = {}
     for skill_name in skills:
         try:
@@ -1539,16 +1564,10 @@ async def delete_skill(
     request: Request,
     skill_name: str,
 ) -> dict[str, Any]:
-    workspace_dir = await _request_workspace_dir(request)
-    service = SkillService(workspace_dir)
-    service.disable_skill(skill_name)
-    deleted = service.delete_skill(skill_name)
-    if not deleted:
-        raise HTTPException(
-            status_code=409,
-            detail="Only disabled workspace skills can be deleted",
-        )
-    return {"deleted": True}
+    raise HTTPException(
+        status_code=403,
+        detail="技能只能在全局技能中删除。请切换到全局技能标签页删除。",
+    )
 
 
 @router.get("/{skill_name}/files/{file_path:path}")
@@ -1579,8 +1598,8 @@ async def save_workspace_skill(
     try:
         result = SkillService(workspace_dir).save_skill(
             skill_name=body.source_name or body.name,
+            target_name=body.name,
             content=body.content,
-            target_name=body.name if body.source_name else None,
             config=body.config,
             overwrite=body.overwrite,
         )
@@ -1589,11 +1608,10 @@ async def save_workspace_skill(
     except (ValueError, AppBaseException) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     if not result.get("success"):
-        if result.get("reason") == "conflict":
-            raise HTTPException(status_code=409, detail=result)
-        raise HTTPException(status_code=404, detail="Skill not found")
-    if result.get("mode") != "noop":
-        schedule_agent_reload(request, workspace.agent_id)
+        reason = result.get("reason")
+        status = 404 if reason == "not_found" else 409
+        raise HTTPException(status_code=status, detail=result)
+    schedule_agent_reload(request, workspace.agent_id)
     return result
 
 
@@ -1699,3 +1717,141 @@ async def delete_skill_config_endpoint(
     if not updated:
         raise HTTPException(status_code=404, detail="Skill not found")
     return {"cleared": True}
+
+
+# ─── Sync status + push + resolve ──────────────────────────────────────────
+
+
+class SyncPushRequest(BaseModel):
+    skill_name: str
+    force: bool = False
+    expected_global_hash: str | None = None
+    include_config: bool = False
+    propagate: bool = False
+
+
+class SyncResolveRequest(BaseModel):
+    skill_name: str
+    resolution: str  # "keep_global" | "keep_agent"
+    merged_content: str | None = None  # reserved for future manual merge
+
+
+@router.get("/sync/status")
+async def get_sync_status(
+    request: Request,
+) -> dict[str, Any]:
+    """Return sync status for all skills in the current workspace."""
+    from ..agent_context import get_agent_for_request
+
+    workspace = await get_agent_for_request(request)
+    workspace_dir = Path(workspace.workspace_dir)
+    try:
+        result = GlobalSkillService().get_sync_status(workspace_dir)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get sync status: {exc}",
+        ) from exc
+    return result
+
+
+@router.post("/sync/push")
+async def push_skill_to_global(
+    request: Request,
+    body: SyncPushRequest,
+) -> dict[str, Any]:
+    """Push a workspace skill to global skills (Agent → Global sync)."""
+    from ..agent_context import get_agent_for_request
+
+    workspace = await get_agent_for_request(request)
+    workspace_dir = Path(workspace.workspace_dir)
+    try:
+        result = await asyncio.to_thread(
+            GlobalSkillService().promote_workspace_skill_to_global,
+            workspace_dir,
+            body.skill_name,
+            force=body.force,
+            expected_global_hash=body.expected_global_hash,
+            include_config=body.include_config,
+            propagate=body.propagate,
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to push skill: {exc}",
+        ) from exc
+    if not result.get("success"):
+        if result.get("reason") in {
+            "conflict",
+            "not_linked",
+            "outdated_global",
+            "stale_global",
+        }:
+            raise HTTPException(status_code=409, detail=result)
+        raise HTTPException(status_code=404, detail="Skill not found")
+    if body.propagate:
+        rollout = await asyncio.to_thread(
+            run_global_auto_update_sync,
+            skill_name=body.skill_name,
+        )
+        await post_auto_update_msg(rollout)
+        result["rollout"] = rollout
+        result["propagated"] = True
+    return result
+
+
+@router.post("/sync/resolve")
+async def resolve_sync_conflict(
+    request: Request,
+    body: SyncResolveRequest,
+) -> dict[str, Any]:
+    """Resolve a sync conflict by choosing global or agent version."""
+    from ..agent_context import get_agent_for_request
+
+    workspace = await get_agent_for_request(request)
+    workspace_dir = Path(workspace.workspace_dir)
+    service = GlobalSkillService()
+
+    try:
+        skill_name = body.skill_name
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if body.resolution == "keep_global":
+        # Overwrite agent with global version
+        result = await asyncio.to_thread(
+            service.download_to_workspace,
+            skill_name,
+            workspace_dir,
+            overwrite=True,
+        )
+        if not result.get("success"):
+            raise HTTPException(
+                status_code=404,
+                detail="Skill not found in global skills",
+            )
+        schedule_agent_reload(request, workspace.agent_id)
+        return {"resolved": True, "resolution": "keep_global"}
+
+    if body.resolution == "keep_agent":
+        # Push agent version to global skills
+        result = await asyncio.to_thread(
+            service.promote_workspace_skill_to_global,
+            workspace_dir,
+            skill_name,
+            force=True,
+        )
+        if not result.get("success"):
+            if result.get("reason") == "conflict":
+                raise HTTPException(status_code=409, detail=result)
+            raise HTTPException(
+                status_code=404,
+                detail="Skill not found",
+            )
+        schedule_agent_reload(request, workspace.agent_id)
+        return {"resolved": True, "resolution": "keep_agent"}
+
+    raise HTTPException(
+        status_code=400,
+        detail=f"Unknown resolution: {body.resolution}",
+    )

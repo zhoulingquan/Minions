@@ -2,24 +2,33 @@ export { SkillCard } from "./SkillCard";
 export {
   SkillDrawer,
   parseFrontmatter,
-  MAX_TAGS,
-  MAX_TAG_LENGTH,
   type SkillDrawerFormValues,
 } from "./SkillDrawer";
 export { getFileIcon, getSkillVisual } from "./SkillCard";
 export {
   getSkillDisplaySource,
-  getPoolBuiltinStatusLabel,
-  getPoolBuiltinStatusTone,
+  getGlobalBuiltinStatusLabel,
+  getGlobalBuiltinStatusTone,
 } from "@/utils/skill";
 export { useConflictRenameModal } from "./useConflictRenameModal";
 export { ImportHubModal } from "./ImportHubModal";
-export { PoolTransferModal } from "./PoolTransferModal";
-export { SkillFilterDropdown, TAG_PREFIX } from "./SkillFilterDropdown";
-export { HeaderActions } from "./HeaderActions";
 export { AddSkillDropdown } from "./AddSkillDropdown";
 export { SkillsToolbar } from "./SkillsToolbar";
 export { SkillListItem } from "./SkillListItem";
+export { ConfigToAgentModal } from "./ConfigToAgentModal";
+export { ImportBuiltinModal } from "./ImportBuiltinModal";
+export { GlobalSkillDrawer } from "./GlobalSkillDrawer";
+export { SkillCategoryBadges } from "./SkillMeta";
+export { useGlobalSkills, type GlobalSkillMode } from "./useGlobalSkills";
+export {
+  canSyncWorkspaceSkill,
+  getWorkspaceSyncAction,
+  getWorkspaceSyncActionHint,
+  getWorkspaceSyncActionLabel,
+  getWorkspaceSyncLabel,
+  getWorkspaceSyncTone,
+  type WorkspaceSyncAction,
+} from "./skillSync";
 
 export {
   SUPPORTED_SKILL_URL_PREFIXES,

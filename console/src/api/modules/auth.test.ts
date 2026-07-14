@@ -147,3 +147,22 @@ describe("authApi.updateProfile", () => {
     );
   });
 });
+
+describe("authApi.logout", () => {
+  beforeEach(() => localStorage.clear());
+  afterEach(() => vi.clearAllMocks());
+
+  it("revokes the current server session before local logout", async () => {
+    localStorage.setItem("minions_auth_token", "my-token");
+    mockFetch(200, { revoked: true });
+    await authApi.logout();
+    expect(fetch).toHaveBeenCalledWith("/api/auth/revoke-token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer my-token",
+      },
+      body: JSON.stringify({}),
+    });
+  });
+});

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from types import SimpleNamespace
 
 import pytest
 
@@ -11,60 +10,32 @@ import minions.providers.provider_manager as provider_manager_module
 from minions.config.config import ModelSlotConfig
 from minions.exceptions import ModelNotFoundException, ProviderError
 from minions.local_models.llamacpp import LlamaCppServerSetupResult
-from minions.providers.anthropic_provider import AnthropicProvider
-from minions.providers.capping_formatter import (
-    _CappingAnthropicFormatter,
-    _CappingGeminiFormatter,
-    _CappingOpenAIFormatter,
-)
-from minions.providers.openai_provider import (
-    GitHubModelsProvider,
-    OpenAIProvider,
-)
+from minions.providers.capping_formatter import _CappingOpenAIFormatter
+from minions.providers.openai_provider import OpenAIProvider
 from minions.providers.provider import ModelInfo
 from minions.providers.provider_manager import ProviderManager
 
 LEGACY_PROVIDER = {
     "providers": {
-        "modelscope": {
-            "base_url": "https://api-inference.modelscope.cn/v1",
-            "api_key": "",
-            "extra_models": [],
-            "chat_model": "",
-        },
-        "dashscope": {
-            "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "deepseek": {
+            "base_url": "https://ignored-for-frozen-provider.example/v1",
             "api_key": "sk-test-legacy-secret",
-            "extra_models": [{"id": "qwen-plus", "name": "Qwen Plus"}],
-            "chat_model": "",
-        },
-        "aliyun-codingplan": {
-            "base_url": "https://coding.dashscope.aliyuncs.com/v1",
-            "api_key": "",
-            "extra_models": [],
-            "chat_model": "",
-        },
-        "openai": {
-            "base_url": "https://api.openai.com/v1",
-            "api_key": "",
-            "extra_models": [],
-            "chat_model": "",
-        },
-        "azure-openai": {
-            "base_url": "",
-            "api_key": "",
-            "extra_models": [],
-            "chat_model": "",
-        },
-        "anthropic": {
-            "base_url": "https://api.anthropic.com/v1",
-            "api_key": "",
-            "extra_models": [],
+            "extra_models": [
+                {"id": "deepseek-legacy", "name": "DeepSeek Legacy"},
+            ],
             "chat_model": "",
         },
         "ollama": {
             "base_url": "http://myhost:11434/v1",
             "api_key": "",
+            "extra_models": [],
+            "chat_model": "",
+        },
+        # Removed built-ins may still exist in legacy files. Migration must
+        # ignore them without preventing current providers from loading.
+        "openai": {
+            "base_url": "https://api.openai.com/v1",
+            "api_key": "sk-removed-provider",
             "extra_models": [],
             "chat_model": "",
         },
@@ -81,7 +52,7 @@ LEGACY_PROVIDER = {
             "chat_model": "OpenAIChatModel",
         },
     },
-    "active_llm": {"provider_id": "dashscope", "model": "qwen3-max"},
+    "active_llm": {"provider_id": "deepseek", "model": "deepseek-chat"},
 }
 
 
@@ -92,42 +63,30 @@ def isolated_secret_dir(monkeypatch, tmp_path):
     return secret_dir
 
 
-def test_builtin_zhipu_providers_registered(isolated_secret_dir) -> None:
+def test_current_builtin_providers_registered_and_isolated(
+    isolated_secret_dir,
+) -> None:
     manager = ProviderManager()
-
-    expected_configs = {
-        "zhipu-cn": {
-            "base_url": "https://open.bigmodel.cn/api/paas/v4",
-            "support_connection_check": True,
-        },
-        "zhipu-cn-codingplan": {
-            "base_url": "https://open.bigmodel.cn/api/coding/paas/v4",
-            "support_connection_check": False,
-        },
-        "zhipu-intl": {
-            "base_url": "https://api.z.ai/api/paas/v4",
-            "support_connection_check": True,
-        },
-        "zhipu-intl-codingplan": {
-            "base_url": "https://api.z.ai/api/coding/paas/v4",
-            "support_connection_check": False,
-        },
+    assert set(manager.builtin_providers) == {
+        "deepseek",
+        "minions-local",
+        "ollama",
+        "lmstudio",
     }
 
-    for provider_id, expected in expected_configs.items():
-        provider = manager.get_provider(provider_id)
+    deepseek = manager.get_provider("deepseek")
+    assert isinstance(deepseek, OpenAIProvider)
+    assert deepseek.base_url == "https://api.deepseek.com"
+    assert deepseek.freeze_url is True
+    model_ids = [model.id for model in deepseek.models]
+    assert model_ids
+    assert len(model_ids) == len(set(model_ids))
 
-        assert provider is not None
-        assert isinstance(provider, OpenAIProvider)
-        assert provider.base_url == expected["base_url"]
-        assert provider.freeze_url is True
-        assert (
-            provider.support_connection_check
-            == expected["support_connection_check"]
-        )
-        model_ids = [m.id for m in provider.models]
-        assert len(model_ids) > 0
-        assert len(model_ids) == len(set(model_ids))
+    reloaded = ProviderManager()
+    reloaded_deepseek = reloaded.get_provider("deepseek")
+    assert reloaded_deepseek is not deepseek
+    deepseek.api_key = "sk-instance-only"
+    assert reloaded_deepseek.api_key == ""
 
 
 async def test_add_custom_provider_and_reload_from_storage(
@@ -145,19 +104,19 @@ async def test_add_custom_provider_and_reload_from_storage(
     created = await manager.add_custom_provider(custom)
     builtin_conflict = await manager.add_custom_provider(
         OpenAIProvider(
-            id="openai",
-            name="Conflict OpenAI",
+            id="deepseek",
+            name="Conflict DeepSeek",
         ),
     )
     duplicate = await manager.add_custom_provider(custom)
 
     reloaded = ProviderManager()
     loaded = reloaded.get_provider("custom-openai")
-    loaded_builtin_conflict = reloaded.get_provider("openai-custom")
+    loaded_builtin_conflict = reloaded.get_provider("deepseek-custom")
     loaded_duplicate = reloaded.get_provider("custom-openai-new")
 
     assert created.id == "custom-openai"
-    assert builtin_conflict.id == "openai-custom"
+    assert builtin_conflict.id == "deepseek-custom"
     assert duplicate.id == "custom-openai-new"
     assert loaded is not None
     assert isinstance(loaded, OpenAIProvider)
@@ -173,34 +132,19 @@ async def test_add_custom_provider_and_reload_from_storage(
 
 async def test_activate_provider_persists_active_model(
     isolated_secret_dir,
-    monkeypatch,
 ) -> None:
     manager = ProviderManager()
 
-    class FakeCompletions:
-        async def create(self, **kwargs):
-            return SimpleNamespace(id="ok", request=kwargs)
-
-    fake_client = SimpleNamespace(
-        chat=SimpleNamespace(completions=FakeCompletions()),
-    )
-
-    monkeypatch.setattr(
-        OpenAIProvider,
-        "_client",
-        lambda self, timeout=5: fake_client,
-    )
-
-    await manager.activate_model("openai", "gpt-5")
+    await manager.activate_model("deepseek", "deepseek-chat")
 
     assert manager.active_model is not None
-    assert manager.active_model.provider_id == "openai"
-    assert manager.active_model.model == "gpt-5"
+    assert manager.active_model.provider_id == "deepseek"
+    assert manager.active_model.model == "deepseek-chat"
 
     reloaded = ProviderManager()
     assert reloaded.active_model is not None
-    assert reloaded.active_model.provider_id == "openai"
-    assert reloaded.active_model.model == "gpt-5"
+    assert reloaded.active_model.provider_id == "deepseek"
+    assert reloaded.active_model.model == "deepseek-chat"
 
 
 async def test_resume_local_model_restores_server_and_runtime_state(
@@ -317,12 +261,17 @@ def test_migrate_legacy_file_and_persist_active_model(
 
     assert legacy_file.exists() is False
     assert manager.active_model is not None
-    assert manager.active_model.provider_id == "dashscope"
-    assert manager.active_model.model == "qwen3-max"
+    assert manager.active_model.provider_id == "deepseek"
+    assert manager.active_model.model == "deepseek-chat"
 
-    dashscope_provider = manager.get_provider("dashscope")
-    assert dashscope_provider is not None
-    assert dashscope_provider.api_key == "sk-test-legacy-secret"
+    deepseek_provider = manager.get_provider("deepseek")
+    assert deepseek_provider is not None
+    assert deepseek_provider.api_key == "sk-test-legacy-secret"
+    assert deepseek_provider.base_url == "https://api.deepseek.com"
+    assert [model.id for model in deepseek_provider.extra_models] == [
+        "deepseek-legacy",
+    ]
+    assert manager.get_provider("openai") is None
 
     legacy_custom = manager.get_provider("mydash")
     assert legacy_custom is not None
@@ -332,7 +281,7 @@ def test_migrate_legacy_file_and_persist_active_model(
     assert legacy_custom.api_key == "sk-test-legacy-custom-secret"
 
     legacy_ollama = manager.get_provider("ollama")
-    assert legacy_ollama.base_url == "http://myhost:11434"
+    assert legacy_ollama.base_url == "http://myhost:11434/v1"
 
     active_model_file = isolated_secret_dir / "providers" / "active_model.json"
     assert active_model_file.exists()
@@ -343,21 +292,21 @@ async def test_add_custom_provider_conflict_resolution_loops_until_unique(
 ) -> None:
     manager = ProviderManager()
     conflict = OpenAIProvider(
-        id="openai",
-        name="Conflict OpenAI",
+        id="deepseek",
+        name="Conflict DeepSeek",
     )
 
     first = await manager.add_custom_provider(conflict)
     second = await manager.add_custom_provider(conflict)
     third = await manager.add_custom_provider(conflict)
 
-    assert first.id == "openai-custom"
-    assert second.id == "openai-custom-new"
-    assert third.id == "openai-custom-new-new"
+    assert first.id == "deepseek-custom"
+    assert second.id == "deepseek-custom-new"
+    assert third.id == "deepseek-custom-new-new"
 
-    assert manager.get_provider("openai-custom") is not None
-    assert manager.get_provider("openai-custom-new") is not None
-    assert manager.get_provider("openai-custom-new-new") is not None
+    assert manager.get_provider("deepseek-custom") is not None
+    assert manager.get_provider("deepseek-custom-new") is not None
+    assert manager.get_provider("deepseek-custom-new-new") is not None
 
 
 def test_update_provider_for_builtin_persists_to_builtin_path(
@@ -366,7 +315,7 @@ def test_update_provider_for_builtin_persists_to_builtin_path(
     manager = ProviderManager()
 
     ok = manager.update_provider(
-        "openai",
+        "deepseek",
         {
             "base_url": "https://updated.example/v1",  # not taken effect
             "api_key": "sk-updated",
@@ -374,25 +323,25 @@ def test_update_provider_for_builtin_persists_to_builtin_path(
     )
 
     assert ok is True
-    persisted = manager.load_provider("openai", is_builtin=True)
+    persisted = manager.load_provider("deepseek", is_builtin=True)
     assert persisted is not None
     assert isinstance(persisted, OpenAIProvider)
-    assert persisted.base_url == "https://api.openai.com/v1"
+    assert persisted.base_url == "https://api.deepseek.com"
     assert persisted.api_key == "sk-updated"
 
+    # Local provider URLs remain configurable and are stored as built-ins.
     ok = manager.update_provider(
-        "azure-openai",
+        "ollama",
         {
-            "base_url": "https://azure-updated.example/v1",
-            "api_key": "sk-azure-updated",
+            "base_url": "http://ollama-updated.example:11434/v1",
+            "api_key": "sk-ollama-updated",
         },
     )
     assert ok is True
-    persisted_azure = manager.load_provider("azure-openai", is_builtin=True)
-    assert persisted_azure is not None
-    assert isinstance(persisted_azure, OpenAIProvider)
-    assert persisted_azure.base_url == "https://azure-updated.example/v1"
-    assert persisted_azure.api_key == "sk-azure-updated"
+    persisted_ollama = manager.load_provider("ollama", is_builtin=True)
+    assert persisted_ollama is not None
+    assert persisted_ollama.base_url == "http://ollama-updated.example:11434"
+    assert persisted_ollama.api_key == "sk-ollama-updated"
 
 
 def test_update_provider_for_unknown_returns_false(
@@ -420,7 +369,7 @@ async def test_activate_provider_invalid_model_raises(
     manager = ProviderManager()
 
     with pytest.raises(ModelNotFoundException, match="not-exists"):
-        await manager.activate_model("openai", "not-exists")
+        await manager.activate_model("deepseek", "not-exists")
 
 
 async def test_add_model_to_provider_duplicate_id_raises(
@@ -429,15 +378,15 @@ async def test_add_model_to_provider_duplicate_id_raises(
     manager = ProviderManager()
     model_info = ModelInfo(id="custom-duplicate", name="Custom Duplicate")
 
-    provider = await manager.add_model_to_provider("openai", model_info)
+    provider = await manager.add_model_to_provider("deepseek", model_info)
 
     assert [m.id for m in provider.extra_models].count("custom-duplicate") == 1
 
     with pytest.raises(ProviderError, match="already exists"):
-        await manager.add_model_to_provider("openai", model_info)
+        await manager.add_model_to_provider("deepseek", model_info)
 
     reloaded = ProviderManager()
-    reloaded_provider = reloaded.get_provider("openai")
+    reloaded_provider = reloaded.get_provider("deepseek")
 
     assert reloaded_provider is not None
     assert reloaded_provider.extra_models is not None
@@ -475,21 +424,6 @@ def test_load_provider_missing_returns_none(isolated_secret_dir) -> None:
     assert loaded is None
 
 
-def test_provider_from_data_dispatch_to_anthropic(isolated_secret_dir) -> None:
-    manager = ProviderManager()
-
-    provider = manager._provider_from_data(
-        {
-            "id": "custom-anthropic",
-            "name": "Custom Anthropic",
-            "chat_model": "AnthropicChatModel",
-            "api_key": "sk-ant-x",
-        },
-    )
-
-    assert isinstance(provider, AnthropicProvider)
-
-
 def test_provider_from_data_fallback_to_openai(isolated_secret_dir) -> None:
     manager = ProviderManager()
 
@@ -504,201 +438,9 @@ def test_provider_from_data_fallback_to_openai(isolated_secret_dir) -> None:
     assert isinstance(provider, OpenAIProvider)
 
 
-def test_init_from_storage_migrates_with_different_provider(
-    isolated_secret_dir,
-) -> None:
-    builtin_path = isolated_secret_dir / "providers" / "builtin"
-    builtin_path.mkdir(parents=True, exist_ok=True)
-
-    legacy_minimax_provider = {
-        "id": "minimax",
-        "name": "MiniMax",
-        "base_url": "https://api.minimax.io/v1",
-        "api_key": "sk-legacy-minimax",
-        "chat_model": "OpenAIChatModel",
-        "models": [{"id": "MiniMax-M2.5", "name": "MiniMax M2.5"}],
-        "generate_kwargs": {"temperature": 1.0},
-    }
-    (builtin_path / "minimax.json").write_text(
-        json.dumps(legacy_minimax_provider, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
-
-    manager = ProviderManager()
-
-    provider = manager.get_provider("minimax")
-
-    assert provider is not None
-    assert isinstance(provider, AnthropicProvider)
-    # url / name / chatmodel should be updated
-    assert provider.base_url == "https://api.minimax.io/anthropic"
-    assert provider.chat_model == "AnthropicChatModel"
-    assert provider.name == "MiniMax (International)"
-    # api key should be preserved
-    assert provider.api_key == "sk-legacy-minimax"
-
-    from agentscope.model import AnthropicChatModel
-
-    assert provider.get_chat_model_cls() == AnthropicChatModel
-
-    legacy_ollama_provider = {
-        "id": "ollama",
-        "name": "Ollama New",
-        "base_url": "http://legacy-ollama:11434",
-        "api_key": "sk-legacy-ollama",
-        "chat_model": "OpenAIChatModel",
-        "models": [],
-    }
-    (builtin_path / "ollama.json").write_text(
-        json.dumps(legacy_ollama_provider, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
-    manager = ProviderManager()
-    assert manager.get_provider("ollama") is not None
-    assert (
-        manager.get_provider("ollama").base_url == "http://legacy-ollama:11434"
-    )
-
-
-def test_provider_group_metadata(isolated_secret_dir) -> None:
-    """Providers in the same brand share provider_group."""
-    manager = ProviderManager()
-
-    aliyun_ids = [
-        "dashscope",
-        "aliyun-codingplan",
-        "aliyun-codingplan-intl",
-        "aliyun-tokenplan",
-    ]
-    for pid in aliyun_ids:
-        p = manager.get_provider(pid)
-        assert p is not None, f"{pid} not found"
-        assert p.provider_group == "aliyun"
-        assert p.provider_group_name == "Aliyun"
-
-    kimi_ids = ["kimi-cn", "kimi-intl", "kimi-codingplan"]
-    for pid in kimi_ids:
-        p = manager.get_provider(pid)
-        assert p is not None, f"{pid} not found"
-        assert p.provider_group == "kimi"
-
-    volcengine_ids = ["volcengine-cn", "volcengine-cn-codingplan"]
-    for pid in volcengine_ids:
-        p = manager.get_provider(pid)
-        assert p is not None, f"{pid} not found"
-        assert p.provider_group == "volcengine"
-
-
-async def test_provider_group_in_get_info(isolated_secret_dir) -> None:
-    """get_info() should include provider_group fields."""
-    manager = ProviderManager()
-    provider = manager.get_provider("dashscope")
-    assert provider is not None
-
-    info = await provider.get_info()
-    assert info.provider_group == "aliyun"
-    assert info.provider_group_name == "Aliyun"
-    assert info.provider_variant == "dashscope"
-
-
-def test_dashscope_max_inline_media_bytes_loaded_from_json(
-    isolated_secret_dir,
-) -> None:
-    """A user-set ``max_inline_media_bytes`` in dashscope.json must be
-    loaded by ``_init_from_storage`` and actually used by the capping
-    formatter at runtime.
-
-    Writes a builtin dashscope.json with a custom threshold, boots a fresh
-    ``ProviderManager`` (which runs ``_init_from_storage``), and asserts
-    the runtime builtin instance — not just the freshly deserialized one —
-    carries the value through to the formatter.
-    """
-    builtin_path = isolated_secret_dir / "providers" / "builtin"
-    builtin_path.mkdir(parents=True, exist_ok=True)
-
-    dashscope_json = {
-        "id": "dashscope",
-        "name": "DashScope",
-        "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        "api_key": "sk-test",
-        "chat_model": "DashScopeChatModel",
-        "models": [{"id": "qwen3-max", "name": "Qwen3 Max"}],
-        "max_inline_media_bytes": 4096,
-    }
-    (builtin_path / "dashscope.json").write_text(
-        json.dumps(dashscope_json, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
-
-    manager = ProviderManager()
-
-    provider = manager.get_provider("dashscope")
-    assert provider is not None
-    # The runtime builtin must reflect the value loaded from disk, not the
-    # field default (2 MB).
-    assert provider.max_inline_media_bytes == 4096
-
-    # And it must reach the capping formatter that actually guards requests.
-    model = provider.get_chat_model_instance("qwen3-max")
-    assert model.formatter.max_bytes == 4096
-
-
-def test_dashscope_max_inline_media_bytes_defaults_when_absent(
-    isolated_secret_dir,
-) -> None:
-    """An existing dashscope.json without the new key must fall back to the
-    built-in default (2 MB) — i.e. upgrading must not silently cap at 0."""
-    builtin_path = isolated_secret_dir / "providers" / "builtin"
-    builtin_path.mkdir(parents=True, exist_ok=True)
-
-    # Legacy JSON: no max_inline_media_bytes key at all.
-    dashscope_json = {
-        "id": "dashscope",
-        "name": "DashScope",
-        "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        "api_key": "sk-test",
-        "chat_model": "DashScopeChatModel",
-        "models": [{"id": "qwen3-max", "name": "Qwen3 Max"}],
-    }
-    (builtin_path / "dashscope.json").write_text(
-        json.dumps(dashscope_json, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
-
-    manager = ProviderManager()
-    provider = manager.get_provider("dashscope")
-    assert provider is not None
-    assert provider.max_inline_media_bytes == 2 * 1024 * 1024
-    assert (
-        provider.get_chat_model_instance("qwen3-max").formatter.max_bytes
-        == 2 * 1024 * 1024
-    )
-
-
-# ---------------------------------------------------------------------------
-# Inline-media capping for the other providers (OpenAI / Anthropic / Gemini).
-# Same oversized-request bug as DashScope: their agentscope formatters read
-# every file:// media off disk and base64-inline the whole file on every
-# call. Each provider now wires a shared capping formatter and exposes the
-# same configurable ``max_inline_media_bytes`` field, restored by
-# ``_init_from_storage`` via the generic ``hasattr`` branch.
-# ---------------------------------------------------------------------------
-
 # (provider_id, chat_model, model_id, capping_formatter_cls)
 _CAPPING_PROVIDER_CASES = [
-    ("openai", "OpenAIChatModel", "gpt-4o", _CappingOpenAIFormatter),
-    (
-        "anthropic",
-        "AnthropicChatModel",
-        "claude-3-5-sonnet",
-        _CappingAnthropicFormatter,
-    ),
-    (
-        "gemini",
-        "GeminiChatModel",
-        "gemini-2.0-flash",
-        _CappingGeminiFormatter,
-    ),
+    ("deepseek", "OpenAIChatModel", "deepseek-chat", _CappingOpenAIFormatter),
 ]
 
 
@@ -797,40 +539,23 @@ def test_max_inline_media_bytes_defaults_when_absent(
     assert model.formatter.max_bytes == 2 * 1024 * 1024
 
 
-async def test_github_models_provider_uses_new_endpoint_and_prefixes(
-    isolated_secret_dir,
-) -> None:
-    manager = ProviderManager()
-    provider = manager.get_provider("github-models")
-
-    assert provider is not None
-    assert isinstance(provider, OpenAIProvider)
-    assert isinstance(provider, GitHubModelsProvider)
-    assert provider.base_url == "https://models.github.ai/inference"
-    assert provider.freeze_url is False
-    assert provider.api_key_prefix == "ghp_"
-    assert provider.api_key_prefixes == ["ghp_", "github_pat_"]
-
-    info = await provider.get_info()
-    assert info.base_url == "https://models.github.ai/inference"
-    assert info.freeze_url is False
-    assert info.api_key_prefix == "ghp_"
-    assert info.api_key_prefixes == ["ghp_", "github_pat_"]
-
-
 async def test_update_config_persists_api_key_prefixes(
     isolated_secret_dir,
 ) -> None:
     manager = ProviderManager()
-    provider = manager.get_provider("github-models")
+    provider = manager.get_provider("deepseek")
     assert provider is not None
 
     manager.update_provider(
-        "github-models",
-        {"api_key_prefixes": ["ghp_", "github_pat_"]},
+        "deepseek",
+        {"api_key_prefixes": ["sk-", "ds-"]},
     )
 
-    provider = manager.get_provider("github-models")
-    assert provider.api_key_prefixes == ["ghp_", "github_pat_"]
+    provider = manager.get_provider("deepseek")
+    assert provider.api_key_prefixes == ["sk-", "ds-"]
     info = await provider.get_info()
-    assert info.api_key_prefixes == ["ghp_", "github_pat_"]
+    assert info.api_key_prefixes == ["sk-", "ds-"]
+
+    reloaded = ProviderManager().get_provider("deepseek")
+    assert reloaded is not None
+    assert reloaded.api_key_prefixes == ["sk-", "ds-"]

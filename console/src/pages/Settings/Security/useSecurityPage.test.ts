@@ -22,7 +22,6 @@ const hoisted = vi.hoisted(() => {
     getBuiltinRules: vi.fn(),
     updateToolGuard: vi.fn(),
   };
-  const stableT = (k: string) => k;
   const buildSaveBodyMock = vi.fn(() => ({
     disabled_rules: new Set(["r1"]),
     auto_denied_rules: [],
@@ -37,7 +36,6 @@ const hoisted = vi.hoisted(() => {
     mockFormSetFieldsValue,
     messageMock,
     apiMocks,
-    stableT,
     buildSaveBodyMock,
     setEnabledMock,
     fetchAllMock,
@@ -62,10 +60,6 @@ vi.mock("../../../api", () => ({
 
 vi.mock("../../../hooks/useAppMessage", () => ({
   useAppMessage: () => ({ message: hoisted.messageMock }),
-}));
-
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: hoisted.stableT }),
 }));
 
 vi.mock("./useToolGuard", () => ({
@@ -137,7 +131,7 @@ describe("useSecurityPage", () => {
     expect(body.denied_tools).toEqual([]);
     expect(body.disabled_rules).toEqual(["r1"]);
     expect(body.auto_denied_rules).toEqual([]);
-    expect(messageMock.success).toHaveBeenCalledWith("security.saveSuccess");
+    expect(messageMock.success).toHaveBeenCalledWith("工具防护设置已保存");
     expect(hoisted.setEnabledMock).toHaveBeenCalledWith(true);
   });
 

@@ -1,6 +1,5 @@
 import { Form, Switch, Button, Card, Select } from "@agentscope-ai/design";
 import { PlusCircleOutlined } from "@ant-design/icons";
-import { useTranslation } from "react-i18next";
 import type { MergedRule } from "../useToolGuard";
 import type { ToolGuardConfig } from "../../../../api/modules/security";
 import type { FormInstance } from "antd";
@@ -40,13 +39,12 @@ export function ToolGuardTab({
   shellEvasionChecks,
   toggleShellEvasionCheck,
 }: ToolGuardTabProps) {
-  const { t } = useTranslation();
 
   return (
     <div className={styles.tabContent}>
       <div className={styles.sectionConfigureContainer}>
         <p className={styles.tabDescription}>
-          {t("security.toolGuardDescription")}
+          {"配置工具调用的安全扫描。危险操作将在执行前需要你的明确批准。"}
         </p>
 
         <Card className={styles.formCard}>
@@ -61,24 +59,24 @@ export function ToolGuardTab({
             }}
           >
             <Form.Item
-              label={t("security.enabled")}
+              label={"启用工具防护"}
               name="enabled"
               valuePropName="checked"
-              tooltip={t("security.enabledTooltip")}
+              tooltip={"启用后，工具调用在执行前会被扫描是否包含危险模式"}
             >
               <Switch onChange={(val) => setEnabled(val)} />
             </Form.Item>
             <div className={styles.toolGuardRow}>
               <Form.Item
-                label={t("security.guardedTools")}
+                label={"受保护的工具"}
                 name="guarded_tools"
-                tooltip={t("security.guardedToolsTooltip")}
+                tooltip={"检测到危险模式时需要审批的工具。留空则使用内置默认集合。"}
                 style={{ marginBottom: 0 }}
               >
                 <Select
                   mode="tags"
                   options={toolOptions}
-                  placeholder={t("security.guardedToolsPlaceholder")}
+                  placeholder={"选择工具或输入自定义工具名"}
                   disabled={!enabled}
                   allowClear
                   style={{ width: "100%" }}
@@ -86,15 +84,15 @@ export function ToolGuardTab({
               </Form.Item>
 
               <Form.Item
-                label={t("security.deniedTools")}
+                label={"禁止的工具"}
                 name="denied_tools"
-                tooltip={t("security.deniedToolsTooltip")}
+                tooltip={"始终被拒绝的工具，无需审批直接拦截"}
                 style={{ marginBottom: 0 }}
               >
                 <Select
                   mode="tags"
                   options={toolOptions}
-                  placeholder={t("security.deniedToolsPlaceholder")}
+                  placeholder={"选择要始终禁止的工具"}
                   disabled={!enabled}
                   allowClear
                   style={{ width: "100%" }}
@@ -107,7 +105,7 @@ export function ToolGuardTab({
 
       <div className={styles.sectionContainer}>
         <div className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>{t("security.rules.title")}</h2>
+          <h2 className={styles.sectionTitle}>{"检测规则"}</h2>
           <Button
             type="primary"
             icon={<PlusCircleOutlined />}
@@ -115,7 +113,7 @@ export function ToolGuardTab({
             disabled={!enabled}
             size="middle"
           >
-            {t("security.rules.add")}
+            {"添加规则"}
           </Button>
         </div>
 
@@ -135,12 +133,12 @@ export function ToolGuardTab({
       <div className={styles.sectionContainer}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>
-            {t("security.shellEvasion.title")}
+            {"Shell 逃逸检测"}
           </h2>
         </div>
         <div className={styles.sectionConfigureContainer}>
           <p className={styles.tabDescription}>
-            {t("security.shellEvasion.description")}
+            {"配置启用哪些 Shell 逃逸和混淆检测。这些检测能够发现试图绕过简单正则检测来隐藏恶意意图的技术手段。"}
           </p>
           <ShellEvasionSection
             checks={shellEvasionChecks}

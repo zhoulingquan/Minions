@@ -1,6 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
-import type { TFunction } from "i18next";
 import api from "../../../api";
 import type { MsgEvent } from "../../../api/modules/console";
 import { useAgentStore } from "../../../stores/agentStore";
@@ -38,7 +36,7 @@ const getHeartbeatSummary = (status?: string): string => {
   return "Heartbeat 执行失败";
 };
 
-const getSkillAutoUpdateSummary = (event: MsgEvent, t: TFunction): string => {
+const getSkillAutoUpdateSummary = (event: MsgEvent): string => {
   const payload = (event.payload || {}) as {
     synced?: { skill?: string; agents?: string[] }[];
     failed?: { skill?: string; agents?: string[] }[];
@@ -46,18 +44,12 @@ const getSkillAutoUpdateSummary = (event: MsgEvent, t: TFunction): string => {
   const parts: string[] = [];
   for (const item of payload.synced || []) {
     parts.push(
-      t("msg.skillAutoUpdated", {
-        skill: item.skill,
-        agents: (item.agents || []).join(", "),
-      }),
+      `${item.skill}技能发生修改，自动同步至以下智能体：${(item.agents || []).join(", ")}`,
     );
   }
   for (const item of payload.failed || []) {
     parts.push(
-      t("msg.skillAutoUpdateFailed", {
-        skill: item.skill,
-        agents: (item.agents || []).join(", "),
-      }),
+      `${item.skill}技能自动同步失败，目标智能体：${(item.agents || []).join(", ")}`,
     );
   }
   return parts.join("; ") || event.body;
@@ -66,7 +58,6 @@ const getSkillAutoUpdateSummary = (event: MsgEvent, t: TFunction): string => {
 const mapEventToPushMessage = (
   event: MsgEvent,
   resolveAgentName: (agentId: string) => string,
-  t: TFunction,
 ): PushMessage => ({
   id: event.id,
   channelType:
@@ -91,19 +82,19 @@ const mapEventToPushMessage = (
       : "System",
   title:
     event.source_type === "skill_autoupdate"
-      ? t("msg.skillAutoUpdateTitle")
+      ? "技能自动同步"
       : event.title,
   content:
     event.source_type === "heartbeat"
       ? getHeartbeatSummary(event.status)
       : event.source_type === "skill_autoupdate"
-      ? getSkillAutoUpdateSummary(event, t)
+      ? getSkillAutoUpdateSummary(event)
       : stripExecutionTimeText(event.body),
   sender: {
     userId: event.agent_id || "default",
     username:
       event.source_type === "skill_autoupdate"
-        ? t("msg.skillPoolSender")
+        ? "全局技能"
         : resolveAgentName(event.agent_id || DEFAULT_AGENT_ID),
   },
   createdAt: new Date((event.created_at || Date.now() / 1000) * 1000),
@@ -131,8 +122,7 @@ const mapEventToPushMessage = (
 });
 
 export const useMsgData = () => {
-  const { t } = useTranslation();
-  const agents = useAgentStore((state) => state.agents);
+    const agents = useAgentStore((state) => state.agents);
   const agentsById = useMemo(
     () => new Map(agents.map((agent) => [agent.id, agent])),
     [agents],
@@ -142,19 +132,17 @@ export const useMsgData = () => {
       const normalizedId = agentId || DEFAULT_AGENT_ID;
       const agent = agentsById.get(normalizedId);
       if (agent) {
-        return getAgentDisplayName(agent, t);
+        return getAgentDisplayName(agent);
       }
       if (normalizedId === DEFAULT_AGENT_ID) {
-        return t("agent.defaultDisplayName");
+        return "默认智能体";
       }
       return normalizedId;
     },
-    [agentsById, t],
+    [agentsById],
   );
   const resolveAgentNameRef = useRef(resolveAgentName);
   resolveAgentNameRef.current = resolveAgentName;
-  const tRef = useRef(t);
-  tRef.current = t;
   const [summary, setSummary] = useState<MsgSummary>({
     approvals: { total: 0, urgent: 0 },
     pushMessages: { total: 0, unread: 0 },
@@ -178,7 +166,7 @@ export const useMsgData = () => {
       );
       events.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
       const nextItems: PushMessage[] = events.map((event) =>
-        mapEventToPushMessage(event, resolveAgentNameRef.current, tRef.current),
+        mapEventToPushMessage(event, resolveAgentNameRef.current),
       );
       setPushMessages(nextItems);
       setSummary((prev) => ({

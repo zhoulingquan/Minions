@@ -2,7 +2,7 @@ import { request } from "../request";
 import { getApiUrl } from "../config";
 import { buildAuthHeaders } from "../authHeaders";
 import { downloadFileFromUrl } from "../../utils/downloadFileFromUrl";
-import type { MdFileInfo, MdFileContent, DailyMemoryFile } from "../types";
+import type { MdFileInfo, MdFileContent } from "../types";
 
 function getSelectedAgentId(): string {
   try {
@@ -33,10 +33,6 @@ function generateFallbackFilename(): string {
     .replace("T", "_")
     .slice(0, 15); // YYYYMMDD_HHMMSS
   return `minions_workspace_${agentId}_${timestamp}.zip`;
-}
-
-function encodePath(path: string): string {
-  return path.split("/").map(encodeURIComponent).join("/");
 }
 
 export const workspaceApi = {
@@ -94,31 +90,6 @@ export const workspaceApi = {
 
     return await response.json();
   },
-
-  listDailyMemory: () =>
-    request<MdFileInfo[]>("/workspace/memory").then((files) =>
-      files.map((file) => {
-        const basename = file.filename.split("/").pop() || file.filename;
-        const date = basename.replace(".md", "");
-        return {
-          ...file,
-          date,
-          updated_at: new Date(file.modified_time).getTime(),
-        } as DailyMemoryFile;
-      }),
-    ),
-
-  loadDailyMemory: (memoryPath: string) =>
-    request<MdFileContent>(`/workspace/memory/${encodePath(memoryPath)}`),
-
-  saveDailyMemory: (memoryPath: string, content: string) =>
-    request<Record<string, unknown>>(
-      `/workspace/memory/${encodePath(memoryPath)}`,
-      {
-        method: "PUT",
-        body: JSON.stringify({ content }),
-      },
-    ),
 
   // System prompt files management
   getSystemPromptFiles: () =>

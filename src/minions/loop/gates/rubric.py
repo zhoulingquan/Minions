@@ -7,6 +7,7 @@ Architecture:
     ├── GoalStatusRubric  — checks session.active
     └── SubAgentRubric    — placeholder for subagent eval
 """
+
 from __future__ import annotations
 
 import logging
@@ -180,20 +181,23 @@ class StandaloneRubricGate(StopGate):
     async def check(
         self,
         ctx: Any,
-    ) -> Optional[StopHandlerResult]:
-        """Return CONTINUE up to max_interventions.
+    ) -> StopHandlerResult:
+        """Intervene up to max_interventions.
 
         Only triggers on text-only responses
         (no tool calls).
         """
+        _bypass = StopHandlerResult(
+            action=StopAction.BYPASS,
+        )
         if isinstance(ctx, dict) and ctx.get(
             "has_tool_calls",
         ):
-            return None
+            return _bypass
 
         if self._count >= self._max:
             self._count = 0
-            return None
+            return _bypass
 
         self._count += 1
         logger.debug(
@@ -202,10 +206,18 @@ class StandaloneRubricGate(StopGate):
             self._max,
         )
         return StopHandlerResult(
-            action=StopAction.CONTINUE,
-            continuation_message=self._prompt,
+            action=StopAction.INTERRUPT_AND_CONTINUE,
             reason="text-only response re-prompt",
+            reset_peers=True,
         )
+
+    def build_continuation(self) -> str:
+        """Return the re-prompt text."""
+        return self._prompt
+
+    def reset(self) -> None:
+        """Reset intervention counter for new turn."""
+        self._count = 0
 
 
 __all__ = [

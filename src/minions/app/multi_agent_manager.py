@@ -157,6 +157,29 @@ class MultiAgentManager:
                 self._pending_starts.pop(agent_id, None)
             event.set()
 
+    async def acquire_agent_task(
+        self,
+        agent_id: str,
+        run_key: str,
+    ) -> Workspace:
+        """Atomically select a workspace and register an in-flight task.
+
+        Reload swaps ``self.agents[agent_id]`` under the same lock. Keeping
+        selection and task registration together prevents a request from
+        acquiring the old workspace just before the swap and registering
+        only after the reload has decided that the old instance is idle.
+        """
+        await self.get_agent(agent_id)
+        async with self._lock:
+            workspace = self.agents.get(agent_id)
+            if workspace is None:
+                raise ConfigurationException(
+                    config_key="agent",
+                    message=f"Agent '{agent_id}' is not available",
+                )
+            await workspace.task_tracker.register_external_task(run_key)
+            return workspace
+
     @staticmethod
     async def _fire_workspace_created_hooks(workspace_info: dict) -> None:
         """Invoke all registered workspace_created hooks.

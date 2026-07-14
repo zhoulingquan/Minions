@@ -1,6 +1,5 @@
 import { memo, useMemo } from "react";
 import { Button, Drawer } from "@agentscope-ai/design";
-import { useTranslation } from "react-i18next";
 import type { MarketResult } from "../../../../api/modules/market";
 import { SkillIcon, sourceLabel } from "./SkillIcon";
 import styles from "./DetailDrawer.module.less";
@@ -12,13 +11,13 @@ interface DetailDrawerProps {
 }
 
 const STAT_KEY_LABELS: Record<string, string> = {
-  downloads: "market.stats.downloads",
-  installs: "market.stats.installs",
-  stars: "market.stats.stars",
-  likes: "market.stats.likes",
-  views: "market.stats.views",
-  category: "market.stats.category",
-  updated_at: "market.stats.updatedAt",
+  downloads: "下载量",
+  installs: "安装量",
+  stars: "星标",
+  likes: "点赞",
+  views: "浏览量",
+  category: "分类",
+  updated_at: "更新时间",
 };
 
 function formatStatValue(key: string, value: string | number): string {
@@ -35,23 +34,22 @@ export const DetailDrawer = memo(function DetailDrawer({
   onInstall,
   onClose,
 }: DetailDrawerProps) {
-  const { t } = useTranslation();
-  const open = !!item;
-  const missing = t("market.detail.missing");
+    const open = !!item;
+  const missing = "—";
 
   const rows = useMemo<Array<[string, React.ReactNode]>>(() => {
     if (!item) return [];
     const result: Array<[string, React.ReactNode]> = [
-      [t("market.detail.author"), item.author || missing],
-      [t("market.detail.version"), item.version || missing],
+      ["作者", item.author || missing],
+      ["版本", item.version || missing],
       [
-        t("market.detail.sourceUrl"),
+        "安装地址",
         <code key="src" className={styles.mono}>
           {item.source_url}
         </code>,
       ],
       [
-        t("market.detail.slug"),
+        "标识",
         <code key="slug" className={styles.mono}>
           {item.slug}
         </code>,
@@ -60,18 +58,18 @@ export const DetailDrawer = memo(function DetailDrawer({
     if (item.stats) {
       for (const [key, value] of Object.entries(item.stats)) {
         const labelKey = STAT_KEY_LABELS[key];
-        const label = labelKey ? t(labelKey) : key;
+        const label = labelKey || key;
         result.push([label, formatStatValue(key, value)]);
       }
     }
     return result;
-  }, [item, t, missing]);
+  }, [item, missing]);
 
   return (
     <Drawer
       width={520}
       placement="right"
-      title={t("market.detail.title")}
+      title={"技能详情"}
       open={open}
       onClose={onClose}
       destroyOnHidden
@@ -79,7 +77,7 @@ export const DetailDrawer = memo(function DetailDrawer({
         item ? (
           <div className={styles.drawerFooter}>
             <Button type="primary" onClick={onInstall}>
-              {t("common.save")}
+              {"保存"}
             </Button>
           </div>
         ) : null
@@ -104,7 +102,7 @@ export const DetailDrawer = memo(function DetailDrawer({
           </div>
 
           <div className={styles.detailDescription}>
-            {item.description || t("market.noDescription")}
+            {item.description || "暂无描述"}
           </div>
 
           <dl className={styles.detailRows}>

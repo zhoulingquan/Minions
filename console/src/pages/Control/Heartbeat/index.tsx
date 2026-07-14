@@ -11,7 +11,6 @@ import { useAppMessage } from "../../../hooks/useAppMessage";
 import { TimePicker } from "antd";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import { useTranslation } from "react-i18next";
 import api from "../../../api";
 import { useAgentStore } from "../../../stores/agentStore";
 import type { HeartbeatConfig } from "../../../api/types/heartbeat";
@@ -60,19 +59,18 @@ type HeartbeatFormValues = Omit<HeartbeatConfig, "every"> & {
 };
 
 const TARGET_OPTIONS = [
-  { value: "main", labelKey: "heartbeat.targetMain" },
-  { value: "last", labelKey: "heartbeat.targetLast" },
-  { value: "msg", labelKey: "heartbeat.targetMsg" },
+  { value: "main", label: "静默运行（默认，不发送到频道）" },
+  { value: "last", label: "发到上次对话频道" },
+  { value: "msg", label: "发送到消息" },
 ];
 
-const EVERY_UNIT_OPTIONS: { value: EveryUnit; labelKey: string }[] = [
-  { value: "m", labelKey: "heartbeat.unitMinutes" },
-  { value: "h", labelKey: "heartbeat.unitHours" },
+const EVERY_UNIT_OPTIONS: { value: EveryUnit; label: string }[] = [
+  { value: "m", label: "分钟" },
+  { value: "h", label: "小时" },
 ];
 
 function HeartbeatPage() {
-  const { t } = useTranslation();
-  const { selectedAgent } = useAgentStore();
+    const { selectedAgent } = useAgentStore();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form] = Form.useForm<HeartbeatFormValues>();
@@ -95,7 +93,7 @@ function HeartbeatPage() {
       });
     } catch (e) {
       console.error("Failed to load heartbeat config:", e);
-      message.error(t("heartbeat.loadFailed"));
+      message.error("加载心跳配置失败");
     } finally {
       setLoading(false);
     }
@@ -132,10 +130,10 @@ function HeartbeatPage() {
     setSaving(true);
     try {
       await api.updateHeartbeatConfig(body);
-      message.success(t("heartbeat.saveSuccess"));
+      message.success("保存成功，心跳已热重载");
     } catch (e) {
       console.error("Failed to save heartbeat config:", e);
-      message.error(t("heartbeat.saveFailed"));
+      message.error("保存心跳配置失败");
     } finally {
       setSaving(false);
     }
@@ -145,9 +143,9 @@ function HeartbeatPage() {
     return (
       <div className={styles.heartbeatPage}>
         <PageHeader
-          items={[{ title: t("nav.control") }, { title: t("heartbeat.title") }]}
+          items={[{ title: "控制" }, { title: "心跳" }]}
         />
-        <span className={styles.description}>{t("common.loading")}</span>
+        <span className={styles.description}>{"加载中..."}</span>
       </div>
     );
   }
@@ -155,7 +153,7 @@ function HeartbeatPage() {
   return (
     <div className={styles.heartbeatPage}>
       <PageHeader
-        items={[{ title: t("nav.control") }, { title: t("heartbeat.title") }]}
+        items={[{ title: "控制" }, { title: "心跳" }]}
       />
       <div className={styles.heartbeatContent}>
         <Card className={styles.card}>
@@ -176,14 +174,14 @@ function HeartbeatPage() {
           >
             <Form.Item
               name="enabled"
-              label={t("heartbeat.enabled")}
+              label={"开启心跳"}
               valuePropName="checked"
             >
               <Switch />
             </Form.Item>
 
             <Form.Item
-              label={t("heartbeat.every")}
+              label={"执行间隔"}
               required
               className={styles.everyField}
             >
@@ -191,11 +189,11 @@ function HeartbeatPage() {
                 <Form.Item
                   name="everyNumber"
                   rules={[
-                    { required: true, message: t("heartbeat.everyRequired") },
+                    { required: true, message: "请填写间隔" },
                     {
                       type: "number",
                       min: 1,
-                      message: t("heartbeat.everyMin"),
+                      message: "间隔至少为 1",
                     },
                   ]}
                   noStyle
@@ -206,7 +204,7 @@ function HeartbeatPage() {
                   <Select
                     options={EVERY_UNIT_OPTIONS.map((opt) => ({
                       value: opt.value,
-                      label: t(opt.labelKey),
+                      label: opt.label,
                     }))}
                     className={styles.everyUnit}
                   />
@@ -216,21 +214,21 @@ function HeartbeatPage() {
 
             <Form.Item
               name="timeoutSeconds"
-              label={t("heartbeat.timeoutSeconds")}
+              label={"执行超时（秒）"}
               rules={[
                 {
                   required: true,
-                  message: t("heartbeat.timeoutRequired"),
+                  message: "请填写执行超时",
                 },
                 {
                   type: "number",
                   min: 1,
-                  message: t("heartbeat.timeoutMin"),
+                  message: "执行超时至少为 1",
                 },
                 {
                   type: "number",
                   max: HEARTBEAT_MAX_TIMEOUT_SECONDS,
-                  message: t("heartbeat.timeoutMax"),
+                  message: "执行超时最多为 3600",
                 },
               ]}
             >
@@ -243,20 +241,20 @@ function HeartbeatPage() {
 
             <Form.Item
               name="target"
-              label={t("heartbeat.target")}
+              label={"回复目标"}
               rules={[{ required: true }]}
             >
               <Select
                 options={TARGET_OPTIONS.map((opt) => ({
                   value: opt.value,
-                  label: t(opt.labelKey),
+                  label: opt.label,
                 }))}
               />
             </Form.Item>
 
             <Form.Item
               name="useActiveHours"
-              label={t("heartbeat.activeHours")}
+              label={"活跃时段（可选）"}
               valuePropName="checked"
             >
               <Switch />
@@ -273,13 +271,13 @@ function HeartbeatPage() {
                   <div className={styles.activeHoursRow}>
                     <Form.Item
                       name="activeHoursStart"
-                      label={t("heartbeat.activeStart")}
+                      label={"开始时间"}
                     >
                       <TimePickerHHmm />
                     </Form.Item>
                     <Form.Item
                       name="activeHoursEnd"
-                      label={t("heartbeat.activeEnd")}
+                      label={"结束时间"}
                     >
                       <TimePickerHHmm />
                     </Form.Item>
@@ -290,7 +288,7 @@ function HeartbeatPage() {
 
             <Form.Item className={styles.formActions}>
               <Button type="primary" htmlType="submit" loading={saving}>
-                {t("common.save")}
+                {"保存"}
               </Button>
             </Form.Item>
           </Form>

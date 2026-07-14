@@ -343,7 +343,7 @@ class SkillService:
             current_entry = (
                 payload["skills"].get(skill_name) or old_entry or {}
             )
-            next_entry = {
+            next_entry: dict[str, Any] = {
                 "enabled": bool(current_entry.get("enabled", False)),
                 "channels": current_entry.get("channels") or ["all"],
                 "source": metadata["source"],
@@ -358,6 +358,14 @@ class SkillService:
             existing_tags = current_entry.get("tags")
             if existing_tags is not None:
                 next_entry["tags"] = existing_tags
+            # Preserve sync state fields from prior entry
+            for sync_key in (
+                "synced_from_global_hash",
+                "synced_from_pool_hash",  # legacy key, migrated on next sync
+                "last_synced_at",
+            ):
+                if sync_key in current_entry:
+                    next_entry[sync_key] = current_entry[sync_key]
             payload["skills"][skill_name] = next_entry
 
         mutate_json(

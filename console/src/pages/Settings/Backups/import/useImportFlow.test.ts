@@ -12,7 +12,6 @@ const hoisted = vi.hoisted(() => ({
     success: vi.fn(),
     error: vi.fn(),
   },
-  stableT: (k: string) => k,
   trustModeFromErrorMock: vi.fn(),
 }));
 
@@ -23,10 +22,6 @@ vi.mock("@/api", () => ({
 
 vi.mock("@/hooks/useAppMessage", () => ({
   useAppMessage: () => ({ message: hoisted.messageMock }),
-}));
-
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: hoisted.stableT }),
 }));
 
 vi.mock("../trust/trustErrors", () => ({
@@ -45,7 +40,7 @@ function makeExisting(): BackupMeta {
       include_agents: false,
       include_global_config: false,
       include_secrets: false,
-      include_skill_pool: false,
+      include_global_skills: false,
     },
     agent_count: 0,
   };
@@ -70,7 +65,7 @@ describe("useImportFlow", () => {
       await result.current.handleImport(new File([], "x.zip"));
     });
 
-    expect(messageMock.success).toHaveBeenCalledWith("backup.importSuccess");
+    expect(messageMock.success).toHaveBeenCalledWith("备份导入成功");
     expect(onSuccess).toHaveBeenCalledTimes(1);
   });
 
@@ -119,7 +114,7 @@ describe("useImportFlow", () => {
       await result.current.handleImport(new File([], "x.zip"));
     });
 
-    expect(messageMock.error).toHaveBeenCalledWith("backup.importFailed");
+    expect(messageMock.error).toHaveBeenCalledWith("备份导入失败");
     expect(result.current.conflictMeta).toBeNull();
     expect(result.current.trustFileName).toBeNull();
   });
@@ -146,7 +141,7 @@ describe("useImportFlow", () => {
     });
 
     expect(apiMocks.resolveImportConflict).toHaveBeenCalledWith("tok-2");
-    expect(messageMock.success).toHaveBeenCalledWith("backup.importSuccess");
+    expect(messageMock.success).toHaveBeenCalledWith("备份导入成功");
     expect(onSuccess).toHaveBeenCalledTimes(1);
   });
 

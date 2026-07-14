@@ -1,13 +1,11 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { useTranslation } from "react-i18next";
 import { Form } from "antd";
 import { useAppMessage } from "@/hooks/useAppMessage";
 import { installPlugin, uploadPlugin } from "@/api/modules/plugin";
 import { readDirEntry, type LocalSelection } from "../utils";
 
 export function useInstallModal(onSuccess: () => void) {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
 
   const [installOpen, setInstallOpen] = useState(false);
   const [localInstalling, setLocalInstalling] = useState(false);
@@ -76,18 +74,18 @@ export function useInstallModal(onSuccess: () => void) {
           const entries = await readDirEntry(entry as FileSystemDirectoryEntry);
           setLocalSel({ kind: "folder", name: entry.name, entries });
         } catch {
-          message.error(t("pluginManager.dropFailed"));
+          message.error("读取拖入的文件夹失败");
         }
       } else if (entry.isFile) {
         const file = e.dataTransfer.files[0];
         if (!file.name.endsWith(".zip")) {
-          message.warning(t("pluginManager.zipOnly"));
+          message.warning("直接拖入文件时仅支持 ZIP，如需安装文件夹请直接拖入文件夹");
           return;
         }
         setLocalSel({ kind: "zip", name: file.name, file });
       }
     },
-    [message, t],
+    [message],
   );
 
   const handleInstallLocal = useCallback(async () => {
@@ -111,19 +109,19 @@ export function useInstallModal(onSuccess: () => void) {
       }
 
       const result = await uploadPlugin(uploadFile);
-      message.success(`${t("pluginManager.installSuccess")}: ${result.name}`);
+      message.success(`${"插件安装成功"}: ${result.name}`);
       setInstallOpen(false);
       setLocalSel(null);
       onSuccess();
       setTimeout(() => window.location.reload(), 800);
     } catch (err) {
       const msg =
-        err instanceof Error ? err.message : t("pluginManager.installFailed");
+        err instanceof Error ? err.message : "插件安装失败";
       message.error(msg);
     } finally {
       setLocalInstalling(false);
     }
-  }, [localSel, message, t, onSuccess]);
+  }, [localSel, message, onSuccess]);
 
   const handleInstallUrl = useCallback(async () => {
     let values: { source: string };
@@ -136,19 +134,19 @@ export function useInstallModal(onSuccess: () => void) {
     setUrlInstalling(true);
     try {
       const result = await installPlugin(source);
-      message.success(`${t("pluginManager.installSuccess")}: ${result.name}`);
+      message.success(`${"插件安装成功"}: ${result.name}`);
       setInstallOpen(false);
       form.resetFields();
       onSuccess();
       setTimeout(() => window.location.reload(), 800);
     } catch (err) {
       const msg =
-        err instanceof Error ? err.message : t("pluginManager.installFailed");
+        err instanceof Error ? err.message : "插件安装失败";
       message.error(msg);
     } finally {
       setUrlInstalling(false);
     }
-  }, [form, message, t, onSuccess]);
+  }, [form, message, onSuccess]);
 
   const clearSelection = useCallback(() => setLocalSel(null), []);
   const browseZip = useCallback(() => fileInputRef.current?.click(), []);

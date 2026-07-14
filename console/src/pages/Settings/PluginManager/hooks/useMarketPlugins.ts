@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { useCallback, useEffect, useState } from "react";
 import { useAppMessage } from "@/hooks/useAppMessage";
 import {
   fetchMarketPlugins,
@@ -36,10 +35,7 @@ interface UseMarketPluginsOptions {
 }
 
 export function useMarketPlugins({ onInstalled }: UseMarketPluginsOptions) {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
-  const tRef = useRef(t);
-  tRef.current = t;
+    const { message } = useAppMessage();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +66,6 @@ export function useMarketPlugins({ onInstalled }: UseMarketPluginsOptions) {
         if (err instanceof Error && err.name === "AbortError") {
           return;
         }
-        // eslint-disable-next-line no-console
         console.error("[useMarketPlugins] failed to fetch version:", err);
         setMinionsVersion(null);
       });
@@ -93,7 +88,7 @@ export function useMarketPlugins({ onInstalled }: UseMarketPluginsOptions) {
         setPlugins(data.plugins ?? []);
         setTotal(data.total);
       } catch {
-        setError(tRef.current("pluginManager.marketUnavailable"));
+        setError("插件市场正在维护中，请稍后再试");
         setPlugins([]);
         setTotal(0);
       } finally {
@@ -138,7 +133,7 @@ export function useMarketPlugins({ onInstalled }: UseMarketPluginsOptions) {
         const downloadUrl = buildMarketDownloadUrl(entry);
         const result = await installPlugin(downloadUrl, { force: true });
         message.success(
-          `${tRef.current("pluginManager.installSuccess")}: ${result.name}`,
+          `插件安装成功: ${result.name}`,
         );
         onInstalled();
         setTimeout(() => window.location.reload(), 800);
@@ -146,7 +141,7 @@ export function useMarketPlugins({ onInstalled }: UseMarketPluginsOptions) {
         const msg =
           err instanceof Error
             ? err.message
-            : tRef.current("pluginManager.installFailed");
+            : "插件安装失败";
         message.error(msg);
       } finally {
         setInstallingId(null);

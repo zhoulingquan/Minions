@@ -3,7 +3,7 @@ import api from "../../../api";
 import { invalidateSkillCache } from "../../../api/modules/skill";
 import type { MarketResult } from "../../../api/modules/market";
 
-export type InstallTarget = "pool" | "workspace";
+export type InstallTarget = "global" | "workspace";
 
 export type InstallStatus =
   | "queued"
@@ -130,10 +130,10 @@ export function useMarketInstall(opts: UseMarketInstallOptions) {
     async (item: InstallQueueItem, overrideName: string | undefined) => {
       updateItem(item.id, { status: "installing", message: "" });
       try {
-        if (item.target === "pool") {
+        if (item.target === "global") {
           currentInstallingItemIdRef.current = item.id;
           try {
-            const result = await api.importPoolSkillFromHub({
+            const result = await api.importGlobalSkillFromHub({
               bundle_url: item.result.source_url,
               version: item.result.version || undefined,
               target_name: overrideName,
@@ -142,7 +142,7 @@ export function useMarketInstall(opts: UseMarketInstallOptions) {
               updateItem(item.id, { status: "cancelled", message: "" });
               return;
             }
-            invalidateSkillCache({ pool: true });
+            invalidateSkillCache({ global: true });
             updateItem(item.id, {
               status: "completed",
               installedName: result.name,

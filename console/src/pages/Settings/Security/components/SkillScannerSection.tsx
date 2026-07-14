@@ -13,7 +13,6 @@ import {
 import { useAppMessage } from "../../../../hooks/useAppMessage";
 import { Select, Space } from "antd";
 import { Trash2, ShieldCheck, Eye } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import { useSkillScanner } from "../useSkillScanner";
 import type {
   BlockedSkillRecord,
@@ -36,13 +35,10 @@ function FindingsModal({
   open: boolean;
   onClose: () => void;
 }) {
-  const { t } = useTranslation();
 
   return (
     <Modal
-      title={`${t(
-        "security.skillScanner.scanAlerts.viewFindings",
-      )} - ${skillName}`}
+      title={`${"查看详情"} - ${skillName}`}
       open={open}
       onCancel={onClose}
       footer={null}
@@ -82,8 +78,7 @@ function FindingsModal({
 }
 
 export function SkillScannerSection() {
-  const { t } = useTranslation();
-  const { isDark } = useTheme();
+    const { isDark } = useTheme();
   const darkBtnStyle = isDark ? { color: "rgba(255,255,255,0.75)" } : undefined;
   const {
     config,
@@ -109,11 +104,11 @@ export function SkillScannerSection() {
     async (mode: SkillScannerMode) => {
       setSaving(true);
       const ok = await updateConfig({ mode });
-      if (ok) message.success(t("security.skillScanner.saveSuccess"));
-      else message.error(t("security.skillScanner.saveFailed"));
+      if (ok) message.success("技能扫描器设置已保存");
+      else message.error("保存技能扫描器设置失败");
       setSaving(false);
     },
-    [updateConfig, t],
+    [message, updateConfig],
   );
 
   const [pendingTimeout, setPendingTimeout] = useState<number | null>(null);
@@ -126,58 +121,58 @@ export function SkillScannerSection() {
     }
     setSaving(true);
     const ok = await updateConfig({ timeout: value });
-    if (ok) message.success(t("security.skillScanner.saveSuccess"));
-    else message.error(t("security.skillScanner.saveFailed"));
+    if (ok) message.success("技能扫描器设置已保存");
+    else message.error("保存技能扫描器设置失败");
     setPendingTimeout(null);
     setSaving(false);
-  }, [pendingTimeout, updateConfig, t]);
+  }, [message, pendingTimeout, updateConfig]);
 
   const handleAllowSkill = useCallback(
     async (record: BlockedSkillRecord, index: number) => {
       const ok = await addToWhitelist(record.skill_name, record.content_hash);
       if (ok) {
-        message.success(t("security.skillScanner.whitelist.addSuccess"));
+        message.success("技能已加入白名单");
         await removeBlockedEntry(index);
       } else {
-        message.error(t("security.skillScanner.whitelist.addFailed"));
+        message.error("加入白名单失败");
       }
     },
-    [addToWhitelist, removeBlockedEntry, t],
+    [addToWhitelist, message, removeBlockedEntry],
   );
 
   const handleRemoveWhitelist = useCallback(
     async (skillName: string) => {
       Modal.confirm({
-        title: t("security.skillScanner.whitelist.removeConfirm"),
-        content: t("security.skillScanner.whitelist.removeWillDisable"),
+        title: "确定将此技能从白名单中移除？",
+        content: "移除后该技能将同时被禁用。",
         onOk: async () => {
           const ok = await removeFromWhitelist(skillName);
           if (!ok) {
-            message.error(t("security.skillScanner.whitelist.removeFailed"));
+            message.error("从白名单移除失败");
             return;
           }
           try {
             await skillApi.disableSkill(skillName);
             message.success(
-              t("security.skillScanner.whitelist.removeAndDisabled"),
+              "技能已从白名单移除并已禁用",
             );
           } catch {
-            message.success(t("security.skillScanner.whitelist.removeSuccess"));
+            message.success("技能已从白名单移除");
           }
         },
       });
     },
-    [removeFromWhitelist, t],
+    [message, removeFromWhitelist],
   );
 
   const handleClearHistory = useCallback(() => {
     Modal.confirm({
-      title: t("security.skillScanner.scanAlerts.clearConfirm"),
+      title: "确定清除所有扫描告警吗？",
       onOk: async () => {
         await clearBlockedHistory();
       },
     });
-  }, [clearBlockedHistory, t]);
+  }, [clearBlockedHistory]);
 
   if (loading || !config) return null;
 
@@ -185,26 +180,26 @@ export function SkillScannerSection() {
 
   const blockedColumns = [
     {
-      title: t("security.skillScanner.scanAlerts.skillName"),
+      title: "技能",
       dataIndex: "skill_name",
       key: "skill_name",
       width: 180,
     },
     {
-      title: t("security.skillScanner.scanAlerts.action"),
+      title: "动作",
       dataIndex: "action",
       key: "action",
       width: 100,
       render: (action: string) => (
         <Tag color={action === "blocked" ? "red" : "orange"}>
           {action === "blocked"
-            ? t("security.skillScanner.scanAlerts.actionBlocked")
-            : t("security.skillScanner.scanAlerts.actionWarned")}
+            ? "已拦截"
+            : "已提醒"}
         </Tag>
       ),
     },
     {
-      title: t("security.skillScanner.scanAlerts.time"),
+      title: "时间",
       dataIndex: "blocked_at",
       key: "blocked_at",
       width: 180,
@@ -217,12 +212,12 @@ export function SkillScannerSection() {
       },
     },
     {
-      title: t("security.skillScanner.scanAlerts.actions"),
+      title: "操作",
       key: "actions",
       width: 200,
       render: (_: unknown, record: BlockedSkillRecord, index: number) => (
         <Space size="small">
-          <Tooltip title={t("security.skillScanner.scanAlerts.viewFindings")}>
+          <Tooltip title={"查看详情"}>
             <Button
               type="text"
               size="middle"
@@ -238,7 +233,7 @@ export function SkillScannerSection() {
               <Eye size={14} />
             </Button>
           </Tooltip>
-          <Tooltip title={t("security.skillScanner.scanAlerts.allowSkill")}>
+          <Tooltip title={"加入白名单"}>
             <Button
               type="text"
               size="middle"
@@ -248,7 +243,7 @@ export function SkillScannerSection() {
               <ShieldCheck size={14} />
             </Button>
           </Tooltip>
-          <Tooltip title={t("security.skillScanner.scanAlerts.remove")}>
+          <Tooltip title={"删除"}>
             <Button
               type="text"
               size="middle"
@@ -265,13 +260,13 @@ export function SkillScannerSection() {
 
   const whitelistColumns = [
     {
-      title: t("security.skillScanner.whitelist.skillName"),
+      title: "技能",
       dataIndex: "skill_name",
       key: "skill_name",
       width: 200,
     },
     {
-      title: t("security.skillScanner.whitelist.contentHash"),
+      title: "内容哈希",
       dataIndex: "content_hash",
       key: "content_hash",
       width: 200,
@@ -286,7 +281,7 @@ export function SkillScannerSection() {
         ),
     },
     {
-      title: t("security.skillScanner.whitelist.addedAt"),
+      title: "添加时间",
       dataIndex: "added_at",
       key: "added_at",
       width: 180,
@@ -299,11 +294,11 @@ export function SkillScannerSection() {
       },
     },
     {
-      title: t("security.skillScanner.whitelist.actions"),
+      title: "操作",
       key: "actions",
       width: 100,
       render: (_: unknown, record: SkillScannerWhitelistEntry) => (
-        <Tooltip title={t("security.skillScanner.whitelist.remove")}>
+        <Tooltip title={"移除"}>
           <Button
             type="text"
             size="middle"
@@ -322,9 +317,9 @@ export function SkillScannerSection() {
       <Card className={styles.formCard}>
         <div className={styles.skillScannerConfig}>
           <div className={styles.skillScannerConfigItem}>
-            <Tooltip title={t("security.skillScanner.modeTooltip")}>
+            <Tooltip title={"控制扫描器如何处理不安全的技能：拦截、仅提醒或关闭"}>
               <span className={styles.skillScannerLabel}>
-                {t("security.skillScanner.mode")}
+                {"扫描模式"}
               </span>
             </Tooltip>
             <Select
@@ -335,18 +330,18 @@ export function SkillScannerSection() {
               options={[
                 {
                   value: "block",
-                  label: t("security.skillScanner.modeBlock"),
+                  label: "拦截",
                 },
-                { value: "warn", label: t("security.skillScanner.modeWarn") },
-                { value: "off", label: t("security.skillScanner.modeOff") },
+                { value: "warn", label: "仅提醒" },
+                { value: "off", label: "关闭" },
               ]}
             />
           </div>
 
           <div className={styles.skillScannerConfigItem}>
-            <Tooltip title={t("security.skillScanner.timeoutTooltip")}>
+            <Tooltip title={"等待扫描完成的最长时间（5-300秒）"}>
               <span className={styles.skillScannerLabel}>
-                {t("security.skillScanner.timeout")}
+                {"扫描超时（秒）"}
               </span>
             </Tooltip>
             <InputNumber
@@ -370,7 +365,7 @@ export function SkillScannerSection() {
             key: "scanAlerts",
             label: (
               <span>
-                {t("security.skillScanner.scanAlerts.title")}
+                {"扫描告警"}
                 {blockedHistory.length > 0 && (
                   <span className={styles.tabBadge}>
                     {blockedHistory.length}
@@ -383,7 +378,7 @@ export function SkillScannerSection() {
                 {blockedHistory.length > 0 && (
                   <div className={styles.tabPanelHeader}>
                     <Button size="small" danger onClick={handleClearHistory}>
-                      {t("security.skillScanner.scanAlerts.clearAll")}
+                      {"清除全部"}
                     </Button>
                   </div>
                 )}
@@ -393,7 +388,7 @@ export function SkillScannerSection() {
                       <Empty
                         description={
                           <span className={styles.emptyText}>
-                            {t("security.skillScanner.scanAlerts.empty")}
+                            {"暂无安全告警"}
                           </span>
                         }
                       />
@@ -415,7 +410,7 @@ export function SkillScannerSection() {
             key: "whitelist",
             label: (
               <span>
-                {t("security.skillScanner.whitelist.title")}
+                {"白名单"}
                 {whitelist.length > 0 && (
                   <span className={styles.tabBadge}>{whitelist.length}</span>
                 )}
@@ -429,7 +424,7 @@ export function SkillScannerSection() {
                       <Empty
                         description={
                           <span className={styles.emptyText}>
-                            {t("security.skillScanner.whitelist.empty")}
+                            {"暂无白名单技能"}
                           </span>
                         }
                       />

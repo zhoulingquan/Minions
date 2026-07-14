@@ -1,5 +1,4 @@
 import { Card, Radio, Space, Alert } from "antd";
-import { useTranslation } from "react-i18next";
 import type { LocalWhisperStatus } from "../useVoiceTranscription";
 import styles from "../index.module.less";
 
@@ -14,15 +13,14 @@ export function AudioModeCard({
   onAudioModeChange,
   localWhisperStatus,
 }: AudioModeCardProps) {
-  const { t } = useTranslation();
 
   return (
     <Card className={styles.card}>
       <h3 className={styles.cardTitle}>
-        {t("voiceTranscription.audioModeLabel")}
+        {"音频模式"}
       </h3>
       <p className={styles.cardDescription}>
-        {t("voiceTranscription.audioModeDescription")}
+        {"选择来自频道（Discord、Telegram 等）的语音消息在发送给模型之前如何处理。"}
       </p>
       <Radio.Group
         value={audioMode}
@@ -31,18 +29,18 @@ export function AudioModeCard({
         <Space direction="vertical" size="middle">
           <Radio value="auto">
             <span className={styles.optionLabel}>
-              {t("voiceTranscription.modeAuto")}
+              {"自动（推荐）"}
             </span>
             <span className={styles.optionDescription}>
-              {t("voiceTranscription.modeAutoDesc")}
+              {"使用所选转写提供商将音频转写为文字后发送给模型。如果转写未启用或不可用，则显示文件上传占位消息。此模式下音频不会直接发送给模型。适用于所有模型。"}
             </span>
           </Radio>
           <Radio value="native">
             <span className={styles.optionLabel}>
-              {t("voiceTranscription.modeNative")}
+              {"原生音频"}
             </span>
             <span className={styles.optionDescription}>
-              {t("voiceTranscription.modeNativeDesc")}
+              {"直接将音频文件发送给模型，不进行转写。这是唯一会将音频发送给模型的模式。仅适用于特定的音频模型（如 gpt-4o-audio），大多数模型不支持此模式。"}
             </span>
           </Radio>
         </Space>
@@ -54,14 +52,14 @@ export function AudioModeCard({
             <Alert
               type="success"
               showIcon
-              message={t("voiceTranscription.ffmpegReady")}
+              message={"ffmpeg 已安装。原生模式音频格式转换可用。"}
             />
           ) : (
             <Alert
               type="warning"
               showIcon
-              message={t("voiceTranscription.ffmpegMissing")}
-              description={t("voiceTranscription.ffmpegMissingDesc")}
+              message={"ffmpeg 未安装。"}
+              description={"原生音频模式需要 ffmpeg 来转换音频格式（如 .ogg 转 .wav）。请安装 ffmpeg 系统包以启用此模式。"}
             />
           )}
         </div>

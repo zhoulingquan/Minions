@@ -6,7 +6,6 @@ import {
   Collapse,
   Select,
 } from "@agentscope-ai/design";
-import { useTranslation } from "react-i18next";
 import { SliderWithValue } from "./SliderWithValue";
 import styles from "../index.module.less";
 
@@ -15,8 +14,6 @@ interface LightContextCardProps {
 }
 
 export function LightContextCard({ maxInputLength }: LightContextCardProps) {
-  const { t } = useTranslation();
-
   const compactThresholdRatio = Form.useWatch([
     "light_context_config",
     "context_compact_config",
@@ -38,26 +35,26 @@ export function LightContextCard({ maxInputLength }: LightContextCardProps) {
   return (
     <Card
       className={styles.formCard}
-      title={t("agentConfig.lightContextTitle")}
+      title={"上下文管理"}
     >
       <Form.Item
-        label={t("agentConfig.dialogPath")}
+        label={"对话存储路径"}
         name={["light_context_config", "dialog_path"]}
-        tooltip={t("agentConfig.dialogPathTooltip")}
+        tooltip={"对话记录持久化存储的相对路径（相对于 working_dir）"}
       >
-        <Input placeholder={t("agentConfig.dialogPathPlaceholder")} />
+        <Input placeholder={"dialog"} />
       </Form.Item>
 
       <Form.Item
-        label={t("agentConfig.tokenCountEstimateDivisor")}
+        label={"byte/Token 估算除数"}
         name={["light_context_config", "token_count_estimate_divisor"]}
         rules={[
           {
             required: true,
-            message: t("agentConfig.tokenCountEstimateDivisorRequired"),
+            message: "估算除数为必填项",
           },
         ]}
-        tooltip={t("agentConfig.tokenCountEstimateDivisorTooltip")}
+        tooltip={"基于字节数估算 token 数的除数（token 数 ≈ 字节数 / 除数）。推荐值：3.75 ~ 4。"}
       >
         <SliderWithValue
           min={2}
@@ -71,24 +68,24 @@ export function LightContextCard({ maxInputLength }: LightContextCardProps) {
         items={[
           {
             key: "contextCompact",
-            label: t("agentConfig.contextCompactCollapseLabel"),
+            label: "上下文压缩",
             children: (
               <>
                 <Form.Item
-                  label={t("agentConfig.contextCompactEnabled")}
+                  label={"启用上下文压缩"}
                   name={[
                     "light_context_config",
                     "context_compact_config",
                     "enabled",
                   ]}
                   valuePropName="checked"
-                  tooltip={t("agentConfig.contextCompactEnabledTooltip")}
+                  tooltip={"自动压缩上下文，防止上下文窗口溢出"}
                 >
                   <Switch />
                 </Form.Item>
 
                 <Form.Item
-                  label={t("agentConfig.contextCompactRatio")}
+                  label={"上下文压缩阈值比例"}
                   name={[
                     "light_context_config",
                     "context_compact_config",
@@ -97,10 +94,10 @@ export function LightContextCard({ maxInputLength }: LightContextCardProps) {
                   rules={[
                     {
                       required: true,
-                      message: t("agentConfig.contextCompactRatioRequired"),
+                      message: "上下文压缩比例为必填项",
                     },
                   ]}
-                  tooltip={t("agentConfig.contextCompactRatioTooltip")}
+                  tooltip={"当上下文长度达到最大上下文长度的该比例时，触发自动压缩"}
                 >
                   <SliderWithValue
                     min={0.1}
@@ -111,8 +108,8 @@ export function LightContextCard({ maxInputLength }: LightContextCardProps) {
                 </Form.Item>
 
                 <Form.Item
-                  label={t("agentConfig.contextCompactThreshold")}
-                  tooltip={t("agentConfig.contextCompactThresholdTooltip")}
+                  label={"压缩触发阈值（tokens）"}
+                  tooltip={"根据最大上下文长度与压缩阈值比例自动计算，上下文超过此 token 数时触发压缩"}
                 >
                   <Input
                     disabled
@@ -121,14 +118,12 @@ export function LightContextCard({ maxInputLength }: LightContextCardProps) {
                         ? compactThreshold.toLocaleString()
                         : ""
                     }
-                    placeholder={t(
-                      "agentConfig.contextCompactThresholdPlaceholder",
-                    )}
+                    placeholder={"自动计算"}
                   />
                 </Form.Item>
 
                 <Form.Item
-                  label={t("agentConfig.contextCompactReserveRatio")}
+                  label={"上下文保留阈值比例"}
                   name={[
                     "light_context_config",
                     "context_compact_config",
@@ -137,12 +132,10 @@ export function LightContextCard({ maxInputLength }: LightContextCardProps) {
                   rules={[
                     {
                       required: true,
-                      message: t(
-                        "agentConfig.contextCompactReserveRatioRequired",
-                      ),
+                      message: "上下文保留比例为必填项",
                     },
                   ]}
-                  tooltip={t("agentConfig.contextCompactReserveRatioTooltip")}
+                  tooltip={"为保持上下文连贯性，该比例的最新上下文会被保留，不会被压缩"}
                 >
                   <SliderWithValue
                     min={0.01}
@@ -153,10 +146,8 @@ export function LightContextCard({ maxInputLength }: LightContextCardProps) {
                 </Form.Item>
 
                 <Form.Item
-                  label={t("agentConfig.contextCompactReserveThreshold")}
-                  tooltip={t(
-                    "agentConfig.contextCompactReserveThresholdTooltip",
-                  )}
+                  label={"保留阈值（tokens）"}
+                  tooltip={"根据最大上下文长度与保留阈值比例自动计算，压缩后至少保留此 token 数的最新上下文"}
                 >
                   <Input
                     disabled
@@ -165,9 +156,7 @@ export function LightContextCard({ maxInputLength }: LightContextCardProps) {
                         ? reserveThreshold.toLocaleString()
                         : ""
                     }
-                    placeholder={t(
-                      "agentConfig.contextCompactReserveThresholdPlaceholder",
-                    )}
+                    placeholder={"自动计算"}
                   />
                 </Form.Item>
               </>
@@ -175,24 +164,24 @@ export function LightContextCard({ maxInputLength }: LightContextCardProps) {
           },
           {
             key: "toolResultPruning",
-            label: t("agentConfig.toolResultPruningCollapseLabel"),
+            label: "工具结果压缩",
             children: (
               <>
                 <Form.Item
-                  label={t("agentConfig.toolResultCompactEnabled")}
+                  label={"启用工具结果压缩"}
                   name={[
                     "light_context_config",
                     "tool_result_pruning_config",
                     "enabled",
                   ]}
                   valuePropName="checked"
-                  tooltip={t("agentConfig.toolResultCompactEnabledTooltip")}
+                  tooltip={"对过长的工具调用结果进行压缩，节省上下文空间"}
                 >
                   <Switch />
                 </Form.Item>
 
                 <Form.Item
-                  label={t("agentConfig.toolResultCompactRecentN")}
+                  label={"最新工具结果范围"}
                   name={[
                     "light_context_config",
                     "tool_result_pruning_config",
@@ -201,12 +190,10 @@ export function LightContextCard({ maxInputLength }: LightContextCardProps) {
                   rules={[
                     {
                       required: true,
-                      message: t(
-                        "agentConfig.toolResultCompactRecentNRequired",
-                      ),
+                      message: "最新工具结果范围为必填项",
                     },
                   ]}
-                  tooltip={t("agentConfig.toolResultCompactRecentNTooltip")}
+                  tooltip={"将消息列表分为两段：最近的 N 条消息与更早的消息，两段分别使用不同的压缩字节阈值"}
                 >
                   <SliderWithValue
                     min={1}
@@ -217,7 +204,7 @@ export function LightContextCard({ maxInputLength }: LightContextCardProps) {
                 </Form.Item>
 
                 <Form.Item
-                  label={t("agentConfig.toolResultCompactOldThreshold")}
+                  label={"早期消息压缩阈值（bytes）"}
                   name={[
                     "light_context_config",
                     "tool_result_pruning_config",
@@ -226,24 +213,18 @@ export function LightContextCard({ maxInputLength }: LightContextCardProps) {
                   rules={[
                     {
                       required: true,
-                      message: t(
-                        "agentConfig.toolResultCompactOldThresholdRequired",
-                      ),
+                      message: "超出recent_n的工具调用结果最大字符数为必填项",
                     },
                   ]}
-                  tooltip={t(
-                    "agentConfig.toolResultCompactOldThresholdTooltip",
-                  )}
+                  tooltip={"早期消息（N 条以外）中工具结果超过此字节数时将被压缩，须小于最新消息阈值"}
                 >
                   <Input
-                    placeholder={t(
-                      "agentConfig.toolResultCompactOldThresholdPlaceholder",
-                    )}
+                    placeholder={"请输入字符阈值"}
                   />
                 </Form.Item>
 
                 <Form.Item
-                  label={t("agentConfig.toolResultCompactRecentThreshold")}
+                  label={"最新消息压缩阈值（bytes）"}
                   name={[
                     "light_context_config",
                     "tool_result_pruning_config",
@@ -252,24 +233,18 @@ export function LightContextCard({ maxInputLength }: LightContextCardProps) {
                   rules={[
                     {
                       required: true,
-                      message: t(
-                        "agentConfig.toolResultCompactRecentThresholdRequired",
-                      ),
+                      message: "recent_n内的工具调用结果最大字符数为必填项",
                     },
                   ]}
-                  tooltip={t(
-                    "agentConfig.toolResultCompactRecentThresholdTooltip",
-                  )}
+                  tooltip={"最近 N 条消息中工具结果超过此字节数时将被压缩，同时也是 read_file 工具单次读取的最大字节上限，须大于等于早期消息阈值"}
                 >
                   <Input
-                    placeholder={t(
-                      "agentConfig.toolResultCompactRecentThresholdPlaceholder",
-                    )}
+                    placeholder={"请输入字符阈值"}
                   />
                 </Form.Item>
 
                 <Form.Item
-                  label={t("agentConfig.toolResultCompactRetentionDays")}
+                  label={"工具调用的文件保留天数"}
                   name={[
                     "light_context_config",
                     "tool_result_pruning_config",
@@ -278,14 +253,10 @@ export function LightContextCard({ maxInputLength }: LightContextCardProps) {
                   rules={[
                     {
                       required: true,
-                      message: t(
-                        "agentConfig.toolResultCompactRetentionDaysRequired",
-                      ),
+                      message: "工具调用的文件保留天数为必填项",
                     },
                   ]}
-                  tooltip={t(
-                    "agentConfig.toolResultCompactRetentionDaysTooltip",
-                  )}
+                  tooltip={"压缩后的工具结果文件保留天数，过期自动清理"}
                 >
                   <SliderWithValue
                     min={1}
@@ -296,36 +267,34 @@ export function LightContextCard({ maxInputLength }: LightContextCardProps) {
                 </Form.Item>
 
                 <Form.Item
-                  label={t("agentConfig.exemptFileExtensions")}
+                  label={"豁免文件后缀"}
                   name={[
                     "light_context_config",
                     "tool_result_pruning_config",
                     "exempt_file_extensions",
                   ]}
-                  tooltip={t("agentConfig.exemptFileExtensionsTooltip")}
+                  tooltip={"这些文件后缀的 read_file 工具结果将使用最新消息的压缩阈值，而不是早期消息阈值"}
                 >
                   <Select
                     mode="tags"
-                    placeholder={t(
-                      "agentConfig.exemptFileExtensionsPlaceholder",
-                    )}
+                    placeholder={".md, .txt, .json"}
                     tokenSeparators={[",", " "]}
                     style={{ width: "100%" }}
                   />
                 </Form.Item>
 
                 <Form.Item
-                  label={t("agentConfig.exemptToolNames")}
+                  label={"豁免工具名称"}
                   name={[
                     "light_context_config",
                     "tool_result_pruning_config",
                     "exempt_tool_names",
                   ]}
-                  tooltip={t("agentConfig.exemptToolNamesTooltip")}
+                  tooltip={"这些工具的调用结果将使用最新消息的压缩阈值，而不是早期消息阈值"}
                 >
                   <Select
                     mode="tags"
-                    placeholder={t("agentConfig.exemptToolNamesPlaceholder")}
+                    placeholder={"chat_with_agent, list_agents"}
                     tokenSeparators={[",", " "]}
                     style={{ width: "100%" }}
                   />

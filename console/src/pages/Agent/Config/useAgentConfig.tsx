@@ -1,20 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Form, Modal } from "@agentscope-ai/design";
-import { useTranslation } from "react-i18next";
 import api from "../../../api";
 import type { AgentsRunningConfig } from "../../../api/types";
 import { useAppMessage } from "../../../hooks/useAppMessage";
 import { useAgentStore } from "../../../stores/agentStore";
 import {
   CONTEXT_MANAGER_BACKEND_MAPPINGS,
-  MEMORY_MANAGER_BACKEND_MAPPINGS,
-  MEMORY_MANAGER_BACKEND_OPTIONS,
 } from "../../../constants/backendMappings";
 import type { ToolExecutionLevel } from "./components/ToolExecutionLevelCard";
 
 export function useAgentConfig() {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const { selectedAgent } = useAgentStore();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(true);
@@ -29,6 +25,8 @@ export function useAgentConfig() {
   const originalConfigRef = useRef<AgentsRunningConfig | null>(null);
 
   const fetchConfig = useCallback(async () => {
+    // The request layer reads the selected agent from the shared store.
+    void selectedAgent;
     setLoading(true);
     setError(null);
     try {
@@ -45,13 +43,6 @@ export function useAgentConfig() {
         config.context_manager_backend in CONTEXT_MANAGER_BACKEND_MAPPINGS
           ? config.context_manager_backend
           : "light";
-      const memoryBackend =
-        config.memory_manager_backend in MEMORY_MANAGER_BACKEND_MAPPINGS ||
-        MEMORY_MANAGER_BACKEND_OPTIONS.some(
-          (o) => o.value === config.memory_manager_backend,
-        )
-          ? config.memory_manager_backend
-          : "remelight";
       form.setFieldsValue({
         shell_command_timeout: config.shell_command_timeout ?? 60.0,
         shell_command_executable: config.shell_command_executable ?? "",
@@ -75,9 +66,6 @@ export function useAgentConfig() {
         history_max_length: config.history_max_length,
         context_manager_backend: contextBackend,
         light_context_config: config.light_context_config,
-        memory_manager_backend: memoryBackend,
-        reme_light_memory_config: config.reme_light_memory_config,
-        adbpg_memory_config: config.adbpg_memory_config,
         auto_title_config: config.auto_title_config ?? {
           enabled: true,
           timeout_seconds: 30.0,
@@ -91,12 +79,12 @@ export function useAgentConfig() {
       setTimezone(tzResp.timezone || "UTC");
     } catch (err) {
       const errMsg =
-        err instanceof Error ? err.message : t("agentConfig.loadFailed");
+        err instanceof Error ? err.message : "配置加载失败";
       setError(errMsg);
     } finally {
       setLoading(false);
     }
-  }, [form, t, selectedAgent]);
+  }, [form, selectedAgent]);
 
   useEffect(() => {
     fetchConfig();
@@ -114,25 +102,21 @@ export function useAgentConfig() {
       const original = originalConfigRef.current!;
       const formValues = values as AgentsRunningConfig;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const isPlainObject = (
+        value: unknown,
+      ): value is Record<string, unknown> =>
+        value !== null && typeof value === "object" && !Array.isArray(value);
+
       const deepMergeConfig = <T,>(
         base: T | undefined | null,
         override: T | undefined | null,
       ): T | undefined => {
-        if (!base) return override ?? undefined;
-        if (!override) return base;
-        const result = { ...(base as any) };
-        for (const key of Object.keys(override as any)) {
-          const overrideVal = (override as any)[key];
-          const baseVal = (base as any)[key];
-          if (
-            overrideVal != null &&
-            typeof overrideVal === "object" &&
-            !Array.isArray(overrideVal) &&
-            baseVal != null &&
-            typeof baseVal === "object" &&
-            !Array.isArray(baseVal)
-          ) {
+        if (!isPlainObject(base)) return override ?? base ?? undefined;
+        if (!isPlainObject(override)) return override ?? base;
+        const result: Record<string, unknown> = { ...base };
+        for (const [key, overrideVal] of Object.entries(override)) {
+          const baseVal = result[key];
+          if (isPlainObject(overrideVal) && isPlainObject(baseVal)) {
             result[key] = deepMergeConfig(baseVal, overrideVal);
           } else {
             result[key] = overrideVal;
@@ -145,18 +129,10 @@ export function useAgentConfig() {
         ...original,
         ...formValues,
         // Deep-merge nested config sections to preserve collapsed fields
-        reme_light_memory_config: deepMergeConfig(
-          original.reme_light_memory_config,
-          formValues.reme_light_memory_config,
-        ) as typeof original.reme_light_memory_config,
         light_context_config: deepMergeConfig(
           original.light_context_config,
           formValues.light_context_config,
         ) as typeof original.light_context_config,
-        adbpg_memory_config: deepMergeConfig(
-          original.adbpg_memory_config,
-          formValues.adbpg_memory_config,
-        ) as typeof original.adbpg_memory_config,
         auto_title_config: deepMergeConfig(
           original.auto_title_config,
           formValues.auto_title_config,
@@ -168,29 +144,29 @@ export function useAgentConfig() {
 
       // Update original config after successful save
       originalConfigRef.current = configToSave;
-      message.success(t("agentConfig.saveSuccess"));
+      message.success("配置保存成功");
     } catch (err) {
       if (err instanceof Error && "errorFields" in err) return;
       const errMsg =
-        err instanceof Error ? err.message : t("agentConfig.saveFailed");
+        err instanceof Error ? err.message : "配置保存失败";
       message.error(errMsg);
     } finally {
       setSaving(false);
     }
-  }, [form, t, selectedAgent, approvalLevel]);
+  }, [approvalLevel, form, message]);
 
   const handleLanguageChange = useCallback(
     (value: string): void => {
       if (value === language) return;
       Modal.confirm({
-        title: t("agentConfig.languageConfirmTitle"),
+        title: "切换智能体语言",
         content: (
           <span style={{ whiteSpace: "pre-line" }}>
-            {t("agentConfig.languageConfirmContent")}
+            {"切换语言将会覆盖以下文件为新语言的默认版本：\n\n  SOUL.md、AGENTS.md、PROFILE.md、BOOTSTRAP.md、HEARTBEAT.md\n\n如果您已对这些文件进行过自定义修改，请提前备份。您自行添加的其他文件不受影响。"}
           </span>
         ),
-        okText: t("agentConfig.languageConfirmOk"),
-        cancelText: t("common.cancel"),
+        okText: "切换语言",
+        cancelText: "取消",
         onOk: async () => {
           setSavingLang(true);
           try {
@@ -198,18 +174,16 @@ export function useAgentConfig() {
             setLanguage(resp.language);
             if (resp.copied_files && resp.copied_files.length > 0) {
               message.success(
-                t("agentConfig.languageSaveSuccessWithFiles", {
-                  count: resp.copied_files.length,
-                }),
+                `语言已更新，已复制 ${resp.copied_files.length} 个 MD 文件`,
               );
             } else {
-              message.success(t("agentConfig.languageSaveSuccess"));
+              message.success("语言更新成功");
             }
           } catch (err) {
             const errMsg =
               err instanceof Error
                 ? err.message
-                : t("agentConfig.languageSaveFailed");
+                : "语言更新失败";
             message.error(errMsg);
           } finally {
             setSavingLang(false);
@@ -217,7 +191,7 @@ export function useAgentConfig() {
         },
       });
     },
-    [language, t],
+    [language, message],
   );
 
   const handleTimezoneChange = useCallback(
@@ -227,18 +201,18 @@ export function useAgentConfig() {
       try {
         await api.updateUserTimezone(value);
         setTimezone(value);
-        message.success(t("agentConfig.timezoneSaveSuccess"));
+        message.success("时区更新成功");
       } catch (err) {
         const errMsg =
           err instanceof Error
             ? err.message
-            : t("agentConfig.timezoneSaveFailed");
+            : "时区更新失败";
         message.error(errMsg);
       } finally {
         setSavingTimezone(false);
       }
     },
-    [timezone, t],
+    [message, timezone],
   );
 
   return {

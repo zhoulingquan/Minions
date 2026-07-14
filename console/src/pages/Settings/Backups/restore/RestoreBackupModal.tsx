@@ -21,7 +21,6 @@ import {
   Space,
 } from "antd";
 import { QuestionCircleOutlined } from "@ant-design/icons";
-import { useTranslation } from "react-i18next";
 import api from "@/api";
 import { useAppMessage } from "@/hooks/useAppMessage";
 import type {
@@ -64,8 +63,7 @@ export default function RestoreBackupModal({
   onClose,
   onSuccess,
 }: Props) {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const [loading, setLoading] = useState(false);
 
   const fullBackup = isFullBackup(backup.scope);
@@ -85,8 +83,8 @@ export default function RestoreBackupModal({
   const [globalConfig, setGlobalConfig] = useState(
     backup.scope.include_global_config,
   );
-  const [includeSkillPool, setIncludeSkillPool] = useState(
-    backup.scope.include_skill_pool,
+  const [includeGlobalSkills, setIncludeGlobalSkills] = useState(
+    backup.scope.include_global_skills,
   );
   const [includeSecrets, setIncludeSecrets] = useState(
     backup.scope.include_secrets,
@@ -112,7 +110,7 @@ export default function RestoreBackupModal({
       })
       .catch(() => {
         setDetailFailed(true);
-        message.error(t("backup.detailLoadFailed"));
+        message.error("备份详情加载失败，无法进行恢复操作");
       })
       .finally(() => setDetailLoading(false));
     // keying on backup.id is intentional: re-fetch when a different backup is opened.
@@ -187,7 +185,7 @@ export default function RestoreBackupModal({
       agent_ids,
       include_global_config: isFull ? true : globalConfig,
       include_secrets: isFull ? true : includeSecrets,
-      include_skill_pool: isFull ? true : includeSkillPool,
+      include_global_skills: isFull ? true : includeGlobalSkills,
       default_workspace_dir: defaultWorkspaceDir.trim() || null,
       // Backend overlays local security/MCP config after the selected restore
       // mode has built its config payload.
@@ -200,14 +198,10 @@ export default function RestoreBackupModal({
     const preserved = response.preserved_local_keys ?? [];
     if (preserved.length > 0) {
       message.success(
-        t("backup.restoreSuccessPreserved", {
-          defaultValue:
-            "Backup restored successfully. Preserved local settings: {{keys}}. Please restart the service.",
-          keys: preserved.join(", "),
-        }),
+        `备份恢复成功。已保留本地设置：${preserved.join(", ")}。请重启服务。`,
       );
     } else {
-      message.success(t("backup.restoreSuccess"));
+      message.success("备份恢复成功，请您重启服务。");
     }
     onSuccess();
     onClose();
@@ -224,7 +218,7 @@ export default function RestoreBackupModal({
       message.error({
         content: (
           <div className={styles.restoreErrorMessage}>
-            <div>{t("backup.restoreTargetBusy")}</div>
+            <div>{"备份恢复失败：以下目录仍被占用。请关闭正在使用这些目录的浏览器或进程后重试；如果仍然被锁定，请重启系统后再试。"}</div>
             {lockedPaths.length > 0 && (
               <div className={styles.lockedPathList}>
                 {lockedPaths.map((path) => (
@@ -241,7 +235,7 @@ export default function RestoreBackupModal({
       return;
     }
 
-    message.error(t("backup.restoreFailed"));
+    message.error("备份恢复失败");
   };
 
   const handleOk = async () => {
@@ -284,10 +278,7 @@ export default function RestoreBackupModal({
   const summaryText =
     restoreMode === "custom" &&
     (selectedExistingCount > 0 || selectedNewCount > 0)
-      ? t("backup.restoreCustomSummary", {
-          existing: selectedExistingCount,
-          added: selectedNewCount,
-        })
+      ? `已选 ${selectedExistingCount} 个已存在 · ${selectedNewCount} 个新增`
       : null;
 
   // OK is disabled when detail hasn't loaded (we need workspace_stats to build agent_ids),
@@ -298,13 +289,13 @@ export default function RestoreBackupModal({
   return (
     <>
       <Modal
-        title={t("backup.restoreTitle")}
+        title={"恢复备份"}
         open={open}
         onCancel={onClose}
         onOk={handleOk}
         confirmLoading={loading}
         okButtonProps={{ disabled: okDisabled, danger: true }}
-        okText={t("common.confirm")}
+        okText={"确认"}
         destroyOnHidden
         centered
         width={680}
@@ -332,18 +323,10 @@ export default function RestoreBackupModal({
             }
             message={
               trustState === false
-                ? t("backup.trustLocalBanner", {
-                    defaultValue: "Local backup - full restore by default",
-                  })
+                ? "本地备份 - 默认完整恢复"
                 : trustState === true
-                ? t("backup.trustForeignBanner", {
-                    defaultValue:
-                      "Imported backup - local security and MCP are preserved by default",
-                  })
-                : t("backup.trustLegacyBanner", {
-                    defaultValue:
-                      "Legacy backup - trust confirmation is required before restore",
-                  })
+                ? "导入的备份 - 默认保留本地安全和 MCP 配置"
+                : "历史备份 - 恢复前需要确认信任"
             }
             className={styles.trustBanner}
           />
@@ -352,7 +335,7 @@ export default function RestoreBackupModal({
             <Alert
               type="error"
               showIcon
-              message={t("backup.detailLoadFailed")}
+              message={"备份详情加载失败，无法进行恢复操作"}
               className={styles.fullRestoreAlert}
             />
           )}
@@ -360,15 +343,15 @@ export default function RestoreBackupModal({
           {hasNewAgents && !detailFailed && (
             <div className={styles.workspaceDirSection}>
               <div className={styles.workspaceDirLabel}>
-                {t("backup.defaultWorkspaceDir")}
-                <Tooltip title={t("backup.defaultWorkspaceDirHint")}>
+                {"智能体默认工作目录"}
+                <Tooltip title={"待恢复的智能体的工作路径不存在时，智能体将保存在 <默认路径>/<智能体ID> 下，存在时则使用智能体的原始工作路径。"}>
                   <QuestionCircleOutlined className={styles.hintIcon} />
                 </Tooltip>
               </div>
               <Input
                 value={defaultWorkspaceDir}
                 onChange={(e) => setDefaultWorkspaceDir(e.target.value)}
-                placeholder={t("backup.defaultWorkspaceDirPlaceholder")}
+                placeholder={"留空时将使用 ~/.minions/workspaces"}
               />
             </div>
           )}
@@ -377,7 +360,7 @@ export default function RestoreBackupModal({
 
           <div className={styles.restoreModeSection}>
             <div className={styles.restoreModeLabel}>
-              {t("backup.restoreMode")}
+              {"恢复模式"}
             </div>
             <Radio.Group
               value={restoreMode}
@@ -387,23 +370,23 @@ export default function RestoreBackupModal({
               <Radio value="full" disabled={!fullBackup}>
                 <div className={styles.radioOption}>
                   <div className={styles.radioOptionHeader}>
-                    <Text strong>{t("backup.restoreModeFull")}</Text>
+                    <Text strong>{"整体恢复"}</Text>
                     {!fullBackup && (
                       <Tag color="default" className={styles.radioDisabledTag}>
-                        {t("backup.restoreModeFullDisabled")}
+                        {"仅完整备份可用"}
                       </Tag>
                     )}
                   </div>
                   <Text type="secondary" className={styles.radioDesc}>
-                    {t("backup.restoreModeFullDesc")}
+                    {"完全替换当前实例的所有内容，包括所有智能体、全局配置、全局技能和密钥"}
                   </Text>
                 </div>
               </Radio>
               <Radio value="custom">
                 <div className={styles.radioOption}>
-                  <Text strong>{t("backup.restoreModeCustom")}</Text>
+                  <Text strong>{"自定义恢复"}</Text>
                   <Text type="secondary" className={styles.radioDesc}>
-                    {t("backup.restoreModeCustomDesc")}
+                    {"选择要恢复的内容，如部分智能体、配置等；当前已有但不在本次恢复范围内的其他智能体不会被移除"}
                   </Text>
                 </div>
               </Radio>
@@ -412,9 +395,7 @@ export default function RestoreBackupModal({
 
           <div className={styles.strategySection}>
             <div className={styles.strategyLabel}>
-              {t("backup.restoreStrategy", {
-                defaultValue: "Restore strategy",
-              })}
+              {"恢复策略"}
             </div>
             <Radio.Group
               value={restoreStrategy}
@@ -424,30 +405,20 @@ export default function RestoreBackupModal({
               <Radio value="preserve">
                 <div className={styles.radioOption}>
                   <Text strong>
-                    {t("backup.restoreStrategyPreserve", {
-                      defaultValue: "Preserve local security and MCP",
-                    })}
+                    {"保留本地安全和 MCP 配置"}
                   </Text>
                   <Text type="secondary" className={styles.radioDesc}>
-                    {t("backup.restoreStrategyPreserveDesc", {
-                      defaultValue:
-                        "Keep this instance's security guards and MCP configuration.",
-                    })}
+                    {"保留当前实例的安全防护和 MCP 配置。"}
                   </Text>
                 </div>
               </Radio>
               <Radio value="restore">
                 <div className={styles.radioOption}>
                   <Text strong>
-                    {t("backup.restoreStrategyRestore", {
-                      defaultValue: "Restore these settings from backup",
-                    })}
+                    {"从备份恢复这些设置"}
                   </Text>
                   <Text type="secondary" className={styles.radioDesc}>
-                    {t("backup.restoreStrategyRestoreDesc", {
-                      defaultValue:
-                        "Use the backup's security and MCP configuration.",
-                    })}
+                    {"使用备份中的安全和 MCP 配置。"}
                   </Text>
                 </div>
               </Radio>
@@ -458,7 +429,7 @@ export default function RestoreBackupModal({
             <Alert
               type="warning"
               showIcon
-              message={t("backup.restoreFullWarning")}
+              message={"整体恢复将完全替换当前实例的所有内容（包括所有智能体、全局配置、全局技能和密钥），操作不可撤销。恢复期间相关功能不可用，恢复完成后请重启服务。"}
               className={styles.fullRestoreAlert}
             />
           )}
@@ -488,18 +459,18 @@ export default function RestoreBackupModal({
                     checked={globalConfig}
                     onChange={(e) => setGlobalConfig(e.target.checked)}
                   >
-                    {t("backup.scopeGlobalConfig")}
+                    {"全局设置"}
                   </Checkbox>
                 </div>
               )}
 
-              {backup.scope.include_skill_pool && (
+              {backup.scope.include_global_skills && (
                 <div className={styles.checkboxRow}>
                   <Checkbox
-                    checked={includeSkillPool}
-                    onChange={(e) => setIncludeSkillPool(e.target.checked)}
+                    checked={includeGlobalSkills}
+                    onChange={(e) => setIncludeGlobalSkills(e.target.checked)}
                   >
-                    {t("backup.scopeSkillPool")}
+                    {"全局技能"}
                   </Checkbox>
                 </div>
               )}
@@ -510,10 +481,10 @@ export default function RestoreBackupModal({
                     checked={includeSecrets}
                     onChange={(e) => setIncludeSecrets(e.target.checked)}
                   >
-                    {t("backup.scopeSecrets")}
+                    {"密钥信息"}
                   </Checkbox>
                   <div className={styles.secretsHint}>
-                    {t("backup.scopeSecretsHint")}
+                    {"包含模型供应商密钥（API Key）和环境变量等敏感信息"}
                   </div>
                 </div>
               )}
@@ -528,8 +499,8 @@ export default function RestoreBackupModal({
               showIcon
               message={
                 <ul className={styles.restoreWarningList}>
-                  <li>{t("backup.restoreWarningModify")}</li>
-                  <li>{t("backup.restoreWarningRestart")}</li>
+                  <li>{"恢复操作会修改当前配置，此操作不可撤销。"}</li>
+                  <li>{"恢复期间相关功能不可用，恢复完成后请重启服务。"}</li>
                 </ul>
               }
               className={styles.customRestoreAlert}
@@ -540,7 +511,7 @@ export default function RestoreBackupModal({
             checked={confirmed}
             onChange={(e) => setConfirmed(e.target.checked)}
           >
-            {t("backup.restoreConfirm")}
+            {"我确认要恢复此备份"}
           </Checkbox>
         </div>
       </Modal>

@@ -499,6 +499,15 @@ class Provider(ProviderInfo, ABC):
             return model_info.preserve_thinking
         return True
 
+    def _get_relay_reasoning(self, model_id: str) -> bool:
+        """Internal name for the reasoning relay behavior.
+
+        The public Minions API retains ``preserve_thinking`` for frontend and
+        persisted-config compatibility while provider implementations use the
+        clearer formal-release terminology internally.
+        """
+        return self._get_preserve_thinking(model_id)
+
     def _get_thinking_config(
         self,
         model_id: str,

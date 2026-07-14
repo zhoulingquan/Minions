@@ -1,6 +1,5 @@
 import { Card, Button, Modal, Tooltip, Input } from "@agentscope-ai/design";
 import type { MCPAccessPolicy, MCPClientInfo } from "../../../../api/types";
-import { useTranslation } from "react-i18next";
 import React, { useState } from "react";
 import { useTheme } from "../../../../contexts/ThemeContext";
 import {
@@ -43,8 +42,7 @@ export const MCPClientCard = React.memo(function MCPClientCard({
   onUpdatePolicy,
   onRefresh,
 }: MCPClientCardProps) {
-  const { t } = useTranslation();
-  const { isDark } = useTheme();
+    const { isDark } = useTheme();
   const [isHovered, setIsHovered] = useState(false);
   const [jsonModalOpen, setJsonModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -96,8 +94,11 @@ export const MCPClientCard = React.memo(function MCPClientCard({
 
   const handleSaveJson = async () => {
     try {
-      const parsed = JSON.parse(editedJson);
-      const { key: _key, ...updates } = parsed;
+      const parsed = JSON.parse(editedJson) as MCPClientUpdate & {
+        key?: unknown;
+      };
+      const updates = { ...parsed };
+      delete updates.key;
 
       // Send all updates directly to backend, let backend handle env masking check
       const success = await onUpdate(client.key, updates);
@@ -143,7 +144,7 @@ export const MCPClientCard = React.memo(function MCPClientCard({
               {clientType}
             </span>
             {hasOauth && isOauthExpired && (
-              <Tooltip title={t("mcp.oauth.expired")}>
+              <Tooltip title={"授权已过期"}>
                 <ShieldAlert
                   size={13}
                   style={{ color: "#e67e22", flexShrink: 0 }}
@@ -151,7 +152,7 @@ export const MCPClientCard = React.memo(function MCPClientCard({
               </Tooltip>
             )}
             {hasOauth && isOauthAuthorized && (
-              <Tooltip title={t("mcp.oauth.authorized")}>
+              <Tooltip title={"已授权"}>
                 <ShieldCheck
                   size={13}
                   style={{ color: "#27ae60", flexShrink: 0 }}
@@ -159,7 +160,7 @@ export const MCPClientCard = React.memo(function MCPClientCard({
               </Tooltip>
             )}
             {hasOauth && !isOauthAuthorized && !isOauthExpired && (
-              <Tooltip title={t("mcp.oauth.notAuthorized")}>
+              <Tooltip title={"未授权"}>
                 <ShieldX
                   size={13}
                   style={{ color: "#7f8c8d", flexShrink: 0 }}
@@ -170,7 +171,7 @@ export const MCPClientCard = React.memo(function MCPClientCard({
           <div className={styles.statusContainer}>
             <span className={styles.statusDot} />
             <span className={styles.statusText}>
-              {client.enabled ? t("common.enabled") : t("common.disabled")}
+              {client.enabled ? "已启用" : "已禁用"}
             </span>
           </div>
         </div>
@@ -186,7 +187,7 @@ export const MCPClientCard = React.memo(function MCPClientCard({
             }}
             icon={<ToolOutlined />}
           >
-            {t("mcp.tools")}
+            {"工具&权限"}
           </Button>
           <div
             className={`${styles.cardSecondaryActions} ${
@@ -233,10 +234,10 @@ export const MCPClientCard = React.memo(function MCPClientCard({
                     <KeyRound size={13} />
                   )}
                   {isOauthAuthorized
-                    ? t("mcp.oauth.authorized")
+                    ? "已授权"
                     : isOauthExpired
-                    ? t("mcp.oauth.expired")
-                    : t("mcp.oauth.authorize")}
+                    ? "授权已过期"
+                    : "点击授权"}
                 </span>
               </Button>
             )}
@@ -248,7 +249,7 @@ export const MCPClientCard = React.memo(function MCPClientCard({
               }}
               icon={client.enabled ? <EyeInvisibleOutlined /> : <EyeOutlined />}
             >
-              {client.enabled ? t("common.disable") : t("common.enable")}
+              {client.enabled ? "禁用" : "启用"}
             </Button>
             <Button
               className={styles.deleteButton}
@@ -258,22 +259,22 @@ export const MCPClientCard = React.memo(function MCPClientCard({
                 handleDeleteClick(e);
               }}
             >
-              {t("common.delete")}
+              {"删除"}
             </Button>
           </div>
         </div>
       </Card>
 
       <Modal
-        title={t("common.confirm")}
+        title={"确认"}
         open={deleteModalOpen}
         onOk={confirmDelete}
         onCancel={() => setDeleteModalOpen(false)}
-        okText={t("common.confirm")}
-        cancelText={t("common.cancel")}
+        okText={"确认"}
+        cancelText={"取消"}
         okButtonProps={{ danger: true }}
       >
-        <p>{t("mcp.deleteConfirm")}</p>
+        <p>{"确定要删除此 MCP 客户端吗？"}</p>
       </Modal>
 
       <Modal
@@ -286,22 +287,22 @@ export const MCPClientCard = React.memo(function MCPClientCard({
               onClick={() => setJsonModalOpen(false)}
               style={{ marginRight: 8 }}
             >
-              {t("common.cancel")}
+              {"取消"}
             </Button>
             {isEditing ? (
               <Button type="primary" onClick={handleSaveJson}>
-                {t("common.save")}
+                {"保存"}
               </Button>
             ) : (
               <Button type="primary" onClick={() => setIsEditing(true)}>
-                {t("common.edit")}
+                {"编辑"}
               </Button>
             )}
           </div>
         }
         width={700}
       >
-        <div className={styles.maskedFieldHint}>{t("mcp.maskedFieldHint")}</div>
+        <div className={styles.maskedFieldHint}>{"敏感字段已用 *** 遮掩，不支持在遮掩值上直接编辑，如需修改请替换为完整新值。"}</div>
         {isEditing ? (
           <Input.TextArea
             value={editedJson}
@@ -346,7 +347,7 @@ export const MCPClientCard = React.memo(function MCPClientCard({
             ) : (
               <ShieldX size={16} style={{ color: "#7f8c8d" }} />
             )}
-            {`${client.name} — ${t("mcp.oauth.manage")}`}
+            {`${client.name} — ${"OAuth 授权"}`}
           </div>
         }
         open={oauthModalOpen}
@@ -354,7 +355,7 @@ export const MCPClientCard = React.memo(function MCPClientCard({
         footer={
           <div style={{ textAlign: "right" }}>
             <Button onClick={() => setOauthModalOpen(false)}>
-              {t("common.close")}
+              {"关闭"}
             </Button>
           </div>
         }

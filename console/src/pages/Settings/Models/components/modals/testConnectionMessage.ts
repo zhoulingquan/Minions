@@ -1,4 +1,3 @@
-import type { TFunction } from "i18next";
 import type { TestConnectionResponse } from "../../../../../api/types";
 
 const FAILURE_PREFIX_PATTERNS = [
@@ -39,14 +38,13 @@ export function getTestConnectionFailureDetail(
 
 export function getLocalizedTestConnectionMessage(
   result: Pick<TestConnectionResponse, "success" | "message">,
-  t: TFunction,
 ): string {
   if (result.success) {
-    return t("models.testConnectionSuccess");
+    return "连接测试成功";
   }
 
   const detail = getTestConnectionFailureDetail(result.message);
   return detail
-    ? t("models.testConnectionFailedWithMessage", { message: detail })
-    : t("models.testConnectionFailed");
+    ? `连接测试失败：${detail}`
+    : "连接测试失败";
 }

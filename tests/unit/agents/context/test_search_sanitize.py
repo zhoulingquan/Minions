@@ -13,8 +13,8 @@ import sqlite3
 import pytest
 
 from minions.agents.context.scroll.history import HistoryStore
-from minions.agents.context.scroll.memoryspace import (
-    MemorySpace,
+from minions.agents.context.scroll.recall_space import (
+    RecallSpace,
     fts_match_query,
 )
 from minions.agents.context.types import LogEntry
@@ -62,7 +62,7 @@ def ms(tmp_path):
         ),
     )
     store.close()
-    space = MemorySpace(
+    space = RecallSpace(
         history_db_path=str(store.path),
         session_id="s1",
         agent_id="ag1",
@@ -90,7 +90,7 @@ def test_search_falls_back_to_like_on_operationalerror(ms, monkeypatch):
     # engine raises; the backstop should catch it and the LIKE scan should
     # still return the matching row.
     monkeypatch.setattr(
-        "minions.agents.context.scroll.memoryspace.fts_match_query",
+        "minions.agents.context.scroll.recall_space.fts_match_query",
         lambda _raw: '"',  # unterminated FTS5 string -> OperationalError
     )
     with pytest.raises(sqlite3.OperationalError):

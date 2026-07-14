@@ -18,7 +18,6 @@ import {
   AddCloudModel,
 } from "./components";
 import { PageHeader } from "@/components/PageHeader";
-import { useTranslation } from "react-i18next";
 import type { ProviderInfo } from "../../../api/types/provider";
 import {
   countConfiguredProviders,
@@ -33,8 +32,7 @@ import styles from "./index.module.less";
 /* ------------------------------------------------------------------ */
 
 function ModelsPage() {
-  const { t } = useTranslation();
-  const [searchParams, setSearchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
   const { providers, activeModels, loading, error, fetchAll } = useProviders();
 
 
@@ -243,15 +241,15 @@ function ModelsPage() {
   return (
     <div className={styles.settingsPage}>
       {loading ? (
-        <LoadingState message={t("models.loading")} />
+        <LoadingState message={"加载中..."} />
       ) : error ? (
         <LoadingState message={error} error onRetry={fetchAll} />
       ) : (
         <>
           {/* ---- LLM Section (top) ---- */}
           <PageHeader
-            parent={t("nav.settings")}
-            current={t("models.llmTitle")}
+            parent={"设置"}
+            current={"模型"}
           />
           {/* ---- Scrollable Content ---- */}
           <div className={styles.content}>
@@ -259,7 +257,7 @@ function ModelsPage() {
             <div className={styles.providersBlock}>
               <div className={styles.sectionHeaderRow}>
                 <PageHeader
-                  current={t("models.providersTitle")}
+                  current={"提供商"}
                   className={styles.providersPageHeader}
                 />
                 <div className={styles.headerRight}>
@@ -280,21 +278,21 @@ function ModelsPage() {
                       }
                     />
                     <span className={styles.llmPillLabel}>
-                      {t("models.defaultLlm")}:
+                      {"默认LLM"}:
                     </span>
                     <span className={styles.llmPillValue}>
                       {activeModels?.active_llm?.provider_id || "—"} /{" "}
                       {activeModels?.active_llm?.model || "—"}
                     </span>
                     <span className={styles.llmPillEdit}>
-                      {t("common.edit")}
+                      {"编辑"}
                     </span>
                   </div>
                   <Button
                     icon={<SyncOutlined />}
                     onClick={() => fetchAll()}
                     className={styles.searchBtn}
-                    title={t("common.refresh")}
+                    title={"刷新"}
                   />
                 </div>
               </div>
@@ -308,7 +306,7 @@ function ModelsPage() {
                   ].join(" ")}
                   onClick={() => handleTabChange("cloud")}
                 >
-                  {t("models.cloudGroup")} (
+                  {"自定义"} (
                   {cloudConfiguredGrouped.reduce(
                     (n, g) => n + g.providers.length,
                     0,
@@ -327,7 +325,7 @@ function ModelsPage() {
                   ].join(" ")}
                   onClick={() => handleTabChange("local")}
                 >
-                  {t("models.localCustomGroup")} (
+                  {"本地"} (
                   {localConfigured.length + localAvailable.length})
                 </div>
               </div>
@@ -339,7 +337,7 @@ function ModelsPage() {
                   <div className={styles.panelSection}>
                     <div className={styles.panelTitle}>
                       <span className={styles.panelDotBlue} />
-                      {t("models.addCloudModel")}
+                      {"添加自定义模型"}
                     </div>
                     <div style={{ padding: "16px 0" }}>
                       <AddCloudModel onSaved={refreshProvidersSilently} />
@@ -350,10 +348,10 @@ function ModelsPage() {
                   <div className={styles.panelSection}>
                     <div className={styles.panelTitle}>
                       <span className={styles.panelDotGreen} />
-                      {t("models.configuredGroup")}
+                      {"已配置"}
                       <span className={styles.panelCount}>
                         {configuredCloudProviderCount}{" "}
-                        {t("models.configuredOnline")}
+                        {"个提供商在线"}
                       </span>
                     </div>
 
@@ -382,7 +380,7 @@ function ModelsPage() {
                     >
                       <div className={styles.panelTitle}>
                         <span className={styles.panelDotGray} />
-                        {t("models.availableGroup")}
+                        {"可用提供商"}
                       </div>
                       <div className={styles.availableGrid}>
                         {cloudAvailableGroups.map((g) => (
@@ -408,7 +406,7 @@ function ModelsPage() {
                               <span className={styles.freeTag}>FREE</span>
                             )}
                             <span className={styles.availableItemAction}>
-                              {t("models.configureAction")}
+                              {"配置 →"}
                             </span>
                           </div>
                         ))}
@@ -425,7 +423,7 @@ function ModelsPage() {
                     <div className={styles.panelSection}>
                       <div className={styles.panelTitle}>
                         <span className={styles.panelDotGreen} />
-                        {t("models.configuredGroup")}
+                        {"已配置"}
                       </div>
                       <div className={styles.providerCards}>
                         {renderProviderCards(localConfigured)}
@@ -438,7 +436,7 @@ function ModelsPage() {
                     <div className={styles.panelSectionDashed}>
                       <div className={styles.panelTitle}>
                         <span className={styles.panelDotGray} />
-                        {t("models.availableGroup")}
+                        {"可用提供商"}
                       </div>
                       <div className={styles.availableGrid}>
                         {localAvailable.map((provider) => (
@@ -452,7 +450,7 @@ function ModelsPage() {
                               {provider.name}
                             </span>
                             <span className={styles.availableItemAction}>
-                              {t("models.configureAction")}
+                              {"配置 →"}
                             </span>
                           </div>
                         ))}
@@ -465,7 +463,7 @@ function ModelsPage() {
 
             <Modal
               open={llmModalOpen}
-              title={t("models.defaultLlm")}
+              title={"默认LLM"}
               footer={null}
               onCancel={() => setLlmModalOpen(false)}
               destroyOnClose
@@ -503,9 +501,7 @@ function ModelsPage() {
 
             <Modal
               open={!!variantSelectGroup}
-              title={t("models.selectVariant", {
-                name: variantSelectGroup?.name || "",
-              })}
+              title={`选择 ${variantSelectGroup?.name || ""} 的版本`}
               footer={null}
               onCancel={() => setVariantSelectGroup(null)}
               destroyOnClose

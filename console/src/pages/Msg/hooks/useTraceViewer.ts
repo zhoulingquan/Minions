@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { message } from "antd";
-import { useTranslation } from "react-i18next";
 import api from "../../../api";
 import type { PushMessage } from "../types";
 import {
@@ -30,8 +29,7 @@ export interface TraceViewerState {
 export function useTraceViewer(
   markMessageAsRead: (id: string) => void,
 ): TraceViewerState {
-  const { t } = useTranslation();
-  const [detailOpen, setDetailOpen] = useState(false);
+    const [detailOpen, setDetailOpen] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<PushMessage | null>(
     null,
   );
@@ -121,12 +119,12 @@ export function useTraceViewer(
       if (!text) return;
       try {
         await navigator.clipboard.writeText(text);
-        message.success(t("common.copied"));
+        message.success("已复制到剪贴板");
       } catch {
-        message.error(t("common.copyFailed"));
+        message.error("复制到剪贴板失败");
       }
     },
-    [t],
+    [],
   );
 
   const handleTraceScroll = useCallback(

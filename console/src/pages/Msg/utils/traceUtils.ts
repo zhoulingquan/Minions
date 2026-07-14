@@ -209,19 +209,16 @@ export const normalizeDetailTaskName = (title: string): string => {
 
 export const getDetailModalTitle = (
   messageItem: PushMessage | null,
-  t: (key: string, options?: Record<string, unknown>) => string,
 ): string => {
-  if (!messageItem) return t("msg.messageDetailTitle");
+  if (!messageItem) return "执行详情";
   const sourceType = (messageItem.metadata?.sourceType || "").toLowerCase();
   if (sourceType === "cron") {
-    return t("msg.detailCronTitle", {
-      name: normalizeDetailTaskName(messageItem.title),
-    });
+    return `定时任务：${normalizeDetailTaskName(messageItem.title)}`;
   }
   if (sourceType === "heartbeat") {
-    return t("msg.detailHeartbeatTitle");
+    return "心跳";
   }
-  return messageItem.title || t("msg.messageDetailTitle");
+  return messageItem.title || "执行详情";
 };
 
 /**

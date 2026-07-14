@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """Minions Agent - Main agent implementation.
 
-This module provides the main MinionsAgent class built on ReActAgent,
-with integrated tools, skills, and memory management.
+This module provides the main MinionsAgent class built on AgentScope,
+with integrated tools, skills, and request-scoped context management.
 
 Agent construction is fully delegated to :class:`AgentBuilder` — the
 agent accepts all dependencies (model, prompt, toolkit, middlewares)
@@ -37,14 +37,13 @@ from ..loop.gates import StopAction, StopHandlerResult
 from ..providers.model_capability_cache import get_capability_cache
 
 if TYPE_CHECKING:
-    from ..agents.memory import BaseMemoryManager
     from ..config.config import AgentProfileConfig
 
 logger = logging.getLogger(__name__)
 
 
 class MinionsAgent(Agent):
-    """Minions Agent with integrated tools, skills, and memory management.
+    """Minions Agent with integrated tools, skills, and context management.
 
     This agent extends agentscope 2.0 ``Agent`` with:
     - Built-in tools (shell, file operations, browser, etc.)
@@ -66,7 +65,6 @@ class MinionsAgent(Agent):
         agent_config: "AgentProfileConfig",
         workspace_dir: Path | None = None,
         request_context: Optional[dict[str, str]] = None,
-        memory_manager: "BaseMemoryManager | None" = None,
         offloader: Any = None,
         context_config: Any = None,
         context_manager: Any = None,
@@ -95,27 +93,6 @@ class MinionsAgent(Agent):
         self._gate_pending_stop = None
         self._gate_pending_continue = None
 
-        self.memory_manager = memory_manager
-
-        # Register memory tools into toolkit
-        if self.memory_manager is not None:
-            memory_tools = self.memory_manager.list_memory_tools()
-            basic_group = toolkit.tool_groups[0]
-            for tool_fn in memory_tools:
-                from ..governance import PolicyGuardedTool
-
-                basic_group.tools.append(
-                    PolicyGuardedTool(
-                        tool_fn,
-                        governor=self._governor,
-                        request_context=self._request_context,
-                    ),
-                )
-            logger.debug(
-                "Registered memory tools: %s",
-                [fn.__name__ for fn in memory_tools],
-            )
-
         init_kwargs: dict[str, Any] = {
             "name": name,
             "model": model,
@@ -134,9 +111,6 @@ class MinionsAgent(Agent):
         from agentscope.permission import PermissionMode
 
         self.state.permission_context.mode = PermissionMode.BYPASS
-
-        # Tombstone for legacy ``getattr(agent, "memory", None)`` callers
-        self.memory = None  # type: ignore[assignment]
 
         self._register_tool_call_hooks()
 
@@ -475,7 +449,7 @@ class MinionsAgent(Agent):
             return
 
         # Model produced text (wants to stop).
-        if stop_result.action == StopAction.CONTINUE:
+        if stop_result.action == StopAction.INTERRUPT_AND_CONTINUE:
             logger.info(
                 "Stop handler BLOCKED exit: %s",
                 stop_result.reason,

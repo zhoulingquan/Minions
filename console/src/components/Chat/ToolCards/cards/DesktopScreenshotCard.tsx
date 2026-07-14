@@ -1,5 +1,4 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { DesktopOutlined } from "@ant-design/icons";
 import type { ToolCallContent } from "../shared/types";
 import { ToolCardShell, MediaPreview } from "../shared";
@@ -14,8 +13,7 @@ const DesktopScreenshotCard: React.FC<DesktopScreenshotCardProps> = ({
   content,
   isStreaming,
 }) => {
-  const { t } = useTranslation();
-  const title = t("tool.desktopScreenshot");
+    const title = "截图 桌面";
   const media = getMediaInfo(content);
 
   return (

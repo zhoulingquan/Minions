@@ -125,7 +125,7 @@ def test_create_agent_workspace_initialized(app_server) -> None:
     Test flow:
     1. POST /api/agents.
     2. GET /api/agents/{id} to find workspace_dir.
-    3. Check sessions/, memory/, jobs.json, chats.json exist.
+    3. Check sessions/, jobs.json, chats.json exist.
     4. Cleanup.
 
     API endpoints:
@@ -148,7 +148,6 @@ def test_create_agent_workspace_initialized(app_server) -> None:
         assert ws_dir.is_dir(), f"workspace_dir not found: {ws_dir}"
 
         assert (ws_dir / "sessions").is_dir()
-        assert (ws_dir / "memory").is_dir()
         assert (ws_dir / "jobs.json").is_file()
         assert (ws_dir / "chats.json").is_file()
     finally:

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Form } from "@agentscope-ai/design";
 import { Badge, Button, Space } from "antd";
 import { SafetyOutlined, AuditOutlined } from "@ant-design/icons";
-import { useTranslation } from "react-i18next";
 import api from "../../../api";
 import {
   ChannelCard,
@@ -21,8 +20,7 @@ import styles from "./index.module.less";
 type FilterType = "all" | "builtin" | "custom";
 
 function ChannelsPage() {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const {
     channels,
     orderedKeys,
@@ -129,28 +127,28 @@ function ChannelsPage() {
       await fetchChannels();
 
       setDrawerOpen(false);
-      message.success(t("channels.configSaved"));
+      message.success("配置保存成功");
     } catch (error) {
       console.error("❌ Failed to update channel config:", error);
-      message.error(t("channels.configFailed"));
+      message.error("配置保存失败");
     } finally {
       setSaving(false);
     }
   };
 
-  const activeLabel = activeKey ? getChannelLabel(activeKey, t) : "";
+  const activeLabel = activeKey ? getChannelLabel(activeKey) : "";
 
   const FILTER_TABS: { key: FilterType; label: string }[] = [
-    { key: "all", label: t("channels.filterAll") },
-    { key: "builtin", label: t("channels.builtin") },
-    { key: "custom", label: t("channels.custom") },
+    { key: "all", label: "全部" },
+    { key: "builtin", label: "内置" },
+    { key: "custom", label: "自定义" },
   ];
 
   return (
     <div className={styles.channelsPage}>
       <PageHeader
         className={styles.pageHeader}
-        items={[{ title: t("nav.control") }, { title: t("channels.title") }]}
+        items={[{ title: "控制" }, { title: "频道" }]}
         center={
           <div className={styles.filterTabs}>
             {FILTER_TABS.map(({ key, label }) => (
@@ -173,14 +171,14 @@ function ChannelsPage() {
                 icon={<AuditOutlined />}
                 onClick={() => setPendingDrawerOpen(true)}
               >
-                {t("channels.pendingApprovals")}
+                {"待审批"}
               </Button>
             </Badge>
             <Button
               icon={<SafetyOutlined />}
               onClick={() => setAclDrawerOpen(true)}
             >
-              {t("channels.manageAccessControl")}
+              {"访问控制"}
             </Button>
           </Space>
         }
@@ -188,7 +186,7 @@ function ChannelsPage() {
       <div className={styles.channelsContainer}>
         {loading ? (
           <div className={styles.loading}>
-            <span className={styles.loadingText}>{t("channels.loading")}</span>
+            <span className={styles.loadingText}>{"正在加载频道..."}</span>
           </div>
         ) : (
           <>
@@ -196,9 +194,9 @@ function ChannelsPage() {
             <div className={styles.panelSection}>
               <div className={styles.panelTitle}>
                 <span className={styles.panelDotGreen} />
-                {t("channels.enabledSection")}
+                {"已激活"}
                 <span className={styles.panelCount}>
-                  {t("channels.enabledCount", { count: enabledCards.length })}
+                  {`${enabledCards.length} 个`}
                 </span>
               </div>
 
@@ -215,7 +213,7 @@ function ChannelsPage() {
                 </div>
               ) : (
                 <div className={styles.emptyConfigured}>
-                  <p>{t("channels.noEnabledChannels")}</p>
+                  <p>{"暂无已激活频道"}</p>
                   {disabledCards.length > 0 && (
                     <Button
                       type="primary"
@@ -225,7 +223,7 @@ function ChannelsPage() {
                           ?.scrollIntoView({ behavior: "smooth" });
                       }}
                     >
-                      {t("channels.goEnableChannels")}
+                      {"去启用频道"}
                     </Button>
                   )}
                 </div>
@@ -240,7 +238,7 @@ function ChannelsPage() {
               >
                 <div className={styles.panelTitle}>
                   <span className={styles.panelDotGray} />
-                  {t("channels.availableSection")}
+                  {"未激活"}
                 </div>
                 <div className={styles.availableGrid}>
                   {disabledCards.map(({ key }) => (

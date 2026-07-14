@@ -6,7 +6,6 @@ import type {
   BlockedSkillRecord,
   SkillScannerConfig,
 } from "../api/modules/security";
-import type { TFunction } from "i18next";
 
 export function tryParseScanError(
   error: unknown,
@@ -29,7 +28,7 @@ export function tryParseScanError(
 /** Cap long finding lists so modals stay readable; full history remains in alerts. */
 const MAX_FINDINGS_IN_MODAL = 5;
 
-function renderFindings(findings: BlockedSkillFinding[], t: TFunction) {
+function renderFindings(findings: BlockedSkillFinding[]) {
   const total = findings.length;
   const shown = findings.slice(0, MAX_FINDINGS_IN_MODAL);
   const moreCount = total - shown.length;
@@ -79,18 +78,17 @@ function renderFindings(findings: BlockedSkillFinding[], t: TFunction) {
             padding: "8px 12px",
           },
         },
-        t("security.skillScanner.scanError.moreFindings", { count: moreCount }),
+        `另有 ${moreCount} 条未列出（完整列表见 设置 → 安全 → 技能扫描）。`,
       ),
   );
 }
 
 export function showScanErrorModal(
   scanError: SecurityScanErrorResponse,
-  t: TFunction,
 ) {
   const findings = scanError.findings || [];
   Modal.error({
-    title: t("security.skillScanner.scanError.title"),
+    title: "检测到安全问题",
     width: 640,
     content: React.createElement(
       "div",
@@ -98,19 +96,18 @@ export function showScanErrorModal(
       React.createElement(
         "p",
         null,
-        t("security.skillScanner.scanError.description"),
+        "发现以下安全问题：",
       ),
-      renderFindings(findings, t),
+      renderFindings(findings),
     ),
   });
 }
 
 export function showScanWarnModal(
   findings: BlockedSkillFinding[],
-  t: TFunction,
 ) {
   Modal.warning({
-    title: t("security.skillScanner.scanError.title"),
+    title: "检测到安全问题",
     width: 640,
     content: React.createElement(
       "div",
@@ -118,9 +115,9 @@ export function showScanWarnModal(
       React.createElement(
         "p",
         null,
-        t("security.skillScanner.scanError.warnDescription"),
+        "发现安全问题，但技能仍已启用（仅提醒模式）：",
       ),
-      renderFindings(findings, t),
+      renderFindings(findings),
     ),
   });
 }
@@ -129,10 +126,10 @@ export function showScanWarnModal(
  * Check an error for a scan failure, show the modal if found, and return
  * whether it was handled.
  */
-export function handleScanError(error: unknown, t: TFunction): boolean {
+export function handleScanError(error: unknown): boolean {
   const scanError = tryParseScanError(error);
   if (scanError) {
-    showScanErrorModal(scanError, t);
+    showScanErrorModal(scanError);
     return true;
   }
   return false;
@@ -146,7 +143,6 @@ export async function checkScanWarnings(
   skillName: string,
   fetchAlerts: () => Promise<BlockedSkillRecord[]>,
   fetchScannerCfg: () => Promise<SkillScannerConfig>,
-  t: TFunction,
 ): Promise<void> {
   try {
     const [alerts, scannerCfg] = await Promise.all([
@@ -165,7 +161,7 @@ export async function checkScanWarnings(
       .filter((a) => a.skill_name === skillName && a.action === "warned")
       .pop();
     if (!latestForSkill) return;
-    showScanWarnModal(latestForSkill.findings || [], t);
+    showScanWarnModal(latestForSkill.findings || []);
   } catch {
     // best-effort; don't break the caller on failure
   }

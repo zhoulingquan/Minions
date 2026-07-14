@@ -196,7 +196,7 @@ def _startup_restore_targets() -> list[Path]:
 
     # SECRET_DIR is recovered before load_envs_into_environ reads envs.json.
     targets = [
-        WORKING_DIR / "skill_pool",
+        WORKING_DIR / "global_skills",
     ]
     config = load_config(get_config_path())
     for profile in config.agents.profiles.values():

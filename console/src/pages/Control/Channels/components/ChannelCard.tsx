@@ -1,5 +1,4 @@
 import { Card } from "@agentscope-ai/design";
-import { useTranslation } from "react-i18next";
 import React, { useState } from "react";
 import { ChannelIcon } from "./ChannelIcon";
 import { getChannelLabel, type ChannelKey } from "./constants";
@@ -16,11 +15,10 @@ export const ChannelCard = React.memo(function ChannelCard({
   config,
   onClick,
 }: ChannelCardProps) {
-  const { t } = useTranslation();
-  const [isHover, setIsHover] = useState(false);
+    const [isHover, setIsHover] = useState(false);
   const enabled = Boolean(config.enabled);
   const isBuiltin = Boolean(config.isBuiltin);
-  const label = getChannelLabel(channelKey, t);
+  const label = getChannelLabel(channelKey);
   const getConfigString = (key: string) =>
     typeof config[key] === "string" ? config[key] : "";
   const botPrefix = getConfigString("bot_prefix");
@@ -58,7 +56,7 @@ export const ChannelCard = React.memo(function ChannelCard({
               enabled ? styles.enabled : styles.disabled
             }`}
           >
-            {enabled ? t("common.enabled") : t("common.disabled")}
+            {enabled ? "已启用" : "已禁用"}
           </span>
         </div>
       </div>
@@ -67,16 +65,16 @@ export const ChannelCard = React.memo(function ChannelCard({
       <div className={styles.cardMiddleSection}>
         <div className={styles.cardTitle}>{label}</div>
         {isBuiltin ? (
-          <span className={styles.builtinTag}>{t("channels.builtin")}</span>
+          <span className={styles.builtinTag}>{"内置"}</span>
         ) : (
-          <span className={styles.customTag}>{t("channels.custom")}</span>
+          <span className={styles.customTag}>{"自定义"}</span>
         )}
       </div>
 
       {/* Bottom section: Bot Prefix */}
       <div className={styles.cardBottomSection}>
         <div className={styles.cardDescription}>
-          {t("channels.botPrefix")}: {botPrefix || t("channels.notSet")}
+          {"机器人前缀"}: {botPrefix || "未设置"}
         </div>
       </div>
     </Card>

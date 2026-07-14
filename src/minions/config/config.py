@@ -81,27 +81,6 @@ def _get_default_acp_agents() -> Dict[str, ACPAgentConfig]:
             trusted=True,
             tool_parse_mode="update_detail",
         ),
-        "qwen_code": ACPAgentConfig(
-            enabled=True,
-            command="qwen",
-            args=["--acp"],
-            trusted=True,
-            tool_parse_mode="call_detail",
-        ),
-        "claude_code": ACPAgentConfig(
-            enabled=True,
-            command="npx",
-            args=["-y", "@zed-industries/claude-agent-acp"],
-            trusted=True,
-            tool_parse_mode="update_detail",
-        ),
-        "codex": ACPAgentConfig(
-            enabled=True,
-            command="npx",
-            args=["-y", "@zed-industries/codex-acp"],
-            trusted=True,
-            tool_parse_mode="call_detail",
-        ),
     }
 
 
@@ -128,7 +107,7 @@ _AGENT_ID_PATTERN = re.compile(
 )
 _AGENT_ID_MIN_LENGTH = 2
 _AGENT_ID_MAX_LENGTH = 64
-_RESERVED_AGENT_IDS = frozenset({"default"})
+_RESERVED_AGENT_IDS = frozenset({"default", "order"})
 
 
 def generate_short_agent_id() -> str:
@@ -397,161 +376,6 @@ class AgentsDefaultsConfig(BaseModel):
     heartbeat: Optional[HeartbeatConfig] = None
 
 
-class AutoMemorySearchConfig(BaseModel):
-    """Auto memory search configuration."""
-
-    model_config = ConfigDict(extra="ignore")
-
-    enabled: bool = Field(
-        default=False,
-        description="Whether to auto search memory on every turn",
-    )
-
-    max_results: int = Field(
-        default=2,
-        ge=1,
-        description=(
-            "Maximum number of results to return when auto memory"
-            " search is enabled"
-        ),
-    )
-
-
-class EmbeddingModelConfig(BaseModel):
-    """Embedding model configuration."""
-
-    model_config = ConfigDict(extra="ignore")
-
-    backend: str = Field(
-        default="openai",
-        description="Embedding backend (openai, etc.)",
-    )
-    api_key: str = Field(
-        default="",
-        description="API key for embedding provider",
-    )
-    base_url: str = Field(default="", description="Base URL for embedding API")
-    model_name: str = Field(default="", description="Embedding model name")
-    dimensions: int = Field(default=1024, description="Embedding dimensions")
-    enable_cache: bool = Field(
-        default=True,
-        description="Whether to enable embedding cache",
-    )
-    use_dimensions: bool = Field(
-        default=False,
-        description="Whether to use custom dimensions",
-    )
-    max_cache_size: int = Field(
-        default=10000,
-        description="Maximum cache size",
-    )
-    max_input_length: int = Field(
-        default=8192,
-        description="Maximum input length for embedding",
-    )
-    max_batch_size: int = Field(
-        default=10,
-        description="Maximum batch size for embedding",
-    )
-
-
-class ADBPGMemoryConfig(BaseModel):
-    """ADBPG (AnalyticDB for PostgreSQL) REST memory configuration."""
-
-    model_config = ConfigDict(extra="ignore")
-
-    rest_base_url: str = ""
-    rest_api_key: str = ""
-
-    # Behavior
-    memory_isolation: bool = Field(
-        default=True,
-        description="Per-agent memory isolation (True) or shared (False)",
-    )
-    search_timeout: float = 10.0
-    auto_memory_search_config: AutoMemorySearchConfig = Field(
-        default_factory=lambda: AutoMemorySearchConfig(
-            enabled=True,
-            max_results=3,
-        ),
-    )
-
-
-class ReMeLightMemoryConfig(BaseModel):
-    """ReMeLight memory manager configuration."""
-
-    model_config = ConfigDict(extra="ignore")
-
-    metadata_dir: str = Field(
-        default="mem_metadata",
-        description="Subdirectory for ReMe persistent state",
-    )
-    session_dir: str = Field(
-        default="mem_session",
-        description=(
-            "Subdirectory for ReMe source conversation logs used by "
-            "auto-memory"
-        ),
-    )
-    mem_session_dir: str = Field(
-        default="mem_agent",
-        description="Subdirectory for ReMe internal memory-agent sessions",
-    )
-    resource_dir: str = Field(
-        default="resource",
-        description="Subdirectory for external assets",
-    )
-    daily_dir: str = Field(
-        default="memory",
-        description="Subdirectory for daily memory",
-    )
-    digest_dir: str = Field(
-        default="digest",
-        description="Subdirectory for digest memory",
-    )
-    enable_search_raw_log: bool = Field(
-        default=False,
-        description="Whether to enable raw log search",
-    )
-
-    summarize_when_compact: bool = Field(
-        default=True,
-        description="Whether to enable memory summarization during compaction",
-    )
-
-    auto_memory_interval: int | None = Field(
-        default=5,
-        description="Auto memory every N user queries. 1 means auto "
-        "memory after every user query, 2 means every 2 queries, etc. "
-        "None or <= 0 disables periodic auto memory. WARNING: Setting "
-        "too small (e.g., 1-3) may cause high token usage and heavy "
-        "background task burden.",
-    )
-
-    dream_cron: str = Field(
-        default="0 23 * * *",
-        description="Cron expression for dream-based memory optimization job "
-        "(empty to disable)",
-    )
-
-    auto_memory_search_config: AutoMemorySearchConfig = Field(
-        default_factory=AutoMemorySearchConfig,
-    )
-
-    embedding_model_config: EmbeddingModelConfig = Field(
-        default_factory=EmbeddingModelConfig,
-    )
-
-    rebuild_memory_index_on_start: bool = Field(
-        default=False,
-        description=(
-            "Whether to clear and rebuild the memory search index when the"
-            " agent starts. Set to False to skip re-indexing and only monitor"
-            " new file changes."
-        ),
-    )
-
-
 class ContextCompactConfig(BaseModel):
     """Context compaction configuration."""
 
@@ -721,6 +545,31 @@ class ScrollContextConfig(BaseModel):
             "opt-in for external consumers (analytics, backup). When on, "
             "dialog is written on every eviction AND on /clear, /new, "
             "/compact; when off, scroll never writes dialog anywhere."
+        ),
+    )
+
+    summarize_unheadlined_evictions: bool = Field(
+        default=True,
+        description=(
+            "When an evicted span carries NO model headline, generate a "
+            "one-line summary of it (via the active model) to use as its "
+            "eviction-index entry instead of a bare ``(no milestone)`` line. "
+            "Keeps the index readable for legacy 1.x conversations (whose "
+            "turns predate headlines) and for tool-heavy spans the model "
+            "never headlined. The full turns stay recallable either way; "
+            "this only affects the descriptive label. Best-effort — a "
+            "model/timeout failure falls back to ``(no milestone)`` and never "
+            "blocks eviction. Costs one extra model call per such eviction."
+        ),
+    )
+
+    summarize_eviction_timeout_seconds: int = Field(
+        default=20,
+        ge=1,
+        description=(
+            "Per-eviction timeout for the un-headlined-span summary call "
+            "above. On timeout the span keeps a ``(no milestone)`` label; "
+            "eviction itself is never delayed beyond this."
         ),
     )
 
@@ -1090,23 +939,6 @@ class AgentsRunningConfig(BaseModel):
             "Async chat-title generation toggle and timeout. See "
             "AutoTitleConfig."
         ),
-    )
-
-    memory_manager_backend: str = Field(default="remelight")
-
-    adbpg_memory_config: Optional[ADBPGMemoryConfig] = Field(
-        default=None,
-        description="ADBPG memory configuration (used when "
-        "memory_manager_backend='adbpg')",
-    )
-
-    reme_light_memory_config: ReMeLightMemoryConfig = Field(
-        default_factory=ReMeLightMemoryConfig,
-    )
-
-    daily_memory_dir: str = Field(
-        default="memory",
-        description="Dir name to daily summary file",
     )
 
     approval_level: Optional[str] = Field(
@@ -1538,6 +1370,18 @@ def _default_builtin_tools() -> Dict[str, BuiltinToolConfig]:
             description="Browser automation and web interaction",
             icon="🌐",
         ),
+        "web_search": BuiltinToolConfig(
+            name="web_search",
+            enabled=True,
+            description="Search the public web for current information",
+            icon="🔎",
+        ),
+        "web_fetch": BuiltinToolConfig(
+            name="web_fetch",
+            enabled=True,
+            description="Safely fetch readable text from a public URL",
+            icon="📥",
+        ),
         "desktop_screenshot": BuiltinToolConfig(
             name="desktop_screenshot",
             enabled=True,
@@ -1887,8 +1731,8 @@ class Config(BaseModel):
     )
     skill_paths: List[str] = Field(
         default_factory=list,
-        description="Additional read-only skill pool roots, scanned after "
-        "the primary skill_pool in order. Paths support ~ expansion. "
+        description="Additional read-only global skills roots, scanned after "
+        "the primary global_skills in order. Paths support ~ expansion. "
         "Skills found here are read-only (no edit/create); they can be "
         "listed, downloaded to a workspace, and deleted.",
     )

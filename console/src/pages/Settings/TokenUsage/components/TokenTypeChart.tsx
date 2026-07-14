@@ -1,14 +1,13 @@
 import { Card } from "@agentscope-ai/design";
-import { useTranslation } from "react-i18next";
 import { Line } from "@ant-design/plots";
+import type { LineConfig } from "@ant-design/plots";
 import styles from "../index.module.less";
 
 interface TokenTypeChartProps {
-  chartConfig: any;
+  chartConfig: LineConfig | null;
 }
 
 export function TokenTypeChart({ chartConfig }: TokenTypeChartProps) {
-  const { t } = useTranslation();
 
   if (!chartConfig) return null;
 
@@ -17,7 +16,7 @@ export function TokenTypeChart({ chartConfig }: TokenTypeChartProps) {
       className={styles.chartCard}
       title={
         <span className={styles.chartTitle}>
-          {t("tokenUsage.tokenTypeChart", "Token Type Trend")}
+          {"Token 类型趋势"}
         </span>
       }
     >

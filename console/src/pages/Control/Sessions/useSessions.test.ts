@@ -18,10 +18,6 @@ vi.mock("../../../stores/agentStore", () => ({
 vi.mock("../../../hooks/useAppMessage", () => ({
   useAppMessage: vi.fn(() => ({ message: mockMessage })),
 }));
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (k: string) => k }),
-}));
-
 import api from "../../../api";
 
 type Session = { id: string; name: string; [key: string]: unknown };
@@ -86,7 +82,7 @@ describe("useSessions", () => {
     expect(returnValue).toBe(true);
     expect(result.current.sessions[0]).toEqual(updatedSession);
     expect(result.current.sessions[1]).toEqual(mockSessions[1]);
-    expect(mockMessage.success).toHaveBeenCalledWith("sessions.saveSuccess");
+    expect(mockMessage.success).toHaveBeenCalledWith("会话保存成功");
   });
 
   // 4. updateSession 失败时调用 message.error，返回 false
@@ -107,7 +103,7 @@ describe("useSessions", () => {
     });
 
     expect(returnValue).toBe(false);
-    expect(mockMessage.error).toHaveBeenCalledWith("sessions.saveFailed");
+    expect(mockMessage.error).toHaveBeenCalledWith("会话保存失败");
   });
 
   // 5. deleteSession 成功时从 sessions 移除并调用 message.success
@@ -130,7 +126,7 @@ describe("useSessions", () => {
     expect(returnValue).toBe(true);
     expect(result.current.sessions).toHaveLength(1);
     expect(result.current.sessions[0].id).toBe("s2");
-    expect(mockMessage.success).toHaveBeenCalledWith("sessions.deleteSuccess");
+    expect(mockMessage.success).toHaveBeenCalledWith("会话删除成功");
   });
 
   // 6. deleteSession 失败时调用 message.error，返回 false
@@ -151,7 +147,7 @@ describe("useSessions", () => {
     });
 
     expect(returnValue).toBe(false);
-    expect(mockMessage.error).toHaveBeenCalledWith("sessions.deleteFailed");
+    expect(mockMessage.error).toHaveBeenCalledWith("会话删除失败");
   });
 
   // 7. batchDeleteSessions 成功时批量移除并调用 message.success
@@ -175,7 +171,7 @@ describe("useSessions", () => {
     expect(result.current.sessions).toHaveLength(1);
     expect(result.current.sessions[0].id).toBe("s2");
     expect(mockMessage.success).toHaveBeenCalledWith(
-      "sessions.batchDeleteSuccess",
+      "成功删除 1 个会话",
     );
   });
 
@@ -197,8 +193,6 @@ describe("useSessions", () => {
     });
 
     expect(returnValue).toBe(false);
-    expect(mockMessage.error).toHaveBeenCalledWith(
-      "sessions.batchDeleteFailed",
-    );
+    expect(mockMessage.error).toHaveBeenCalledWith("批量删除会话失败");
   });
 });

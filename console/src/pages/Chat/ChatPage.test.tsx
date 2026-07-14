@@ -153,12 +153,7 @@ vi.mock("./sessionApi", () => ({
 }));
 
 vi.mock("./OptionsPanel/defaultConfig", () => ({
-  default: { theme: { leftHeader: {} }, api: {} },
-  getDefaultConfig: vi.fn(() => ({
-    theme: { leftHeader: {} },
-    welcome: {},
-    sender: {},
-  })),
+  default: { theme: { leftHeader: {} }, api: {}, welcome: {}, sender: {} },
 }));
 
 vi.mock("./ModelSelector", () => ({

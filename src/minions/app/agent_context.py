@@ -3,8 +3,7 @@
 
 Provides utilities to get the correct agent instance for each request.
 """
-from contextvars import ContextVar
-from pathlib import Path
+from contextvars import ContextVar, Token
 from typing import Optional, TYPE_CHECKING
 from fastapi import Request
 from .multi_agent_manager import MultiAgentManager
@@ -87,6 +86,25 @@ async def get_agent_for_request(
     # Check if agent exists and is enabled
     if config is None:
         config = load_config()
+
+    # A path/header selects only a candidate Agent. The control plane must
+    # prove that the attested caller can use it before configuration or the
+    # workspace registry is touched.
+    principal = getattr(request.state, "tenant_principal", None)
+    if principal is not None:
+        from ..tenancy.errors import AccessDenied, ResourceNotFound
+        from ..tenancy.factory import get_tenancy_service
+
+        try:
+            get_tenancy_service().assert_agent_access(
+                principal,
+                target_agent_id,
+            )
+        except AccessDenied as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except ResourceNotFound as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
     if target_agent_id not in config.agents.profiles:
         raise HTTPException(
             status_code=404,
@@ -142,13 +160,18 @@ def get_active_agent_id() -> str:
         return "default"
 
 
-def set_current_agent_id(agent_id: str) -> None:
+def set_current_agent_id(agent_id: str) -> Token[Optional[str]]:
     """Set current agent ID in context.
 
     Args:
         agent_id: Agent ID to set
     """
-    _current_agent_id.set(agent_id)
+    return _current_agent_id.set(agent_id)
+
+
+def reset_current_agent_id(token: Token[Optional[str]]) -> None:
+    """Restore the previous request-local Agent selection."""
+    _current_agent_id.reset(token)
 
 
 def get_current_agent_id() -> str:

@@ -32,45 +32,9 @@ export interface LightContextConfig {
   tool_result_pruning_config: ToolResultPruningConfig;
 }
 
-export interface AutoMemorySearchConfig {
-  enabled: boolean;
-  max_results: number;
-}
-
-export interface EmbeddingModelConfig {
-  backend: string;
-  api_key: string;
-  base_url: string;
-  model_name: string;
-  dimensions: number;
-  enable_cache: boolean;
-  use_dimensions: boolean;
-  max_cache_size: number;
-  max_input_length: number;
-  max_batch_size: number;
-}
-
-export interface ReMeLightMemoryConfig {
-  summarize_when_compact: boolean;
-  auto_memory_interval: number | null;
-  dream_cron: string;
-  auto_memory_search_config: AutoMemorySearchConfig;
-  embedding_model_config: EmbeddingModelConfig;
-  rebuild_memory_index_on_start: boolean;
-  enable_search_raw_log: boolean;
-}
-
 export interface AutoTitleConfig {
   enabled: boolean;
   timeout_seconds: number;
-}
-
-export interface ADBPGMemoryConfig {
-  rest_base_url: string;
-  rest_api_key: string;
-  memory_isolation: boolean;
-  search_timeout: number;
-  auto_memory_search_config: AutoMemorySearchConfig;
 }
 
 export interface DoomLoopStageConfig {
@@ -121,9 +85,6 @@ export interface AgentsRunningConfig {
   history_max_length: number;
   context_manager_backend: string;
   light_context_config: LightContextConfig;
-  memory_manager_backend: string;
-  adbpg_memory_config?: ADBPGMemoryConfig | null;
-  reme_light_memory_config: ReMeLightMemoryConfig;
   approval_level?: string;
   auto_title_config: AutoTitleConfig;
 }

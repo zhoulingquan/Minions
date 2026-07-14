@@ -18,9 +18,6 @@ vi.mock("../../../stores/agentStore", () => ({
 vi.mock("../../../hooks/useAppMessage", () => ({
   useAppMessage: vi.fn(() => ({ message: mockMessage })),
 }));
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (k: string) => k }),
-}));
 vi.mock("../../../utils/error", () => ({
   parseErrorDetail: vi.fn(),
 }));
@@ -265,7 +262,7 @@ describe("useCronJobs", () => {
       });
 
       expect(mockMessage.error).toHaveBeenCalledWith(
-        "cronJobs.validation.cronRequired",
+        "循环任务必须填写 Cron 表达式。",
       );
     });
 
@@ -288,7 +285,7 @@ describe("useCronJobs", () => {
       });
 
       expect(mockMessage.error).toHaveBeenCalledWith(
-        "cronJobs.validation.invalidCronExpression",
+        "Cron 表达式无效，请使用 5 段 Cron 格式。",
       );
     });
   });

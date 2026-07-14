@@ -1,6 +1,5 @@
 import { Button } from "@agentscope-ai/design";
 import { Alert, Spin } from "antd";
-import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/PageHeader";
 import { useVoiceTranscription } from "./useVoiceTranscription";
 import {
@@ -11,8 +10,7 @@ import {
 import styles from "./index.module.less";
 
 function VoiceTranscriptionPage() {
-  const { t } = useTranslation();
-  const {
+    const {
     loading,
     saving,
     audioMode,
@@ -44,18 +42,18 @@ function VoiceTranscriptionPage() {
     <div className={styles.voiceTranscriptionPage}>
       <PageHeader
         items={[
-          { title: t("nav.settings") },
-          { title: t("voiceTranscription.title") },
+          { title: "设置" },
+          { title: "语音转写" },
         ]}
       />
       <Alert
         type="info"
         showIcon
-        message={t("voiceTranscription.transcriptionInfoTitle")}
+        message={"转写工作原理"}
         description={
           isLocalWhisper
-            ? t("voiceTranscription.transcriptionInfoDescLocal")
-            : t("voiceTranscription.transcriptionInfoDesc")
+            ? "本地 Whisper 转写直接在您的设备上运行 openai-whisper 库。需要同时安装 ffmpeg（用于音频解码）和 openai-whisper Python 包。无需 API Key 或网络连接。安装命令：uv pip install 'minions[whisper]'。"
+            : "Whisper API 转写使用 OpenAI 兼容的 /v1/audio/transcriptions 端点。需要配置一个支持 Whisper 端点的提供商（如 OpenAI）。请在上方选择具体的提供商以启用转写。"
         }
       />
       <div className={styles.content}>
@@ -91,10 +89,10 @@ function VoiceTranscriptionPage() {
           disabled={saving}
           style={{ marginRight: 8 }}
         >
-          {t("common.reset")}
+          {"重置"}
         </Button>
         <Button type="primary" onClick={handleSave} loading={saving}>
-          {t("common.save")}
+          {"保存"}
         </Button>
       </div>
     </div>

@@ -6,7 +6,6 @@
  * providers (Theme, i18n, agent store, chat session context) are guaranteed
  * to be mounted.
  */
-import { useTranslation } from "react-i18next";
 import { useChatAnywhereSessionsState } from "@agentscope-ai/chat";
 import { useTheme as useThemeCtx } from "../../contexts/ThemeContext";
 import { useAgentStore } from "../../stores/agentStore";
@@ -26,7 +25,7 @@ export function useHostTheme(): HostThemeMode {
 }
 
 export function useHostLocale(): string {
-  return useTranslation().i18n.language;
+  return "zh";
 }
 
 export function useHostSelectedAgent(): HostAgentInfo {

@@ -8,7 +8,7 @@ describe("defaultCreateScope", () => {
       backupMode: "full",
       selectedAgents: ["a1", "a2"],
       globalConfig: true,
-      includeSkillPool: true,
+      includeGlobalSkills: true,
       includeSecrets: false,
     });
   });
@@ -28,7 +28,7 @@ describe("buildPreRestoreScope", () => {
       include_agents: true,
       include_global_config: true,
       include_secrets: false,
-      include_skill_pool: true,
+      include_global_skills: true,
     });
     expect(result.agents).toEqual(["a1", "a2"]);
   });
@@ -41,7 +41,7 @@ describe("buildScope — full mode", () => {
       include_agents: true,
       include_global_config: true,
       include_secrets: true,
-      include_skill_pool: true,
+      include_global_skills: true,
     });
     expect(agents).toEqual(["a1"]);
   });
@@ -60,7 +60,7 @@ describe("buildScope — partial mode", () => {
       include_agents: true,
       include_global_config: true,
       include_secrets: true,
-      include_skill_pool: true,
+      include_global_skills: true,
     });
     expect(agents).toEqual(["a1", "a2"]);
   });
@@ -71,7 +71,7 @@ describe("buildScope — partial mode", () => {
       include_agents: false,
       include_global_config: true,
       include_secrets: false,
-      include_skill_pool: false,
+      include_global_skills: false,
     });
     expect(agents).toEqual([]);
   });

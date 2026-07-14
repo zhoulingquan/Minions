@@ -9,12 +9,16 @@ from __future__ import annotations
 import asyncio
 import os
 import sys
+import time
+from types import SimpleNamespace
 
 import pytest
 
+from minions.agents.acp.meta import ACP_APPROVAL_EXPIRES_AT_META_KEY
 from minions.cli.tui.events import (
     BackendWarmed,
     Connected,
+    PermissionExpired,
     PermissionRequest,
     TextDelta,
     ThoughtDelta,
@@ -23,7 +27,7 @@ from minions.cli.tui.events import (
     TurnEnded,
     UserTurn,
 )
-from minions.cli.tui.transport.acp import AcpTransport
+from minions.cli.tui.transport.acp import AcpTransport, _TuiClient
 
 pytestmark = [pytest.mark.unit, pytest.mark.p1]
 
@@ -72,9 +76,7 @@ async def test_start_and_basic_turn():
     # output) sharing one tool_call_id; the UI merges them by id.
     tools = [e for e in events if isinstance(e, ToolCall)]
     assert any(
-        t.title == "read_file"
-        and t.kind == "read"
-        and t.params == "path: README.md"
+        t.title == "read_file" and t.kind == "read" and t.params == "path: README.md"
         for t in tools
     )
     assert any(
@@ -116,6 +118,39 @@ async def test_permission_allow():
 
     text = "".join(e.text for e in events if isinstance(e, TextDelta))
     assert "[perm:allow]" in text
+
+
+@pytest.mark.asyncio
+async def test_permission_request_carries_expiry_and_clears_on_cancel():
+    queue = asyncio.Queue()
+    client = _TuiClient(queue)
+    expires_at = time.time() + 300.0
+    task = asyncio.create_task(
+        client.request_permission(
+            options=[],
+            session_id="sess-1",
+            tool_call=SimpleNamespace(
+                title="dangerous_tool",
+                kind="execute",
+                raw_input={"command": "rm -rf /tmp/nope"},
+                field_meta={
+                    ACP_APPROVAL_EXPIRES_AT_META_KEY: expires_at,
+                },
+            ),
+        ),
+    )
+
+    request = await asyncio.wait_for(queue.get(), timeout=1.0)
+    assert isinstance(request, PermissionRequest)
+    assert request.expires_at == expires_at
+
+    task.cancel("timeout")
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    expired = await asyncio.wait_for(queue.get(), timeout=1.0)
+    assert isinstance(expired, PermissionExpired)
+    assert expired.request_id == request.request_id
+    assert "timed out" in expired.message
 
 
 @pytest.mark.asyncio

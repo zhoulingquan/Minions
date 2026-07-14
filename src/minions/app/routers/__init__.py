@@ -31,6 +31,8 @@ from .frontend_plugin import router as frontend_plugin_router
 from .backup import router as backup_router
 from .access_control import router as access_control_router
 from .provider_oauth import router as provider_oauth_router
+from .sage import router as sage_router
+from .tenancy import router as tenancy_router
 
 router = APIRouter()
 
@@ -62,6 +64,8 @@ router.include_router(frontend_plugin_router)
 router.include_router(backup_router)
 router.include_router(access_control_router)
 router.include_router(provider_oauth_router)
+router.include_router(sage_router)
+router.include_router(tenancy_router)
 
 
 def create_agent_scoped_router() -> APIRouter:

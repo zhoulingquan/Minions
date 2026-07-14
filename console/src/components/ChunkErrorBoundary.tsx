@@ -1,7 +1,6 @@
 import { Component } from "react";
 import type { ReactNode, ErrorInfo } from "react";
 import { Button, Result } from "antd";
-import i18n from "../i18n";
 
 interface Props {
   children: ReactNode;
@@ -58,21 +57,14 @@ export class ChunkErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      const titleKey = this.state.isChunkError
-        ? "chunkError.title"
-        : "chunkError.genericTitle";
-      const subTitleKey = this.state.isChunkError
-        ? "chunkError.subTitle"
-        : "chunkError.genericSubTitle";
-
       return (
         <Result
           status="error"
-          title={i18n.t(titleKey)}
-          subTitle={i18n.t(subTitleKey)}
+          title={this.state.isChunkError ? "加载失败" : "发生错误"}
+          subTitle={this.state.isChunkError ? "页面资源加载失败，请刷新重试" : "页面发生未知错误"}
           extra={
             <Button type="primary" onClick={() => window.location.reload()}>
-              {i18n.t("chunkError.reload")}
+              {"重新加载"}
             </Button>
           }
           style={{ marginTop: "10vh" }}

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { DeleteOutlined } from "@ant-design/icons";
 import { Button, Input, Select } from "@agentscope-ai/design";
 import { AutoComplete } from "antd";
-import { useTranslation } from "react-i18next";
 import type {
   MCPAccessEffect,
   MCPAccessPrincipalOption,
@@ -178,19 +177,16 @@ export function MCPAccessRuleRows<Rule extends MCPAccessRule>({
   emptyText,
   effectLabel,
 }: MCPAccessRuleRowsProps<Rule>) {
-  const { t } = useTranslation();
-  const channelLabel = (value: string) =>
-    t(`channels.channelNames.${value}`, {
-      defaultValue: CHANNEL_SOURCE_FALLBACK_LABELS[value] || value,
-    });
+    const channelLabel = (value: string) =>
+    CHANNEL_SOURCE_FALLBACK_LABELS[value] || value;
   const sourceValueOptions = channelSourceOptions(
-    t("mcp.access.sourceValueAllChannels"),
+    "所有频道",
     channelLabel,
   );
-  const channelSourceTypeLabel = t("mcp.access.source.channel");
+  const channelSourceTypeLabel = "频道";
   const subjectTypeOptions = [
-    { label: t("mcp.access.subjectTypeOption.all"), value: "all" },
-    { label: t("mcp.access.subjectTypeOption.user"), value: "user" },
+    { label: "全部", value: "all" },
+    { label: "用户", value: "user" },
   ];
   if (rules.length === 0) {
     return <div className={styles.accessNoRules}>{emptyText}</div>;
@@ -239,15 +235,14 @@ function AccessRuleRow<Rule extends MCPAccessRule>({
   deleteRule,
   effectLabel,
 }: AccessRuleRowProps<Rule>) {
-  const { t } = useTranslation();
-  const subjectValueOptions = buildSubjectValueOptions(principalOptions, rule);
+    const subjectValueOptions = buildSubjectValueOptions(principalOptions, rule);
   const hasUnknownUserValue = ruleHasUnknownUserValue(principalOptions, rule);
 
   return (
     <div className={styles.accessRuleRow}>
       <div className={styles.accessRuleField}>
         <span className={styles.accessRuleFieldLabel}>
-          {t("mcp.access.sourceType")}
+          {"调用来源"}
         </span>
         <Select
           className={styles.accessRuleSourceType}
@@ -266,7 +261,7 @@ function AccessRuleRow<Rule extends MCPAccessRule>({
       </div>
       <div className={styles.accessRuleField}>
         <span className={styles.accessRuleFieldLabel}>
-          {t("mcp.access.sourceValue")}
+          {"来源值"}
         </span>
         {rule.source_type === "channel" ? (
           <Select
@@ -282,7 +277,7 @@ function AccessRuleRow<Rule extends MCPAccessRule>({
         ) : (
           <RuleTextInput
             value={rule.source_value}
-            placeholder={t("mcp.access.sourceValuePlaceholder.channel")}
+            placeholder={"控制台 / 钉钉"}
             className={styles.accessRuleSourceValue}
             onCommit={(sourceValue) =>
               updateRule(rule, {
@@ -294,7 +289,7 @@ function AccessRuleRow<Rule extends MCPAccessRule>({
       </div>
       <div className={styles.accessRuleField}>
         <span className={styles.accessRuleFieldLabel}>
-          {t("mcp.access.subjectType")}
+          {"对象"}
         </span>
         <Select
           className={styles.accessRuleSubjectType}
@@ -309,14 +304,14 @@ function AccessRuleRow<Rule extends MCPAccessRule>({
       </div>
       <div className={styles.accessRuleField}>
         <span className={styles.accessRuleFieldLabel}>
-          {t("mcp.access.subjectValue")}
+          {"对象值"}
         </span>
         {rule.subject_type === "user" ? (
           <div className={styles.accessRuleSubjectStack}>
             <RuleSubjectValueInput
               value={rule.subject_value}
-              placeholder={t("mcp.access.recentUserPlaceholder")}
-              noOptionsText={t("mcp.access.noRecentUsers")}
+              placeholder={"用户 ID 仅在所选来源内有效；请重新输入或选择"}
+              noOptionsText={"该来源暂无近期用户，可手动输入用户 ID"}
               options={subjectValueOptions}
               className={styles.accessRuleSubjectValue}
               onCommit={(subjectValue) =>
@@ -327,26 +322,26 @@ function AccessRuleRow<Rule extends MCPAccessRule>({
             />
             {ruleHasAmbiguousUserSource(rule) && (
               <div className={styles.accessRuleWarning}>
-                {t("mcp.access.ambiguousUserSourceWarning")}
+                {"用户 ID 仅在来源内唯一，请选择具体频道以避免跨频道误匹配。"}
               </div>
             )}
             {hasUnknownUserValue && (
               <div className={styles.accessRuleWarning}>
-                {t("mcp.access.unknownUserValueWarning")}
+                {"该用户 ID 未出现在近期活跃用户中，但仍可保存。"}
               </div>
             )}
           </div>
         ) : (
           <Input
             className={styles.accessRuleSubjectValue}
-            value={t("mcp.access.subjectValueAll")}
+            value={"全部"}
             disabled
           />
         )}
       </div>
       <div className={styles.accessRuleField}>
         <span className={styles.accessRuleFieldLabel}>
-          {t("mcp.access.effectLabel")}
+          {"策略"}
         </span>
         <Select
           className={styles.accessRuleEffect}
@@ -363,7 +358,7 @@ function AccessRuleRow<Rule extends MCPAccessRule>({
         className={styles.accessRuleDeleteButton}
         icon={<DeleteOutlined />}
         onClick={() => deleteRule(rule)}
-        title={t("mcp.access.deleteRule")}
+        title={"删除规则"}
       />
     </div>
   );

@@ -11,11 +11,22 @@ from __future__ import annotations
 import logging
 
 from ..base import LifecycleHook
+from ...agents.acp.meta import ACP_EPHEMERAL_META_KEY
 from ...runtime._state_utils import StateProxy
 from ...runtime.hooks import HookContext, HookResult
 from ...runtime.phases import Phase
 
 logger = logging.getLogger(__name__)
+
+
+def _is_ephemeral_request(ctx: HookContext) -> bool:
+    request_context = getattr(ctx.request, "request_context", None)
+    if not isinstance(request_context, dict):
+        return False
+    value = request_context.get(ACP_EPHEMERAL_META_KEY)
+    if value is True:
+        return True
+    return isinstance(value, str) and value.lower() in {"1", "true", "yes"}
 
 
 class SessionLoadHook(LifecycleHook):
@@ -26,6 +37,8 @@ class SessionLoadHook(LifecycleHook):
     priority = 10
 
     async def run(self, ctx: HookContext) -> HookResult:
+        if _is_ephemeral_request(ctx):
+            return HookResult()
         if ctx.workspace is None:
             return HookResult()
         session = getattr(ctx.workspace, "session", None)
@@ -63,6 +76,8 @@ class SessionSaveHook(LifecycleHook):
     priority = 90
 
     async def run(self, ctx: HookContext) -> HookResult:
+        if _is_ephemeral_request(ctx):
+            return HookResult()
         if ctx.workspace is None or ctx.agent is None:
             return HookResult()
         session = getattr(ctx.workspace, "session", None)

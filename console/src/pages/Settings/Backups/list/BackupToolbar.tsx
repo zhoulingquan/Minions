@@ -5,7 +5,6 @@
  */
 import { Input } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
-import { useTranslation } from "react-i18next";
 import styles from "./BackupToolbar.module.less";
 
 interface Props {
@@ -14,13 +13,12 @@ interface Props {
 }
 
 export default function BackupToolbar({ searchQuery, onSearchChange }: Props) {
-  const { t } = useTranslation();
-  return (
+    return (
     <div className={styles.toolbar}>
       <Input
         className={styles.searchInput}
         prefix={<SearchOutlined />}
-        placeholder={t("backup.searchPlaceholder")}
+        placeholder={"按名称或 ID 搜索备份..."}
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
         allowClear

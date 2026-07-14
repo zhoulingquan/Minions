@@ -1,5 +1,4 @@
 import { Checkbox, Modal } from "@agentscope-ai/design";
-import type { TFunction } from "i18next";
 
 const FREE_MODEL_WARNING_DISABLED_KEY =
   "minions_free_model_switch_warning_disabled";
@@ -18,7 +17,6 @@ interface FreeModelWarningModel {
 interface ConfirmFreeModelSwitchOptions {
   provider: FreeModelWarningProvider;
   model: FreeModelWarningModel;
-  t: TFunction;
 }
 
 function isWarningDisabled(): boolean {
@@ -36,7 +34,6 @@ function getProviderWebsite(provider: FreeModelWarningProvider): string {
 export async function confirmFreeModelSwitch({
   provider,
   model,
-  t,
 }: ConfirmFreeModelSwitchOptions): Promise<boolean> {
   if (!model.is_free || isWarningDisabled()) {
     return true;
@@ -55,10 +52,10 @@ export async function confirmFreeModelSwitch({
     };
 
     Modal.confirm({
-      title: t("models.freeModelWarningTitle"),
+      title: "免费模型提示",
       content: (
         <div>
-          <div>{t("models.freeModelWarningMessage")}</div>
+          <div>免费模型可能存在服务不稳定的情况，详情请参考提供商服务条款：</div>
           <div className="minions-free-model-warning-link-row">
             <a href={providerWebsite} target="_blank" rel="noreferrer">
               {providerWebsite}
@@ -70,13 +67,13 @@ export async function confirmFreeModelSwitch({
                 dontShowAgain = Boolean(event?.target?.checked);
               }}
             >
-              {t("models.freeModelWarningDontShowAgain")}
+              今后不再提示
             </Checkbox>
           </div>
         </div>
       ),
-      okText: t("common.confirm"),
-      cancelText: t("common.cancel"),
+      okText: "确认",
+      cancelText: "取消",
       onOk: () => {
         if (dontShowAgain) {
           disableWarning();

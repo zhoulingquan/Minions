@@ -42,7 +42,6 @@ import type {
 } from "../../../../../api/types";
 
 import api from "../../../../../api";
-import { useTranslation } from "react-i18next";
 import { useTheme } from "../../../../../contexts/ThemeContext";
 import { useAppMessage } from "../../../../../hooks/useAppMessage";
 import { JsonConfigEditor } from "./JsonConfigEditor.tsx";
@@ -74,8 +73,7 @@ function ModelConfigEditor({
   reasoningEffortOptions?: string[];
   thinkingBudgetRange?: [number, number];
 }) {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const [saving, setSaving] = useState(false);
 
   const [maxTokens, setMaxTokens] = useState<number | null>(
@@ -152,12 +150,12 @@ function ModelConfigEditor({
       try {
         const obj = JSON.parse(trimmed);
         if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
-          message.error(t("models.generateConfigMustBeObject"));
+          message.error("生成参数配置必须是 JSON 对象");
           return;
         }
         parsed = obj;
       } catch {
-        message.error(t("models.generateConfigInvalidJson"));
+        message.error("请输入有效的 JSON");
         return;
       }
     }
@@ -173,7 +171,7 @@ function ModelConfigEditor({
         thinking_budget: thinkingBudget,
         reasoning_effort: reasoningEffort,
       });
-      message.success(t("models.modelConfigSaved", { name: model.name }));
+      message.success(`模型 ${model.name} 的配置已保存`);
       setDirty(false);
       onProviderUpdated?.(updated);
       await onSaved();
@@ -182,7 +180,7 @@ function ModelConfigEditor({
       const errMsg =
         error instanceof Error
           ? error.message
-          : t("models.modelConfigSaveFailed");
+          : "保存模型配置失败";
       message.error(errMsg);
     } finally {
       setSaving(false);
@@ -200,7 +198,7 @@ function ModelConfigEditor({
       <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
         <div style={{ flex: 1 }}>
           <div style={labelStyle}>
-            {t("models.maxTokensLabel", "Max Tokens")}
+            {"最大输出 Tokens"}
           </div>
           <InputNumber
             style={{ width: "100%" }}
@@ -217,12 +215,12 @@ function ModelConfigEditor({
               marginTop: 2,
             }}
           >
-            {t("models.maxTokensHint", "每次响应的最大输出 token 数")}
+            {"每次响应的最大输出 token 数"}
           </div>
         </div>
         <div style={{ flex: 1 }}>
           <div style={labelStyle}>
-            {t("models.maxInputLengthLabel", "Max Context Length")}
+            {"最大上下文长度"}
           </div>
           <InputNumber
             style={{ width: "100%" }}
@@ -239,10 +237,7 @@ function ModelConfigEditor({
               marginTop: 2,
             }}
           >
-            {t(
-              "models.maxInputLengthHint",
-              "模型上下文窗口大小，控制上下文压缩阈值（≥1000）",
-            )}
+            {"模型上下文窗口大小，控制上下文压缩阈值（≥1000）"}
           </div>
         </div>
       </div>
@@ -265,7 +260,7 @@ function ModelConfigEditor({
                   color: isDark ? "rgba(255,255,255,0.85)" : "#333",
                 }}
               >
-                {t("models.thinkingModeLabel")}
+                {"启用思考"}
               </span>
               <div
                 style={{
@@ -274,7 +269,7 @@ function ModelConfigEditor({
                   marginTop: 2,
                 }}
               >
-                {t("models.thinkingModeHint")}
+                {"开启以启用模型思考/推理，关闭以禁用思考。"}
               </div>
             </div>
             <Switch
@@ -298,7 +293,7 @@ function ModelConfigEditor({
                       justifyContent: "space-between",
                     }}
                   >
-                    <span>{t("models.thinkingBudgetLabel")}</span>
+                    <span>{"思考预算"}</span>
                     <a
                       style={{ fontSize: 11, cursor: "pointer" }}
                       onClick={() => {
@@ -311,8 +306,8 @@ function ModelConfigEditor({
                       }}
                     >
                       {thinkingBudget === null
-                        ? t("models.switchToManual")
-                        : t("models.switchToAuto")}
+                        ? "手动设置"
+                        : "自动"}
                     </a>
                   </div>
                   {thinkingBudget !== null ? (
@@ -351,14 +346,14 @@ function ModelConfigEditor({
                         marginTop: 2,
                       }}
                     >
-                      {t("models.thinkingBudgetHint")}
+                      {"使用模型默认思考预算"}
                     </div>
                   )}
                 </div>
               ) : (
                 <div>
                   <div style={labelStyle}>
-                    {t("models.reasoningEffortLabel")}
+                    {"推理深度"}
                   </div>
                   <Segmented
                     block
@@ -369,7 +364,7 @@ function ModelConfigEditor({
                       setDirty(true);
                     }}
                     options={[
-                      { label: t("models.switchToAuto"), value: "__auto__" },
+                      { label: "自动", value: "__auto__" },
                       ...(
                         reasoningEffortOptions ?? [
                           "none",
@@ -407,7 +402,7 @@ function ModelConfigEditor({
               color: isDark ? "rgba(255,255,255,0.85)" : "#333",
             }}
           >
-            {t("models.preserveThinkingLabel")}
+            {"保留推理内容"}
           </span>
           <div
             style={{
@@ -416,7 +411,7 @@ function ModelConfigEditor({
               marginTop: 2,
             }}
           >
-            {t("models.preserveThinkingHint")}
+            {"将推理内容（thinking contents）回传至后续对话轮次"}
           </div>
         </div>
         <Switch
@@ -435,7 +430,7 @@ function ModelConfigEditor({
           marginBottom: 4,
         }}
       >
-        {t("models.modelGenerateConfigHint")}
+        {"使用 JSON 格式表示的该模型专属生成参数配置项，会被展开传入到生成请求中。优先级高于提供商级别的进阶配置。"}
       </div>
       <JsonConfigEditor
         value={text}
@@ -457,7 +452,7 @@ function ModelConfigEditor({
           disabled={!dirty}
           onClick={handleSave}
         >
-          {t("models.save")}
+          {"保存"}
         </Button>
       </div>
     </div>
@@ -522,13 +517,12 @@ function CapabilityTags({
   model: ModelInfo;
   isDark: boolean;
 }) {
-  const { t } = useTranslation();
-  const c = tagColors(isDark);
+    const c = tagColors(isDark);
   if (model.supports_image && model.supports_video) {
     return (
       <Tag style={{ fontSize: 11, marginRight: 4, ...c.multimodal }}>
         <AppstoreOutlined style={{ fontSize: 10, marginRight: 3 }} />
-        {t("models.tagMultimodal", "多模态")}
+        {"多模态"}
       </Tag>
     );
   }
@@ -536,7 +530,7 @@ function CapabilityTags({
     return (
       <Tag style={{ fontSize: 11, marginRight: 4, ...c.vision }}>
         <EyeOutlined style={{ fontSize: 10, marginRight: 3 }} />
-        {t("models.tagVision", "视觉")}
+        {"视觉"}
       </Tag>
     );
   }
@@ -544,7 +538,7 @@ function CapabilityTags({
     return (
       <Tag style={{ fontSize: 11, marginRight: 4, ...c.video }}>
         <VideoCameraOutlined style={{ fontSize: 10, marginRight: 3 }} />
-        {t("models.tagVideo", "视频")}
+        {"视频"}
       </Tag>
     );
   }
@@ -552,14 +546,14 @@ function CapabilityTags({
     return (
       <Tag style={{ fontSize: 11, marginRight: 4, ...c.text }}>
         <FileTextOutlined style={{ fontSize: 10, marginRight: 3 }} />
-        {t("models.tagText", "文本")}
+        {"文本"}
       </Tag>
     );
   }
   return (
     <Tag style={{ fontSize: 11, marginRight: 4, ...c.notProbed }}>
       <QuestionCircleOutlined style={{ fontSize: 10, marginRight: 3 }} />
-      {t("models.tagNotProbed", "未检测")}
+      {"未检测"}
     </Tag>
   );
 }
@@ -571,8 +565,7 @@ export function RemoteModelManageModal({
   onSaved,
   onProviderUpdated,
 }: RemoteModelManageModalProps) {
-  const { t } = useTranslation();
-  const { isDark } = useTheme();
+    const { isDark } = useTheme();
   const darkBtnStyle = isDark ? { color: "rgba(255,255,255,0.65)" } : undefined;
   const { message } = useAppMessage();
   const supportsAutoDiscover = provider.support_model_discovery;
@@ -609,7 +602,7 @@ export function RemoteModelManageModal({
 
   const doAddModel = async (id: string, name: string) => {
     await api.addModel(provider.id, { id, name });
-    message.success(t("models.modelAdded", { name }));
+    message.success(`模型 "${name}" 已添加`);
     form.resetFields();
     setAdding(false);
     onSaved();
@@ -626,7 +619,7 @@ export function RemoteModelManageModal({
       ].some((model) => model.id.trim() === id);
 
       if (modelAlreadyExists) {
-        message.warning(t("models.modelAlreadyExists", { id }));
+        message.warning(`模型 ID "${id}" 已存在`);
         return;
       }
 
@@ -641,14 +634,12 @@ export function RemoteModelManageModal({
         setSaving(false);
         const failureDetail =
           getTestConnectionFailureDetail(testResult.message) ||
-          t("models.modelTestFailed");
+          "模型验证失败，请检查模型ID是否正确";
         Modal.confirm({
-          title: t("models.testConnectionFailed"),
-          content: t("models.modelTestFailedConfirm", {
-            message: failureDetail,
-          }),
-          okText: t("models.addModel"),
-          cancelText: t("models.cancel"),
+          title: "连接测试失败",
+          content: `模型连接测试失败：${failureDetail}。是否仍要添加此模型？`,
+          okText: "添加模型",
+          cancelText: "取消",
           onOk: async () => {
             setSaving(true);
             try {
@@ -657,7 +648,7 @@ export function RemoteModelManageModal({
               const errMsg =
                 error instanceof Error
                   ? error.message
-                  : t("models.modelAddFailed");
+                  : "添加模型失败";
               message.error(errMsg);
             } finally {
               setSaving(false);
@@ -672,7 +663,7 @@ export function RemoteModelManageModal({
     } catch (error) {
       if (error && typeof error === "object" && "errorFields" in error) return;
       const errMsg =
-        error instanceof Error ? error.message : t("models.modelAddFailed");
+        error instanceof Error ? error.message : "添加模型失败";
       message.error(errMsg);
     } finally {
       setSaving(false);
@@ -686,15 +677,15 @@ export function RemoteModelManageModal({
         model_id: modelId,
       });
       if (result.success) {
-        message.success(getLocalizedTestConnectionMessage(result, t));
+        message.success(getLocalizedTestConnectionMessage(result));
       } else {
-        message.warning(getLocalizedTestConnectionMessage(result, t));
+        message.warning(getLocalizedTestConnectionMessage(result));
       }
     } catch (error) {
       const errMsg =
         error instanceof Error
           ? error.message
-          : t("models.testConnectionError");
+          : "测试连接时发生错误";
       message.error(errMsg);
     } finally {
       setTestingModelId(null);
@@ -706,23 +697,21 @@ export function RemoteModelManageModal({
     try {
       const result = await api.probeMultimodal(provider.id, modelId);
       const parts: string[] = [];
-      if (result.supports_image) parts.push(t("models.probeImage"));
+      if (result.supports_image) parts.push("图片");
 
-      if (result.supports_video) parts.push(t("models.probeVideo"));
+      if (result.supports_video) parts.push("视频");
 
       if (parts.length > 0) {
         message.success(
-          t("models.probeSupported", {
-            types: parts.join(", "),
-          }),
+          `支持: ${parts.join(", ")}`,
         );
       } else {
-        message.info(t("models.probeNotSupported"));
+        message.info("该模型不支持多模态输入");
       }
       await onSaved();
     } catch (error) {
       const errMsg =
-        error instanceof Error ? error.message : t("models.probeFailed");
+        error instanceof Error ? error.message : "探测失败";
 
       message.error(errMsg);
     } finally {
@@ -732,24 +721,21 @@ export function RemoteModelManageModal({
 
   const handleRemoveModel = (modelId: string, modelName: string) => {
     Modal.confirm({
-      title: t("models.removeModel"),
-      content: t("models.removeModelConfirm", {
-        name: modelName,
-        provider: provider.name,
-      }),
-      okText: t("common.delete"),
+      title: "移除",
+      content: `确定从 ${provider.name} 中移除模型 "${modelName}"？`,
+      okText: "删除",
       okButtonProps: { danger: true },
-      cancelText: t("models.cancel"),
+      cancelText: "取消",
       onOk: async () => {
         try {
           await api.removeModel(provider.id, modelId);
-          message.success(t("models.modelRemoved", { name: modelName }));
+          message.success(`模型 "${modelName}" 已移除`);
           await onSaved();
         } catch (error) {
           const errMsg =
             error instanceof Error
               ? error.message
-              : t("models.modelRemoveFailed");
+              : "移除模型失败";
           message.error(errMsg);
         }
       },
@@ -810,13 +796,13 @@ export function RemoteModelManageModal({
       if (result.success) {
         setDiscoveredModels(result.models || []);
         message.success(
-          t("models.filteredModelsLoaded", { count: result.total_count }),
+          `已加载过滤模型：${result.total_count}`,
         );
       } else {
-        message.error(t("models.filterFailed"));
+        message.error("过滤模型失败");
       }
     } catch {
-      message.error(t("models.filterFailed"));
+      message.error("过滤模型失败");
     } finally {
       setLoadingFilters(false);
     }
@@ -834,11 +820,11 @@ export function RemoteModelManageModal({
         supports_video: model.supports_video,
         probe_source: model.probe_source,
       });
-      message.success(t("models.modelAdded", { name: model.name }));
+      message.success(`模型 "${model.name}" 已添加`);
       await onSaved();
       setDiscoveredModels((prev) => prev.filter((m) => m.id !== model.id));
     } catch {
-      message.error(t("models.modelAddFailed"));
+      message.error("添加模型失败");
     } finally {
       setSaving(false);
     }
@@ -850,7 +836,7 @@ export function RemoteModelManageModal({
       const result = await api.discoverModels(provider.id, undefined, true);
 
       if (!result.success) {
-        message.error(result.message || t("models.autoDiscoverModelsFailed"));
+        message.error(result.message || "自动发现模型失败");
         return;
       }
 
@@ -858,24 +844,20 @@ export function RemoteModelManageModal({
 
       if (result.added_count > 0) {
         message.success(
-          t("models.autoDiscoverModelsSuccess", {
-            count: result.added_count,
-          }),
+          `自动发现完成，新增 ${result.added_count} 个模型`,
         );
         return;
       }
 
       message.info(
         result.message ||
-          t("models.autoDiscoverModelsNoNew", {
-            count: result.models.length,
-          }),
+          "自动发现完成，未新增模型",
       );
     } catch (error) {
       const errMsg =
         error instanceof Error
           ? error.message
-          : t("models.autoDiscoverModelsFailed");
+          : "自动发现模型失败";
       message.error(errMsg);
     } finally {
       setDiscoveringModels(false);
@@ -928,7 +910,7 @@ export function RemoteModelManageModal({
 
   return (
     <Modal
-      title={t("models.manageModelsTitle", { provider: provider.name })}
+      title={`${provider.name} — 模型管理`}
       open={open}
       onCancel={handleClose}
       footer={null}
@@ -937,7 +919,7 @@ export function RemoteModelManageModal({
       destroyOnHidden
     >
       <Input
-        placeholder={t("models.searchModelPlaceholder", "搜索模型...")}
+        placeholder={"搜索模型..."}
         value={modelSearchQuery}
         onChange={(e) => setModelSearchQuery(e.target.value)}
         prefix={<SearchOutlined />}
@@ -947,7 +929,7 @@ export function RemoteModelManageModal({
       {/* Model list */}
       <div className={styles.modelList}>
         {filteredModels.length === 0 ? (
-          <div className={styles.modelListEmpty}>{t("models.noModels")}</div>
+          <div className={styles.modelListEmpty}>{"暂无模型"}</div>
         ) : (
           <>
             {filteredModels.slice(0, visibleCount).map((m) => {
@@ -973,7 +955,7 @@ export function RemoteModelManageModal({
                           <GiftOutlined
                             style={{ fontSize: 10, marginRight: 3 }}
                           />
-                          {t("models.free")}
+                          {"免费"}
                         </Tag>
                       )}
                       <Tag
@@ -992,7 +974,7 @@ export function RemoteModelManageModal({
                             style={{ fontSize: 10, marginRight: 3 }}
                           />
                         )}
-                        {t(isDeletable ? "models.userAdded" : "models.builtin")}
+                        {isDeletable ? "用户添加" : "内置"}
                       </Tag>
                       <span
                         style={{
@@ -1008,7 +990,7 @@ export function RemoteModelManageModal({
                       />
                       {m.probe_source !== "documentation" && (
                         <Tooltip
-                          title={t("models.probeMultimodal", "测试多模态")}
+                          title={"测试多模态"}
                         >
                           <Button
                             type="text"
@@ -1020,7 +1002,7 @@ export function RemoteModelManageModal({
                           />
                         </Tooltip>
                       )}
-                      <Tooltip title={t("models.testConnection")}>
+                      <Tooltip title={"测试连接"}>
                         <Button
                           type="text"
                           size="small"
@@ -1030,7 +1012,7 @@ export function RemoteModelManageModal({
                           style={darkBtnStyle}
                         />
                       </Tooltip>
-                      <Tooltip title={t("models.modelConfigLabel", "模型配置")}>
+                      <Tooltip title={"模型配置"}>
                         <Button
                           type="text"
                           size="small"
@@ -1103,13 +1085,10 @@ export function RemoteModelManageModal({
                   size="small"
                   onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
                 >
-                  {t("models.loadMore", {
-                    count: Math.min(
-                      PAGE_SIZE,
-                      filteredModels.length - visibleCount,
-                    ),
-                    total: filteredModels.length,
-                  })}
+                  {`加载更多 (${Math.min(
+                    PAGE_SIZE,
+                    filteredModels.length - visibleCount,
+                  )})`}
                 </Button>
                 <span className={styles.modelListCount}>
                   {visibleCount} / {filteredModels.length}
@@ -1148,12 +1127,12 @@ export function RemoteModelManageModal({
             <Form form={form} layout="vertical" style={{ marginBottom: 0 }}>
               <Form.Item
                 name="id"
-                label={t("models.modelIdLabel")}
-                rules={[{ required: true, message: t("models.modelIdLabel") }]}
+                label={"模型 ID"}
+                rules={[{ required: true, message: "模型 ID" }]}
                 style={{ marginBottom: 12 }}
               >
                 <AutoComplete
-                  placeholder={t("models.modelIdPlaceholder")}
+                  placeholder={"例如 gpt-4o, gemini-2.0-flash"}
                   options={discoveredModels.map((model) => ({
                     value: model.id,
                     label: model.id,
@@ -1168,8 +1147,8 @@ export function RemoteModelManageModal({
                   }
                   notFoundContent={
                     loadingDiscoveredModels
-                      ? t("common.loading")
-                      : t("models.modelDiscoveryUnavailableHint")
+                      ? "加载中..."
+                      : "未发现可用模型。该供应商可能不支持模型列表查询，请手动输入模型 ID。"
                   }
                 >
                   <Input />
@@ -1177,10 +1156,10 @@ export function RemoteModelManageModal({
               </Form.Item>
               <Form.Item
                 name="name"
-                label={t("models.modelNameLabel")}
+                label={"模型名称"}
                 style={{ marginBottom: 12 }}
               >
-                <Input placeholder={t("models.modelNamePlaceholder")} />
+                <Input placeholder={"例如 GPT-4o, Gemini 2.0 Flash"} />
               </Form.Item>
               <div
                 style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}
@@ -1192,7 +1171,7 @@ export function RemoteModelManageModal({
                     form.resetFields();
                   }}
                 >
-                  {t("models.cancel")}
+                  {"取消"}
                 </Button>
                 <Button
                   type="primary"
@@ -1200,7 +1179,7 @@ export function RemoteModelManageModal({
                   loading={saving}
                   onClick={handleAddModel}
                 >
-                  {t("models.addModel")}
+                  {"添加模型"}
                 </Button>
               </div>
             </Form>
@@ -1214,7 +1193,7 @@ export function RemoteModelManageModal({
                 onClick={handleAutoDiscoverModels}
                 style={{ flex: 1 }}
               >
-                {t("models.autoDiscoverModels")}
+                {"自动发现模型"}
               </Button>
             )}
             <Button
@@ -1223,7 +1202,7 @@ export function RemoteModelManageModal({
               onClick={() => setAdding(true)}
               style={{ flex: 1 }}
             >
-              {t("models.addModel")}
+              {"添加模型"}
             </Button>
           </div>
         ))}

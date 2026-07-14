@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
 import {
   Alert,
   Button,
@@ -56,8 +55,7 @@ interface MarketPluginListProps {
 }
 
 export function MarketPluginList({ onInstalled }: MarketPluginListProps) {
-  const { t, i18n } = useTranslation();
-  const [searchInput, setSearchInput] = useState("");
+    const [searchInput, setSearchInput] = useState("");
   const [activeSearch, setActiveSearch] = useState("");
 
   const {
@@ -78,7 +76,7 @@ export function MarketPluginList({ onInstalled }: MarketPluginListProps) {
     handleInstall,
   } = useMarketPlugins({ onInstalled });
 
-  const lang = i18n.language.split("-")[0].toLowerCase();
+  const lang = "zh";
 
   const isSearchMode = !!activeSearch;
 
@@ -103,7 +101,7 @@ export function MarketPluginList({ onInstalled }: MarketPluginListProps) {
               }`}
               onClick={() => onCategoryClick(null)}
             >
-              {t("pluginManager.marketAll")}
+              {"全部"}
             </span>
             {PLUGIN_CATEGORIES.map((cat) => (
               <span
@@ -121,15 +119,12 @@ export function MarketPluginList({ onInstalled }: MarketPluginListProps) {
           <div className={marketStyles.searchHint}>
             {!loading &&
               !error &&
-              t("pluginManager.marketSearchResult", {
-                keyword: activeSearch,
-                count: total,
-              })}
+              `"${activeSearch}" 相关插件共搜索到 ${total} 个结果`}
           </div>
         )}
         <div className={marketStyles.toolbarRight}>
           <Input.Search
-            placeholder={t("pluginManager.marketSearch")}
+            placeholder={"搜索插件..."}
             allowClear
             value={searchInput}
             onChange={(e) => {
@@ -146,7 +141,7 @@ export function MarketPluginList({ onInstalled }: MarketPluginListProps) {
             onClick={handleRefresh}
             disabled={loading}
           >
-            {t("pluginManager.catalogRefresh")}
+            {"刷新"}
           </Button>
         </div>
       </div>
@@ -162,7 +157,7 @@ export function MarketPluginList({ onInstalled }: MarketPluginListProps) {
 
       <Spin spinning={loading}>
         {!loading && plugins.length === 0 && !error && (
-          <Text type="secondary">{t("pluginManager.marketEmpty")}</Text>
+          <Text type="secondary">{"暂无市场插件"}</Text>
         )}
         <div className={styles.catalogList}>
           {plugins.map((entry) => (
@@ -203,18 +198,18 @@ export function MarketPluginList({ onInstalled }: MarketPluginListProps) {
                 </div>
                 {entry.locales && (
                   <div className={styles.catalogDescription}>
-                    {pickLocalizedDescription(entry, i18n.language)}
+                    {pickLocalizedDescription(entry, "zh")}
                   </div>
                 )}
                 <div className={styles.catalogMeta}>
                   v{entry.version}
                   {entry.developer
-                    ? ` · ${t("pluginManager.marketDeveloper")}: ${
+                    ? ` · ${"开发者"}: ${
                         entry.developer
                       }`
                     : ""}
                   {entry.downloads != null
-                    ? ` · ${t("pluginManager.marketDownloads")}: ${
+                    ? ` · ${"下载量"}: ${
                         entry.downloads
                       }`
                     : ""}
@@ -228,7 +223,7 @@ export function MarketPluginList({ onInstalled }: MarketPluginListProps) {
                     icon={<ExternalLink size={14} />}
                     onClick={() => openExternalLink(entry.details_url!)}
                   >
-                    {t("pluginManager.marketDetails")}
+                    {"详情"}
                   </Button>
                 )}
                 <Tooltip
@@ -253,23 +248,14 @@ export function MarketPluginList({ onInstalled }: MarketPluginListProps) {
                     onClick={() => {
                       if (!isCompatible(entry)) {
                         Modal.confirm({
-                          title: t(
-                            "pluginManager.compatWarningTitle",
-                            "Compatibility Warning",
-                          ),
-                          content: t("pluginManager.compatWarningContent", {
-                            defaultValue:
-                              "This plugin is labeled for Minions {{labels}}. Your Minions version is {{version}}. Installing it may cause errors. Are you sure you want to continue?",
-                            labels:
-                              entry.minions_compat_labels?.join(", ") ??
-                              "unknown",
-                            version: minionsVersion ?? "unknown",
-                          }),
-                          okText: t(
-                            "pluginManager.compatWarningConfirm",
-                            "Install anyway",
-                          ),
-                          cancelText: t("common.cancel", "Cancel"),
+                          title: "兼容性警告",
+                          content: `该插件标注适配 Minions ${
+                            entry.minions_compat_labels?.join(", ") ?? "unknown"
+                          }，而您当前的 Minions 版本为 ${
+                            minionsVersion ?? "unknown"
+                          }。安装后可能出现错误，是否确认继续？`,
+                          okText: "仍然安装",
+                          cancelText: "取消",
                           onOk: () => void handleInstall(entry),
                         });
                       } else {
@@ -277,7 +263,7 @@ export function MarketPluginList({ onInstalled }: MarketPluginListProps) {
                       }
                     }}
                   >
-                    {t("pluginManager.catalogInstall")}
+                    {"安装"}
                   </Button>
                 </Tooltip>
               </div>

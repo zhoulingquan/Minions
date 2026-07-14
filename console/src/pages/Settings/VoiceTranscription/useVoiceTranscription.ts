@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { useCallback, useEffect, useState } from "react";
 import api from "../../../api";
 import { useAppMessage } from "../../../hooks/useAppMessage";
 
@@ -20,8 +19,7 @@ export interface LocalWhisperStatus {
 // ─── Hook ───────────────────────────────────────────────────────────────────
 
 export function useVoiceTranscription() {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -32,7 +30,7 @@ export function useVoiceTranscription() {
   const [localWhisperStatus, setLocalWhisperStatus] =
     useState<LocalWhisperStatus | null>(null);
 
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     setLoading(true);
     try {
       const [modeRes, provTypeRes, provRes, lwStatus] = await Promise.all([
@@ -48,15 +46,15 @@ export function useVoiceTranscription() {
       setLocalWhisperStatus(lwStatus);
     } catch (err) {
       console.error("Failed to load voice transcription settings:", err);
-      message.error(t("voiceTranscription.loadFailed"));
+      message.error("加载音频模式设置失败");
     } finally {
       setLoading(false);
     }
-  };
+  }, [message]);
 
   useEffect(() => {
-    fetchSettings();
-  }, []);
+    void fetchSettings();
+  }, [fetchSettings]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -69,10 +67,10 @@ export function useVoiceTranscription() {
         promises.push(api.updateTranscriptionProvider(selectedProviderId));
       }
       await Promise.all(promises);
-      message.success(t("voiceTranscription.saveSuccess"));
+      message.success("音频模式已保存");
     } catch (err) {
       console.error("Failed to save voice transcription settings:", err);
-      message.error(t("voiceTranscription.saveFailed"));
+      message.error("保存音频模式失败");
     } finally {
       setSaving(false);
     }

@@ -13,7 +13,6 @@ from minions.exceptions import (
     ConfigurationException,
 )
 
-from .memory.base_memory_manager import BaseMemoryManager
 from .utils.file_handling import read_text_file_with_encoding_fallback
 
 logger = logging.getLogger(__name__)
@@ -61,8 +60,8 @@ class PromptBuilder:
         re.DOTALL,
     )
 
-    # Regex pattern to match memory section markers
-    MEMORY_PATTERN = re.compile(
+    # Compatibility scrubber for retired workspace instructions.
+    RETIRED_EXPERIENCE_PATTERN = re.compile(
         r"<!-- memory:start -->.*?<!-- memory:end -->",
         re.DOTALL,
     )
@@ -73,7 +72,6 @@ class PromptBuilder:
         enabled_files: list[str] | None = None,
         heartbeat_enabled: bool = False,
         language: str = "zh",
-        memory_manager: BaseMemoryManager | None = None,
     ):
         """Initialize prompt builder.
 
@@ -81,14 +79,12 @@ class PromptBuilder:
             working_dir: Directory containing markdown configuration files
             enabled_files: List of filenames to load (if None, uses default order)
             heartbeat_enabled: Whether heartbeat is enabled, affects AGENTS.md content
-            language: Language code used to select the memory prompt.
-            memory_manager: Memory manager instance for generating memory prompts.
+            language: Agent language code.
         """
         self.working_dir = working_dir
         self.enabled_files = enabled_files
         self.heartbeat_enabled = heartbeat_enabled
         self.language = language
-        self.memory_manager = memory_manager
         self.prompt_parts = []
         self.loaded_count = 0
 
@@ -116,7 +112,7 @@ class PromptBuilder:
                 if len(parts) >= 3:
                     content = parts[2].strip()
 
-            # Filter heartbeat / memory sections from AGENTS.md based on config
+            # Filter heartbeat and retired experience instructions.
             if filename == "AGENTS.md":
                 try:
                     content = self._process_heartbeat_section(content)
@@ -125,10 +121,10 @@ class PromptBuilder:
                         f"Failed to process heartbeat with {e}",
                     )
                 try:
-                    content = self._process_memory_section(content)
+                    content = self._strip_retired_experience_section(content)
                 except Exception as e:
                     logger.warning(
-                        f"Failed to process memory section with {e}",
+                        f"Failed to remove retired experience section: {e}",
                     )
 
             if content:
@@ -177,33 +173,20 @@ class PromptBuilder:
             filtered = self.HEARTBEAT_PATTERN.sub("", content)
             return filtered.strip()
 
-    def _process_memory_section(self, content: str) -> str:
-        """Process memory section in AGENTS.md content.
-
-        - If memory markers are found: remove the entire section.
-        - Always append the canonical memory prompt at the end.
+    def _strip_retired_experience_section(self, content: str) -> str:
+        """Remove instructions belonging to the retired Markdown backend.
 
         Args:
             content: Original AGENTS.md content
 
         Returns:
-            Processed content with memory prompt appended.
+            Content without the retired section.
         """
-        # Remove existing memory section if markers exist
+        # Existing workspaces may still contain the retired marker pair.
         if "<!-- memory:start -->" in content:
-            content = self.MEMORY_PATTERN.sub("", content).strip()
+            content = self.RETIRED_EXPERIENCE_PATTERN.sub("", content).strip()
 
-        # Get memory prompt from manager or fallback
-        if self.memory_manager:
-            memory_section = self.memory_manager.get_memory_prompt()
-        else:
-            memory_section = ""
-
-        return (
-            (content + "\n\n" + memory_section).strip()
-            if content
-            else memory_section
-        )
+        return content.strip()
 
     def build(self) -> str:
         """Build the system prompt from markdown files.
@@ -246,7 +229,6 @@ def build_system_prompt_from_working_dir(
     agent_id: str | None = None,
     heartbeat_enabled: bool = False,
     language: str = "zh",
-    memory_manager: BaseMemoryManager | None = None,
 ) -> str:
     """
     Build system prompt by reading markdown files from working directory.
@@ -272,10 +254,7 @@ def build_system_prompt_from_working_dir(
         agent_id: Agent identifier to include in system prompt (optional)
         heartbeat_enabled: Whether heartbeat is enabled. When False, filters
             heartbeat section from AGENTS.md to avoid confusing instructions.
-        language: Language code (``"zh"`` or ``"en"``) for memory prompt.
-        memory_manager: Memory manager instance for generating memory prompts.
-            If provided, uses its ``get_memory_prompt()`` method instead of
-            the standalone function.
+        language: Agent language code.
 
     Returns:
         str: Constructed system prompt from markdown files.
@@ -315,7 +294,6 @@ def build_system_prompt_from_working_dir(
         enabled_files=enabled_files,
         heartbeat_enabled=heartbeat_enabled,
         language=language,
-        memory_manager=memory_manager,
     )
     prompt = builder.build()
 
@@ -353,7 +331,7 @@ def build_bootstrap_guidance(
             "2. 按照 BOOTSTRAP.md 的指示，"
             "帮助用户定义你的身份和偏好。\n"
             "3. 按指南创建/更新必要文件"
-            "（PROFILE.md、MEMORY.md 等）。\n"
+            "（PROFILE.md、AGENTS.md 等）。\n"
             "4. 完成后删除 BOOTSTRAP.md。\n"
             "\n"
             "如果用户希望跳过，直接回答下面的问题即可。\n"
@@ -372,7 +350,7 @@ def build_bootstrap_guidance(
         "2. Follow BOOTSTRAP.md instructions "
         "to define identity and preferences.\n"
         "3. Create/update files "
-        "(PROFILE.md, MEMORY.md, etc.) as described.\n"
+        "(PROFILE.md, AGENTS.md, etc.) as described.\n"
         "4. Delete BOOTSTRAP.md when done.\n"
         "\n"
         "If the user wants to skip, answer their "

@@ -1,6 +1,5 @@
 import { Card, Button, Tag } from "antd";
 import { Terminal, FileText, Settings, Check, X } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import type { ApprovalItem } from "../types";
 import styles from "./ApprovalCard.module.less";
 
@@ -34,8 +33,7 @@ export function ApprovalCard({
   onApprove,
   onReject,
 }: ApprovalCardProps) {
-  const { t } = useTranslation();
-  const IconComponent = TYPE_ICONS[approval.type];
+    const IconComponent = TYPE_ICONS[approval.type];
   const timeText = approval.requestedAt.toLocaleString();
 
   return (
@@ -54,7 +52,7 @@ export function ApprovalCard({
           <div>
             <div className={styles.typeLabel}>{TYPE_LABELS[approval.type]}</div>
             <div className={styles.requestedBy}>
-              {t("msg.requestedBy")} {approval.requestedBy}
+              {"请求方"} {approval.requestedBy}
             </div>
           </div>
         </div>
@@ -74,14 +72,14 @@ export function ApprovalCard({
             icon={<X size={16} />}
             onClick={() => onReject(approval.id)}
           >
-            {t("msg.reject")}
+            {"拒绝"}
           </Button>
           <Button
             type="primary"
             icon={<Check size={16} />}
             onClick={() => onApprove(approval.id)}
           >
-            {t("msg.approve")}
+            {"同意"}
           </Button>
         </div>
       </div>

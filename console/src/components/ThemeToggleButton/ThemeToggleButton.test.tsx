@@ -1,12 +1,8 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { screen } from "@testing-library/react";
 import ThemeToggleButton from "./index";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { render } from "@testing-library/react";
-
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (k: string) => k }),
-}));
 
 // Wrap with real ThemeProvider, control initial theme via localStorage
 function renderWithTheme(mode: "light" | "dark" | "system" = "light") {

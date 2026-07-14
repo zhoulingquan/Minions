@@ -17,9 +17,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import type { MsgEvent } from "../../../api/modules/console";
 
-const { stableT, mockGetMsgEvents, mockMarkMsgRead, mockDeleteMsgEvent } =
+const { mockGetMsgEvents, mockMarkMsgRead, mockDeleteMsgEvent } =
   vi.hoisted(() => ({
-    stableT: (k: string) => k,
     mockGetMsgEvents: vi.fn(),
     mockMarkMsgRead: vi.fn(),
     mockDeleteMsgEvent: vi.fn(),
@@ -38,10 +37,6 @@ vi.mock("../../../stores/agentStore", () => ({
   useAgentStore: vi.fn((selector: (state: { agents: never[] }) => unknown) =>
     selector({ agents: [] }),
   ),
-}));
-
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: stableT as (k: string) => string }),
 }));
 
 vi.mock("../../../utils/agentDisplayName", () => ({

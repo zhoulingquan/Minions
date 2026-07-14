@@ -87,25 +87,25 @@ describe("skillApi.listSkillWorkspaces", () => {
 });
 
 // ---------------------------------------------------------------------------
-// listSkillPoolSkills — caching + array validation
+// listGlobalSkills — caching + array validation
 // ---------------------------------------------------------------------------
-describe("skillApi.listSkillPoolSkills", () => {
+describe("skillApi.listGlobalSkills", () => {
   beforeEach(() => {
     invalidateSkillCache();
   });
   afterEach(() => vi.clearAllMocks());
 
-  it("calls /skills/pool and returns data", async () => {
-    vi.mocked(request).mockResolvedValue([{ name: "pool-skill" }]);
-    const result = await skillApi.listSkillPoolSkills();
-    expect(request).toHaveBeenCalledWith("/skills/pool");
-    expect(result).toEqual([{ name: "pool-skill" }]);
+  it("calls /skills/global and returns data", async () => {
+    vi.mocked(request).mockResolvedValue([{ name: "global-skill" }]);
+    const result = await skillApi.listGlobalSkills();
+    expect(request).toHaveBeenCalledWith("/skills/global");
+    expect(result).toEqual([{ name: "global-skill" }]);
   });
 
   it("throws when response is not an array", async () => {
     vi.mocked(request).mockResolvedValue({ not: "an array" });
-    await expect(skillApi.listSkillPoolSkills()).rejects.toThrow(
-      "Expected array from /skills/pool but got object",
+    await expect(skillApi.listGlobalSkills()).rejects.toThrow(
+      "Expected array from /skills/global but got object",
     );
   });
 });
@@ -203,6 +203,66 @@ describe("skillApi.disableSkill", () => {
     expect(request).toHaveBeenCalledWith("/skills/special%2Fskill/disable", {
       method: "POST",
     });
+  });
+});
+
+describe("skillApi.promoteSkillToGlobal", () => {
+  afterEach(() => vi.clearAllMocks());
+
+  it("sends the optimistic promotion payload for the selected agent", async () => {
+    vi.mocked(request).mockResolvedValue({
+      success: true,
+      mode: "promoted",
+      name: "demo",
+      global_hash: "new-hash",
+    });
+
+    await skillApi.promoteSkillToGlobal(
+      "demo",
+      {
+        expected_global_hash: "old-hash",
+        force: false,
+        propagate: false,
+      },
+      "agent-1",
+    );
+
+    expect(request).toHaveBeenCalledWith("/skills/sync/push", {
+      method: "POST",
+      headers: expect.any(Headers),
+      body: JSON.stringify({
+        skill_name: "demo",
+        expected_global_hash: "old-hash",
+        force: false,
+        propagate: false,
+      }),
+    });
+    const options = vi.mocked(request).mock.calls[0][1] as RequestInit;
+    expect((options.headers as Headers).get("X-Agent-Id")).toBe("agent-1");
+  });
+});
+
+describe("skillApi.resolveSkillSync", () => {
+  afterEach(() => vi.clearAllMocks());
+
+  it("sends the selected resolution for the selected agent", async () => {
+    vi.mocked(request).mockResolvedValue({
+      resolved: true,
+      resolution: "keep_global",
+    });
+
+    await skillApi.resolveSkillSync("demo", "keep_global", "agent-1");
+
+    expect(request).toHaveBeenCalledWith("/skills/sync/resolve", {
+      method: "POST",
+      headers: expect.any(Headers),
+      body: JSON.stringify({
+        skill_name: "demo",
+        resolution: "keep_global",
+      }),
+    });
+    const options = vi.mocked(request).mock.calls[0][1] as RequestInit;
+    expect((options.headers as Headers).get("X-Agent-Id")).toBe("agent-1");
   });
 });
 

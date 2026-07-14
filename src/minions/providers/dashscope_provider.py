@@ -18,6 +18,7 @@ from typing import Any, Dict
 from agentscope.model import ChatModelBase
 from pydantic import Field
 
+from .provider import ModelInfo
 from .capping_formatter import MAX_INLINE_MEDIA_BYTES
 from .capping_formatter import _CappingDashScopeFormatter
 from .openai_provider import (
@@ -51,6 +52,26 @@ class DashScopeProvider(OpenAIProvider):
 
     def _is_builtin_model(self, model_id: str) -> bool:
         return any(m.id == model_id for m in self.models)
+
+    def _get_relay_reasoning(self, model_id: str) -> bool:
+        """DashScope defaults reasoning relay off to avoid duplicate traces."""
+        model_info = self.get_model_info(model_id)
+        if model_info is not None and (
+            "preserve_thinking" in model_info.model_fields_set
+        ):
+            return model_info.preserve_thinking
+        return False
+
+    async def add_model(
+        self,
+        model_info: ModelInfo,
+        target: str = "extra_models",
+        timeout: float = 10,
+    ) -> tuple[bool, str]:
+        """Default new DashScope models to non-relayed reasoning."""
+        if "preserve_thinking" not in model_info.model_fields_set:
+            model_info.preserve_thinking = False
+        return await super().add_model(model_info, target, timeout)
 
     def _apply_thinking_config(
         self,
@@ -90,18 +111,12 @@ class DashScopeProvider(OpenAIProvider):
         eb = effective.get("extra_body")
         eb = eb if isinstance(eb, dict) else {}
         if enabled is not None:
-            if (
-                "thinking_enable" not in effective
-                and "enable_thinking" not in eb
-            ):
+            if "thinking_enable" not in effective and "enable_thinking" not in eb:
                 effective["thinking_enable"] = enabled
         if enabled is False:
             return
         if budget is not None:
-            if (
-                "thinking_budget" not in effective
-                and "thinking_budget" not in eb
-            ):
+            if "thinking_budget" not in effective and "thinking_budget" not in eb:
                 effective["thinking_budget"] = budget
         if effort is not None:
             effective.setdefault("reasoning_effort", effort)
@@ -114,10 +129,7 @@ class DashScopeProvider(OpenAIProvider):
             from minions.exceptions import ProviderError
 
             raise ProviderError(
-                message=(
-                    f"DashScope provider '{self.id}' has no api_key "
-                    "configured."
-                ),
+                message=(f"DashScope provider '{self.id}' has no api_key configured."),
             )
 
         credential = DashScopeCredential(
@@ -199,7 +211,7 @@ class DashScopeProvider(OpenAIProvider):
             extra_generate_kwargs=extra_generate_kwargs,
             formatter=_CappingDashScopeFormatter(
                 max_bytes=self.max_inline_media_bytes,
-                relay_reasoning_content=self._get_preserve_thinking(model_id),
+                relay_reasoning_content=self._get_relay_reasoning(model_id),
             ),
         )
 

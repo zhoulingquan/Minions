@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { Button, Modal } from "@agentscope-ai/design";
 import { Spin } from "antd";
-import { useTranslation } from "react-i18next";
 import {
   LinkOutlined,
   CloseOutlined,
@@ -71,8 +70,7 @@ export function ImportHubModal({
   cancelImport,
   hint,
 }: ImportHubModalProps) {
-  const { t } = useTranslation();
-  const [importUrl, setImportUrl] = useState("");
+    const [importUrl, setImportUrl] = useState("");
 
   const validation = useMemo(() => validateUrl(importUrl), [importUrl]);
   const canImport = validation.ok && !importing;
@@ -97,7 +95,7 @@ export function ImportHubModal({
   return (
     <Modal
       className={styles.importHubModal}
-      title={t("skills.importHub")}
+      title={"通过URL上传"}
       open={open}
       onCancel={handleClose}
       keyboard={!importing}
@@ -110,11 +108,7 @@ export function ImportHubModal({
             className={styles.cancelButton}
             onClick={importing && cancelImport ? cancelImport : handleClose}
           >
-            {t(
-              importing && cancelImport
-                ? "skills.cancelImport"
-                : "common.cancel",
-            )}
+            {importing && cancelImport ? "取消导入" : "取消"}
           </Button>
           <Button
             className={styles.importButton}
@@ -123,7 +117,7 @@ export function ImportHubModal({
             loading={importing}
             disabled={!canImport}
           >
-            {t("common.confirm")}
+            {"确认"}
           </Button>
         </div>
       }
@@ -137,18 +131,18 @@ export function ImportHubModal({
             className={styles.urlInput}
             value={importUrl}
             onChange={(e) => setImportUrl(e.target.value)}
-            placeholder={t("skills.enterSkillUrl")}
+            placeholder={"输入技能URL"}
             disabled={importing}
-            aria-label={t("skills.enterSkillUrl")}
+            aria-label={"输入技能URL"}
             type="text"
           />
           {importUrl && (
             <button
               className={styles.iconButton}
               onClick={() => setImportUrl("")}
-              title={t("common.clear")}
+              title={"清除"}
               type="button"
-              aria-label={t("common.clear")}
+              aria-label={"清除"}
             >
               <CloseOutlined />
             </button>
@@ -159,17 +153,19 @@ export function ImportHubModal({
           {validation.ok ? (
             <span className={styles.valid}>
               <CheckCircleOutlined />
-              {t("skills.urlValid", { source: validation.source })}
+              {`来自 ${validation.source} 的有效 URL`}
             </span>
           ) : validation.messageKey ? (
             <span className={styles.invalid}>
               <CloseCircleOutlined />
-              {t(validation.messageKey)}
+              {validation.messageKey === "skills.invalidUrl"
+                ? "无效的 URL"
+                : "请确认技能URL来自受支持的技能市场"}
             </span>
           ) : importing ? (
             <span className={styles.validating}>
               <Spin size="small" />
-              {t("common.loading")}
+              {"加载中..."}
             </span>
           ) : null}
         </div>
@@ -177,7 +173,7 @@ export function ImportHubModal({
 
       <div className={styles.sourcesSection}>
         <div className={styles.sourcesHeader}>
-          {t("skills.supportedSources")}
+          {"支持的来源："}
         </div>
         <div className={styles.sourcesList}>
           {skillMarkets.map((market: SkillMarket) => {
@@ -190,7 +186,7 @@ export function ImportHubModal({
                 }`}
                 role="button"
                 tabIndex={importing || !example ? -1 : 0}
-                title={example ? t("skills.clickToFill") : undefined}
+                title={example ? "点击填入 URL" : undefined}
                 onClick={
                   importing || !example
                     ? undefined

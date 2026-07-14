@@ -20,10 +20,6 @@ vi.mock("@/stores/agentStore", () => ({
   useAgentStore: vi.fn(() => ({ selectedAgent: "default" })),
 }));
 
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (k: string) => k }),
-}));
-
 vi.mock("lucide-react", () => ({
   Loader2: () => "Loader2",
   ExternalLink: () => "ExternalLink",
@@ -124,7 +120,7 @@ describe("ModelSelector", () => {
     });
     renderWithProviders(<ModelSelector />);
     expect(
-      (await screen.findAllByText("modelSelector.selectModel"))[0],
+      (await screen.findAllByText("选择模型"))[0],
     ).toBeInTheDocument();
   });
 
@@ -193,12 +189,12 @@ describe("ModelSelector", () => {
     });
     const user = userEvent.setup();
     renderWithProviders(<ModelSelector />);
-    await screen.findAllByText("modelSelector.selectModel");
+    await screen.findAllByText("选择模型");
 
-    await user.click(screen.getAllByText("modelSelector.selectModel")[0]);
+    await user.click(screen.getAllByText("选择模型")[0]);
 
     expect(
-      await screen.findByText("modelSelector.noConfiguredModels"),
+      await screen.findByText("暂无已配置模型"),
     ).toBeInTheDocument();
   });
 

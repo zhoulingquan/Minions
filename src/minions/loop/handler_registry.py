@@ -5,6 +5,7 @@ Single entry point for GoalMode, ReAct gates, and
 future plugin-registered modes to obtain or create
 a StopHandler on a workspace object.
 """
+
 from __future__ import annotations
 
 import logging

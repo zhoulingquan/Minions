@@ -1,5 +1,3 @@
-import type { TFunction } from "i18next";
-
 // Channel key type - now accepts any string for custom channels
 export type ChannelKey = string;
 
@@ -33,10 +31,6 @@ function formatCustomChannelKey(key: string): string {
 }
 
 // Per-locale strings under `channels.channelNames.*`; missing keys use `defaultValue` (English labels).
-export function getChannelLabel(key: string, t?: TFunction): string {
-  const english = CHANNEL_LABELS[key] ?? formatCustomChannelKey(key);
-  if (t) {
-    return t(`channels.channelNames.${key}`, { defaultValue: english });
-  }
-  return english;
+export function getChannelLabel(key: string): string {
+  return CHANNEL_LABELS[key] ?? formatCustomChannelKey(key);
 }

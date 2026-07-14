@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { Button, Input, Select, Spin, Typography, Alert, Tag } from "antd";
 import { Download, RefreshCw, Package } from "lucide-react";
 import type { OfficialPluginCatalogEntry } from "@/api/modules/plugin";
@@ -47,8 +46,7 @@ interface OfficialPluginListProps {
 }
 
 export function OfficialPluginList({ onInstalled }: OfficialPluginListProps) {
-  const { t, i18n } = useTranslation();
-  const [nameFilter, setNameFilter] = useState("");
+    const [nameFilter, setNameFilter] = useState("");
   const [kindFilter, setKindFilter] = useState<string | undefined>(undefined);
 
   const {
@@ -75,28 +73,23 @@ export function OfficialPluginList({ onInstalled }: OfficialPluginListProps) {
     const kinds = [...new Set(plugins.map((p) => p.kind).filter(Boolean))];
     return kinds.map((kind) => ({
       value: kind!.toLowerCase(),
-      label: t(
-        `pluginManager.kind${kind!.charAt(0).toUpperCase()}${kind!
-          .slice(1)
-          .toLowerCase()}`,
-        { defaultValue: kind },
-      ),
+      label: kind,
     }));
-  }, [plugins, t]);
+  }, [plugins]);
 
   return (
     <div className={styles.catalogSection}>
       <div className={styles.catalogToolbar}>
         <div className={styles.catalogFilters}>
           <Input
-            placeholder={t("pluginManager.filterByName")}
+            placeholder={"按名称筛选"}
             allowClear
             value={nameFilter}
             onChange={(e) => setNameFilter(e.target.value)}
             style={{ width: 220 }}
           />
           <Select
-            placeholder={t("pluginManager.filterByKind")}
+            placeholder={"按标签筛选"}
             allowClear
             value={kindFilter}
             onChange={(val) => setKindFilter(val)}
@@ -111,7 +104,7 @@ export function OfficialPluginList({ onInstalled }: OfficialPluginListProps) {
           onClick={() => void loadCatalog()}
           disabled={loading}
         >
-          {t("pluginManager.catalogRefresh")}
+          {"刷新"}
         </Button>
       </div>
 
@@ -126,7 +119,7 @@ export function OfficialPluginList({ onInstalled }: OfficialPluginListProps) {
 
       <Spin spinning={loading}>
         {!loading && filteredPlugins.length === 0 && !catalogError && (
-          <Text type="secondary">{t("pluginManager.catalogEmpty")}</Text>
+          <Text type="secondary">{"暂无官方插件（请确认已发布到下载 CDN）"}</Text>
         )}
         <div className={styles.catalogList}>
           {filteredPlugins.map((entry) => (
@@ -146,28 +139,23 @@ export function OfficialPluginList({ onInstalled }: OfficialPluginListProps) {
                       }
                       style={{ margin: 0, fontSize: 11 }}
                     >
-                      {t(
-                        `pluginManager.kind${entry.kind
-                          .charAt(0)
-                          .toUpperCase()}${entry.kind.slice(1).toLowerCase()}`,
-                        { defaultValue: entry.kind },
-                      )}
+                      {entry.kind}
                     </Tag>
                   )}
                   {entry.installed && !entry.upgrade_available && (
                     <Tag color="success" style={{ margin: 0, fontSize: 11 }}>
-                      {t("pluginManager.catalogInstalled")}
+                      {"已安装"}
                     </Tag>
                   )}
                   {entry.upgrade_available && (
                     <Tag color="processing" style={{ margin: 0, fontSize: 11 }}>
-                      {t("pluginManager.catalogUpgrade")}
+                      {"可升级"}
                     </Tag>
                   )}
                 </div>
                 {(entry.description || entry.description_i18n) && (
                   <div className={styles.catalogDescription}>
-                    {pickLocalizedDescription(entry, i18n.language)}
+                    {pickLocalizedDescription(entry, "zh")}
                   </div>
                 )}
                 <div className={styles.catalogMeta}>
@@ -190,10 +178,10 @@ export function OfficialPluginList({ onInstalled }: OfficialPluginListProps) {
                   onClick={() => void handleInstall(entry)}
                 >
                   {entry.upgrade_available
-                    ? t("pluginManager.catalogUpgradeBtn")
+                    ? "升级"
                     : entry.installed
-                    ? t("pluginManager.catalogReinstall")
-                    : t("pluginManager.catalogInstall")}
+                    ? "重新安装"
+                    : "安装"}
                 </Button>
               </div>
             </div>

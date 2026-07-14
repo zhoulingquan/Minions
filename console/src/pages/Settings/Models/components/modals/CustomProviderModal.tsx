@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Form, Input, Modal, Select } from "@agentscope-ai/design";
 import api from "../../../../../api";
-import { useTranslation } from "react-i18next";
 import { useAppMessage } from "../../../../../hooks/useAppMessage";
 
 interface CustomProviderModalProps {
@@ -15,8 +14,7 @@ export function CustomProviderModal({
   onClose,
   onSaved,
 }: CustomProviderModalProps) {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const [saving, setSaving] = useState(false);
   const [form] = Form.useForm();
 
@@ -38,7 +36,7 @@ export function CustomProviderModal({
         chat_model: values.chat_model || "OpenAIChatModel",
       });
       message.success(
-        t("models.providerCreated", { name: values.name.trim() }),
+        `提供商 "${values.name.trim()}" 已创建`,
       );
       onSaved();
       onClose();
@@ -47,7 +45,7 @@ export function CustomProviderModal({
       const errMsg =
         error instanceof Error
           ? error.message
-          : t("models.providerCreateFailed");
+          : "创建提供商失败";
       message.error(errMsg);
     } finally {
       setSaving(false);
@@ -56,13 +54,13 @@ export function CustomProviderModal({
 
   return (
     <Modal
-      title={t("models.addProviderTitle")}
+      title={"添加自定义提供商"}
       open={open}
       onCancel={onClose}
       onOk={handleSubmit}
       confirmLoading={saving}
-      okText={t("common.create")}
-      cancelText={t("models.cancel")}
+      okText={"创建"}
+      cancelText={"取消"}
       destroyOnHidden
     >
       <Form
@@ -73,58 +71,58 @@ export function CustomProviderModal({
       >
         <Form.Item
           name="id"
-          label={t("models.providerIdLabel")}
-          extra={t("models.providerIdHint")}
+          label={"提供商 ID"}
+          extra={"小写字母、数字、连字符、下划线，创建后不可更改。"}
           rules={[
-            { required: true, message: t("models.providerIdLabel") },
+            { required: true, message: "提供商 ID" },
             {
               pattern: /^[a-z][a-z0-9_-]{0,63}$/,
-              message: t("models.providerIdHint"),
+              message: "小写字母、数字、连字符、下划线，创建后不可更改。",
             },
           ]}
         >
-          <Input placeholder={t("models.providerIdPlaceholder")} />
+          <Input placeholder={"例如 openai, google, anthropic"} />
         </Form.Item>
 
         <Form.Item
           name="name"
-          label={t("models.providerNameLabel")}
-          rules={[{ required: true, message: t("models.providerNameLabel") }]}
+          label={"显示名称"}
+          rules={[{ required: true, message: "显示名称" }]}
         >
-          <Input placeholder={t("models.providerNamePlaceholder")} />
+          <Input placeholder={"例如 OpenAI, Google Gemini"} />
         </Form.Item>
 
         <Form.Item
           name="default_base_url"
-          label={t("models.defaultBaseUrlLabel")}
+          label={"默认 Base URL"}
         >
-          <Input placeholder={t("models.defaultBaseUrlPlaceholder")} />
+          <Input placeholder={"例如 https://api.example.com"} />
         </Form.Item>
 
         <Form.Item
           name="chat_model"
-          label={t("models.protocol")}
+          label={"协议"}
           rules={[
             {
               required: true,
-              message: t("models.selectProtocol"),
+              message: "请选择协议",
             },
           ]}
-          extra={t("models.protocolHint")}
+          extra={"为当前配置选择提供商 API 协议。"}
         >
           <Select
             options={[
               {
                 value: "OpenAIChatModel",
-                label: t("models.protocolOpenAI"),
+                label: "OpenAI 兼容（Chat Completions）",
               },
               {
                 value: "OpenAIResponseModel",
-                label: t("models.protocolOpenAIResponse"),
+                label: "OpenAI 兼容（Response API）",
               },
               {
                 value: "AnthropicChatModel",
-                label: t("models.protocolAnthropic"),
+                label: "Anthropic（Messages API）",
               },
             ]}
           />

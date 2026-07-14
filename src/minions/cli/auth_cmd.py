@@ -6,6 +6,8 @@ import secrets
 import click
 
 from ..app.auth import (
+    PASSWORD_ALGORITHM,
+    PASSWORD_ITERATIONS,
     _hash_password,
     _load_auth_data,
     _save_auth_data,
@@ -55,6 +57,8 @@ def reset_password_cmd() -> None:
     pw_hash, salt = _hash_password(new_password)
     data["user"]["password_hash"] = pw_hash
     data["user"]["password_salt"] = salt
+    data["user"]["password_algorithm"] = PASSWORD_ALGORITHM
+    data["user"]["password_iterations"] = PASSWORD_ITERATIONS
 
     # Invalidate existing tokens by rotating jwt_secret
     data["jwt_secret"] = secrets.token_hex(32)

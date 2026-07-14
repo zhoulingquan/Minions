@@ -2,7 +2,6 @@ import React, { useCallback, useRef, useState } from "react";
 import { Dropdown, Input } from "antd";
 import type { InputRef } from "antd";
 import { IconButton } from "@agentscope-ai/design";
-import { useTranslation } from "react-i18next";
 import {
   SparkMoreLine,
   SparkDeleteLine,
@@ -68,16 +67,15 @@ const SessionItem: React.FC<SessionItemProps> = ({
   onEditCancel,
   onContextMenu,
 }) => {
-  const { t } = useTranslation();
-  const inputRef = useRef<InputRef>(null);
+    const inputRef = useRef<InputRef>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const isComposingRef = useRef(false);
 
   const inProgress = generating === true || chatStatus === "running";
   const isIdle = !inProgress && !!chatStatus;
   const statusAriaLabel = inProgress
-    ? t("chat.statusInProgress")
-    : t("chat.statusIdle");
+    ? "进行中"
+    : "空闲";
 
   const handleClick = useCallback(() => {
     if (disabled || editing) return;
@@ -110,22 +108,22 @@ const SessionItem: React.FC<SessionItemProps> = ({
     {
       key: "rename",
       icon: <SparkEditLine size={14} />,
-      label: t("chat.contextMenu.rename", "Rename"),
+      label: "重命名",
       onClick: handleStartEdit,
     },
     {
       key: "pin",
       icon: pinned ? <SparkMarkFill size={14} /> : <SparkMarkLine size={14} />,
       label: pinned
-        ? t("chat.contextMenu.unpin", "Unpin")
-        : t("chat.contextMenu.pin", "Pin"),
+        ? "取消置顶"
+        : "置顶",
       onClick: () => onPin?.(sessionId),
     },
     { type: "divider" as const },
     {
       key: "delete",
       icon: <SparkDeleteLine size={14} />,
-      label: t("chat.contextMenu.delete", "Delete"),
+      label: "删除",
       danger: true,
       onClick: () => onDelete?.(sessionId),
     },

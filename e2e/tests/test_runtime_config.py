@@ -273,16 +273,16 @@ class TestAgentConfigSaveAndReset:
         log_test_step("1. Visit the runtime config page")
         navigate_to_agent_config(page)
 
-        # Step 2: Switch to the long-term memory tab (context compaction was merged in; this tab has a toggle switch)
-        log_test_step("2. Switch to the long-term memory tab")
-        context_tab = page.locator('[data-node-key="remeLightMemory"] .minions-tabs-tab-btn').first
+        # Step 2: Switch to the context management tab.
+        log_test_step("2. Switch to the context management tab")
+        context_tab = page.locator('[data-node-key="lightContext"] .minions-tabs-tab-btn').first
         expect(context_tab).to_be_visible(timeout=5000)
         context_tab.click()
         page.wait_for_timeout(1500)
 
         context_panel = page.locator('.minions-tabs-tabpane-active').first
         expect(context_panel).to_be_visible(timeout=5000)
-        logger.info("Switched to long-term memory tab")
+        logger.info("Switched to context management tab")
 
         # Step 3: Locate the enable switch and record its initial state
         log_test_step("3. Record the initial switch state")
@@ -327,9 +327,9 @@ class TestAgentConfigSaveAndReset:
         page.wait_for_load_state("domcontentloaded")
         page.wait_for_timeout(3000)
 
-        # Step 8: Switch to the long-term memory tab
-        log_test_step("8. Switch to the long-term memory tab")
-        context_tab_refreshed = page.locator('[data-node-key="remeLightMemory"] .minions-tabs-tab-btn').first
+        # Step 8: Switch to the context management tab
+        log_test_step("8. Switch to the context management tab")
+        context_tab_refreshed = page.locator('[data-node-key="lightContext"] .minions-tabs-tab-btn').first
         expect(context_tab_refreshed).to_be_visible(timeout=5000)
         context_tab_refreshed.click()
         page.wait_for_timeout(1500)
@@ -618,46 +618,6 @@ class TestToolResultCompactConfig:
         logger.info(f"Found {len(inputs)} config items on context management panel")
 
 
-@pytest.mark.integration
-@pytest.mark.p1
-@pytest.mark.config
-class TestEmbeddingConfig:
-    """
-    test_embedding_config: Long-term memory configuration (embedding config was merged into the long-term memory tab).
-
-    Coverage:
-    1. Switch to the long-term memory tab
-    2. Verify panel content (vector model config, memory toggle, etc.)
-    3. Verify toggles and config items are displayed
-    """
-
-    def test_embedding_config(self, page: Page):
-        """Long-term memory config test (embedding config was merged here)."""
-        log_test_step("Navigate to the Agent Config page")
-        navigate_to_agent_config(page)
-
-        from pages.runtime_config_page import RuntimeConfigPage
-        runtime_config_page = RuntimeConfigPage(page)
-
-        log_test_step("Switch to the long-term memory tab (embedding config was merged here)")
-        runtime_config_page.switch_to_memory_summary_tab()
-
-        # Verify the panel is visible
-        active_panel = page.locator('.minions-tabs-tabpane-active').first
-        expect(active_panel).to_be_visible(timeout=5000)
-
-        # Verify the panel contains long-term memory related content
-        panel_text = active_panel.inner_text()
-        assert any(kw in panel_text for kw in ["Memory", "Embedding"]), \
-            f"Panel content does not contain long-term memory keywords: {panel_text[:200]}"
-        logger.info("Long-term memory panel content verified")
-
-        # Verify there are switches
-        switches = active_panel.locator('.minions-switch').all()
-        assert len(switches) >= 1, f"No switches found on long-term memory panel; found {len(switches)}"
-        logger.info(f"Found {len(switches)} switches on long-term memory panel")
-
-
 # ============================================================================
 # AGCFG-P1-001: Context compaction config
 # ============================================================================
@@ -774,79 +734,3 @@ class TestConfigDynamicLinkage:
 # ============================================================================
 # AGCFG-P1-002: Memory summary config
 # ============================================================================
-
-@pytest.mark.integration
-@pytest.mark.p1
-@pytest.mark.runtime_config
-class TestMemorySummaryConfig:
-    """
-    AGCFG-P1-002: Memory summary config.
-
-    Coverage:
-    1. Switch to the Memory Summary tab
-    2. Verify form fields exist (switches, inputs, sliders, etc.)
-    3. Modify config and verify
-    """
-
-    @pytest.mark.test_id("AGCFG-P1-002")
-    def test_memory_summary_config(self, page: Page, request: pytest.FixtureRequest):
-        """Test the display and editing of memory summary config."""
-        test_name = request.node.name
-
-        log_test_step("Navigate to the runtime config page")
-        navigate_to_agent_config(page)
-
-        log_test_step("Switch to the Memory Summary tab")
-        memory_tab = page.locator(
-            '[data-node-key="memorySummary"] .minions-tabs-tab-btn, '
-            '.minions-tabs-tab-btn:has-text("Memory")'
-        ).first
-        expect(memory_tab).to_be_visible(timeout=5000)
-        memory_tab.click()
-        page.wait_for_timeout(1500)
-        logger.info("Switched to Memory Summary tab")
-
-        log_test_step("Verify active panel content")
-        active_panel = page.locator('.minions-tabs-tabpane-active').first
-        expect(active_panel).to_be_visible(timeout=5000)
-
-        # Verify the card title
-        card_title = active_panel.locator('.minions-spark-title').first
-        expect(card_title).to_be_visible()
-        title_text = card_title.inner_text()
-        assert "Memory" in title_text or "Summary" in title_text, \
-            f"Card title does not contain expected keywords: {title_text}"
-        logger.info(f"Card title verified: {title_text}")
-
-        log_test_step("Verify the memory summary switch exists")
-        switches = active_panel.locator('.minions-switch').all()
-        assert len(switches) >= 1, f"Memory summary switch not found; found {len(switches)} switches"
-        logger.info(f"Found {len(switches)} switches")
-
-        log_test_step("Verify the Cron expression input exists")
-        cron_input = active_panel.locator('#memory_summary_dream_cron, input[id*="dream_cron"]').first
-        if cron_input.count() == 0:
-            cron_input = active_panel.locator('input').nth(0)
-        assert cron_input.count() > 0, "Cron expression input not found"
-        logger.info("Cron expression input present")
-
-        log_test_step("Verify number inputs exist")
-        number_inputs = active_panel.locator('.minions-input-number').all()
-        assert len(number_inputs) >= 1, f"No number inputs found; got {len(number_inputs)}"
-        logger.info(f"Found {len(number_inputs)} number inputs")
-
-        log_test_step("Toggle the memory summary switch")
-        first_switch = switches[0]
-        original_state = first_switch.get_attribute("aria-checked")
-        first_switch.click()
-        page.wait_for_timeout(1000)
-        new_state = first_switch.get_attribute("aria-checked")
-        assert original_state != new_state, \
-            f"Switch toggle had no effect: before={original_state}, after={new_state}"
-        logger.info(f"Switch toggled: {original_state} -> {new_state}")
-
-        # Restore the original state
-        first_switch.click()
-        page.wait_for_timeout(500)
-
-        log_test_result(test_name, True, 0)

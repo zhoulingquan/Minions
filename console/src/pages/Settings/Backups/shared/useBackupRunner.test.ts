@@ -10,7 +10,6 @@ const hoisted = vi.hoisted(() => ({
     success: vi.fn(),
     error: vi.fn(),
   },
-  stableT: (k: string) => k,
 }));
 
 vi.mock("@/api", () => ({
@@ -20,10 +19,6 @@ vi.mock("@/api", () => ({
 
 vi.mock("@/hooks/useAppMessage", () => ({
   useAppMessage: () => ({ message: hoisted.messageMock }),
-}));
-
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: hoisted.stableT }),
 }));
 
 import { useBackupRunner } from "./useBackupRunner";
@@ -36,7 +31,7 @@ const data: CreateBackupRequest = {
     include_agents: false,
     include_global_config: false,
     include_secrets: false,
-    include_skill_pool: false,
+    include_global_skills: false,
   },
   agents: [],
 };
@@ -66,7 +61,7 @@ describe("useBackupRunner", () => {
     });
 
     expect(result.current.loading).toBe(false);
-    expect(messageMock.success).toHaveBeenCalledWith("backup.createSuccess");
+    expect(messageMock.success).toHaveBeenCalledWith("备份创建成功");
     expect(onSuccess).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
@@ -99,7 +94,7 @@ describe("useBackupRunner", () => {
       await result.current.start(data);
     });
 
-    expect(messageMock.error).toHaveBeenCalledWith("backup.createFailed");
+    expect(messageMock.error).toHaveBeenCalledWith("备份创建失败");
     expect(result.current.loading).toBe(false);
   });
 

@@ -16,10 +16,14 @@ services:
     restart: always
     ports:
       - "127.0.0.1:8088:8088"
+    # 本机开发可直接启用 SQLite 多租户；正式企业部署请改用 PostgreSQL DSN，
+    # 详见 docs/multitenant-2.1-deployment.md。
     # environment:
-    #   - MINIONS_AUTH_ENABLED=true
-    #   - MINIONS_AUTH_USERNAME=admin
-    #   - MINIONS_AUTH_PASSWORD=yourpassword
+      # - MINIONS_TENANCY_ENABLED=true
+      # - MINIONS_TENANCY_MODE=development
+      # - MINIONS_TENANCY_STORE=sqlite
+      # - MINIONS_SAGE_MODE=development
+      # - MINIONS_SAGE_STORE=sqlite
     volumes:
       - minions-data:/app/working
       - minions-secrets:/app/working.secret

@@ -1,6 +1,5 @@
 import React from "react";
 import { Popover, Progress } from "antd";
-import { useTranslation } from "react-i18next";
 import { formatCompact } from "../../../../utils/formatNumber";
 import {
   readTurnUsageFromResponseCardData,
@@ -58,8 +57,7 @@ function PopoverBody({
   usage: TurnUsage | null;
   context: ContextUsage | null;
 }) {
-  const { t } = useTranslation();
-  const ratio = context
+    const ratio = context
     ? Math.max(0, Math.min(Number(context.context_usage_ratio) || 0, 100))
     : 0;
   const pctLabel =
@@ -70,19 +68,12 @@ function PopoverBody({
       {usage && (
         <div style={{ marginBottom: context ? 12 : 0 }}>
           <div style={{ fontWeight: 600, marginBottom: 4 }}>
-            {t(
-              usage.estimated
-                ? "chat.turnUsagePopover.turnEstimated"
-                : "chat.turnUsagePopover.turn",
-            )}{" "}
+            {usage.estimated ? "本轮约" : "本轮"}{" "}
             {formatCompact(usage.total_tokens || 0)}{" "}
-            {t("chat.turnUsagePopover.tok")}
+            {"tok"}
           </div>
           <div style={{ opacity: 0.75 }}>
-            {t("chat.turnUsagePopover.inOut", {
-              inTok: formatCompact(usage.prompt_tokens || 0),
-              outTok: formatCompact(usage.completion_tokens || 0),
-            })}
+            {`in ${formatCompact(usage.prompt_tokens || 0)} · out ${formatCompact(usage.completion_tokens || 0)}`}
           </div>
         </div>
       )}
@@ -97,7 +88,7 @@ function PopoverBody({
             }}
           >
             <span style={{ fontWeight: 600 }}>
-              {t("chat.turnUsagePopover.contextLabel")} {pctLabel}
+              {"上下文窗口："} {pctLabel}
             </span>
             <span style={{ opacity: 0.75, fontSize: 12 }}>
               {formatCompact(context.estimated_tokens)}/
@@ -119,8 +110,7 @@ function PopoverBody({
 const TurnUsageAction: React.FC<{
   data: { data?: Record<string, unknown> };
 }> = ({ data }) => {
-  const { t } = useTranslation();
-  const snapshot = readTurnUsageFromResponseCardData(data?.data ?? null);
+    const snapshot = readTurnUsageFromResponseCardData(data?.data ?? null);
   if (!snapshot || (!snapshot.usage && !snapshot.context_usage)) {
     return null;
   }
@@ -143,7 +133,7 @@ const TurnUsageAction: React.FC<{
       <span
         role="button"
         tabIndex={0}
-        aria-label={t("chat.turnUsagePopover.ariaLabel")}
+        aria-label={"查看本轮 Token 与上下文用量"}
         style={{
           display: "inline-flex",
           alignItems: "center",

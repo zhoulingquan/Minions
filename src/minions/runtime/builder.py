@@ -200,46 +200,22 @@ class AgentBuilder:
             ctx.extras = {}
         ctx.extras["driver_prompt_hints"] = driver_prompt_hints
 
-        # Model + formatter (built before the toolkit so the scroll context
-        # strategy, which needs the model for token counting, can wire in).
+        # Model + formatter.
         model, _formatter = self.build_model(agent_config)
 
-        # Built once and shared: the agent's native offloader, and (when
-        # ``offload_dialog`` is on) scroll's optional dialog archive.
+        # Two memory layers coexist: Scroll keeps raw session history while
+        # SAGE provides governed, cross-session business experience.
         offloader = self._build_offloader(ctx, agent_config)
-
-        # Optional scroll context strategy (None unless strategy="scroll").
-        scroll = self._build_scroll_components(
-            ctx,
-            agent_config,
-            model,
+        scroll = self._prepare_scroll_runtime(
+            ctx=ctx,
+            agent_config=agent_config,
+            model=model,
             offloader=offloader,
+            governor=governor,
+            extra_tools=extra_tools,
+            agent_id=agent_id,
+            request_context=request_context,
         )
-        # Eviction and recall must live or die together. The structured
-        # recall_history tool reads history in-process (no sandbox needed),
-        # but it is still guard-wrapped — with no governor the guard layer
-        # itself is degraded. Keep the conservative gate: if the governor
-        # never came up and the operator hasn't opted into unsandboxed
-        # recall, degrade to native so the full history stays in-context.
-        if scroll is not None and not self._scroll_recall_runnable(
-            agent_config,
-            governor,
-        ):
-            _logger.warning(
-                "scroll: recall tools cannot run (governor unavailable and "
-                "allow_unsandboxed is off) — falling back to native context "
-                "management so evicted history stays accessible",
-            )
-            scroll = None
-        if scroll is not None:
-            self._append_scroll_recall_tools(
-                extra_tools,
-                scroll,
-                agent_config,
-                agent_id,
-                request_context,
-                governor,
-            )
 
         toolkit = await self.build_toolkit(
             agent_config,
@@ -258,7 +234,7 @@ class AgentBuilder:
 
         middlewares = self._build_middlewares(ctx, agent_config)
         if scroll is not None:
-            middlewares.append(scroll.cap_middleware)
+            middlewares.insert(0, scroll.cap_middleware)
 
         running_config = agent_config.running
 
@@ -278,12 +254,9 @@ class AgentBuilder:
             agent_config=agent_config,
             workspace_dir=workspace_dir,
             request_context=request_context,
-            memory_manager=self._get_memory_manager(ctx),
             offloader=offloader,
             context_config=self._build_context_config(agent_config),
-            context_manager=(
-                scroll.context_manager if scroll is not None else None
-            ),
+            context_manager=(scroll.context_manager if scroll is not None else None),
             effective_skills=effective_skills,
             governor=governor,
         )
@@ -301,8 +274,7 @@ class AgentBuilder:
             agent.load_state_dict(ctx.session_state)
 
         _logger.info(
-            "builder: built agent for session=%s agent=%s"
-            " model=%s/%s tools=%d",
+            "builder: built agent for session=%s agent=%s model=%s/%s tools=%d",
             getattr(ctx, "session_id", ""),
             agent_id,
             active.provider_id,
@@ -411,12 +383,8 @@ class AgentBuilder:
         rc: dict[str, Any] = {
             "session_id": getattr(ctx, "session_id", "") or "",
             "agent_id": getattr(ctx, "agent_id", "") or "",
-            "channel": (
-                (getattr(request, "channel", None) or "") if request else ""
-            ),
-            "user_id": (
-                (getattr(request, "user_id", None) or "") if request else ""
-            ),
+            "channel": ((getattr(request, "channel", None) or "") if request else ""),
+            "user_id": ((getattr(request, "user_id", None) or "") if request else ""),
             "root_session_id": getattr(ctx, "root_session_id", "") or "",
             "root_agent_id": getattr(ctx, "root_agent_id", "") or "",
         }
@@ -432,9 +400,7 @@ class AgentBuilder:
                 "tool_coordinator",
                 None,
             )
-        _channel_meta = (
-            getattr(request, "channel_meta", None) if request else None
-        )
+        _channel_meta = getattr(request, "channel_meta", None) if request else None
         if isinstance(_channel_meta, dict):
             user_name = _channel_meta.get("user_name")
             if user_name:
@@ -445,9 +411,7 @@ class AgentBuilder:
             "channel_instance",
             None,
         )
-        _payload_ctx = (
-            getattr(request, "request_context", None) if request else None
-        )
+        _payload_ctx = getattr(request, "request_context", None) if request else None
         if isinstance(_payload_ctx, dict):
             rc.update(_payload_ctx)
         return rc
@@ -512,13 +476,6 @@ class AgentBuilder:
         )
 
     @staticmethod
-    def _get_memory_manager(ctx: Any) -> Any:
-        workspace = getattr(ctx, "workspace", None)
-        if workspace is not None:
-            return getattr(workspace, "memory_manager", None)
-        return None
-
-    @staticmethod
     def _build_context_config(agent_config: Any) -> Any:
         """Map Minions's ``ContextCompactConfig`` to AS ``ContextConfig``."""
         from agentscope.agent import ContextConfig
@@ -573,6 +530,53 @@ class AgentBuilder:
             agent_id=agent_id,
             offloader=offloader,
         )
+
+    def _prepare_scroll_runtime(
+        self,
+        *,
+        ctx: Any,
+        agent_config: Any,
+        model: Any,
+        offloader: Any,
+        governor: Any,
+        extra_tools: list[Any],
+        agent_id: str,
+        request_context: dict[str, Any],
+    ) -> Any:
+        """Build and expose Scroll only when its recall path is usable."""
+
+        strategy = getattr(
+            getattr(
+                getattr(agent_config, "running", None), "light_context_config", None
+            ),
+            "strategy",
+            "native",
+        )
+        if strategy != "scroll":
+            return None
+        if not self._scroll_recall_runnable(agent_config, governor):
+            _logger.warning(
+                "scroll requested but no governed recall path is available; "
+                "using native context management",
+            )
+            return None
+        scroll = self._build_scroll_components(
+            ctx,
+            agent_config,
+            model,
+            offloader,
+        )
+        if scroll is None:
+            return None
+        self._append_scroll_recall_tools(
+            extra_tools,
+            scroll,
+            agent_config,
+            agent_id,
+            request_context,
+            governor,
+        )
+        return scroll
 
     @staticmethod
     def _scroll_recall_runnable(agent_config: Any, governor: Any) -> bool:
@@ -797,19 +801,6 @@ class AgentBuilder:
                     ),
                 )
 
-        memory_manager = AgentBuilder._get_memory_manager(ctx)
-        if memory_manager is not None:
-            try:
-                build_middlewares = getattr(
-                    memory_manager,
-                    "build_middlewares",
-                    None,
-                )
-                if callable(build_middlewares):
-                    mws.extend(build_middlewares())
-            except Exception:
-                _logger.debug("Memory middlewares not created", exc_info=True)
-
         # Tiered tool-result pruning (ported from LightContextManager)
         try:
             import os
@@ -840,9 +831,7 @@ class AgentBuilder:
                     exempt_file_extensions={
                         e.lower() for e in trc.exempt_file_extensions
                     },
-                    exempt_tool_names={
-                        n.lower() for n in trc.exempt_tool_names
-                    },
+                    exempt_tool_names={n.lower() for n in trc.exempt_tool_names},
                     tool_results_dir=tool_results_dir,
                     agent_id=getattr(agent_config, "id", "default"),
                 ),

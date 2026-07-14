@@ -7,7 +7,7 @@ here, not by scrolling back. Each call runs a fresh process (Option A:
 stateless cells) inside the sandbox when a ``sandbox_config`` is supplied —
 mirroring ``execute_shell_command``. The cell preamble builds ``ms`` (the
 durable history ATTACHed read-only + a file-backed scratch DB) from
-:mod:`.memoryspace`.
+:mod:`.recall_space`.
 
 Python variables do not persist across calls; derived tables do, because the
 ``ms`` scratch DB is file-backed under the workspace.
@@ -26,7 +26,7 @@ from agentscope.tool import ToolChunk
 from ...tools.utils import truncate_text_output  # repo-standard output bound
 from ....runtime.tool_registry import ToolDescriptor
 
-# Directory holding memoryspace.py — added to the cell's sys.path so the
+# Directory holding recall_space.py — added to the cell's sys.path so the
 # sandboxed process imports it by bare module name.
 _PKG_DIR = str(Path(__file__).parent)
 
@@ -146,14 +146,14 @@ def make_recall_history_python(
 
     def _build_cell(source: str) -> Path:
         # sqlite3.connect won't create missing parent dirs, so make the
-        # scratch DB's holding dir before MemorySpace opens it.
+        # scratch DB's holding dir before RecallSpace opens it.
         preamble = (
             "import sys\n"
             f"sys.path.insert(0, {_PKG_DIR!r})\n"
             "from pathlib import Path\n"
-            "from memoryspace import MemorySpace\n"
+            "from recall_space import RecallSpace\n"
             f"Path({scratch_db!r}).parent.mkdir(parents=True, exist_ok=True)\n"
-            "ms = MemorySpace(\n"
+            "ms = RecallSpace(\n"
             f"    history_db_path={history_db_path!r},\n"
             f"    session_id={session_id!r},\n"
             f"    agent_id={agent_id!r},\n"

@@ -1,6 +1,5 @@
 import { Checkbox, Button } from "@agentscope-ai/design";
 import { SparkDeleteLine } from "@agentscope-ai/icons";
-import { useTranslation } from "react-i18next";
 import styles from "../index.module.less";
 
 interface ToolbarProps {
@@ -32,7 +31,6 @@ export function Toolbar({
   onSave,
   className,
 }: ToolbarProps) {
-  const { t } = useTranslation();
 
   return (
     <div className={`${styles.toolbar} ${className || ""}`}>
@@ -46,13 +44,11 @@ export function Toolbar({
         )}
         <span className={styles.toolbarCount}>
           {someSelected
-            ? `${selectedSize} ${t("environments.of")} ${workingRowsLength} ${t(
-                "environments.selected",
-              )}`
+            ? `${selectedSize} ${"共"} ${workingRowsLength} ${"已选"}`
             : `${workingRowsLength} ${
                 workingRowsLength !== 1
-                  ? t("environments.variables")
-                  : t("environments.variable")
+                  ? "变量"
+                  : "变量"
               }`}
         </span>
       </div>
@@ -66,13 +62,13 @@ export function Toolbar({
             onClick={onRemoveSelected}
             disabled={saving}
           >
-            {t("common.delete")} ({selectedSize})
+            {"删除"} ({selectedSize})
           </Button>
         )}
         {dirty && (
           <>
             <Button size="small" onClick={onReset} disabled={saving}>
-              {t("common.reset")}
+              {"重置"}
             </Button>
             <Button
               type="primary"
@@ -80,7 +76,7 @@ export function Toolbar({
               loading={saving}
               onClick={onSave}
             >
-              {t("common.save")}
+              {"保存"}
             </Button>
           </>
         )}

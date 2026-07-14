@@ -5,7 +5,6 @@ import { Plus } from "lucide-react";
 import type { MCPClientInfo } from "../../../api/types";
 import { MCPClientCard } from "./components";
 import { useMCP } from "./useMCP";
-import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/PageHeader";
 import styles from "./index.module.less";
 
@@ -73,8 +72,7 @@ const defaultForm = {
 };
 
 function MCPPage() {
-  const { t } = useTranslation();
-  const {
+    const {
     clients,
     loading,
     toggleEnabled,
@@ -203,11 +201,11 @@ function MCPPage() {
     const key = form.key.trim();
     const name = form.name.trim();
     if (!key) {
-      alert(t("mcp.form.keyRequired"));
+      alert("请填写客户端标识符");
       return;
     }
     if (!name) {
-      alert(t("mcp.form.nameRequired"));
+      alert("请填写显示名称");
       return;
     }
 
@@ -215,11 +213,11 @@ function MCPPage() {
       form.transport === "streamable_http" || form.transport === "sse";
 
     if (isHttp && !form.url.trim()) {
-      alert(t("mcp.form.urlRequired"));
+      alert("远程 MCP 服务器需要填写 URL");
       return;
     }
     if (form.transport === "stdio" && !form.command.trim()) {
-      alert(t("mcp.form.commandRequired"));
+      alert("Stdio 模式需要填写启动命令");
       return;
     }
 
@@ -266,25 +264,25 @@ function MCPPage() {
   return (
     <div className={styles.mcpPage}>
       <PageHeader
-        items={[{ title: t("nav.agent") }, { title: t("mcp.title") }]}
+        items={[{ title: "工作区" }, { title: "MCP 客户端" }]}
         extra={
           <Button
             type="primary"
             icon={<Plus size={14} />}
             onClick={() => setCreateModalOpen(true)}
           >
-            {t("mcp.create")}
+            {"创建客户端"}
           </Button>
         }
       />
 
       {loading ? (
         <div className={styles.loading}>
-          <p>{t("common.loading")}</p>
+          <p>{"加载中..."}</p>
         </div>
       ) : clients.length === 0 ? (
         <div className={styles.emptyState}>
-          <Empty description={t("mcp.emptyState")} />
+          <Empty description={"暂无配置的 MCP 客户端"} />
         </div>
       ) : (
         <div className={styles.mcpGrid}>
@@ -303,7 +301,7 @@ function MCPPage() {
       )}
 
       <Modal
-        title={t("mcp.create")}
+        title={"创建客户端"}
         open={createModalOpen}
         onCancel={() => {
           setCreateModalOpen(false);
@@ -318,7 +316,7 @@ function MCPPage() {
               }}
               style={{ marginRight: 8 }}
             >
-              {t("common.cancel")}
+              {"取消"}
             </Button>
             <Button
               type="primary"
@@ -328,7 +326,7 @@ function MCPPage() {
                   : handleCreateFromForm
               }
             >
-              {t("common.create")}
+              {"创建"}
             </Button>
           </div>
         }
@@ -340,24 +338,24 @@ function MCPPage() {
           items={[
             {
               key: "json",
-              label: t("mcp.tab.json"),
+              label: "JSON 导入",
               children: (
                 <div>
                   <div className={styles.importHint}>
                     <p className={styles.importHintTitle}>
-                      {t("mcp.formatSupport")}:
+                      {"支持的格式"}:
                     </p>
                     <ul className={styles.importHintList}>
                       <li>
-                        {t("mcp.standardFormat")}:{" "}
+                        {"标准（mcpServers 包裹）"}:{" "}
                         <code>{`{ "mcpServers": { "key": {...} } }`}</code>
                       </li>
                       <li>
-                        {t("mcp.directFormat")}:{" "}
+                        {"直连（键 → 配置对象）"}:{" "}
                         <code>{`{ "key": {...} }`}</code>
                       </li>
                       <li>
-                        {t("mcp.singleFormat")}:{" "}
+                        {"单客户端（平铺字段）"}:{" "}
                         <code>{`{ "key": "...", "name": "...", "command": "..." }`}</code>
                       </li>
                     </ul>
@@ -373,7 +371,7 @@ function MCPPage() {
             },
             {
               key: "form",
-              label: t("mcp.tab.form"),
+              label: "表单模式",
               children: (
                 <div
                   style={{ display: "flex", flexDirection: "column", gap: 10 }}
@@ -382,22 +380,22 @@ function MCPPage() {
                   <div style={rowStyle}>
                     <div style={fieldStyle}>
                       <label style={labelStyle}>
-                        {t("mcp.form.key")}
+                        {"客户端标识符"}
                         <span style={{ color: "#c0392b" }}> *</span>
                       </label>
                       <Input
-                        placeholder={t("mcp.form.keyPlaceholder")}
+                        placeholder={"my-mcp-server"}
                         value={form.key}
                         onChange={(e) => setField("key", e.target.value)}
                       />
                     </div>
                     <div style={fieldStyle}>
                       <label style={labelStyle}>
-                        {t("mcp.form.name")}
+                        {"显示名称"}
                         <span style={{ color: "#c0392b" }}> *</span>
                       </label>
                       <Input
-                        placeholder={t("mcp.form.namePlaceholder")}
+                        placeholder={"My MCP Server"}
                         value={form.name}
                         onChange={(e) => setField("name", e.target.value)}
                       />
@@ -406,7 +404,7 @@ function MCPPage() {
 
                   {/* Transport */}
                   <div>
-                    <label style={labelStyle}>{t("mcp.form.transport")}</label>
+                    <label style={labelStyle}>{"传输方式"}</label>
                     <Select
                       value={form.transport}
                       onChange={(v) => setField("transport", v as MCPTransport)}
@@ -426,7 +424,7 @@ function MCPPage() {
                   {isHttpTransport ? (
                     <div>
                       <label style={labelStyle}>
-                        {t("mcp.form.url")}
+                        {"服务器 URL"}
                         <span style={{ color: "#c0392b" }}> *</span>
                       </label>
                       <Input
@@ -439,7 +437,7 @@ function MCPPage() {
                     <>
                       <div>
                         <label style={labelStyle}>
-                          {t("mcp.form.command")}
+                          {"启动命令"}
                           <span style={{ color: "#c0392b" }}> *</span>
                         </label>
                         <Input
@@ -449,7 +447,7 @@ function MCPPage() {
                         />
                       </div>
                       <div>
-                        <label style={labelStyle}>{t("mcp.form.args")}</label>
+                        <label style={labelStyle}>{"命令参数（空格或换行分隔）"}</label>
                         <Input
                           placeholder="-y @example/mcp-server"
                           value={form.args}
@@ -462,10 +460,10 @@ function MCPPage() {
                   {/* Description */}
                   <div>
                     <label style={labelStyle}>
-                      {t("mcp.form.description")}
+                      {"描述"}
                     </label>
                     <Input
-                      placeholder={t("mcp.form.descriptionPlaceholder")}
+                      placeholder={"可选描述"}
                       value={form.description}
                       onChange={(e) => setField("description", e.target.value)}
                     />
@@ -474,9 +472,9 @@ function MCPPage() {
                   {/* Env (only for stdio) */}
                   {form.transport === "stdio" && (
                     <div>
-                      <label style={labelStyle}>{t("mcp.form.env")}</label>
+                      <label style={labelStyle}>{"环境变量"}</label>
                       <Input.TextArea
-                        placeholder={t("mcp.form.envPlaceholder")}
+                        placeholder={"KEY=VALUE（每行一个）"}
                         value={form.env}
                         onChange={(e) => setField("env", e.target.value)}
                         autoSize={{ minRows: 2, maxRows: 5 }}

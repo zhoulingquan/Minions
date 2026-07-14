@@ -212,23 +212,6 @@ def test_slash_history_renders(clean_chat_page: ChatPage):
 
 
 @pytest.mark.slash_commands
-@pytest.mark.p1
-@pytest.mark.test_id("SLASH-005")
-@pytest.mark.xfail(strict=False, reason=_XFAIL_FIRST_MSG_RERENDER)
-def test_slash_proactive_status(clean_chat_page: ChatPage):
-    """``/proactive`` (no args) toggles or reports proactive mode."""
-    chat = clean_chat_page.open()
-    text = _send_slash(chat, "/proactive off")
-    _assert_any(
-        text,
-        "Proactive",
-        "proactive",
-        "主动",
-        "No more proactive messages",
-    )
-
-
-@pytest.mark.slash_commands
 @pytest.mark.p2
 @pytest.mark.test_id("SLASH-007")
 @pytest.mark.xfail(strict=False, reason=_XFAIL_FIRST_MSG_RERENDER)

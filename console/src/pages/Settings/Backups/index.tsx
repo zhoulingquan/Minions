@@ -8,7 +8,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button, Spin } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
-import { useTranslation } from "react-i18next";
 import api, { agentsApi } from "@/api";
 import { PageHeader } from "@/components/PageHeader";
 import { useAppMessage } from "@/hooks/useAppMessage";
@@ -29,8 +28,7 @@ import { useRestoreFlow } from "./restore/useRestoreFlow";
 import styles from "./index.module.less";
 
 export default function BackupsPage() {
-  const { t } = useTranslation();
-  const { message } = useAppMessage();
+    const { message } = useAppMessage();
   const [loading, setLoading] = useState(true);
   const [backups, setBackups] = useState<BackupMeta[]>([]);
   const [agents, setAgents] = useState<AgentSummary[]>([]);
@@ -48,11 +46,11 @@ export default function BackupsPage() {
       setBackups(backupRes);
       setAgents(agentRes.agents);
     } catch {
-      message.error(t("backup.loadFailed"));
+      message.error("加载备份列表失败");
     } finally {
       setLoading(false);
     }
-  }, [message, t]);
+  }, [message]);
 
   useEffect(() => {
     fetchData();
@@ -75,8 +73,8 @@ export default function BackupsPage() {
     <div className={styles.page}>
       <PageHeader
         className={styles.pageHeader}
-        parent={t("nav.settings")}
-        current={t("backup.title")}
+        parent={"设置"}
+        current={"备份"}
         extra={
           <div className={styles.headerRight}>
             <ImportButton onPick={importFlow.handleImport} />
@@ -85,7 +83,7 @@ export default function BackupsPage() {
               icon={<PlusOutlined />}
               onClick={() => setCreateOpen(true)}
             >
-              {t("backup.create")}
+              {"创建备份"}
             </Button>
           </div>
         }

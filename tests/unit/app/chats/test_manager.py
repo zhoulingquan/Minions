@@ -298,6 +298,32 @@ async def test_get_chat_id_by_session_returns_most_recent_match(
     assert chat_id != old.id
 
 
+@pytest.mark.asyncio
+async def test_get_chat_id_by_session_isolates_same_session_by_user(
+    manager: ChatManager,
+):
+    alice = await manager.create_chat(
+        _make_spec(session_id="shared-session", user_id="alice"),
+    )
+    bob = await manager.create_chat(
+        _make_spec(session_id="shared-session", user_id="bob"),
+    )
+
+    alice_chat_id = await manager.get_chat_id_by_session(
+        "shared-session",
+        DEFAULT_CHANNEL,
+        user_id="alice",
+    )
+    bob_chat_id = await manager.get_chat_id_by_session(
+        "shared-session",
+        DEFAULT_CHANNEL,
+        user_id="bob",
+    )
+
+    assert alice_chat_id == alice.id
+    assert bob_chat_id == bob.id
+
+
 # ---------------------------------------------------------------------------
 # Lock serializes concurrent writes.
 # ---------------------------------------------------------------------------

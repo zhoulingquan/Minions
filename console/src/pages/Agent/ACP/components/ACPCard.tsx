@@ -5,7 +5,6 @@ import {
   ThunderboltOutlined,
   ToolOutlined,
 } from "@ant-design/icons";
-import { useTranslation } from "react-i18next";
 import type { ACPAgentConfig } from "../../../../api/types";
 import styles from "../../../Control/Channels/index.module.less";
 
@@ -43,9 +42,8 @@ export const ACPCard = React.memo(function ACPCard({
   isBuiltin,
   onClick,
 }: ACPCardProps) {
-  const { t } = useTranslation();
-  const [isHover, setIsHover] = useState(false);
-  const argsSummary = config.args?.join(" ") || t("acp.notSet");
+    const [isHover, setIsHover] = useState(false);
+  const argsSummary = config.args?.join(" ") || "未设置";
   const iconSpec = BUILTIN_ACP_ICON_MAP[agentKey] ?? DEFAULT_ACP_ICON;
   const getCardClassNames = () => {
     if (isHover) return `${styles.channelCard} ${styles.hover}`;
@@ -86,7 +84,7 @@ export const ACPCard = React.memo(function ACPCard({
               config.enabled ? styles.enabled : styles.disabled
             }`}
           >
-            {config.enabled ? t("common.enabled") : t("common.disabled")}
+            {config.enabled ? "已启用" : "已禁用"}
           </span>
         </div>
       </div>
@@ -94,18 +92,18 @@ export const ACPCard = React.memo(function ACPCard({
       <div className={styles.cardMiddleSection}>
         <div className={styles.cardTitle}>{agentKey}</div>
         {isBuiltin ? (
-          <span className={styles.builtinTag}>{t("acp.builtin")}</span>
+          <span className={styles.builtinTag}>{"内置"}</span>
         ) : (
-          <span className={styles.customTag}>{t("acp.custom")}</span>
+          <span className={styles.customTag}>{"自定义"}</span>
         )}
       </div>
 
       <div className={styles.cardBottomSection}>
         <div className={styles.cardDescription}>
-          {t("acp.command")}: {config.command || t("acp.notSet")}
+          {"命令"}: {config.command || "未设置"}
         </div>
         <div className={styles.cardDescription}>
-          {t("acp.args")}: {argsSummary}
+          {"参数"}: {argsSummary}
         </div>
       </div>
     </Card>

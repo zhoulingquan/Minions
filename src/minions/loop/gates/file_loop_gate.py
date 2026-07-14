@@ -13,8 +13,9 @@ Hierarchy:
 Subclasses implement:
     - ``name`` (property)
     - ``_is_complete(state_dir)`` -> bool
-    - ``continuation_prompt()`` -> str
+    - ``build_continuation()`` -> str
 """
+
 from __future__ import annotations
 
 import logging
@@ -67,21 +68,21 @@ class FileLoopGate(LoopGate):
     async def check(
         self,
         ctx: Any,  # pylint: disable=unused-argument
-    ) -> Optional[StopHandlerResult]:
+    ) -> StopHandlerResult:
         """Session-aware check with iteration limit."""
         state: Optional[_FileLoopState] = self._state()
         if state is None or not state.active:
-            return None
+            return StopHandlerResult(
+                action=StopAction.BYPASS,
+            )
 
         state.iteration += 1
 
         if state.iteration > self._MAX_ITERATIONS:
             self.deactivate()
             return StopHandlerResult(
-                action=StopAction.STOP,
-                reason=(
-                    f"{self.name} max iterations " f"({self._MAX_ITERATIONS})"
-                ),
+                action=StopAction.TERMINATE,
+                reason=(f"{self.name} max iterations ({self._MAX_ITERATIONS})"),
             )
 
         state_dir = self._build_state_dir(
@@ -91,18 +92,13 @@ class FileLoopGate(LoopGate):
         if self._is_complete(state_dir):
             self.deactivate()
             return StopHandlerResult(
-                action=StopAction.STOP,
+                action=StopAction.TERMINATE,
                 reason=f"{self.name} completed",
             )
 
         return StopHandlerResult(
-            action=StopAction.CONTINUE,
-            continuation_message=(self.continuation_prompt()),
-            reason=(
-                f"{self.name} iteration "
-                f"{state.iteration}"
-                f"/{self._MAX_ITERATIONS}"
-            ),
+            action=StopAction.INTERRUPT_AND_CONTINUE,
+            reason=(f"{self.name} iteration {state.iteration}/{self._MAX_ITERATIONS}"),
         )
 
     @abstractmethod

@@ -89,10 +89,6 @@ vi.mock("react-router-dom", async () => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (k: string) => k }),
-}));
-
 vi.mock("@agentscope-ai/design", () => ({
   IconButton: ({
     onClick,
@@ -212,19 +208,19 @@ describe("ChatSessionDrawer", () => {
 
   it("renders nothing when open=false", () => {
     renderWithProviders(<ChatSessionDrawer open={false} onClose={vi.fn()} />);
-    expect(screen.queryByText("chat.allChats")).not.toBeInTheDocument();
+    expect(screen.queryByText("全部聊天")).not.toBeInTheDocument();
   });
 
   it("renders title chat.allChats when open=true", () => {
     renderWithProviders(<ChatSessionDrawer {...defaultProps} />);
-    expect(screen.getByText("chat.allChats")).toBeInTheDocument();
+    expect(screen.getByText("全部聊天")).toBeInTheDocument();
   });
 
   it("clicking new chat calls createSession", async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
     renderWithProviders(<ChatSessionDrawer open onClose={onClose} />);
-    await user.click(screen.getByText("chat.createNewChat"));
+    await user.click(screen.getByText("创建新聊天"));
     expect(mockCreateSession).toHaveBeenCalledOnce();
   });
 

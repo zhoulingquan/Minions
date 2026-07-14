@@ -5,7 +5,6 @@ import api from "../../../api";
 import type { SecurityScanErrorResponse } from "../../../api/modules/security";
 import { invalidateSkillCache } from "../../../api/modules/skill";
 import type { SkillSpec } from "../../../api/types";
-import { useTranslation } from "react-i18next";
 import { useAgentStore } from "../../../stores/agentStore";
 import { parseErrorDetail } from "../../../utils/error";
 import {
@@ -14,13 +13,23 @@ import {
   showScanErrorModal,
 } from "../../../utils/scanError";
 
+type SkillConflict = {
+  skill_name?: string;
+  suggested_name?: string;
+  conflicts?: Array<{
+    skill_name?: string;
+    suggested_name?: string;
+    [key: string]: unknown;
+  }>;
+  [key: string]: unknown;
+};
+
 type SkillActionResult =
   | { success: true; name?: string; imported?: string[] }
-  | { success: false; conflict?: Record<string, any> };
+  | { success: false; conflict?: SkillConflict };
 
 export function useSkills() {
-  const { t } = useTranslation();
-  const { selectedAgent } = useAgentStore();
+    const { selectedAgent } = useAgentStore();
   const [skills, setSkills] = useState<SkillSpec[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -31,14 +40,14 @@ export function useSkills() {
 
   const handleError = useCallback(
     (error: unknown, defaultMsg: string): boolean => {
-      if (handleScanError(error, t)) return true;
+      if (handleScanError(error)) return true;
       const msg =
         error instanceof Error && error.message ? error.message : defaultMsg;
       console.error(defaultMsg, error);
       message.error(msg);
       return false;
     },
-    [t],
+    [message],
   );
 
   const checkScanWarnings = useCallback(
@@ -47,9 +56,8 @@ export function useSkills() {
         skillName,
         api.getBlockedHistory,
         api.getSkillScanner,
-        t,
       ),
-    [t],
+    [],
   );
 
   const fetchSkills = useCallback(async () => {
@@ -58,12 +66,12 @@ export function useSkills() {
       const data = await api.listSkills(selectedAgent);
       setSkills(data || []);
     } catch (error) {
-      console.error(t("skills.loadFailed"), error);
-      message.error(t("skills.loadFailed"));
+      console.error("加载技能失败", error);
+      message.error("加载技能失败");
     } finally {
       setLoading(false);
     }
-  }, [selectedAgent]);
+  }, [message, selectedAgent]);
 
   const hardRefresh = useCallback(async () => {
     setLoading(true);
@@ -72,12 +80,12 @@ export function useSkills() {
       const data = await api.refreshSkills(selectedAgent);
       setSkills(data || []);
     } catch (error) {
-      console.error(t("skills.refreshFailed"), error);
-      message.error(t("skills.refreshFailed"));
+      console.error("刷新技能失败", error);
+      message.error("刷新技能失败");
     } finally {
       setLoading(false);
     }
-  }, [selectedAgent]);
+  }, [message, selectedAgent]);
 
   // Invalidate cache when agent changes
   useEffect(() => {
@@ -93,7 +101,7 @@ export function useSkills() {
   ): Promise<SkillActionResult> => {
     try {
       const result = await api.createSkill(name, content, config, enable);
-      message.success(t("skills.createdSuccessfully"));
+      message.success("创建成功");
       invalidateSkillCache({ agentId: selectedAgent }); // Clear cache after mutation
       await fetchSkills();
       await checkScanWarnings(result.name);
@@ -101,9 +109,9 @@ export function useSkills() {
     } catch (error) {
       const detail = parseErrorDetail(error);
       if (detail?.suggested_name) {
-        return { success: false, conflict: detail };
+        return { success: false, conflict: detail as SkillConflict };
       }
-      handleError(error, t("skills.saveFailed"));
+      handleError(error, "保存失败");
       return { success: false };
     }
   };
@@ -122,7 +130,7 @@ export function useSkills() {
       });
       if (result?.count > 0) {
         message.success(
-          t("skills.uploadSuccess") + `: ${result.imported.join(", ")}`,
+          "技能上传成功" + `: ${result.imported.join(", ")}`,
         );
         invalidateSkillCache({ agentId: selectedAgent }); // Clear cache after mutation
         await fetchSkills();
@@ -131,16 +139,16 @@ export function useSkills() {
         }
       }
       if (!result?.count) {
-        message.warning(t("skills.uploadNoChange"));
+        message.warning("没有导入新技能，可能已存在相同技能");
       }
       await fetchSkills();
       return { success: true, imported: result?.imported || [] };
     } catch (error) {
       const detail = parseErrorDetail(error);
       if (Array.isArray(detail?.conflicts) && detail.conflicts.length > 0) {
-        return { success: false, conflict: detail };
+        return { success: false, conflict: detail as SkillConflict };
       }
-      handleError(error, t("skills.uploadFailed"));
+      handleError(error, "技能上传失败");
       return { success: false };
     } finally {
       setUploading(false);
@@ -153,11 +161,11 @@ export function useSkills() {
   ): Promise<SkillActionResult> => {
     const text = (input || "").trim();
     if (!text) {
-      message.warning(t("skills.provideUrl"));
+      message.warning("请提供技能库 URL");
       return { success: false };
     }
     if (!text.startsWith("http://") && !text.startsWith("https://")) {
-      message.warning(t("skills.validUrl"));
+      message.warning("请输入以 http:// 或 https:// 开头的有效 URL");
       return { success: false };
     }
     const timeoutMs = 90_000;
@@ -179,7 +187,7 @@ export function useSkills() {
 
         if (status.status === "completed" && status.result?.installed) {
           message.success(
-            t("skills.importedSkill", { name: status.result.name }),
+            `已导入技能：${status.result.name}`,
           );
           invalidateSkillCache({ agentId: selectedAgent }); // Clear cache after mutation
           await fetchSkills();
@@ -201,19 +209,17 @@ export function useSkills() {
             | null
             | undefined;
           if (hubResult?.type === "security_scan_failed") {
-            showScanErrorModal(hubResult, t);
+            showScanErrorModal(hubResult);
             return { success: false };
           }
-          throw new Error(status.error || t("skills.importFailed"));
+          throw new Error(status.error || "导入失败");
         }
 
         if (status.status === "cancelled") {
           message.warning(
-            t(
-              importCancelReasonRef.current === "timeout"
-                ? "skills.importTimeout"
-                : "skills.importCancelled",
-            ),
+            importCancelReasonRef.current === "timeout"
+              ? "技能导入超时"
+              : "技能导入已取消",
           );
           return { success: false };
         }
@@ -228,7 +234,7 @@ export function useSkills() {
 
       return { success: false };
     } catch (error) {
-      handleError(error, t("skills.importFailed"));
+      handleError(error, "导入失败");
       return { success: false };
     } finally {
       importTaskIdRef.current = null;
@@ -254,7 +260,7 @@ export function useSkills() {
             s.name === skill.name ? { ...s, enabled: false } : s,
           ),
         );
-        message.success(t("skills.disabledSuccessfully"));
+        message.success("已禁用");
       } else {
         await api.enableSkill(skill.name);
         setSkills((prev) =>
@@ -262,13 +268,13 @@ export function useSkills() {
             s.name === skill.name ? { ...s, enabled: true } : s,
           ),
         );
-        message.success(t("skills.enabledSuccessfully"));
+        message.success("已启用");
         await checkScanWarnings(skill.name);
       }
       invalidateSkillCache({ agentId: selectedAgent }); // Clear cache after mutation
       return true;
     } catch (error) {
-      handleError(error, t("skills.operationFailed"));
+      handleError(error, "操作失败");
       return false;
     }
   };
@@ -276,11 +282,11 @@ export function useSkills() {
   const deleteSkill = async (skill: SkillSpec) => {
     const confirmed = await new Promise<boolean>((resolve) => {
       Modal.confirm({
-        title: t("common.confirm"),
-        content: t("skills.deleteConfirm"),
-        okText: t("common.delete"),
+        title: "确认",
+        content: "确定要删除此技能吗？",
+        okText: "删除",
         okType: "danger",
-        cancelText: t("common.cancel"),
+        cancelText: "取消",
         onOk: () => resolve(true),
         onCancel: () => resolve(false),
       });
@@ -291,14 +297,14 @@ export function useSkills() {
     try {
       const result = await api.deleteSkill(skill.name);
       if (result.deleted) {
-        message.success(t("skills.deleteSuccess"));
+        message.success("技能删除成功");
         invalidateSkillCache({ agentId: selectedAgent }); // Clear cache after mutation
         await fetchSkills();
         return true;
       }
     } catch (error) {
-      console.error(t("skills.deleteFailed"), error);
-      message.error(t("skills.deleteFailed"));
+      console.error("技能删除失败", error);
+      message.error("技能删除失败");
     }
     return false;
   };

@@ -28,7 +28,7 @@ metadata:
 | 技能、SKILL、skill_pool、内置技能 | `skills` | `src/minions/agents/skill_system/`、`src/minions/agents/skills/` |
 | MCP、插件 | `mcp` | `src/minions/app/routers/`（按需 grep `mcp`） |
 | 多智能体、工作区、agent、内置 QA | `multi-agent` | `src/minions/app/routers/agents.py`、`src/minions/app/migration.py`、`src/minions/constant.py`（`BUILTIN_QA_AGENT_ID` 等） |
-| 记忆、MEMORY、memory_search | `memory` | `src/minions/agents/memory/memory_manager.py`、`src/minions/agents/tools/memory_search.py` |
+| SAGE、业务经验、心得、召回 | `sage` | `src/minions/sage/`、`docs/sage-deployment.md` |
 | 控制台、前端 | `console` | `console/` |
 | 命令行、子命令、init | `cli` | `src/minions/cli/`（如 `init_cmd.py`） |
 | 频道、会话 | `channels` | 在 `src/minions` 下按 `channels` 关键词检索 |

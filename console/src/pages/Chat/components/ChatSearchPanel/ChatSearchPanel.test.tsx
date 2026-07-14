@@ -25,9 +25,9 @@ const extractTextFromContent = (content: unknown): string => {
 };
 
 // getRoleLabel
-const getRoleLabel = (role: string, t: (key: string) => string): string => {
-  if (role === "user") return t("chat.search.userMessage");
-  return t("chat.search.assistantMessage");
+const getRoleLabel = (role: string): string => {
+  if (role === "user") return "用户";
+  return "助手";
 };
 
 // formatTimestamp
@@ -40,8 +40,6 @@ const formatTimestamp = (raw: string | null | undefined): string => {
     date.getDate(),
   )} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
-
-const t = (k: string) => k;
 
 describe("extractTextFromContent", () => {
   it("returns string content directly", () => {
@@ -76,13 +74,13 @@ describe("extractTextFromContent", () => {
 
 describe("getRoleLabel", () => {
   it("returns user label for user role", () => {
-    expect(getRoleLabel("user", t)).toBe("chat.search.userMessage");
+    expect(getRoleLabel("user")).toBe("用户");
   });
 
   it("returns assistant label for other roles", () => {
-    expect(getRoleLabel("assistant", t)).toBe("chat.search.assistantMessage");
-    expect(getRoleLabel("system", t)).toBe("chat.search.assistantMessage");
-    expect(getRoleLabel("", t)).toBe("chat.search.assistantMessage");
+    expect(getRoleLabel("assistant")).toBe("助手");
+    expect(getRoleLabel("system")).toBe("助手");
+    expect(getRoleLabel("")).toBe("助手");
   });
 });
 

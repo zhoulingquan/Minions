@@ -9,10 +9,39 @@ import {
 } from "@agentscope-ai/design";
 import { Space } from "antd";
 import { Eye, Pencil, Trash2 } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import type { MergedRule } from "../useToolGuard";
 import { useTheme } from "../../../../contexts/ThemeContext";
 import styles from "../index.module.less";
+
+const CATEGORY_LABELS: Record<string, string> = {
+  command_injection: "命令注入",
+  code_execution: "代码执行",
+  data_exfiltration: "数据外泄",
+  path_traversal: "路径穿越",
+  sensitive_file_access: "敏感文件访问",
+  network_abuse: "网络滥用",
+  credential_exposure: "凭证泄露",
+  resource_abuse: "资源滥用",
+  privilege_escalation: "权限提升",
+  prompt_injection: "提示注入",
+  other: "其他",
+};
+
+const RULE_DESCRIPTIONS: Record<string, string> = {
+  TOOL_CMD_DANGEROUS_RM: "检测可能导致数据丢失的 rm 命令",
+  TOOL_CMD_DANGEROUS_MV: "检测可能意外移动或覆盖文件的 mv 命令",
+  TOOL_CMD_FS_DESTRUCTION: "检测低级别磁盘格式化或擦除命令",
+  TOOL_CMD_DOS_FORK_BOMB: "检测经典 Bash Fork 炸弹和批量进程终止",
+  TOOL_CMD_PIPE_TO_SHELL: "检测通过 'curl | bash' 模式下载并立即执行远程载荷的行为",
+  TOOL_CMD_REVERSE_SHELL: "检测建立反向 Shell 或未授权网络隧道的行为",
+  TOOL_CMD_SYSTEM_TAMPERING: "检测对定时任务、SSH 密钥或 sudo 权限的访问（包括读取和修改）",
+  TOOL_CMD_UNSAFE_PERMISSIONS: "检测全局权限降级（chmod 777）或设置不可变标志的操作",
+  TOOL_CMD_OBFUSCATED_EXEC: "检测将 base64 编码字符串直接传递给 Shell 解释器执行的行为",
+  TOOL_CMD_SYSTEM_REBOOT: "检测将终止主机系统的系统重启或关机命令",
+  TOOL_CMD_SERVICE_RESTART: "检测可能中断系统服务的服务管理命令",
+  TOOL_CMD_PROCESS_KILL: "检测可能终止关键进程的进程终止命令",
+  TOOL_CMD_PRIVILEGE_ESCALATION: "检测使用 sudo、su、doas、pkexec 或 runas 的权限提升尝试",
+};
 
 const SEVERITY_COLORS: Record<string, string> = {
   CRITICAL: "red",
@@ -55,15 +84,14 @@ export function RuleTable({
   onEditRule,
   onDeleteRule,
 }: RuleTableProps) {
-  const { t } = useTranslation();
-  const { isDark } = useTheme();
+    const { isDark } = useTheme();
   const darkBtnStyle = isDark ? { color: "rgba(255,255,255,0.75)" } : undefined;
 
   const groupedRules = useMemo(() => groupRulesByCategory(rules), [rules]);
 
   const columns = [
     {
-      title: t("security.rules.id"),
+      title: "规则 ID",
       dataIndex: "id",
       key: "id",
       width: 280,
@@ -72,7 +100,7 @@ export function RuleTable({
       ),
     },
     {
-      title: t("security.rules.severity"),
+      title: "严重程度",
       dataIndex: "severity",
       key: "severity",
       width: 100,
@@ -86,13 +114,13 @@ export function RuleTable({
       ),
     },
     {
-      title: t("security.rules.descriptionCol"),
+      title: "描述",
       dataIndex: "description",
       key: "description",
       ellipsis: true,
       render: (_text: string, record: MergedRule) => {
         const i18nKey = `security.rules.descriptions.${record.id}`;
-        const translated = t(i18nKey, { defaultValue: "" });
+        const translated = RULE_DESCRIPTIONS[i18nKey.replace("security.rules.descriptions.", "")] || "";
         const display = translated || record.description;
         return (
           <Tooltip title={display}>
@@ -112,7 +140,7 @@ export function RuleTable({
       },
     },
     {
-      title: t("security.rules.source"),
+      title: "来源",
       dataIndex: "source",
       key: "source",
       width: 100,
@@ -122,15 +150,15 @@ export function RuleTable({
           style={{ opacity: record.disabled ? 0.4 : 1 }}
         >
           {source === "builtin"
-            ? t("security.rules.builtin")
-            : t("security.rules.custom")}
+            ? "内置"
+            : "自定义"}
         </Tag>
       ),
     },
     {
       title: (
-        <Tooltip title={t("security.rules.autoDenyTooltip")}>
-          <span>{t("security.rules.autoDeny")}</span>
+        <Tooltip title={"启用后，匹配此规则的工具调用将被自动拒绝，无需人工审批"}>
+          <span>{"自动拒绝"}</span>
         </Tooltip>
       ),
       key: "autoDeny",
@@ -139,8 +167,8 @@ export function RuleTable({
         <Tooltip
           title={
             record.autoDeny
-              ? t("security.rules.autoDenyDisable")
-              : t("security.rules.autoDenyEnable")
+              ? "关闭此规则的自动拒绝"
+              : "启用此规则的自动拒绝"
           }
         >
           <Switch
@@ -153,7 +181,7 @@ export function RuleTable({
       ),
     },
     {
-      title: t("security.rules.actions"),
+      title: "操作",
       key: "actions",
       width: 100,
       render: (_: unknown, record: MergedRule) => (
@@ -161,8 +189,8 @@ export function RuleTable({
           <Tooltip
             title={
               record.disabled
-                ? t("security.rules.enable")
-                : t("security.rules.disable")
+                ? "启用"
+                : "禁用"
             }
           >
             <Switch
@@ -190,7 +218,7 @@ export function RuleTable({
           )}
           {record.source === "custom" && (
             <>
-              <Tooltip title={t("security.rules.edit")}>
+              <Tooltip title={"编辑"}>
                 <Button
                   type="text"
                   size="small"
@@ -200,7 +228,7 @@ export function RuleTable({
                   style={darkBtnStyle}
                 />
               </Tooltip>
-              <Tooltip title={t("security.rules.delete")}>
+              <Tooltip title={"删除"}>
                 <Button
                   type="text"
                   size="small"
@@ -224,7 +252,7 @@ export function RuleTable({
     const enabledCount = categoryRules.filter((r) => !r.disabled).length;
     const totalCount = categoryRules.length;
     const categoryLabel =
-      t(`security.rules.categories.${category}`, { defaultValue: "" }) ||
+      CATEGORY_LABELS[category] ||
       category.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
     return {

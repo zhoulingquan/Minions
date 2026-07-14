@@ -1,7 +1,6 @@
 import React from "react";
 import { PlusOutlined } from "@ant-design/icons";
 import { Button } from "@agentscope-ai/design";
-import { useTranslation } from "react-i18next";
 import type {
   MCPAccessEffect,
   MCPAccessPolicy,
@@ -37,7 +36,6 @@ export const MCPAccessClientPanel: React.FC<MCPAccessClientPanelProps> = ({
   deleteClientRule,
   effectLabel,
 }) => {
-  const { t } = useTranslation();
 
   return (
     <div className={styles.accessClientPanel}>
@@ -45,11 +43,11 @@ export const MCPAccessClientPanel: React.FC<MCPAccessClientPanelProps> = ({
         <div
           className={`${styles.accessSectionTitle} ${styles.accessClientTitle}`}
         >
-          {t("mcp.access.clientSection")}
+          {"整体权限"}
         </div>
         <div className={styles.accessDefaultRow}>
           <span className={styles.accessDefaultLabel}>
-            {t("mcp.access.default")}
+            {"默认策略"}
           </span>
           <MCPAccessPolicySegmented
             value={policy.default_effect}
@@ -62,7 +60,7 @@ export const MCPAccessClientPanel: React.FC<MCPAccessClientPanelProps> = ({
           icon={<PlusOutlined />}
           onClick={addClientAccessRule}
         >
-          {t("mcp.access.addRule")}
+          {"新增规则"}
         </Button>
       </div>
       <MCPAccessRuleRows
@@ -72,7 +70,7 @@ export const MCPAccessClientPanel: React.FC<MCPAccessClientPanelProps> = ({
         updateRule={updateClientRule}
         setRuleEffect={setClientRuleEffect}
         deleteRule={deleteClientRule}
-        emptyText={t("mcp.access.noClientRules")}
+        emptyText={"暂无规则"}
         effectLabel={effectLabel}
       />
     </div>

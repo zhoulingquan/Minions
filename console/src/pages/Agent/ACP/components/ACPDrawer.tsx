@@ -9,7 +9,6 @@ import {
 } from "@agentscope-ai/design";
 import { LinkOutlined } from "@ant-design/icons";
 import type { FormInstance } from "antd";
-import { useTranslation } from "react-i18next";
 import {
   ACP_DEFAULT_STDIO_BUFFER_LIMIT_BYTES,
   type ACPAgentConfig,
@@ -112,16 +111,15 @@ export function ACPDrawer({
   onSubmit,
   onDelete,
 }: ACPDrawerProps) {
-  const { t, i18n } = useTranslation();
 
   return (
     <Drawer
       title={
         isCreateMode
-          ? t("acp.createTitle")
+          ? "新增 ACP Agent"
           : activeKey
-          ? `${t("acp.editTitle")}: ${activeKey}`
-          : t("acp.editTitle")
+          ? `${"编辑 ACP 配置"}: ${activeKey}`
+          : "编辑 ACP 配置"
       }
       open={open}
       onClose={onClose}
@@ -131,18 +129,18 @@ export function ACPDrawer({
           <div>
             {canDelete ? (
               <Button danger onClick={onDelete}>
-                {t("common.delete")}
+                {"删除"}
               </Button>
             ) : null}
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-            <Button onClick={onClose}>{t("common.cancel")}</Button>
+            <Button onClick={onClose}>{"取消"}</Button>
             <Button
               type="primary"
               loading={saving}
               onClick={() => form.submit()}
             >
-              {t("common.save")}
+              {"保存"}
             </Button>
           </div>
         </div>
@@ -157,12 +155,12 @@ export function ACPDrawer({
       >
         <Form.Item
           name="agentKey"
-          label={t("acp.agentKey")}
+          label={"Agent Key"}
           rules={[
-            { required: true, message: t("acp.agentKeyRequired") },
+            { required: true, message: "请输入 Agent Key" },
             {
               pattern: /^[A-Za-z0-9_-]+$/,
-              message: t("acp.agentKeyInvalid"),
+              message: "Agent Key 只能包含字母、数字、下划线和连字符",
             },
           ]}
         >
@@ -171,7 +169,7 @@ export function ACPDrawer({
 
         <Form.Item
           name="enabled"
-          label={t("acp.enabled")}
+          label={"启用"}
           valuePropName="checked"
         >
           <Switch />
@@ -179,31 +177,31 @@ export function ACPDrawer({
 
         <Form.Item
           name="command"
-          label={t("acp.command")}
-          rules={[{ required: true, message: t("acp.commandRequired") }]}
+          label={"命令"}
+          rules={[{ required: true, message: "请输入命令" }]}
         >
           <Input placeholder="qwen" />
         </Form.Item>
 
         <Form.Item
           name="argsText"
-          label={t("acp.args")}
-          tooltip={t("acp.argsHelp")}
+          label={"参数"}
+          tooltip={"每行一个参数"}
         >
           <Input.TextArea autoSize={{ minRows: 4, maxRows: 8 }} />
         </Form.Item>
 
         <Form.Item
           name="envText"
-          label={t("acp.env")}
-          tooltip={t("acp.envHelp")}
+          label={"环境变量"}
+          tooltip={"每行使用 KEY=VALUE 格式"}
           rules={[
             {
               validator: async (_, value) => {
                 const invalidLine = findInvalidEnvLine(value);
                 if (invalidLine) {
                   throw new Error(
-                    t("acp.envInvalidLine", { line: invalidLine }),
+                    `无效环境变量格式：${invalidLine}`,
                   );
                 }
               },
@@ -218,18 +216,18 @@ export function ACPDrawer({
             type="text"
             size="small"
             icon={<LinkOutlined />}
-            onClick={() => openExternalLink(getACPDocsUrl(i18n.language))}
-            title={t("acp.docsHelp")}
+            onClick={() => openExternalLink(getACPDocsUrl("zh"))}
+            title={"打开 ACP 集成文档，并跳转到“如何配置外部 runner”章节"}
             className={styles.dingtalkDocBtn}
             style={{ color: "#FF7F16" }}
           >
-            {t("acp.docs")}
+            {"配置文档"}
           </Button>
         </div>
 
         <Form.Item
           name="trusted"
-          label={t("acp.trusted")}
+          label={"可信执行"}
           valuePropName="checked"
         >
           <Switch />
@@ -237,25 +235,25 @@ export function ACPDrawer({
 
         <Form.Item
           name="tool_parse_mode"
-          label={t("acp.toolParseMode")}
-          rules={[{ required: true, message: t("acp.toolParseModeRequired") }]}
+          label={"工具解析模式"}
+          rules={[{ required: true, message: "请选择工具解析模式" }]}
         >
           <Select options={TOOL_PARSE_MODE_OPTIONS} />
         </Form.Item>
 
         <Form.Item
           name="stdio_buffer_limit_bytes"
-          label={t("acp.stdioBufferLimit")}
-          tooltip={t("acp.stdioBufferLimitHelp")}
+          label={"Stdio 缓冲上限"}
+          tooltip={"ACP 子进程 stdio 单行读取缓冲的最大字节数。"}
           rules={[
             {
               required: true,
-              message: t("acp.stdioBufferLimitRequired"),
+              message: "请输入 stdio 缓冲上限",
             },
             {
               type: "number",
               min: 1,
-              message: t("acp.stdioBufferLimitMin"),
+              message: "stdio 缓冲上限至少为 1 字节",
             },
           ]}
         >

@@ -1,7 +1,6 @@
 import { useState, useCallback } from "react";
 import { Form } from "@agentscope-ai/design";
 import { useAppMessage } from "../../../hooks/useAppMessage";
-import { useTranslation } from "react-i18next";
 import api from "../../../api";
 import { useToolGuard, type MergedRule } from "./useToolGuard";
 
@@ -21,8 +20,7 @@ const BUILTIN_TOOLS = [
 ];
 
 export function useSecurityPage() {
-  const { t } = useTranslation();
-  const [form] = Form.useForm();
+    const [form] = Form.useForm();
   const [editForm] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("toolGuard");
@@ -108,18 +106,18 @@ export function useSecurityPage() {
       };
       await api.updateToolGuard(body);
       setEnabled(body.enabled);
-      message.success(t("security.saveSuccess"));
+      message.success("工具防护设置已保存");
     } catch (err) {
       if (err instanceof Error && "errorFields" in err) {
         return;
       }
       const errMsg =
-        err instanceof Error ? err.message : t("security.saveFailed");
+        err instanceof Error ? err.message : "保存工具防护设置失败";
       message.error(errMsg);
     } finally {
       setSaving(false);
     }
-  }, [customRules, buildSaveBody, form, t]);
+  }, [buildSaveBody, customRules, form, message, setEnabled]);
 
   const handleReset = useCallback(() => {
     form.resetFields();
@@ -186,7 +184,7 @@ export function useSecurityPage() {
           ...customRules.map((r) => r.id),
         ];
         if (allIds.includes(rule.id)) {
-          message.error(t("security.rules.duplicateId"));
+          message.error("已存在相同 ID 的规则");
           return;
         }
         addCustomRule(rule);
@@ -202,7 +200,7 @@ export function useSecurityPage() {
     updateCustomRule,
     addCustomRule,
     editForm,
-    t,
+    message,
   ]);
 
   const toolOptions = BUILTIN_TOOLS.map((name) => ({

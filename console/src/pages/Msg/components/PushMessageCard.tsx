@@ -9,7 +9,6 @@ import {
   Trash2,
   Brain,
 } from "lucide-react";
-import { useTranslation } from "react-i18next";
 import type { PushMessage } from "../types";
 import styles from "./PushMessageCard.module.less";
 
@@ -52,13 +51,12 @@ const normalizeCronTaskName = (title: string): string =>
 
 export function PushMessageCard(props: PushMessageCardProps) {
   const { message, onView, onDelete, selected = false, onSelectChange } = props;
-  const { t } = useTranslation();
-  const IconComponent = CHANNEL_ICONS[message.channelType];
+    const IconComponent = CHANNEL_ICONS[message.channelType];
   const channelColor = CHANNEL_COLORS[message.channelType];
   const sourceType = (message.metadata?.sourceType || "").toLowerCase();
   const isCronMessage = sourceType === "cron";
   const displayTitle = isCronMessage
-    ? t("msg.pushCronHeader", { name: normalizeCronTaskName(message.title) })
+    ? `定时任务：${normalizeCronTaskName(message.title)}`
     : message.title;
 
   return (
@@ -88,7 +86,7 @@ export function PushMessageCard(props: PushMessageCardProps) {
           <div className={styles.channelDetails}>
             <div className={styles.channelName}>{message.channelName}</div>
             <div className={styles.senderInfo}>
-              {t("msg.from")} {message.sender.username}
+              {"来自："} {message.sender.username}
             </div>
           </div>
         </div>
@@ -105,7 +103,7 @@ export function PushMessageCard(props: PushMessageCardProps) {
             </Tag>
           ) : null}
           <Popconfirm
-            title={t("msg.deleteMessageConfirm")}
+            title={"确定删除这条推送消息吗？"}
             onConfirm={(event) => {
               event?.stopPropagation();
               onDelete(message.id);
@@ -113,8 +111,8 @@ export function PushMessageCard(props: PushMessageCardProps) {
             onCancel={(event) => {
               event?.stopPropagation();
             }}
-            okText={t("common.confirm")}
-            cancelText={t("common.cancel")}
+            okText={"确认"}
+            cancelText={"取消"}
           >
             <Button
               size="small"

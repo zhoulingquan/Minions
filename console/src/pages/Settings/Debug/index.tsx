@@ -1,4 +1,3 @@
-import { useTranslation } from "react-i18next";
 import {
   Alert,
   Button,
@@ -19,8 +18,7 @@ import styles from "./index.module.less";
 const { Text } = Typography;
 
 export default function DebugPage() {
-  const { t } = useTranslation();
-  const {
+    const {
     backendLogs,
     initialLoading,
     backendError,
@@ -40,8 +38,8 @@ export default function DebugPage() {
   return (
     <div className={styles.debugPage}>
       <PageHeader
-        parent={t("nav.settings")}
-        current={t("debug.title", "Debug")}
+        parent={"设置"}
+        current={"调试"}
       />
 
       <div className={styles.content}>
@@ -49,24 +47,21 @@ export default function DebugPage() {
           type="info"
           showIcon
           className={styles.tipAlert}
-          message={t(
-            "debug.desc",
-            "View backend daemon log file to help diagnose issues. Logs refresh automatically while this page is open.",
-          )}
+          message={"查看后端守护进程日志文件，便于排查问题。在此页面打开时日志会自动刷新。"}
         />
         <Card
-          title={t("debug.backend.title", "Backend logs")}
+          title={"后端日志"}
           extra={
             <Space size="middle" className={styles.cardExtra}>
               <Text type="secondary">
-                {t("debug.backend.newestFirst", "Newest first")}
+                {"最新在前"}
               </Text>
               <Switch
                 checked={backendNewestFirst}
                 onChange={setBackendNewestFirst}
               />
               <Text type="secondary">
-                {t("debug.backend.autoRefresh", "Auto refresh")}
+                {"自动刷新"}
               </Text>
               <Switch checked={autoRefresh} onChange={setAutoRefresh} />
             </Space>
@@ -80,7 +75,7 @@ export default function DebugPage() {
                   value={backendLevel}
                   onChange={(v) => setBackendLevel(v)}
                   options={[
-                    { value: "all", label: t("debug.level.all", "All") },
+                    { value: "all", label: "全部" },
                     {
                       value: "error",
                       label: (
@@ -109,15 +104,12 @@ export default function DebugPage() {
                   className={styles.searchInput}
                   value={backendQuery}
                   onChange={(e) => setBackendQuery(e.target.value)}
-                  placeholder={t(
-                    "debug.backend.searchPlaceholder",
-                    "Search backend logs...",
-                  )}
+                  placeholder={"搜索后端日志..."}
                   allowClear
                 />
                 {backendLogs?.updated_at && (
                   <Text type="secondary" className={styles.updatedAt}>
-                    {t("debug.backend.updatedAt", "Updated at")}:{" "}
+                    {"更新时间"}:{" "}
                     {dayjs(backendLogs.updated_at * 1000).format(
                       "YYYY-MM-DD HH:mm:ss",
                     )}
@@ -128,10 +120,10 @@ export default function DebugPage() {
                 <Button
                   onClick={() => void loadBackendLogs({ successToast: true })}
                 >
-                  {t("debug.actions.refreshBackend", "Refresh backend logs")}
+                  {"刷新后端日志"}
                 </Button>
                 <Button onClick={() => void handleCopyBackend()}>
-                  {t("debug.actions.copyBackend", "Copy backend logs")}
+                  {"复制后端日志"}
                 </Button>
               </div>
             </div>
@@ -139,7 +131,7 @@ export default function DebugPage() {
             {backendLogs?.path && (
               <div className={styles.logPath}>
                 <Text type="secondary" className={styles.logPathLabel}>
-                  {t("debug.backend.path", "Log file")}
+                  {"日志文件"}
                 </Text>
                 <code className={styles.logPathValue}>{backendLogs.path}</code>
               </div>
@@ -149,10 +141,7 @@ export default function DebugPage() {
               <Alert message={backendError} type="error" showIcon />
             ) : !backendLogs?.exists ? (
               <Alert
-                message={t(
-                  "debug.backend.notFound",
-                  "Backend log file was not found yet.",
-                )}
+                message={"暂未找到后端日志文件。"}
                 type="warning"
                 showIcon
               />
