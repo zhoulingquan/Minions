@@ -1,4 +1,4 @@
-# ADR-0001：SAGE 使用可信身份桥和 PostgreSQL RLS
+# ADR-0002：SAGE 使用可信身份桥和 PostgreSQL RLS
 
 ## 状态
 
@@ -58,5 +58,4 @@ Minions 生命周期接入，但现有 Minions 认证仍是单用户 `auth.json`
 
 ## 参考
 
-- `docs/plans/2026-07-12-minions-multitenant-revised-design.md`
-- `docs/plans/2026-07-12-sage-multitenant-experience-engine-design.md`
+- （设计计划文档已归档移除）
