@@ -49,221 +49,158 @@
 ## 架构分层
 
 <div align="center">
-<table border="0" cellspacing="0" cellpadding="0">
-<tr><td align="center">
+<table border="0" cellspacing="0" cellpadding="0" width="800" style="border-collapse:collapse;">
 
-<!-- ====== 渠道 / 接入层 ====== -->
-<table border="0" cellspacing="0" cellpadding="0" width="780">
-<tr><td bgcolor="#E8F4FD" style="border:1px solid #4A90D9; border-radius:8px; padding:14px 18px;">
-<div align="center">
-<b style="font-size:16px; color:#1A3A5C;">📡 渠道 / 接入层 (Channels)</b>
-<hr style="border:0; border-top:1px dashed #4A90D9; margin:8px 0;">
-<table border="0" cellspacing="6" cellpadding="0">
+<!-- L1 -->
 <tr>
-<td bgcolor="#BBDDF5" style="border:1px solid #4A90D9; border-radius:4px; padding:5px 12px; font-size:12px;">🌐 Web 控制台</td>
-<td bgcolor="#BBDDF5" style="border:1px solid #4A90D9; border-radius:4px; padding:5px 12px; font-size:12px;">💻 TUI 终端</td>
-<td bgcolor="#BBDDF5" style="border:1px solid #4A90D9; border-radius:4px; padding:5px 12px; font-size:12px;">💬 钉钉</td>
-<td bgcolor="#BBDDF5" style="border:1px solid #4A90D9; border-radius:4px; padding:5px 12px; font-size:12px;">🐦 飞书</td>
+<td colspan="2" bgcolor="#1E293B" style="padding:8px 14px; color:#F8FAFC; font-size:13px; font-weight:bold;">
+L1 &nbsp;&nbsp;渠道 / 接入层 (Channels)
+</td>
 </tr>
 <tr>
-<td bgcolor="#BBDDF5" style="border:1px solid #4A90D9; border-radius:4px; padding:5px 12px; font-size:12px;">🐧 QQ</td>
-<td bgcolor="#BBDDF5" style="border:1px solid #4A90D9; border-radius:4px; padding:5px 12px; font-size:12px;">💼 企业微信</td>
-<td bgcolor="#BBDDF5" style="border:1px solid #4A90D9; border-radius:4px; padding:5px 12px; font-size:12px;">💚 微信</td>
-<td bgcolor="#BBDDF5" style="border:1px solid #4A90D9; border-radius:4px; padding:5px 12px; font-size:12px;">💎 腾讯元宝</td>
-</tr>
-<tr>
-<td colspan="2" bgcolor="#F0E8FF" style="border:1px solid #7B61FF; border-radius:4px; padding:5px 12px; font-size:12px;">🔌 REST API / SSE</td>
-<td colspan="2" bgcolor="#FFF0E8" style="border:1px solid #D9701B; border-radius:4px; padding:5px 12px; font-size:12px;">🔗 ACP (Agent → Agent)</td>
-</tr>
-</table>
-</div>
-</td></tr>
-</table>
-
-</td></tr>
-<tr><td align="center" height="28" style="font-size:18px; color:#4A90D9;">⬇</td></tr>
-<tr><td align="center">
-
-<!-- ====== 会话管理层 ====== -->
-<table border="0" cellspacing="0" cellpadding="0" width="780">
-<tr><td bgcolor="#E8F8E8" style="border:1px solid #4CAF50; border-radius:8px; padding:14px 18px;">
-<div align="center">
-<b style="font-size:16px; color:#1B5E20;">🔄 会话管理层 (Runtime)</b>
-<hr style="border:0; border-top:1px dashed #4CAF50; margin:8px 0;">
-
+<td colspan="2" bgcolor="#F8FAFC" style="padding:10px; border:1px solid #CBD5E1;">
 <table border="0" cellspacing="0" cellpadding="0" width="100%">
 <tr>
-<td bgcolor="#C8E6C9" style="border:1px solid #4CAF50; border-radius:4px; padding:10px;" width="50%">
-<div align="center"><b style="font-size:13px; color:#1B5E20;">📜 Scroll 上下文管理</b></div>
-<table border="0" cellspacing="4" cellpadding="0" width="100%">
-<tr>
-<td align="center" bgcolor="#FFFFFF" style="border:1px solid #4CAF50; border-radius:3px; padding:4px; font-size:11px;"><b>Working Context</b><br>当前活跃轮次</td>
-<td align="center" bgcolor="#FFFFFF" style="border:1px solid #4CAF50; border-radius:3px; padding:4px; font-size:11px;"><b>Memory Scroll</b><br>EvictionIndex 折叠</td>
-<td align="center" bgcolor="#FFFFFF" style="border:1px solid #4CAF50; border-radius:3px; padding:4px; font-size:11px;"><b>History</b><br>完整逐字 (SQLite + FTS5)</td>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:5px 8px; font-size:12px; color:#0F172A;">Web 控制台</td>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:5px 8px; font-size:12px; color:#0F172A;">TUI 终端</td>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:5px 8px; font-size:12px; color:#0F172A;">钉钉</td>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:5px 8px; font-size:12px; color:#0F172A;">飞书</td>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:5px 8px; font-size:12px; color:#0F172A;">QQ</td>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:5px 8px; font-size:12px; color:#0F172A;">企业微信</td>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:5px 8px; font-size:12px; color:#0F172A;">微信</td>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:5px 8px; font-size:12px; color:#0F172A;">腾讯元宝</td>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:5px 8px; font-size:12px; color:#0F172A;">REST API / SSE</td>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:5px 8px; font-size:12px; color:#0F172A;">ACP</td>
 </tr>
 </table>
 </td>
-<td width="8"></td>
-<td bgcolor="#C8E6C9" style="border:1px solid #4CAF50; border-radius:4px; padding:10px;" width="50%">
-<div align="center"><b style="font-size:13px; color:#1B5E20;">⚙️ ReAct 循环引擎</b></div>
-<div style="font-size:11px; color:#333; line-height:1.6; padding:4px;">
-模型调用 → 工具执行 → 结果回写<br>
-8 Phase Hook 拓扑排序拦截<br>
-PRE_DISPATCH → ... → FINALLY
-</div>
+</tr>
+<tr><td colspan="2" align="center" height="20" style="font-size:12px; color:#94A3B8;">▼</td></tr>
+
+<!-- L2 -->
+<tr>
+<td colspan="2" bgcolor="#1E293B" style="padding:8px 14px; color:#F8FAFC; font-size:13px; font-weight:bold;">
+L2 &nbsp;&nbsp;会话管理层 (Runtime)
+</td>
+</tr>
+<tr>
+<td colspan="2" bgcolor="#F8FAFC" style="padding:10px; border:1px solid #CBD5E1;">
+<table border="0" cellspacing="0" cellpadding="0" width="100%">
+<tr>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:8px;" width="50%">
+<b style="font-size:12px; color:#0F172A;">Scroll 上下文管理</b><br>
+<span style="font-size:11px; color:#475569;">Working Context（活跃轮次）&nbsp;|&nbsp; Memory Scroll（EvictionIndex 折叠）&nbsp;|&nbsp; History（SQLite + FTS5 完整逐字）</span>
+</td>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:8px;" width="50%">
+<b style="font-size:12px; color:#0F172A;">ReAct 循环引擎</b><br>
+<span style="font-size:11px; color:#475569;">模型调用 → 工具执行 → 结果回写 &nbsp;|&nbsp; 8 Phase Hook 拓扑排序（PRE_DISPATCH → FINALLY）</span>
 </td>
 </tr>
 </table>
-</div>
-</td></tr>
-</table>
+</td>
+</tr>
+<tr><td colspan="2" align="center" height="20" style="font-size:12px; color:#94A3B8;">▼</td></tr>
 
-</td></tr>
-<tr><td align="center" height="28" style="font-size:18px; color:#4CAF50;">⬇</td></tr>
-<tr><td align="center">
-
-<!-- ====== Agent 引擎层 ====== -->
-<table border="0" cellspacing="0" cellpadding="0" width="780">
-<tr><td bgcolor="#FFF8E1" style="border:1px solid #FF9800; border-radius:8px; padding:14px 18px;">
-<div align="center">
-<b style="font-size:16px; color:#E65100;">🤖 Agent 引擎层</b>
-<hr style="border:0; border-top:1px dashed #FF9800; margin:8px 0;">
-
-<table border="0" cellspacing="6" cellpadding="0" width="100%">
+<!-- L3 -->
 <tr>
-<td bgcolor="#FFE0B2" style="border:1px solid #FF9800; border-radius:4px; padding:8px;" width="33%">
-<div align="center"><b style="font-size:12px;">📋 Agent 管理器</b></div>
-<div style="font-size:11px; color:#444; line-height:1.5; padding:2px;">
-多智能体创建 / 调度<br>
-子 Agent 委派 / fork<br>
-ACP 跨实例通信
-</div>
+<td colspan="2" bgcolor="#1E293B" style="padding:8px 14px; color:#F8FAFC; font-size:13px; font-weight:bold;">
+L3 &nbsp;&nbsp;Agent 引擎层
 </td>
-<td bgcolor="#FFE0B2" style="border:1px solid #FF9800; border-radius:4px; padding:8px;" width="33%">
-<div align="center"><b style="font-size:12px;">🚦 StopGate / Mode 系统</b></div>
-<div style="font-size:11px; color:#444; line-height:1.5; padding:2px;">
-Iteration / DoomLoop<br>
-Budget / FileLoop / Rubric<br>
-GoalMode / MissionMode
-</div>
+</tr>
+<tr>
+<td colspan="2" bgcolor="#F8FAFC" style="padding:10px; border:1px solid #CBD5E1;">
+<table border="0" cellspacing="0" cellpadding="0" width="100%">
+<tr>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:8px;" width="33%">
+<b style="font-size:12px; color:#0F172A;">Agent 管理器</b><br>
+<span style="font-size:11px; color:#475569;">多智能体创建/调度 · 子 Agent 委派/fork · ACP 跨实例通信</span>
 </td>
-<td bgcolor="#FFE0B2" style="border:1px solid #FF9800; border-radius:4px; padding:8px;" width="33%">
-<div align="center"><b style="font-size:12px;">⚡ 执行引擎</b></div>
-<div style="font-size:11px; color:#444; line-height:1.5; padding:2px;">
-Shell Executor<br>
-MCP Driver / Plugin Driver<br>
-沙箱执行 → 结果返回
-</div>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:8px;" width="34%">
+<b style="font-size:12px; color:#0F172A;">StopGate / Mode 系统</b><br>
+<span style="font-size:11px; color:#475569;">Iteration · DoomLoop · Budget · FileLoop · Rubric · GoalMode · MissionMode</span>
+</td>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:8px;" width="33%">
+<b style="font-size:12px; color:#0F172A;">执行引擎</b><br>
+<span style="font-size:11px; color:#475569;">Shell Executor · MCP Driver · Plugin Driver · 沙箱执行</span>
 </td>
 </tr>
 </table>
-</div>
-</td></tr>
-</table>
+</td>
+</tr>
+<tr><td colspan="2" align="center" height="20" style="font-size:12px; color:#94A3B8;">▼</td></tr>
 
-</td></tr>
-<tr><td align="center" height="28" style="font-size:18px; color:#FF9800;">⬇</td></tr>
-<tr><td align="center">
-
-<!-- ====== 安全层 ====== -->
-<table border="0" cellspacing="0" cellpadding="0" width="780">
-<tr><td bgcolor="#FFEBEE" style="border:1px solid #E53935; border-radius:8px; padding:14px 18px;">
-<div align="center">
-<b style="font-size:16px; color:#B71C1C;">🛡️ 安全层 (Security) — 默认开启</b>
-<hr style="border:0; border-top:1px dashed #E53935; margin:8px 0;">
-
-<table border="0" cellspacing="4" cellpadding="0" width="100%">
+<!-- L4 -->
 <tr>
-<td bgcolor="#FFCDD2" style="border:1px solid #E53935; border-radius:4px; padding:6px 4px; font-size:11px;" width="33%"><b>🔒 Sandbox</b><br>Seatbelt / bwrap / Landlock</td>
-<td bgcolor="#FFCDD2" style="border:1px solid #E53935; border-radius:4px; padding:6px 4px; font-size:11px;" width="33%"><b>🔍 Tool Guard</b><br>三层 Guardian 协调</td>
-<td bgcolor="#FFCDD2" style="border:1px solid #E53935; border-radius:4px; padding:6px 4px; font-size:11px;" width="33%"><b>📁 File Guard</b><br>敏感文件路径保护</td>
+<td colspan="2" bgcolor="#1E293B" style="padding:8px 14px; color:#F8FAFC; font-size:13px; font-weight:bold;">
+L4 &nbsp;&nbsp;安全层 (Security) — 默认开启
+</td>
 </tr>
 <tr>
-<td bgcolor="#FFCDD2" style="border:1px solid #E53935; border-radius:4px; padding:6px 4px; font-size:11px;"><b>🔬 Skill Scanner</b><br>8 类威胁签名检测</td>
-<td bgcolor="#FFCDD2" style="border:1px solid #E53935; border-radius:4px; padding:6px 4px; font-size:11px;"><b>🏢 Tenancy</b><br>多租户 / RLS 隔离</td>
-<td bgcolor="#FFCDD2" style="border:1px solid #E53935; border-radius:4px; padding:6px 4px; font-size:11px;"><b>📊 Governance</b><br>审计日志 / 审批工作流</td>
-</tr>
-</table>
-</div>
-</td></tr>
-</table>
-
-</td></tr>
-<tr><td align="center" height="28" style="font-size:18px; color:#E53935;">⬇</td></tr>
-<tr><td align="center">
-
-<!-- ====== 扩展层 ====== -->
-<table border="0" cellspacing="0" cellpadding="0" width="780">
-<tr><td bgcolor="#F3E5F5" style="border:1px solid #8E24AA; border-radius:8px; padding:14px 18px;">
-<div align="center">
-<b style="font-size:16px; color:#4A148C;">🧩 扩展层 (Extensions)</b>
-<hr style="border:0; border-top:1px dashed #8E24AA; margin:8px 0;">
-
-<table border="0" cellspacing="6" cellpadding="0" width="100%">
+<td colspan="2" bgcolor="#F8FAFC" style="padding:10px; border:1px solid #CBD5E1;">
+<table border="0" cellspacing="0" cellpadding="0" width="100%">
 <tr>
-<td bgcolor="#E1BEE7" style="border:1px solid #8E24AA; border-radius:4px; padding:6px; font-size:11px;" width="20%" align="center"><b>🎯 Skills</b><br>脚本 / 可安装</td>
-<td bgcolor="#E1BEE7" style="border:1px solid #8E24AA; border-radius:4px; padding:6px; font-size:11px;" width="20%" align="center"><b>🔌 插件</b><br>Python 深度集成</td>
-<td bgcolor="#E1BEE7" style="border:1px solid #8E24AA; border-radius:4px; padding:6px; font-size:11px;" width="20%" align="center"><b>🔗 MCP</b><br>模型 → 工具</td>
-<td bgcolor="#E1BEE7" style="border:1px solid #8E24AA; border-radius:4px; padding:6px; font-size:11px;" width="20%" align="center"><b>⏰ Cron</b><br>定时任务</td>
-<td bgcolor="#E1BEE7" style="border:1px solid #8E24AA; border-radius:4px; padding:6px; font-size:11px;" width="20%" align="center"><b>📚 SAGE</b><br>跨会话经验</td>
-</tr>
-</table>
-
-<table border="0" cellspacing="0" cellpadding="0" width="100%" style="margin-top:8px;">
-<tr><td bgcolor="#E1BEE7" style="border:1px solid #8E24AA; border-radius:4px; padding:8px;">
-<div align="center"><b style="font-size:13px; color:#4A148C;">🤖 模型提供商层 (Providers)</b></div>
-<table border="0" cellspacing="4" cellpadding="0" width="100%">
-<tr>
-<td align="center" bgcolor="#FFFFFF" style="border:1px solid #8E24AA; border-radius:3px; padding:4px; font-size:11px;"><b>内置</b> DeepSeek / Minions Local (llama.cpp) / Ollama / LM Studio</td>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:6px;" width="33%"><b style="font-size:12px; color:#0F172A;">Sandbox</b><br><span style="font-size:11px; color:#475569;">Seatbelt / bwrap / Landlock</span></td>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:6px;" width="33%"><b style="font-size:12px; color:#0F172A;">Tool Guard</b><br><span style="font-size:11px; color:#475569;">三层 Guardian 协调</span></td>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:6px;" width="34%"><b style="font-size:12px; color:#0F172A;">File Guard</b><br><span style="font-size:11px; color:#475569;">敏感文件路径保护</span></td>
 </tr>
 <tr>
-<td align="center" bgcolor="#FFFFFF" style="border:1px solid #8E24AA; border-radius:3px; padding:4px; font-size:11px;"><b>自定义</b> 任意 OpenAI-compatible 端点 (OpenAI / Anthropic / Gemini / DashScope / vLLM)</td>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:6px;"><b style="font-size:12px; color:#0F172A;">Skill Scanner</b><br><span style="font-size:11px; color:#475569;">8 类威胁签名检测</span></td>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:6px;"><b style="font-size:12px; color:#0F172A;">Tenancy</b><br><span style="font-size:11px; color:#475569;">多租户 / RLS 隔离</span></td>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:6px;"><b style="font-size:12px; color:#0F172A;">Governance</b><br><span style="font-size:11px; color:#475569;">审计日志 / 审批工作流</span></td>
 </tr>
 </table>
-</td></tr>
-</table>
-</div>
-</td></tr>
-</table>
+</td>
+</tr>
+<tr><td colspan="2" align="center" height="20" style="font-size:12px; color:#94A3B8;">▼</td></tr>
 
-</td></tr>
+<!-- L5 -->
+<tr>
+<td colspan="2" bgcolor="#1E293B" style="padding:8px 14px; color:#F8FAFC; font-size:13px; font-weight:bold;">
+L5 &nbsp;&nbsp;扩展层 (Extensions)
+</td>
+</tr>
+<tr>
+<td colspan="2" bgcolor="#F8FAFC" style="padding:10px; border:1px solid #CBD5E1;">
+<table border="0" cellspacing="0" cellpadding="0" width="100%">
+<tr>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:6px;" width="20%" align="center"><b style="font-size:12px; color:#0F172A;">Skills</b><br><span style="font-size:11px; color:#475569;">脚本 / 可安装</span></td>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:6px;" width="20%" align="center"><b style="font-size:12px; color:#0F172A;">插件</b><br><span style="font-size:11px; color:#475569;">Python 深度集成</span></td>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:6px;" width="20%" align="center"><b style="font-size:12px; color:#0F172A;">MCP</b><br><span style="font-size:11px; color:#475569;">模型 → 工具</span></td>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:6px;" width="20%" align="center"><b style="font-size:12px; color:#0F172A;">Cron</b><br><span style="font-size:11px; color:#475569;">定时任务</span></td>
+<td bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:6px;" width="20%" align="center"><b style="font-size:12px; color:#0F172A;">SAGE</b><br><span style="font-size:11px; color:#475569;">跨会话经验</span></td>
+</tr>
+<tr>
+<td colspan="5" bgcolor="#E2E8F0" style="border:1px solid #94A3B8; padding:8px;">
+<b style="font-size:12px; color:#0F172A;">模型提供商层 (Providers)</b><br>
+<span style="font-size:11px; color:#475569;"><b>内置:</b> DeepSeek · Minions Local (llama.cpp) · Ollama · LM Studio &nbsp;&nbsp;|&nbsp;&nbsp; <b>自定义:</b> 任意 OpenAI-compatible 端点（OpenAI / Anthropic / Gemini / DashScope / vLLM）</span>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+
 </table>
 </div>
 
 <details>
-<summary>📁 查看纯文本版本（适合终端阅读）</summary>
+<summary>查看纯文本版本（适合终端阅读）</summary>
 
 ```text
-┌──────────────────────────────────────────────────────────────────┐
-│  渠道 / 接入层 (Channels)                                          │
-│  Web 控制台 │ TUI │ 钉钉 │ 飞书 │ QQ │ 企业微信 │ 微信 │ 腾讯元宝  │
-│  REST API / SSE │ ACP (Agent→Agent)                               │
-└───────────────────────────────┬──────────────────────────────────┘
-                                ⬇
-┌──────────────────────────────────────────────────────────────────┐
-│  会话管理层 (Runtime)                                              │
-│  ┌─────────────────────────────┐ ┌─────────────────────────────┐ │
-│  │ Scroll 上下文管理            │ │ ReAct 循环引擎              │ │
-│  │ Working / Memory / History   │ │ 8 Phase Hook 拓扑排序       │ │
-│  └─────────────────────────────┘ └─────────────────────────────┘ │
-└───────────────────────────────┬──────────────────────────────────┘
-                                ⬇
-┌──────────────────────────────────────────────────────────────────┐
-│  Agent 引擎层                                                     │
-│  AgentManager │ StopGate/Mode 系统 │ 执行引擎 (Shell/MCP/Plugin)  │
-└───────────────────────────────┬──────────────────────────────────┘
-                                ⬇
-┌──────────────────────────────────────────────────────────────────┐
-│  安全层 (Security) — 默认开启                                      │
-│  Sandbox │ Tool Guard │ File Guard │ Skill Scanner              │
-│  Tenancy │ Governance (审计/审批)                                 │
-└───────────────────────────────┬──────────────────────────────────┘
-                                ⬇
-┌──────────────────────────────────────────────────────────────────┐
-│  扩展层                                                           │
-│  Skills │ 插件 │ MCP │ Cron │ SAGE                                 │
-│  Providers: 内置 4 个 + 自定义 OpenAI-compatible                  │
-└──────────────────────────────────────────────────────────────────┘
+L1  渠道 / 接入层 (Channels)
+    Web 控制台 | TUI | 钉钉 | 飞书 | QQ | 企业微信 | 微信 | 腾讯元宝 | REST API/SSE | ACP
+    ↓
+L2  会话管理层 (Runtime)
+    Scroll 上下文管理 (Working/Memory/History) | ReAct 循环引擎 (8 Phase Hook)
+    ↓
+L3  Agent 引擎层
+    AgentManager | StopGate/Mode 系统 | 执行引擎 (Shell/MCP/Plugin)
+    ↓
+L4  安全层 (Security) — 默认开启
+    Sandbox | Tool Guard | File Guard | Skill Scanner | Tenancy | Governance
+    ↓
+L5  扩展层
+    Skills | 插件 | MCP | Cron | SAGE
+    Providers: 内置 4 个 + 自定义 OpenAI-compatible
 ```
 
 </details>
@@ -342,60 +279,83 @@ LLM 调用不是一次性的，而是在 ReAct Loop 中反复执行，由 **Stop
 ### 7. 多频道接入 — 一个实例，多个渠道
 
 <div align="center">
-<table border="0" cellspacing="6" cellpadding="0">
-<tr>
-<td align="center" bgcolor="#E3F2FD" style="border:1px solid #1976D2; border-radius:8px; padding:12px 16px; min-width:110px;">
-<div style="font-size:28px;">🌐</div>
-<b style="font-size:13px; color:#0D47A1;">Web 控制台</b>
-<div style="font-size:11px; color:#555;">REST API / SSE</div>
-</td>
-<td align="center" bgcolor="#E8F5E9" style="border:1px solid #388E3C; border-radius:8px; padding:12px 16px; min-width:110px;">
-<div style="font-size:28px;">💻</div>
-<b style="font-size:13px; color:#1B5E20;">终端 TUI</b>
-<div style="font-size:11px; color:#555;">交互式终端</div>
-</td>
-<td align="center" bgcolor="#FFF3E0" style="border:1px solid #F57C00; border-radius:8px; padding:12px 16px; min-width:110px;">
-<div style="font-size:28px;">💬</div>
-<b style="font-size:13px; color:#E65100;">钉钉</b>
-<div style="font-size:11px; color:#555;">DingTalk</div>
-</td>
-<td align="center" bgcolor="#F3E5F5" style="border:1px solid #7B1FA2; border-radius:8px; padding:12px 16px; min-width:110px;">
-<div style="font-size:28px;">🐦</div>
-<b style="font-size:13px; color:#4A148C;">飞书</b>
-<div style="font-size:11px; color:#555;">Feishu</div>
-</td>
-<td align="center" bgcolor="#E0F7FA" style="border:1px solid #00838F; border-radius:8px; padding:12px 16px; min-width:110px;">
-<div style="font-size:28px;">🐧</div>
-<b style="font-size:13px; color:#006064;">QQ</b>
-<div style="font-size:11px; color:#555;">腾讯 QQ</div>
-</td>
+<table border="0" cellspacing="0" cellpadding="0" width="800" style="border-collapse:collapse;">
+<tr bgcolor="#1E293B">
+<td style="padding:7px 10px; color:#F8FAFC; font-size:12px; font-weight:bold; width:5%;">#</td>
+<td style="padding:7px 10px; color:#F8FAFC; font-size:12px; font-weight:bold; width:15%;">频道</td>
+<td style="padding:7px 10px; color:#F8FAFC; font-size:12px; font-weight:bold; width:15%;">英文</td>
+<td style="padding:7px 10px; color:#F8FAFC; font-size:12px; font-weight:bold; width:12%;">类型</td>
+<td style="padding:7px 10px; color:#F8FAFC; font-size:12px; font-weight:bold;">说明</td>
 </tr>
-<tr>
-<td align="center" bgcolor="#ECEFF1" style="border:1px solid #455A64; border-radius:8px; padding:12px 16px; min-width:110px;">
-<div style="font-size:28px;">💼</div>
-<b style="font-size:13px; color:#263238;">企业微信</b>
-<div style="font-size:11px; color:#555;">WeCom</div>
-</td>
-<td align="center" bgcolor="#E8F5E9" style="border:1px solid #2E7D32; border-radius:8px; padding:12px 16px; min-width:110px;">
-<div style="font-size:28px;">💚</div>
-<b style="font-size:13px; color:#1B5E20;">微信</b>
-<div style="font-size:11px; color:#555;">WeChat</div>
-</td>
-<td align="center" bgcolor="#E3F2FD" style="border:1px solid #1565C0; border-radius:8px; padding:12px 16px; min-width:110px;">
-<div style="font-size:28px;">💎</div>
-<b style="font-size:13px; color:#0D47A1;">腾讯元宝</b>
-<div style="font-size:11px; color:#555;">Yuanbao</div>
-</td>
-<td align="center" bgcolor="#FFF8E1" style="border:1px solid #FF8F00; border-radius:8px; padding:12px 16px; min-width:110px;">
-<div style="font-size:28px;">🔌</div>
-<b style="font-size:13px; color:#E65100;">ACP</b>
-<div style="font-size:11px; color:#555;">Agent → Agent</div>
-</td>
-<td align="center" bgcolor="#FCE4EC" style="border:1px solid #C2185B; border-radius:8px; padding:12px 16px; min-width:110px; border-style:dashed;">
-<div style="font-size:28px;">➕</div>
-<b style="font-size:13px; color:#880E4F;">插件自定义</b>
-<div style="font-size:11px; color:#555;">Plugin Channel</div>
-</td>
+<tr bgcolor="#F8FAFC">
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#64748B;">01</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; font-weight:bold; color:#0F172A;">Web 控制台</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">Console</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">内置</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">浏览器界面 + REST API / SSE 流式推送</td>
+</tr>
+<tr bgcolor="#F1F5F9">
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#64748B;">02</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; font-weight:bold; color:#0F172A;">终端 TUI</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">Terminal</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">内置</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">交互式终端，基于 ACP 协议</td>
+</tr>
+<tr bgcolor="#F8FAFC">
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#64748B;">03</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; font-weight:bold; color:#0F172A;">钉钉</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">DingTalk</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">内置</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">钉钉机器人，支持群聊 / 单聊</td>
+</tr>
+<tr bgcolor="#F1F5F9">
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#64748B;">04</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; font-weight:bold; color:#0F172A;">飞书</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">Feishu</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">内置</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">飞书应用机器人</td>
+</tr>
+<tr bgcolor="#F8FAFC">
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#64748B;">05</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; font-weight:bold; color:#0F172A;">QQ</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">QQ</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">内置</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">腾讯 QQ 机器人</td>
+</tr>
+<tr bgcolor="#F1F5F9">
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#64748B;">06</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; font-weight:bold; color:#0F172A;">企业微信</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">WeCom</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">内置</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">企业微信应用</td>
+</tr>
+<tr bgcolor="#F8FAFC">
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#64748B;">07</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; font-weight:bold; color:#0F172A;">微信</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">WeChat</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">内置</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">微信机器人</td>
+</tr>
+<tr bgcolor="#F1F5F9">
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#64748B;">08</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; font-weight:bold; color:#0F172A;">腾讯元宝</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">Yuanbao</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">内置</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">腾讯元宝机器人</td>
+</tr>
+<tr bgcolor="#F8FAFC">
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#64748B;">09</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; font-weight:bold; color:#0F172A;">ACP</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">Agent Comm. Protocol</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">协议</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">Agent → Agent 跨实例编排</td>
+</tr>
+<tr bgcolor="#F1F5F9">
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#64748B;">10</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; font-weight:bold; color:#0F172A;">插件自定义</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">Plugin Channel</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">扩展</td>
+<td style="border:1px solid #CBD5E1; padding:6px 10px; font-size:12px; color:#475569;">插件系统注册自定义频道</td>
 </tr>
 </table>
 </div>
