@@ -17,9 +17,6 @@ export interface PushMessage {
   id: string;
   channelType:
     | "wechat"
-    | "slack"
-    | "telegram"
-    | "discord"
     | "email"
     | "memory"
     | "heartbeat"

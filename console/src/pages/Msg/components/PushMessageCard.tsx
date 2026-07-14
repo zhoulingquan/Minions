@@ -1,9 +1,6 @@
 import { Card, Button, Tag, Avatar, Popconfirm, Checkbox } from "antd";
 import {
   MessageCircle,
-  Hash,
-  Send,
-  MessageSquare,
   Mail,
   RefreshCw,
   Trash2,
@@ -23,9 +20,6 @@ interface PushMessageCardProps {
 
 const CHANNEL_ICONS = {
   wechat: MessageCircle,
-  slack: Hash,
-  telegram: Send,
-  discord: MessageSquare,
   email: Mail,
   memory: Brain,
   heartbeat: MessageCircle,
@@ -34,9 +28,6 @@ const CHANNEL_ICONS = {
 
 const CHANNEL_COLORS = {
   wechat: "#07C160",
-  slack: "#4A154B",
-  telegram: "#0088CC",
-  discord: "#5865F2",
   email: "#EA4335",
   memory: "#7C3AED",
   heartbeat: "#5865F2",

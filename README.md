@@ -34,7 +34,7 @@
 | **执行** | 单轮调用 | Loop 闭环引擎（Plan→Build→Review）|
 | **多 Agent** | 单实例单 Agent | AgentManager + ACP 跨实例编排 |
 | **安全** | 用户自行把关 | Sandbox + Tool Guard + File Guard 默认开启 |
-| **频道** | 单一 Web/API | 11+ 渠道共享同一份记忆 |
+| **频道** | 单一 Web/API | 7 个内置频道 + 插件自定义 |
 | **部署** | 云端 SaaS | 本机私有部署，数据不离开你的机器 |
 
 ---
@@ -50,8 +50,8 @@
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │                        渠道 / 接入层 (Channels)                    │
-│  Web 控制台  │  TUI (终端)  │  钉钉  │  飞书  │  Discord  │  Telegram  │
-│  WeChat / QQ / iMessage  │  REST API / SSE  │  ACP (Agent→Agent) │
+│  Web 控制台  │  TUI (终端)  │  钉钉  │  飞书  │  QQ  │  企业微信  │
+│  微信  │  腾讯元宝  │  REST API / SSE  │  ACP (Agent→Agent)  │
 └───────────────────────────────┬──────────────────────────────────┘
                                 │
 ┌───────────────────────────────▼──────────────────────────────────┐
@@ -183,11 +183,11 @@ LLM 调用不是一次性的，而是在 **Loop** 中反复执行，直到满足
 ### 7. 全频道接入 — 一个实例，所有渠道
 
 ```
-  Web 控制台   终端 TUI    钉钉    飞书    Discord
-    Telegram   微信    QQ    iMessage    REST API    ACP
+  Web 控制台   终端 TUI    钉钉    飞书    QQ
+    企业微信   微信    腾讯元宝    REST API / SSE    ACP
 ```
 
-一个实例，所有渠道共享 Agent、记忆、Skills。控制台 / TUI 中看到的历史在钉钉上同样可访问。
+内置 7 个频道（console + 6 个 IM），一个实例所有渠道共享 Agent、记忆、Skills。控制台 / TUI 中看到的历史在钉钉上同样可访问。插件系统可注册自定义频道。
 
 ### 8. 代码模式 — 内置三面板 Web IDE
 
@@ -282,7 +282,7 @@ minions tui --resume <id>  # 恢复之前的会话
 |------|------|
 | [项目介绍](https://minions.agentscope.io/docs/intro) | Minions 是什么 |
 | [模型配置](https://minions.agentscope.io/docs/models) | 云端 / 本地 / 自定义模型 |
-| [频道配置](https://minions.agentscope.io/docs/channels) | 钉钉、飞书、微信、Discord 等 |
+| [频道配置](https://minions.agentscope.io/docs/channels) | 钉钉、飞书、QQ、企业微信、微信、腾讯元宝 |
 | [Skills](https://minions.agentscope.io/docs/skills) | 扩展与自定义能力 |
 | [MCP 与工具](https://minions.agentscope.io/docs/mcp) | 外部工具集成 |
 | [定时任务](https://minions.agentscope.io/docs/cron) | 任务计划与自动化 |

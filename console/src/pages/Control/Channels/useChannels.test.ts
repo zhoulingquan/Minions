@@ -88,7 +88,7 @@ describe("useChannels", () => {
       "alpha-custom",
       "feishu",
       "beta-custom",
-      "telegram",
+      "wechat",
     ]);
 
     const { result } = renderHook(() => useChannels());
@@ -98,7 +98,7 @@ describe("useChannels", () => {
     });
 
     const keys = result.current.orderedKeys;
-    const builtinKeys = ["feishu", "telegram"];
+    const builtinKeys = ["feishu", "wechat"];
     const customKeys = ["alpha-custom", "beta-custom"];
 
     // builtin keys 全部出现在 custom keys 之前

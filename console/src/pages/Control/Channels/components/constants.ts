@@ -3,23 +3,12 @@ export type ChannelKey = string;
 
 // Built-in channel labels
 export const CHANNEL_LABELS: Record<string, string> = {
-  imessage: "iMessage",
-  discord: "Discord",
+  console: "Console",
   dingtalk: "DingTalk",
   feishu: "Feishu",
   qq: "QQ",
-  telegram: "Telegram",
-  slack: "Slack",
-  mqtt: "MQTT",
-  mattermost: "Mattermost",
-  matrix: "Matrix",
-  console: "Console",
-  voice: "Twilio",
-  sip: "SIP",
   wecom: "WeCom",
-  xiaoyi: "XiaoYi",
   wechat: "WeChat",
-  onebot: "OneBot",
   yuanbao: "Yuanbao",
 };
 

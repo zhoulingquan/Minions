@@ -51,17 +51,8 @@ export const MCP_CHANNEL_SOURCE_VALUES = [
   "feishu",
   "wechat",
   "wecom",
-  "discord",
-  "telegram",
   "qq",
-  "imessage",
-  "mattermost",
-  "matrix",
-  "onebot",
-  "mqtt",
-  "voice",
-  "sip",
-  "xiaoyi",
+  "yuanbao",
 ] as const;
 
 export function normalizeMCPAccessPolicy(

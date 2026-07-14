@@ -10,7 +10,6 @@ import {
 import { useAppMessage } from "../../../../hooks/useAppMessage";
 import { Alert, ConfigProvider } from "antd";
 import { LinkOutlined } from "@ant-design/icons";
-import { useEffect } from "react";
 import type { FormInstance } from "antd";
 import { getChannelLabel, type ChannelKey } from "./constants";
 import { QrcodeAuthBlock } from "./QrcodeAuthBlock";
@@ -20,21 +19,12 @@ import { useAgentStore } from "../../../../stores/agentStore";
 import { openExternalLink } from "../../../../utils/openExternalLink";
 
 const CHANNELS_WITH_ACCESS_CONTROL: ChannelKey[] = [
-  "telegram",
   "dingtalk",
-  "discord",
   "feishu",
   "wecom",
-  "mattermost",
-  "matrix",
   "wechat",
-  "imessage",
-  "onebot",
   "qq",
-  "mqtt",
-  "xiaoyi",
   "yuanbao",
-  "slack",
 ];
 
 // Doc EN URLs per channel (anchors on https://minions.agentscope.io/docs/channels)
@@ -42,52 +32,24 @@ const CHANNEL_DOC_EN_URLS: Partial<Record<ChannelKey, string>> = {
   dingtalk:
     "https://minions.agentscope.io/docs/channels/?lang=en#DingTalk-recommended",
   feishu: "https://minions.agentscope.io/docs/channels/?lang=en#Feishu-Lark",
-  imessage:
-    "https://minions.agentscope.io/docs/channels/?lang=en#iMessage-macOS-only",
-  discord: "https://minions.agentscope.io/docs/channels/?lang=en#Discord",
   qq: "https://minions.agentscope.io/docs/channels/?lang=en#QQ",
-  telegram: "https://minions.agentscope.io/docs/channels/?lang=en#Telegram",
-  mqtt: "https://minions.agentscope.io/docs/channels/?lang=en#MQTT",
-  mattermost: "https://minions.agentscope.io/docs/channels/?lang=en#Mattermost",
-  matrix: "https://minions.agentscope.io/docs/channels/?lang=en#Matrix",
-  sip: "https://minions.agentscope.io/docs/channels/?lang=en#SIP",
   wecom:
     "https://minions.agentscope.io/docs/channels/?lang=en#WeCom-WeChat-Work",
   wechat:
     "https://minions.agentscope.io/docs/channels/?lang=en#WeChat-Personal-iLink",
-  xiaoyi:
-    "https://developer.huawei.com/consumer/cn/doc/service/openclaw-0000002518410344",
   yuanbao: "https://minions.agentscope.io/docs/channels/?lang=en#Yuanbao",
-  onebot:
-    "https://minions.agentscope.io/docs/channels/?lang=en#OneBot-v11-NapCat--QQ-full-protocol",
-  slack: "https://minions.agentscope.io/docs/channels/?lang=en#Slack",
 };
 
 // Doc ZH URLs per channel (anchors on https://minions.agentscope.io/docs/channels)
 const CHANNEL_DOC_ZH_URLS: Partial<Record<ChannelKey, string>> = {
   dingtalk: "https://minions.agentscope.io/docs/channels/?lang=zh#钉钉推荐",
   feishu: "https://minions.agentscope.io/docs/channels/?lang=zh#飞书",
-  imessage:
-    "https://minions.agentscope.io/docs/channels/?lang=zh#iMessage仅-macOS",
-  discord: "https://minions.agentscope.io/docs/channels/?lang=zh#Discord",
   qq: "https://minions.agentscope.io/docs/channels/?lang=zh#QQ",
-  telegram: "https://minions.agentscope.io/docs/channels/?lang=zh#Telegram",
-  mqtt: "https://minions.agentscope.io/docs/channels/?lang=zh#MQTT",
-  mattermost: "https://minions.agentscope.io/docs/channels/?lang=zh#Mattermost",
-  matrix: "https://minions.agentscope.io/docs/channels/?lang=zh#Matrix",
-  sip: "https://minions.agentscope.io/docs/channels/?lang=zh#SIP",
   wecom: "https://minions.agentscope.io/docs/channels/?lang=zh#企业微信",
   wechat: "https://minions.agentscope.io/docs/channels/?lang=zh#微信个人iLink",
-  xiaoyi:
-    "https://developer.huawei.com/consumer/cn/doc/service/openclaw-0000002518410344",
   yuanbao:
     "https://minions.agentscope.io/docs/channels/?lang=zh#腾讯元宝Yuanbao",
-  onebot:
-    "https://minions.agentscope.io/docs/channels/?lang=zh#OneBot-v11NapCat--QQ-完整协议",
-  slack: "https://minions.agentscope.io/docs/channels/?lang=zh#Slack",
 };
-
-const TWILIO_CONSOLE_URL = "https://console.twilio.com";
 
 const BASE_FIELDS = [
   "enabled",
@@ -130,19 +92,7 @@ export function ChannelDrawer({
   const currentLang = "zh";
   const label = activeKey ? getChannelLabel(activeKey) : activeLabel;
   const { message } = useAppMessage();
-  const matrixAuthMethod = Form.useWatch("auth_method", form);
-  const isMatrixPasswordAuth = matrixAuthMethod === "password";
   const feishuDomain = (Form.useWatch("domain", form) as string) || "feishu";
-
-  // Parent calls form.setFieldsValue() before the Form mounts, which wins over
-  // initialValues. Re-apply auth_method after open so the dropdown is correct.
-  useEffect(() => {
-    if (!open || activeKey !== "matrix") return;
-    const pw = initialValues?.password;
-    if (typeof pw === "string" && pw.trim().length > 0) {
-      form.setFieldsValue({ auth_method: "password" });
-    }
-  }, [open, activeKey, initialValues, form]);
 
   // ── Access control fields (shared across multiple channels) ──────────────
 
@@ -179,149 +129,6 @@ export function ChannelDrawer({
 
   const renderBuiltinExtraFields = (key: ChannelKey) => {
     switch (key) {
-      case "matrix":
-        return (
-          <>
-            <Form.Item
-              name="homeserver"
-              label="Homeserver URL"
-              rules={[{ required: true }]}
-            >
-              <Input placeholder="https://matrix.org" />
-            </Form.Item>
-            <Form.Item
-              name="user_id"
-              label="User ID"
-              tooltip="Accepts a full MXID (e.g. @bot:matrix.org) or just the localpart (e.g. bot)."
-              rules={[{ required: true, message: "Please enter User ID" }]}
-            >
-              <Input placeholder="@bot:matrix.org" />
-            </Form.Item>
-            <Form.Item
-              name="auth_method"
-              label="Auth Method"
-              initialValue="token"
-            >
-              <Select
-                options={[
-                  { value: "token", label: "Token" },
-                  { value: "password", label: "Password" },
-                ]}
-              />
-            </Form.Item>
-            <Form.Item
-              name="access_token"
-              label="Access Token"
-              rules={[
-                {
-                  required: !isMatrixPasswordAuth,
-                  message: "Please enter access token",
-                },
-              ]}
-              hidden={isMatrixPasswordAuth}
-            >
-              <Input.Password placeholder="syt_..." />
-            </Form.Item>
-            <Form.Item
-              name="password"
-              label="Password"
-              rules={[
-                {
-                  required: isMatrixPasswordAuth,
-                  message: "Please enter password",
-                },
-              ]}
-              hidden={!isMatrixPasswordAuth}
-            >
-              <Input.Password placeholder="Account password for login" />
-            </Form.Item>
-            <Form.Item
-              name="encryption"
-              label="Enable End-to-End Encryption"
-              tooltip="After enabling, you must verify the device in a Matrix client (e.g. Element). E2EE requires manually installing matrix-nio[e2e] (pip install matrix-nio[e2e])."
-              valuePropName="checked"
-              hidden={!isMatrixPasswordAuth}
-            >
-              <Switch />
-            </Form.Item>
-            <Form.Item
-              name="device_name"
-              label="Device Name"
-              tooltip="A stable device identity for the Matrix client. Defaults to 'minions-worker' if left empty."
-            >
-              <Input placeholder="minions-worker" />
-            </Form.Item>
-            <Form.Item
-              name="dm_disabled"
-              label={"禁用私聊"}
-              valuePropName="checked"
-              tooltip={"开启后，机器人将完全忽略所有私聊消息"}
-            >
-              <Switch />
-            </Form.Item>
-            <Form.Item
-              name="group_disabled"
-              label={"禁用群聊"}
-              valuePropName="checked"
-              tooltip={"开启后，机器人将完全忽略所有群聊消息"}
-            >
-              <Switch />
-            </Form.Item>
-          </>
-        );
-
-      case "imessage":
-        return (
-          <>
-            <Form.Item
-              name="db_path"
-              label="DB Path"
-              rules={[{ required: true, message: "Please input DB path" }]}
-            >
-              <Input placeholder="~/Library/Messages/chat.db" />
-            </Form.Item>
-            <Form.Item
-              name="poll_sec"
-              label="Poll Interval (sec)"
-              rules={[
-                { required: true, message: "Please input poll interval" },
-              ]}
-            >
-              <InputNumber min={0.1} step={0.1} style={{ width: "100%" }} />
-            </Form.Item>
-          </>
-        );
-
-      case "discord":
-        return (
-          <>
-            <Form.Item
-              name="bot_token"
-              label="Bot Token"
-              rules={[{ required: true }]}
-            >
-              <Input.Password placeholder="Discord bot token" />
-            </Form.Item>
-            <Form.Item name="http_proxy" label="HTTP Proxy">
-              <Input placeholder="http://127.0.0.1:18118" />
-            </Form.Item>
-            <Form.Item name="http_proxy_auth" label="HTTP Proxy Auth">
-              <Input placeholder="user:password" />
-            </Form.Item>
-            <Form.Item
-              name="accept_bot_messages"
-              label={"接收机器人消息"}
-              valuePropName="checked"
-              tooltip={"开启后，将接收来自其他机器人的消息"}
-            >
-              <Switch />
-            </Form.Item>
-            <Form.Item name="media_dir" label={"媒体文件目录"}>
-              <Input placeholder={defaultMediaDir} />
-            </Form.Item>
-          </>
-        );
-
       case "dingtalk":
         return (
           <>
@@ -608,416 +415,6 @@ export function ChannelDrawer({
           </>
         );
 
-      case "telegram":
-        return (
-          <>
-            <Form.Item
-              name="bot_token"
-              label="Bot Token"
-              rules={[{ required: true }]}
-            >
-              <Input.Password placeholder="Telegram bot token from BotFather" />
-            </Form.Item>
-            <Form.Item name="base_url" label="API Base URL">
-              <Input placeholder="https://tg-api.yourdomain.com" />
-            </Form.Item>
-            <Form.Item name="http_proxy" label="HTTP Proxy">
-              <Input placeholder="http://127.0.0.1:18118" />
-            </Form.Item>
-            <Form.Item name="http_proxy_auth" label="HTTP Proxy Auth">
-              <Input placeholder="user:password" />
-            </Form.Item>
-            <Form.Item
-              name="show_typing"
-              label="Show Typing"
-              valuePropName="checked"
-            >
-              <Switch />
-            </Form.Item>
-          </>
-        );
-
-      case "slack":
-        return (
-          <>
-            <Form.Item
-              name="bot_token"
-              label="Bot Token"
-              rules={[{ required: true }]}
-              tooltip={"Slack Bot User OAuth Token，以 xoxb- 开头"}
-            >
-              <Input.Password placeholder="xoxb-..." />
-            </Form.Item>
-            <Form.Item
-              name="app_token"
-              label="App Token"
-              rules={[{ required: true }]}
-              tooltip={"Slack App-Level Token（Socket Mode），以 xapp- 开头"}
-            >
-              <Input.Password placeholder="xapp-..." />
-            </Form.Item>
-            <Form.Item
-              name="proxy"
-              label="HTTP Proxy"
-              tooltip={"HTTP 代理地址，用于连接 Slack API"}
-            >
-              <Input placeholder="http://127.0.0.1:18118" />
-            </Form.Item>
-          </>
-        );
-
-      case "mqtt":
-        return (
-          <>
-            <Form.Item
-              name="host"
-              label="MQTT Host"
-              rules={[{ required: true }]}
-            >
-              <Input placeholder="127.0.0.1" />
-            </Form.Item>
-            <Form.Item
-              name="port"
-              label="MQTT Port"
-              rules={[
-                { required: true },
-                {
-                  type: "number",
-                  min: 1,
-                  max: 65535,
-                  message: "Port must be between 1 and 65535",
-                },
-              ]}
-            >
-              <InputNumber
-                min={1}
-                max={65535}
-                style={{ width: "100%" }}
-                placeholder="1883"
-              />
-            </Form.Item>
-            <Form.Item
-              name="transport"
-              label="Transport"
-              initialValue="tcp"
-              rules={[{ required: true }]}
-            >
-              <Select>
-                <Select.Option value="tcp">MQTT (tcp)</Select.Option>
-                <Select.Option value="websockets">
-                  WS (websockets)
-                </Select.Option>
-              </Select>
-            </Form.Item>
-            <Form.Item
-              name="clean_session"
-              label="Clean Session"
-              valuePropName="checked"
-            >
-              <Switch defaultChecked />
-            </Form.Item>
-            <Form.Item
-              name="qos"
-              label="QoS"
-              initialValue="2"
-              rules={[{ required: true }]}
-            >
-              <Select>
-                <Select.Option value="0">At Most Once (0)</Select.Option>
-                <Select.Option value="1">At Least Once (1)</Select.Option>
-                <Select.Option value="2">Exactly Once (2)</Select.Option>
-              </Select>
-            </Form.Item>
-            <Form.Item name="username" label="MQTT Username">
-              <Input placeholder="Leave blank to disable / not use" />
-            </Form.Item>
-            <Form.Item name="password" label="MQTT Password">
-              <Input.Password placeholder="Leave blank to disable / not use" />
-            </Form.Item>
-            <Form.Item
-              name="subscribe_topic"
-              label="Subscribe Topic"
-              rules={[{ required: true }]}
-            >
-              <Input placeholder="server/+/up" />
-            </Form.Item>
-            <Form.Item
-              name="publish_topic"
-              label="Publish Topic"
-              rules={[{ required: true }]}
-            >
-              <Input placeholder="client/{client_id}/down" />
-            </Form.Item>
-            <Form.Item
-              name="tls_enabled"
-              label="TLS Enabled"
-              valuePropName="checked"
-            >
-              <Switch />
-            </Form.Item>
-            <Form.Item name="tls_ca_certs" label="TLS CA Certs">
-              <Input placeholder="Path to CA certificates file" />
-            </Form.Item>
-            <Form.Item name="tls_certfile" label="TLS Certfile">
-              <Input placeholder="Path to client certificate file" />
-            </Form.Item>
-            <Form.Item name="tls_keyfile" label="TLS Keyfile">
-              <Input placeholder="Path to client private key file" />
-            </Form.Item>
-          </>
-        );
-
-      case "mattermost":
-        return (
-          <>
-            <Form.Item
-              name="url"
-              label="Mattermost URL"
-              rules={[{ required: true }]}
-            >
-              <Input placeholder="https://mattermost.example.com" />
-            </Form.Item>
-            <Form.Item
-              name="bot_token"
-              label="Bot Token"
-              rules={[{ required: true }]}
-            >
-              <Input.Password placeholder="Mattermost bot token" />
-            </Form.Item>
-            <Form.Item name="media_dir" label={"媒体文件目录"}>
-              <Input placeholder={defaultMediaDir} />
-            </Form.Item>
-            <Form.Item
-              name="show_typing"
-              label="Show Typing"
-              valuePropName="checked"
-            >
-              <Switch />
-            </Form.Item>
-            <Form.Item
-              name="thread_follow_without_mention"
-              label="Thread Follow Without Mention"
-              valuePropName="checked"
-            >
-              <Switch />
-            </Form.Item>
-          </>
-        );
-
-      case "voice":
-        return (
-          <>
-            <ConfigProvider prefixCls="ant">
-              <Alert
-                type="info"
-                showIcon
-                message={"请先注册 Twilio 账户并购买电话号码，然后在下方填写凭据。Account SID 和 Auth Token 可在 Twilio 控制台首页找到。Phone Number SID 在 Phone Numbers → Active Numbers 中查看。"}
-                style={{ marginBottom: 16 }}
-              />
-            </ConfigProvider>
-            <Form.Item
-              name="twilio_account_sid"
-              label={"Twilio 账户 SID"}
-              rules={[{ required: true }]}
-            >
-              <Input placeholder="ACxxxxxxxx" />
-            </Form.Item>
-            <Form.Item
-              name="twilio_auth_token"
-              label={"Twilio 认证令牌"}
-              rules={[{ required: true }]}
-            >
-              <Input.Password />
-            </Form.Item>
-            <Form.Item name="phone_number" label={"电话号码"}>
-              <Input placeholder="+15551234567" />
-            </Form.Item>
-            <Form.Item
-              name="phone_number_sid"
-              label={"电话号码 SID"}
-              tooltip={"可在 Twilio 控制台的 Phone Numbers → Active Numbers 中找到。"}
-            >
-              <Input placeholder="PNxxxxxxxx" />
-            </Form.Item>
-            <Form.Item name="tts_provider" label={"TTS 提供商"}>
-              <Input placeholder="google" />
-            </Form.Item>
-            <Form.Item name="tts_voice" label={"TTS 语音"}>
-              <Input placeholder="en-US-Journey-D" />
-            </Form.Item>
-            <Form.Item name="stt_provider" label={"STT 提供商"}>
-              <Input placeholder="deepgram" />
-            </Form.Item>
-            <Form.Item name="language" label={"语言"}>
-              <Input placeholder="en-US" />
-            </Form.Item>
-            <Form.Item
-              name="welcome_greeting"
-              label={"欢迎语"}
-            >
-              <Input.TextArea rows={2} />
-            </Form.Item>
-          </>
-        );
-
-      case "sip":
-        return (
-          <>
-            <ConfigProvider prefixCls="ant">
-              <Alert
-                type="info"
-                showIcon
-                message={"配置 SIP 注册服务器（如 Asterisk、FreeSWITCH），然后在下方填写 SIP 凭据。Dev 模式使用 pyVoIP 在本地处理 SIP/RTP；Production 模式使用 LiveKit SIP Server。"}
-                style={{ marginBottom: 16 }}
-              />
-            </ConfigProvider>
-            <Form.Item
-              name="sip_mode"
-              label={"SIP 模式"}
-              tooltip={"Dev：纯 Python pyVoIP，适合本地开发测试。Production：LiveKit SIP Server，适合高并发生产环境。"}
-              initialValue="dev"
-            >
-              <Select
-                options={[
-                  { value: "dev", label: "Dev (pyVoIP)" },
-                  { value: "livekit", label: "Production (LiveKit)" },
-                ]}
-              />
-            </Form.Item>
-            <Form.Item
-              shouldUpdate={(
-                prev: Record<string, unknown>,
-                cur: Record<string, unknown>,
-              ) => prev.sip_mode !== cur.sip_mode}
-              noStyle
-            >
-              {({
-                getFieldValue,
-              }: {
-                getFieldValue: (name: string) => unknown;
-              }) => (
-                <Form.Item name="sip_server" label={"SIP 服务器"}>
-                  <Input
-                    placeholder={
-                      getFieldValue("sip_mode") === "livekit"
-                        ? "LiveKit 模式无需填写"
-                        : "留空使用内置注册服务器"
-                    }
-                  />
-                </Form.Item>
-              )}
-            </Form.Item>
-            <Form.Item name="sip_username" label={"SIP 用户名"}>
-              <Input placeholder="1001" />
-            </Form.Item>
-            <Form.Item name="sip_password" label={"SIP 密码"}>
-              <Input.Password />
-            </Form.Item>
-            <Form.Item
-              name="sip_port"
-              label={"SIP 端口"}
-              rules={[
-                {
-                  type: "number",
-                  min: 1,
-                  max: 65535,
-                },
-              ]}
-            >
-              <InputNumber
-                min={1}
-                max={65535}
-                style={{ width: "100%" }}
-                placeholder="5061"
-              />
-            </Form.Item>
-            <Form.Item
-              name="sip_transport"
-              label={"传输协议"}
-              initialValue="UDP"
-            >
-              <Select
-                options={[
-                  { value: "UDP", label: "UDP" },
-                  { value: "TCP", label: "TCP" },
-                  { value: "TLS", label: "TLS" },
-                ]}
-              />
-            </Form.Item>
-            <Form.Item
-              name="dashscope_api_key"
-              label={"DashScope API Key"}
-              tooltip={"阿里云 DashScope STT/TTS 的 API Key。留空则回退到 DASHSCOPE_API_KEY 环境变量。"}
-            >
-              <Input.Password placeholder="sk-..." />
-            </Form.Item>
-            <Form.Item name="tts_provider" label={"TTS 提供商"}>
-              <Input placeholder="aliyun" />
-            </Form.Item>
-            <Form.Item name="tts_voice" label={"TTS 语音"}>
-              <Input placeholder="longxiaochun" />
-            </Form.Item>
-            <Form.Item name="stt_provider" label={"STT 提供商"}>
-              <Input placeholder="aliyun" />
-            </Form.Item>
-            <Form.Item name="language" label={"语言"}>
-              <Input placeholder="zh-CN" />
-            </Form.Item>
-            <Form.Item
-              name="welcome_greeting"
-              label={"欢迎语"}
-            >
-              <Input.TextArea rows={2} />
-            </Form.Item>
-            <Form.Item
-              noStyle
-              shouldUpdate={(prev, cur) => prev.sip_mode !== cur.sip_mode}
-            >
-              {({ getFieldValue }) => {
-                if (getFieldValue("sip_mode") !== "livekit") return null;
-                return (
-                  <>
-                    <Form.Item
-                      name="livekit_url"
-                      label={"LiveKit URL"}
-                      rules={[{ required: true }]}
-                    >
-                      <Input placeholder="ws://localhost:7880" />
-                    </Form.Item>
-                    <Form.Item
-                      name="livekit_api_key"
-                      label={"LiveKit API Key"}
-                      rules={[{ required: true }]}
-                    >
-                      <Input />
-                    </Form.Item>
-                    <Form.Item
-                      name="livekit_api_secret"
-                      label={"LiveKit API Secret"}
-                      rules={[{ required: true }]}
-                    >
-                      <Input.Password />
-                    </Form.Item>
-                    <Form.Item
-                      name="livekit_sip_trunk_id"
-                      label={"LiveKit SIP Trunk ID"}
-                    >
-                      <Input placeholder="ST_xxxx" />
-                    </Form.Item>
-                    <Form.Item
-                      name="livekit_room_name"
-                      label={"LiveKit 房间名称"}
-                      tooltip={"Agent 连入并等待 SIP 来电的 LiveKit 房间名称，需与 SIP Dispatch Rule 中配置的房间名一致。"}
-                    >
-                      <Input placeholder="sip-inbound" />
-                    </Form.Item>
-                  </>
-                );
-              }}
-            </Form.Item>
-          </>
-        );
-
       case "wecom":
         return (
           <>
@@ -1080,41 +477,6 @@ export function ChannelDrawer({
               tooltip={"启用时，群内所有成员共享同一会话上下文；禁用时，每位成员维护各自独立的会话。"}
             >
               <Switch />
-            </Form.Item>
-          </>
-        );
-
-      case "xiaoyi":
-        return (
-          <>
-            <ConfigProvider prefixCls="ant">
-              <Alert
-                type="info"
-                showIcon
-                message={"请在华为开发者平台创建智能体并获取 AK/SK 和 Agent ID。AK/SK 可在凭证管理页面找到。"}
-                style={{ marginBottom: 16 }}
-              />
-            </ConfigProvider>
-            <Form.Item
-              name="ak"
-              label="Access Key (AK)"
-              rules={[{ required: true, message: "Please input Access Key" }]}
-            >
-              <Input placeholder="Access Key from Huawei Developer Platform" />
-            </Form.Item>
-            <Form.Item
-              name="sk"
-              label="Secret Key (SK)"
-              rules={[{ required: true, message: "Please input Secret Key" }]}
-            >
-              <Input.Password placeholder="Secret Key from Huawei Developer Platform" />
-            </Form.Item>
-            <Form.Item
-              name="agent_id"
-              label="Agent ID"
-              rules={[{ required: true, message: "Please input Agent ID" }]}
-            >
-              <Input placeholder="Agent ID from XiaoYi platform" />
             </Form.Item>
           </>
         );
@@ -1265,50 +627,6 @@ export function ChannelDrawer({
               label={"接收机器人消息"}
               valuePropName="checked"
               tooltip={"开启后，将接收来自其他机器人的消息"}
-            >
-              <Switch />
-            </Form.Item>
-          </>
-        );
-
-      case "onebot":
-        return (
-          <>
-            <Form.Item
-              name="ws_host"
-              label="WebSocket Host"
-              rules={[{ required: true }]}
-            >
-              <Input placeholder="0.0.0.0" />
-            </Form.Item>
-            <Form.Item
-              name="ws_port"
-              label="WebSocket Port"
-              rules={[
-                { required: true },
-                {
-                  type: "number",
-                  min: 1,
-                  max: 65535,
-                  message: "Port must be between 1 and 65535",
-                },
-              ]}
-            >
-              <InputNumber
-                min={1}
-                max={65535}
-                style={{ width: "100%" }}
-                placeholder="6199"
-              />
-            </Form.Item>
-            <Form.Item name="access_token" label="Access Token">
-              <Input.Password placeholder="Access token for authentication" />
-            </Form.Item>
-            <Form.Item
-              name="share_session_in_group"
-              label={"群聊共享上下文"}
-              valuePropName="checked"
-              tooltip={"启用时，群内所有成员共享同一会话上下文；禁用时，每位成员维护各自独立的会话。"}
             >
               <Switch />
             </Form.Item>
@@ -1483,18 +801,6 @@ export function ChannelDrawer({
             {label} Doc
           </Button>
         )}
-      {activeKey === "voice" && (
-        <Button
-          type="text"
-          size="small"
-          icon={<LinkOutlined />}
-          onClick={() => openExternalLink(TWILIO_CONSOLE_URL)}
-          className={styles.dingtalkDocBtn}
-          style={{ color: "#FF7F16" }}
-        >
-          {"打开 Twilio 控制台"}
-        </Button>
-      )}
     </div>
   );
 
@@ -1526,16 +832,7 @@ export function ChannelDrawer({
           layout="vertical"
           initialValues={initialValues}
           onFinish={(values: Record<string, unknown>) => {
-            if (activeKey !== "matrix") {
-              onSubmit(values);
-              return;
-            }
-            const { auth_method, ...rest } = values;
-            if (auth_method === "password") {
-              onSubmit({ ...rest, access_token: "" });
-            } else {
-              onSubmit({ ...rest, password: "", encryption: false });
-            }
+            onSubmit(values);
           }}
         >
           <Form.Item
@@ -1546,11 +843,9 @@ export function ChannelDrawer({
             <Switch />
           </Form.Item>
 
-          {activeKey !== "voice" && (
-            <Form.Item name="bot_prefix" label="Bot Prefix">
-              <Input placeholder="@bot" />
-            </Form.Item>
-          )}
+          <Form.Item name="bot_prefix" label="Bot Prefix">
+            <Input placeholder="@bot" />
+          </Form.Item>
 
           {activeKey !== "console" && (
             <>
@@ -1574,12 +869,8 @@ export function ChannelDrawer({
           )}
 
           {(activeKey === "wecom" ||
-            activeKey === "telegram" ||
             activeKey === "dingtalk" ||
-            activeKey === "feishu" ||
-            activeKey === "discord" ||
-            activeKey === "slack" ||
-            activeKey === "matrix") && (
+            activeKey === "feishu") && (
             <Form.Item
               name="streaming_enabled"
               label={"流式输出"}
