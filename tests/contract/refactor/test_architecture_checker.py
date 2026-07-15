@@ -330,6 +330,26 @@ def test_namespace_checker_rejects_duplicate_module_or_resource_ownership(
     )
 
 
+def test_namespace_checker_normalizes_module_identity_across_source_roots(
+    tmp_path: Path,
+) -> None:
+    _base_fixture(tmp_path)
+    module_file = _write(_source_root(tmp_path, "minions") / "foo.py")
+    package_init = _write(
+        _source_root(tmp_path, "minions-core") / "foo" / "__init__.py"
+    )
+
+    result = _run_checker(NAMESPACE_CHECKER, tmp_path)
+
+    _assert_failure(
+        result,
+        "duplicate module ownership",
+        "minions.foo",
+        str(module_file),
+        str(package_init),
+    )
+
+
 def test_namespace_checker_rejects_source_root_for_inactive_package(
     tmp_path: Path,
 ) -> None:
@@ -513,6 +533,53 @@ def test_architecture_checker_resolves_relative_import(tmp_path: Path) -> None:
         "minions.runtime.runner",
         "minions-core",
         "minions-runtime",
+    )
+
+
+def test_out_of_bounds_relative_import_retains_function_scope(
+    tmp_path: Path,
+) -> None:
+    _base_fixture(tmp_path)
+    source = _write(
+        _source_root(tmp_path, "minions-core") / "core" / "invalid_level.py",
+        "def load():\n    from ...outside import value\n",
+    )
+
+    result = _run_checker(ARCHITECTURE_CHECKER, tmp_path)
+
+    _assert_failure(
+        result,
+        "relative import ownership error",
+        str(source),
+        "line 2",
+        "function_scope=true",
+        "type_checking=false",
+    )
+
+
+def test_out_of_bounds_relative_import_retains_type_checking_scope(
+    tmp_path: Path,
+) -> None:
+    _base_fixture(tmp_path)
+    source = _write(
+        _source_root(tmp_path, "minions-core") / "core" / "invalid_type.py",
+        (
+            "from typing import TYPE_CHECKING\n"
+            "\n"
+            "if TYPE_CHECKING:\n"
+            "    from ...outside import value\n"
+        ),
+    )
+
+    result = _run_checker(ARCHITECTURE_CHECKER, tmp_path)
+
+    _assert_failure(
+        result,
+        "relative import ownership error",
+        str(source),
+        "line 4",
+        "function_scope=false",
+        "type_checking=true",
     )
 
 

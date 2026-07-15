@@ -44,6 +44,25 @@ class ImportRecord:
 
 
 @dataclass(frozen=True)
+class ImportDiagnostic:
+    """An invalid import occurrence with the same scope context as imports."""
+
+    message: str
+    source_file: Path
+    line: int
+    function_scope: bool
+    type_checking: bool
+
+    def render(self) -> str:
+        function_scope = str(self.function_scope).lower()
+        type_checking = str(self.type_checking).lower()
+        return (
+            f"{self.message}: {self.source_file} line {self.line} "
+            f"(function_scope={function_scope}, type_checking={type_checking})"
+        )
+
+
+@dataclass(frozen=True)
 class ForbiddenEdge:
     """An import occurrence denied by its source distribution allowlist."""
 
@@ -82,7 +101,7 @@ class _ImportCollector(ast.NodeVisitor):
         self.function_depth = 0
         self.type_checking_depth = 0
         self.records: list[ImportRecord] = []
-        self.errors: list[str] = []
+        self.errors: list[ImportDiagnostic] = []
 
     def _record(self, module: str, line: int) -> None:
         self.records.append(
@@ -119,8 +138,16 @@ class _ImportCollector(ast.NodeVisitor):
         ascents = node.level - 1
         if not self.current_package or ascents >= len(package_parts):
             self.errors.append(
-                f"relative import ownership error: {self.path} line "
-                f"{node.lineno} traverses beyond package {self.current_package!r}",
+                ImportDiagnostic(
+                    message=(
+                        "relative import ownership error: traverses beyond "
+                        f"package {self.current_package!r}"
+                    ),
+                    source_file=self.path,
+                    line=node.lineno,
+                    function_scope=self.function_depth > 0,
+                    type_checking=self.type_checking_depth > 0,
+                ),
             )
             return None
         base_parts = package_parts[: len(package_parts) - ascents]
@@ -194,7 +221,7 @@ def _scan_file(
         package_module=path.name == "__init__.py",
     )
     collector.visit(tree)
-    return collector.records, collector.errors
+    return collector.records, [error.render() for error in collector.errors]
 
 
 def _validate_active_source_ownership(
