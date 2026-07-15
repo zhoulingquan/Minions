@@ -365,6 +365,119 @@ def test_public_api_marks_conditional_or_subscript_all_as_dynamic(
 
 
 @pytest.mark.parametrize(
+    "pattern",
+    (
+        "__all__",
+        "[*__all__]",
+        "{**__all__}",
+    ),
+)
+@pytest.mark.parametrize("initial_all", (False, True))
+def test_public_api_marks_match_capture_string_bindings_as_dynamic(
+    tmp_path: Path,
+    pattern: str,
+    initial_all: bool,
+) -> None:
+    _fixture_repo(tmp_path, active_packages=["minions"])
+    prefix = '__all__ = ["literal"]\n' if initial_all else ""
+    _write(
+        _source_root(tmp_path, "minions") / "app.py",
+        f"{prefix}value = {{}}\nmatch value:\n    case {pattern}:\n        pass\n",
+    )
+
+    model = _generate(API_TOOL, tmp_path, tmp_path / "api.json")
+
+    assert model["modules"][0]["all"] == {
+        "names": [],
+        "status": "dynamic",
+    }
+
+
+@pytest.mark.parametrize("initial_all", (False, True))
+def test_public_api_marks_except_handler_string_binding_as_dynamic(
+    tmp_path: Path,
+    initial_all: bool,
+) -> None:
+    _fixture_repo(tmp_path, active_packages=["minions"])
+    prefix = '__all__ = ["literal"]\n' if initial_all else ""
+    _write(
+        _source_root(tmp_path, "minions") / "app.py",
+        (
+            f"{prefix}try:\n"
+            "    pass\n"
+            "except Exception as __all__:\n"
+            "    pass\n"
+        ),
+    )
+
+    model = _generate(API_TOOL, tmp_path, tmp_path / "api.json")
+
+    assert model["modules"][0]["all"] == {
+        "names": [],
+        "status": "dynamic",
+    }
+
+
+@pytest.mark.parametrize(
+    "binding",
+    (
+        "import package as __all__\n",
+        "from package import value as __all__\n",
+        "def __all__():\n    pass\n",
+        "class __all__:\n    pass\n",
+    ),
+)
+def test_public_api_keeps_existing_string_binding_guards(
+    tmp_path: Path,
+    binding: str,
+) -> None:
+    _fixture_repo(tmp_path, active_packages=["minions"])
+    _write(_source_root(tmp_path, "minions") / "app.py", binding)
+
+    model = _generate(API_TOOL, tmp_path, tmp_path / "api.json")
+
+    assert model["modules"][0]["all"] == {
+        "names": [],
+        "status": "dynamic",
+    }
+
+
+@pytest.mark.parametrize(
+    "comprehension",
+    (
+        "[item for __all__ in values for item in __all__]",
+        "{item for __all__ in values for item in __all__}",
+        "{item: item for __all__ in values for item in __all__}",
+        "(item for __all__ in values for item in __all__)",
+    ),
+)
+def test_public_api_ignores_nested_and_comprehension_local_bindings(
+    tmp_path: Path,
+    comprehension: str,
+) -> None:
+    _fixture_repo(tmp_path, active_packages=["minions"])
+    _write(
+        _source_root(tmp_path, "minions") / "app.py",
+        (
+            '__all__ = ["literal"]\n'
+            "values = []\n"
+            "def nested():\n"
+            "    __all__ = [\"function-local\"]\n"
+            "class Nested:\n"
+            "    __all__ = [\"class-local\"]\n"
+            f"result = {comprehension}\n"
+        ),
+    )
+
+    model = _generate(API_TOOL, tmp_path, tmp_path / "api.json")
+
+    assert model["modules"][0]["all"] == {
+        "names": ["literal"],
+        "status": "resolved",
+    }
+
+
+@pytest.mark.parametrize(
     ("expression", "expected_names"),
     (
         ('("TupleExport", "Another")', ["Another", "TupleExport"]),

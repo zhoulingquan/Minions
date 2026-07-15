@@ -85,6 +85,10 @@ class _DynamicAllFinder(ast.NodeVisitor):
     def __init__(self) -> None:
         self.found = False
 
+    def _record_string_binding(self, name: str | None) -> None:
+        if name == "__all__":
+            self.found = True
+
     def visit_Name(self, node: ast.Name) -> None:  # noqa: N802
         if node.id == "__all__" and isinstance(node.ctx, (ast.Store, ast.Del)):
             self.found = True
@@ -109,31 +113,83 @@ class _DynamicAllFinder(ast.NodeVisitor):
 
     def visit_Import(self, node: ast.Import) -> None:  # noqa: N802
         for alias in node.names:
-            if (alias.asname or alias.name.partition(".")[0]) == "__all__":
-                self.found = True
+            self._record_string_binding(
+                alias.asname or alias.name.partition(".")[0],
+            )
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:  # noqa: N802
         for alias in node.names:
-            if (alias.asname or alias.name) == "__all__":
-                self.found = True
+            self._record_string_binding(alias.asname or alias.name)
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:  # noqa: N802
-        if node.name == "__all__":
-            self.found = True
+        self._record_string_binding(node.name)
 
     def visit_AsyncFunctionDef(  # noqa: N802
         self,
         node: ast.AsyncFunctionDef,
     ) -> None:
-        if node.name == "__all__":
-            self.found = True
+        self._record_string_binding(node.name)
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:  # noqa: N802
-        if node.name == "__all__":
-            self.found = True
+        self._record_string_binding(node.name)
 
     def visit_Lambda(self, node: ast.Lambda) -> None:  # noqa: N802
         return
+
+    def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:  # noqa: N802
+        self._record_string_binding(node.name)
+        self.generic_visit(node)
+
+    def visit_MatchAs(self, node: ast.MatchAs) -> None:  # noqa: N802
+        self._record_string_binding(node.name)
+        self.generic_visit(node)
+
+    def visit_MatchStar(self, node: ast.MatchStar) -> None:  # noqa: N802
+        self._record_string_binding(node.name)
+        self.generic_visit(node)
+
+    def visit_MatchMapping(self, node: ast.MatchMapping) -> None:  # noqa: N802
+        self._record_string_binding(node.rest)
+        self.generic_visit(node)
+
+    def _visit_comprehension_target(self, node: ast.AST) -> None:
+        if isinstance(node, ast.Name):
+            return
+        if isinstance(node, ast.Starred):
+            self._visit_comprehension_target(node.value)
+            return
+        if isinstance(node, (ast.List, ast.Tuple)):
+            for element in node.elts:
+                self._visit_comprehension_target(element)
+            return
+        self.visit(node)
+
+    def _visit_comprehension_parts(
+        self,
+        generators: list[ast.comprehension],
+    ) -> None:
+        for generator in generators:
+            self._visit_comprehension_target(generator.target)
+            self.visit(generator.iter)
+            for condition in generator.ifs:
+                self.visit(condition)
+
+    def visit_ListComp(self, node: ast.ListComp) -> None:  # noqa: N802
+        self._visit_comprehension_parts(node.generators)
+        self.visit(node.elt)
+
+    def visit_SetComp(self, node: ast.SetComp) -> None:  # noqa: N802
+        self._visit_comprehension_parts(node.generators)
+        self.visit(node.elt)
+
+    def visit_DictComp(self, node: ast.DictComp) -> None:  # noqa: N802
+        self._visit_comprehension_parts(node.generators)
+        self.visit(node.key)
+        self.visit(node.value)
+
+    def visit_GeneratorExp(self, node: ast.GeneratorExp) -> None:  # noqa: N802
+        self._visit_comprehension_parts(node.generators)
+        self.visit(node.elt)
 
 
 def _has_dynamic_all(statement: ast.stmt) -> bool:
