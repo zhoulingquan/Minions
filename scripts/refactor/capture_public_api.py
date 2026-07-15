@@ -79,18 +79,55 @@ def _assignment_targets(node: ast.AST) -> Iterable[ast.Name]:
             yield from _assignment_targets(element)
 
 
-class _DynamicAllFinder(ast.NodeVisitor):
-    """Find unsupported module-scope bindings or mutations of ``__all__``."""
+class _ClassGlobalAllFinder(ast.NodeVisitor):
+    """Find a class-scope ``global __all__`` without entering child scopes."""
 
     def __init__(self) -> None:
         self.found = False
 
+    def visit_Global(self, node: ast.Global) -> None:  # noqa: N802
+        if "__all__" in node.names:
+            self.found = True
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:  # noqa: N802
+        return
+
+    def visit_AsyncFunctionDef(  # noqa: N802
+        self,
+        node: ast.AsyncFunctionDef,
+    ) -> None:
+        return
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:  # noqa: N802
+        return
+
+    def visit_Lambda(self, node: ast.Lambda) -> None:  # noqa: N802
+        return
+
+
+class _DynamicAllFinder(ast.NodeVisitor):
+    """Find unsupported module-scope bindings or mutations of ``__all__``."""
+
+    def __init__(
+        self,
+        *,
+        module_reads: bool = True,
+        module_writes: bool = True,
+    ) -> None:
+        self.found = False
+        self.module_reads = module_reads
+        self.module_writes = module_writes
+
     def _record_string_binding(self, name: str | None) -> None:
-        if name == "__all__":
+        if self.module_writes and name == "__all__":
             self.found = True
 
     def visit_Name(self, node: ast.Name) -> None:  # noqa: N802
-        if node.id == "__all__" and isinstance(node.ctx, (ast.Store, ast.Del)):
+        if (
+            self.module_writes
+            and node.id == "__all__"
+            and isinstance(node.ctx, (ast.Store, ast.Del))
+        ):
             self.found = True
 
     def visit_Subscript(self, node: ast.Subscript) -> None:  # noqa: N802
@@ -98,6 +135,7 @@ class _DynamicAllFinder(ast.NodeVisitor):
             isinstance(node.value, ast.Name)
             and node.value.id == "__all__"
             and isinstance(node.ctx, (ast.Store, ast.Del))
+            and self.module_reads
         ):
             self.found = True
         self.generic_visit(node)
@@ -107,6 +145,7 @@ class _DynamicAllFinder(ast.NodeVisitor):
             isinstance(node.func, ast.Attribute)
             and isinstance(node.func.value, ast.Name)
             and node.func.value.id == "__all__"
+            and self.module_reads
         ):
             self.found = True
         self.generic_visit(node)
@@ -123,18 +162,128 @@ class _DynamicAllFinder(ast.NodeVisitor):
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:  # noqa: N802
         self._record_string_binding(node.name)
+        self._visit_function_definition(node)
 
     def visit_AsyncFunctionDef(  # noqa: N802
         self,
         node: ast.AsyncFunctionDef,
     ) -> None:
         self._record_string_binding(node.name)
+        self._visit_function_definition(node)
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:  # noqa: N802
         self._record_string_binding(node.name)
+        for decorator in node.decorator_list:
+            self.visit(decorator)
+        for base in node.bases:
+            self.visit(base)
+        for keyword in node.keywords:
+            self.visit(keyword.value)
+        self._visit_type_parameters(node)
+        self._visit_class_body(node.body)
 
     def visit_Lambda(self, node: ast.Lambda) -> None:  # noqa: N802
-        return
+        self._visit_arguments_definition_time(node.args)
+
+    def _visit_function_definition(
+        self,
+        node: ast.FunctionDef | ast.AsyncFunctionDef,
+    ) -> None:
+        for decorator in node.decorator_list:
+            self.visit(decorator)
+        self._visit_arguments_definition_time(node.args)
+        if node.returns is not None:
+            self.visit(node.returns)
+        self._visit_type_parameters(node)
+
+    def _visit_arguments_definition_time(self, arguments: ast.arguments) -> None:
+        for default in arguments.defaults:
+            self.visit(default)
+        for default in arguments.kw_defaults:
+            if default is not None:
+                self.visit(default)
+        annotated = [
+            *arguments.posonlyargs,
+            *arguments.args,
+            *arguments.kwonlyargs,
+        ]
+        if arguments.vararg is not None:
+            annotated.append(arguments.vararg)
+        if arguments.kwarg is not None:
+            annotated.append(arguments.kwarg)
+        for argument in annotated:
+            if argument.annotation is not None:
+                self.visit(argument.annotation)
+
+    def _visit_type_parameters(
+        self,
+        node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef,
+    ) -> None:
+        for parameter in getattr(node, "type_params", ()):
+            self.generic_visit(parameter)
+
+    @staticmethod
+    def _class_declares_global_all(body: list[ast.stmt]) -> bool:
+        finder = _ClassGlobalAllFinder()
+        for statement in body:
+            finder.visit(statement)
+        return finder.found
+
+    @staticmethod
+    def _class_local_all_after(
+        statement: ast.stmt,
+        shadowed: bool,
+    ) -> bool:
+        if isinstance(statement, ast.Assign):
+            return shadowed or any(
+                target.id == "__all__"
+                for raw_target in statement.targets
+                for target in _assignment_targets(raw_target)
+            )
+        if isinstance(statement, ast.AnnAssign):
+            return shadowed or (
+                statement.value is not None
+                and isinstance(statement.target, ast.Name)
+                and statement.target.id == "__all__"
+            )
+        if isinstance(statement, ast.AugAssign):
+            return shadowed or (
+                isinstance(statement.target, ast.Name)
+                and statement.target.id == "__all__"
+            )
+        if isinstance(statement, ast.Delete) and any(
+            target.id == "__all__"
+            for raw_target in statement.targets
+            for target in _assignment_targets(raw_target)
+        ):
+            return False
+        if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            return shadowed or statement.name == "__all__"
+        if isinstance(statement, ast.Import):
+            return shadowed or any(
+                (alias.asname or alias.name.partition(".")[0]) == "__all__"
+                for alias in statement.names
+            )
+        if isinstance(statement, ast.ImportFrom):
+            return shadowed or any(
+                (alias.asname or alias.name) == "__all__"
+                for alias in statement.names
+            )
+        return shadowed
+
+    def _visit_class_body(self, body: list[ast.stmt]) -> None:
+        global_all = self._class_declares_global_all(body)
+        shadowed = False
+        for statement in body:
+            finder = _DynamicAllFinder(
+                module_reads=global_all or not shadowed,
+                module_writes=global_all,
+            )
+            finder.visit(statement)
+            if finder.found:
+                self.found = True
+            if not global_all:
+                shadowed = self._class_local_all_after(statement, shadowed)
 
     def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:  # noqa: N802
         self._record_string_binding(node.name)

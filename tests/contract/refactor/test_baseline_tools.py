@@ -477,6 +477,227 @@ def test_public_api_ignores_nested_and_comprehension_local_bindings(
     }
 
 
+@pytest.mark.parametrize("definition_kind", ("def", "async def"))
+@pytest.mark.parametrize(
+    "effect_site",
+    ("decorator", "default", "kwdefault", "annotation", "return"),
+)
+def test_public_api_scans_function_definition_time_effects(
+    tmp_path: Path,
+    definition_kind: str,
+    effect_site: str,
+) -> None:
+    _fixture_repo(tmp_path, active_packages=["minions"])
+    decorator = ""
+    signature = "()"
+    if effect_site == "decorator":
+        decorator = '@__all__.append("effect")\n'
+    elif effect_site == "default":
+        signature = '(value=__all__.append("effect"))'
+    elif effect_site == "kwdefault":
+        signature = '(*, value=__all__.append("effect"))'
+    elif effect_site == "annotation":
+        signature = '(value: __all__.append("effect"))'
+    elif effect_site == "return":
+        signature = '() -> __all__.append("effect")'
+    _write(
+        _source_root(tmp_path, "minions") / "app.py",
+        (
+            '__all__ = ["literal"]\n'
+            f"{decorator}{definition_kind} target{signature}:\n"
+            "    pass\n"
+        ),
+    )
+
+    model = _generate(API_TOOL, tmp_path, tmp_path / "api.json")
+
+    assert model["modules"][0]["all"] == {
+        "names": [],
+        "status": "dynamic",
+    }
+
+
+@pytest.mark.parametrize("definition_kind", ("def", "async def"))
+def test_public_api_ignores_function_body_effects(
+    tmp_path: Path,
+    definition_kind: str,
+) -> None:
+    _fixture_repo(tmp_path, active_packages=["minions"])
+    _write(
+        _source_root(tmp_path, "minions") / "app.py",
+        (
+            '__all__ = ["literal"]\n'
+            f"{definition_kind} target():\n"
+            '    __all__.append("body")\n'
+        ),
+    )
+
+    model = _generate(API_TOOL, tmp_path, tmp_path / "api.json")
+
+    assert model["modules"][0]["all"] == {
+        "names": ["literal"],
+        "status": "resolved",
+    }
+
+
+def test_public_api_scans_lambda_default_but_not_body(tmp_path: Path) -> None:
+    _fixture_repo(tmp_path, active_packages=["minions"])
+    _write(
+        _source_root(tmp_path, "minions") / "app.py",
+        (
+            '__all__ = ["literal"]\n'
+            'callback = lambda value=__all__.append("default"): '
+            '__all__.append("body")\n'
+        ),
+    )
+
+    model = _generate(API_TOOL, tmp_path, tmp_path / "api.json")
+
+    assert model["modules"][0]["all"] == {
+        "names": [],
+        "status": "dynamic",
+    }
+
+
+def test_public_api_ignores_lambda_body_effect(tmp_path: Path) -> None:
+    _fixture_repo(tmp_path, active_packages=["minions"])
+    _write(
+        _source_root(tmp_path, "minions") / "app.py",
+        (
+            '__all__ = ["literal"]\n'
+            'callback = lambda: __all__.append("body")\n'
+        ),
+    )
+
+    model = _generate(API_TOOL, tmp_path, tmp_path / "api.json")
+
+    assert model["modules"][0]["all"] == {
+        "names": ["literal"],
+        "status": "resolved",
+    }
+
+
+@pytest.mark.parametrize(
+    "definition",
+    (
+        '@__all__.append("decorator")\nclass Target:\n    pass\n',
+        'class Target(__all__.append("base")):\n    pass\n',
+        (
+            'class Target(metaclass=__all__.append("keyword")):\n'
+            "    pass\n"
+        ),
+    ),
+)
+def test_public_api_scans_class_definition_time_effects(
+    tmp_path: Path,
+    definition: str,
+) -> None:
+    _fixture_repo(tmp_path, active_packages=["minions"])
+    _write(
+        _source_root(tmp_path, "minions") / "app.py",
+        f'__all__ = ["literal"]\n{definition}',
+    )
+
+    model = _generate(API_TOOL, tmp_path, tmp_path / "api.json")
+
+    assert model["modules"][0]["all"] == {
+        "names": [],
+        "status": "dynamic",
+    }
+
+
+def test_public_api_scans_class_body_before_local_all_binding(
+    tmp_path: Path,
+) -> None:
+    _fixture_repo(tmp_path, active_packages=["minions"])
+    _write(
+        _source_root(tmp_path, "minions") / "app.py",
+        (
+            '__all__ = ["literal"]\n'
+            "class Target:\n"
+            '    __all__.append("module")\n'
+            '    __all__ = ["class-local"]\n'
+            '    __all__.append("class-local")\n'
+        ),
+    )
+
+    model = _generate(API_TOOL, tmp_path, tmp_path / "api.json")
+
+    assert model["modules"][0]["all"] == {
+        "names": [],
+        "status": "dynamic",
+    }
+
+
+@pytest.mark.parametrize(
+    "class_body",
+    (
+        '    __all__ = ["class-local"]\n',
+        (
+            '    __all__ = ["class-local"]\n'
+            '    __all__.append("class-local")\n'
+        ),
+        '    __all__ = ["class-local"]\n    del __all__\n',
+    ),
+)
+def test_public_api_keeps_class_local_all_effects_local(
+    tmp_path: Path,
+    class_body: str,
+) -> None:
+    _fixture_repo(tmp_path, active_packages=["minions"])
+    _write(
+        _source_root(tmp_path, "minions") / "app.py",
+        f'__all__ = ["literal"]\nclass Target:\n{class_body}',
+    )
+
+    model = _generate(API_TOOL, tmp_path, tmp_path / "api.json")
+
+    assert model["modules"][0]["all"] == {
+        "names": ["literal"],
+        "status": "resolved",
+    }
+
+
+def test_public_api_honors_global_all_in_class_body(tmp_path: Path) -> None:
+    _fixture_repo(tmp_path, active_packages=["minions"])
+    _write(
+        _source_root(tmp_path, "minions") / "app.py",
+        (
+            '__all__ = ["literal"]\n'
+            "class Target:\n"
+            "    global __all__\n"
+            '    __all__.append("module")\n'
+        ),
+    )
+
+    model = _generate(API_TOOL, tmp_path, tmp_path / "api.json")
+
+    assert model["modules"][0]["all"] == {
+        "names": [],
+        "status": "dynamic",
+    }
+
+
+def test_public_api_ignores_nested_method_body_effect(tmp_path: Path) -> None:
+    _fixture_repo(tmp_path, active_packages=["minions"])
+    _write(
+        _source_root(tmp_path, "minions") / "app.py",
+        (
+            '__all__ = ["literal"]\n'
+            "class Target:\n"
+            "    def method(self):\n"
+            '        __all__.append("method-body")\n'
+        ),
+    )
+
+    model = _generate(API_TOOL, tmp_path, tmp_path / "api.json")
+
+    assert model["modules"][0]["all"] == {
+        "names": ["literal"],
+        "status": "resolved",
+    }
+
+
 @pytest.mark.parametrize(
     ("expression", "expected_names"),
     (
