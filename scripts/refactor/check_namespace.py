@@ -9,6 +9,8 @@ from typing import Sequence
 if __package__:
     from ._architecture_common import (
         ArchitectureError,
+        is_init_module,
+        is_python_source,
         iter_owned_files,
         load_architecture_config,
         module_name_for_path,
@@ -17,6 +19,8 @@ if __package__:
 else:
     from _architecture_common import (  # type: ignore[no-redef]
         ArchitectureError,
+        is_init_module,
+        is_python_source,
         iter_owned_files,
         load_architecture_config,
         module_name_for_path,
@@ -31,18 +35,18 @@ def check_namespace(root: Path, config_path: Path | None = None) -> None:
     source_roots = validate_source_roots(root, config)
 
     for source_root in source_roots.values():
-        init = source_root.path / "__init__.py"
-        if init.is_file():
-            raise ArchitectureError(
-                f"package {source_root.distribution} has forbidden top-level "
-                f"namespace initializer {init}",
-            )
+        for init in sorted(source_root.path.iterdir()):
+            if init.is_file() and is_init_module(init):
+                raise ArchitectureError(
+                    f"package {source_root.distribution} has forbidden "
+                    f"top-level namespace initializer {init}",
+                )
 
     ownership: dict[tuple[str, str], tuple[str, Path]] = {}
     for source_root in source_roots.values():
         for path, relative in iter_owned_files(source_root.path):
             keys = [("resource", relative.as_posix().casefold())]
-            if path.suffix == ".py":
+            if is_python_source(path):
                 module = module_name_for_path(source_root.path, path)
                 keys.append(("module", module.casefold()))
             for kind, identity in keys:

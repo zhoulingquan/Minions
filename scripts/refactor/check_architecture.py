@@ -14,6 +14,8 @@ if __package__:
         ArchitectureConfig,
         ArchitectureError,
         SourceRoot,
+        is_init_module,
+        is_python_source,
         iter_owned_files,
         load_architecture_config,
         module_name_for_path,
@@ -24,6 +26,8 @@ else:
         ArchitectureConfig,
         ArchitectureError,
         SourceRoot,
+        is_init_module,
+        is_python_source,
         iter_owned_files,
         load_architecture_config,
         module_name_for_path,
@@ -196,7 +200,7 @@ def _is_type_checking_guard(node: ast.AST) -> bool:
 
 def _python_files(source_root: SourceRoot) -> Iterable[Path]:
     for path, _relative in iter_owned_files(source_root.path):
-        if path.suffix == ".py":
+        if is_python_source(path):
             yield path
 
 
@@ -218,7 +222,7 @@ def _scan_file(
         source_root.distribution,
         path,
         module_name,
-        package_module=path.name == "__init__.py",
+        package_module=is_init_module(path),
     )
     collector.visit(tree)
     return collector.records, [error.render() for error in collector.errors]
@@ -258,6 +262,13 @@ def _target_distribution(
     record: ImportRecord,
 ) -> tuple[str | None, str | None]:
     target = record.target_module
+    top_level = target.partition(".")[0]
+    if top_level.casefold() == "minions" and top_level != "minions":
+        return None, (
+            f"non-canonical internal import: {record.source_file} line "
+            f"{record.line} imports {target}; use lowercase minions as the "
+            f"top-level package ({_scope_flags(record)})"
+        )
     if target != "minions" and not target.startswith("minions."):
         return None, None
 

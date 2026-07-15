@@ -311,6 +311,20 @@ def test_namespace_checker_rejects_init_in_every_discovered_source_root(
     _assert_failure(result, "__init__.py", distribution, str(init))
 
 
+@pytest.mark.parametrize("distribution", ("minions", "minions-core"))
+def test_namespace_checker_rejects_case_variant_top_level_init(
+    tmp_path: Path,
+    distribution: str,
+) -> None:
+    _base_fixture(tmp_path)
+    init = _write(_source_root(tmp_path, distribution) / "__INIT__.PY")
+
+    result = _run_checker(NAMESPACE_CHECKER, tmp_path)
+
+    _assert_failure(result, "__INIT__.PY", distribution, str(init))
+    assert str(init) in _output(result)
+
+
 def test_namespace_checker_rejects_duplicate_module_or_resource_ownership(
     tmp_path: Path,
 ) -> None:
@@ -345,6 +359,46 @@ def test_namespace_checker_normalizes_module_identity_across_source_roots(
         result,
         "duplicate module ownership",
         "minions.foo",
+        str(module_file),
+        str(package_init),
+    )
+
+
+def test_namespace_checker_treats_uppercase_py_as_python_module(
+    tmp_path: Path,
+) -> None:
+    _base_fixture(tmp_path)
+    module_file = _write(_source_root(tmp_path, "minions") / "foo.PY")
+    package_init = _write(
+        _source_root(tmp_path, "minions-core") / "foo" / "__init__.py"
+    )
+
+    result = _run_checker(NAMESPACE_CHECKER, tmp_path)
+
+    _assert_failure(
+        result,
+        "duplicate module ownership",
+        "minions.foo",
+        str(module_file),
+        str(package_init),
+    )
+
+
+def test_namespace_checker_normalizes_case_variant_init_identity(
+    tmp_path: Path,
+) -> None:
+    _base_fixture(tmp_path)
+    module_file = _write(_source_root(tmp_path, "minions") / "pkg.py")
+    package_init = _write(
+        _source_root(tmp_path, "minions-core") / "pkg" / "__INIT__.PY"
+    )
+
+    result = _run_checker(NAMESPACE_CHECKER, tmp_path)
+
+    _assert_failure(
+        result,
+        "duplicate module ownership",
+        "minions.pkg",
         str(module_file),
         str(package_init),
     )
@@ -518,6 +572,47 @@ def test_architecture_checker_rejects_forbidden_absolute_import(
     )
 
 
+def test_architecture_checker_scans_uppercase_py_source(
+    tmp_path: Path,
+) -> None:
+    _base_fixture(tmp_path)
+    source = _write(
+        _source_root(tmp_path, "minions-core") / "core" / "bypass.PY",
+        "import minions.runtime.runner\n",
+    )
+
+    result = _run_checker(ARCHITECTURE_CHECKER, tmp_path)
+
+    _assert_failure(
+        result,
+        str(source),
+        "line 1",
+        "minions-core",
+        "minions-runtime",
+    )
+
+
+def test_architecture_checker_rejects_noncanonical_internal_import(
+    tmp_path: Path,
+) -> None:
+    _base_fixture(tmp_path)
+    source = _write(
+        _source_root(tmp_path, "minions-core") / "core" / "casing.py",
+        "import Minions.runtime.runner\n",
+    )
+
+    result = _run_checker(ARCHITECTURE_CHECKER, tmp_path)
+
+    _assert_failure(
+        result,
+        str(source),
+        "line 1",
+        "Minions.runtime.runner",
+        "non-canonical internal import",
+        "lowercase minions",
+    )
+
+
 def test_architecture_checker_resolves_relative_import(tmp_path: Path) -> None:
     _base_fixture(tmp_path)
     source = _write(
@@ -530,6 +625,30 @@ def test_architecture_checker_resolves_relative_import(tmp_path: Path) -> None:
     _assert_failure(
         result,
         str(source),
+        "minions.runtime.runner",
+        "minions-core",
+        "minions-runtime",
+    )
+
+
+def test_case_variant_init_uses_package_relative_import_base(
+    tmp_path: Path,
+) -> None:
+    _base_fixture(tmp_path)
+    source = _write(
+        _source_root(tmp_path, "minions-core")
+        / "core"
+        / "pkg"
+        / "__INIT__.PY",
+        "from ...runtime import runner\n",
+    )
+
+    result = _run_checker(ARCHITECTURE_CHECKER, tmp_path)
+
+    _assert_failure(
+        result,
+        str(source),
+        "line 1",
         "minions.runtime.runner",
         "minions-core",
         "minions-runtime",

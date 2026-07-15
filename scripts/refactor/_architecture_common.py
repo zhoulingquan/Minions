@@ -271,15 +271,27 @@ def iter_owned_files(source_root: Path):
         if not path.is_file():
             continue
         relative = path.relative_to(source_root)
-        if "__pycache__" in relative.parts or path.suffix in {".pyc", ".pyo"}:
+        if any(
+            part.casefold() == "__pycache__" for part in relative.parts
+        ) or (path.suffix.casefold() in {".pyc", ".pyo"}):
             continue
         yield path, relative
+
+
+def is_python_source(path: Path) -> bool:
+    """Return whether a path has a Python suffix on any supported filesystem."""
+    return path.suffix.casefold() == ".py"
+
+
+def is_init_module(path: Path) -> bool:
+    """Return whether a path is an init module independent of filesystem case."""
+    return path.name.casefold() == "__init__.py"
 
 
 def module_name_for_path(source_root: Path, path: Path) -> str:
     """Translate a Python source path below ``src/minions`` to a module name."""
     relative = path.relative_to(source_root)
     parts = list(relative.with_suffix("").parts)
-    if parts[-1] == "__init__":
+    if parts[-1].casefold() == "__init__":
         parts.pop()
     return ".".join(("minions", *parts))
