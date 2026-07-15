@@ -1,0 +1,8 @@
+[project]
+name = "minions-runtime"
+version = "2.0.0"
+requires-python = ">=3.11,<3.14"
+dependencies = []
+
+[tool.uv]
+package = false

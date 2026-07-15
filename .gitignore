@@ -96,7 +96,6 @@ Desktop.ini
 # Python
 *.py[cod]
 *$py.class
-uv.lock
 venv/
 .venv/
 providers.json
