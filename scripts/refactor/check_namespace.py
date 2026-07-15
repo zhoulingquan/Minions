@@ -14,6 +14,7 @@ if __package__:
         iter_owned_files,
         load_architecture_config,
         module_name_for_path,
+        namespace_identity_key,
         validate_source_roots,
     )
 else:
@@ -24,6 +25,7 @@ else:
         iter_owned_files,
         load_architecture_config,
         module_name_for_path,
+        namespace_identity_key,
         validate_source_roots,
     )
 
@@ -45,10 +47,10 @@ def check_namespace(root: Path, config_path: Path | None = None) -> None:
     ownership: dict[tuple[str, str], tuple[str, Path]] = {}
     for source_root in source_roots.values():
         for path, relative in iter_owned_files(source_root.path):
-            keys = [("resource", relative.as_posix().casefold())]
+            keys = [("resource", namespace_identity_key(relative.as_posix()))]
             if is_python_source(path):
                 module = module_name_for_path(source_root.path, path)
-                keys.append(("module", module.casefold()))
+                keys.append(("module", namespace_identity_key(module)))
             for kind, identity in keys:
                 previous = ownership.get((kind, identity))
                 if previous is None:

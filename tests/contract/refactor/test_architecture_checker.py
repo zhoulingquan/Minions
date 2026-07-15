@@ -344,6 +344,30 @@ def test_namespace_checker_rejects_duplicate_module_or_resource_ownership(
     )
 
 
+def test_namespace_checker_preserves_distinct_unicode_resource_paths(
+    tmp_path: Path,
+) -> None:
+    _base_fixture(tmp_path)
+    _write(_source_root(tmp_path, "minions") / "straße.json")
+    _write(_source_root(tmp_path, "minions-core") / "strasse.json")
+
+    result = _run_checker(NAMESPACE_CHECKER, tmp_path)
+
+    _assert_success(result, "namespace ownership valid")
+
+
+def test_namespace_checker_preserves_distinct_unicode_module_paths(
+    tmp_path: Path,
+) -> None:
+    _base_fixture(tmp_path)
+    _write(_source_root(tmp_path, "minions") / "straße.py")
+    _write(_source_root(tmp_path, "minions-core") / "strasse.py")
+
+    result = _run_checker(NAMESPACE_CHECKER, tmp_path)
+
+    _assert_success(result, "namespace ownership valid")
+
+
 def test_namespace_checker_normalizes_module_identity_across_source_roots(
     tmp_path: Path,
 ) -> None:
@@ -368,7 +392,7 @@ def test_namespace_checker_treats_uppercase_py_as_python_module(
     tmp_path: Path,
 ) -> None:
     _base_fixture(tmp_path)
-    module_file = _write(_source_root(tmp_path, "minions") / "foo.PY")
+    module_file = _write(_source_root(tmp_path, "minions") / "Foo.PY")
     package_init = _write(
         _source_root(tmp_path, "minions-core") / "foo" / "__init__.py"
     )

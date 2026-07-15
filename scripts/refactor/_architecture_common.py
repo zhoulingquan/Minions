@@ -288,6 +288,15 @@ def is_init_module(path: Path) -> bool:
     return path.name.casefold() == "__init__.py"
 
 
+def namespace_identity_key(value: str) -> str:
+    """Normalize case without folding one character into several characters."""
+    lowered = (character.lower() for character in value)
+    return "".join(
+        normalized if len(normalized) == 1 else original
+        for original, normalized in zip(value, lowered)
+    )
+
+
 def module_name_for_path(source_root: Path, path: Path) -> str:
     """Translate a Python source path below ``src/minions`` to a module name."""
     relative = path.relative_to(source_root)
