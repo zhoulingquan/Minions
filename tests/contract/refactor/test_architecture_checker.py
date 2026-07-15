@@ -574,6 +574,82 @@ def test_architecture_checker_accepts_allowed_absolute_import(
     _assert_success(result, "0 forbidden edges, 0 distribution cycles")
 
 
+def test_architecture_checker_rejects_noncanonical_configured_source_prefix(
+    tmp_path: Path,
+) -> None:
+    _base_fixture(tmp_path, active_packages=["minions", "minions-core"])
+    _write(_source_root(tmp_path, "minions-core") / "core" / "api.py")
+    source = _write(_source_root(tmp_path, "minions") / "Core" / "orphan.py")
+
+    result = _run_checker(ARCHITECTURE_CHECKER, tmp_path)
+
+    _assert_failure(
+        result,
+        "non-canonical configured source prefix",
+        "minions.Core.orphan",
+        "minions.core",
+        "minions-core",
+        str(source),
+    )
+
+
+def test_architecture_checker_rejects_noncanonical_configured_import_prefix(
+    tmp_path: Path,
+) -> None:
+    _base_fixture(tmp_path, active_packages=["minions", "minions-core"])
+    _write(_source_root(tmp_path, "minions-core") / "core" / "api.py")
+    source = _write(
+        _source_root(tmp_path, "minions") / "app.py",
+        "import minions.Core.api\n",
+    )
+
+    result = _run_checker(ARCHITECTURE_CHECKER, tmp_path)
+
+    _assert_failure(
+        result,
+        "non-canonical configured-prefix internal import",
+        "minions.Core.api",
+        "minions.core",
+        str(source),
+        "line 1",
+    )
+
+
+def test_architecture_checker_accepts_canonical_configured_prefixes(
+    tmp_path: Path,
+) -> None:
+    _base_fixture(tmp_path, active_packages=["minions", "minions-core"])
+    _write(_source_root(tmp_path, "minions-core") / "core" / "api.py")
+    _write(
+        _source_root(tmp_path, "minions") / "app.py",
+        "import minions.core.api\n",
+    )
+
+    result = _run_checker(ARCHITECTURE_CHECKER, tmp_path)
+
+    _assert_success(result, "0 forbidden edges, 0 distribution cycles")
+
+
+def test_architecture_checker_keeps_unicode_configured_prefixes_distinct(
+    tmp_path: Path,
+) -> None:
+    packages = _base_fixture(
+        tmp_path,
+        active_packages=["minions", "minions-core"],
+    )
+    packages["minions-core"]["imports"] = ["minions.straße"]
+    _write_config(tmp_path, packages, ["minions", "minions-core"])
+    _write(_source_root(tmp_path, "minions-core") / "straße" / "api.py")
+    _write(
+        _source_root(tmp_path, "minions") / "strasse" / "consumer.py",
+        "import minions.strasse.api\n",
+    )
+
+    result = _run_checker(ARCHITECTURE_CHECKER, tmp_path)
+
+    _assert_success(result, "0 forbidden edges, 0 distribution cycles")
+
+
 def test_architecture_checker_rejects_forbidden_absolute_import(
     tmp_path: Path,
 ) -> None:

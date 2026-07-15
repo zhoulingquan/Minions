@@ -236,7 +236,18 @@ def _validate_active_source_ownership(
         for path in _python_files(source_root):
             module = module_name_for_path(source_root.path, path)
             configured = config.configured_owner(module)
-            configured_distribution = configured[1] if configured else None
+            if configured is None:
+                configured_distribution = None
+            else:
+                configured_distribution = configured.distribution
+                if not configured.uses_canonical_prefix:
+                    raise ArchitectureError(
+                        f"non-canonical configured source prefix: module {module} "
+                        f"in {path} matches configured prefix {configured.prefix} "
+                        f"for package "
+                        f"{configured_distribution}; use canonical prefix "
+                        f"{configured.prefix}",
+                    )
             if distribution == "minions":
                 if (
                     configured_distribution is not None
@@ -274,7 +285,15 @@ def _target_distribution(
 
     configured = config.configured_owner(target)
     if configured is not None:
-        prefix, distribution = configured
+        prefix = configured.prefix
+        distribution = configured.distribution
+        if not configured.uses_canonical_prefix:
+            return None, (
+                f"non-canonical configured-prefix internal import: "
+                f"{record.source_file} line {record.line} imports {target}; "
+                f"use canonical configured prefix {prefix} "
+                f"({_scope_flags(record)})"
+            )
         if distribution in config.active_packages:
             return distribution, None
         if "minions" in config.active_packages:

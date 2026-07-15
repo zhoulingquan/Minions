@@ -32,6 +32,15 @@ class SourceRoot:
 
 
 @dataclass(frozen=True)
+class ConfiguredOwnership:
+    """A case-equivalent owner match and its canonical-prefix status."""
+
+    prefix: str
+    distribution: str
+    uses_canonical_prefix: bool
+
+
+@dataclass(frozen=True)
 class ArchitectureConfig:
     """Validated architecture configuration."""
 
@@ -40,11 +49,16 @@ class ArchitectureConfig:
     active_packages: frozenset[str]
     prefix_owners: tuple[tuple[str, str], ...]
 
-    def configured_owner(self, module: str) -> tuple[str, str] | None:
-        """Return the longest matching ``(prefix, distribution)`` pair."""
+    def configured_owner(self, module: str) -> ConfiguredOwnership | None:
+        """Return the longest case-equivalent configured owner and prefix."""
+        module_key = namespace_identity_key(module)
         for prefix, distribution in self.prefix_owners:
-            if module == prefix or module.startswith(f"{prefix}."):
-                return prefix, distribution
+            prefix_key = namespace_identity_key(prefix)
+            if module_key == prefix_key or module_key.startswith(
+                f"{prefix_key}."
+            ):
+                canonical = module == prefix or module.startswith(f"{prefix}.")
+                return ConfiguredOwnership(prefix, distribution, canonical)
         return None
 
 
