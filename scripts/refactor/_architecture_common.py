@@ -120,7 +120,7 @@ def load_architecture_config(
         )
 
     packages: dict[str, PackageRule] = {}
-    prefix_owner: dict[str, str] = {}
+    prefix_owners_by_identity: dict[str, tuple[str, str]] = {}
     for distribution, raw_rule in raw_packages.items():
         if not isinstance(distribution, str) or not distribution:
             raise ArchitectureError(
@@ -153,23 +153,27 @@ def load_architecture_config(
                     f"config package {distribution} has invalid minions import prefix "
                     f"{prefix!r}",
                 )
-            previous = prefix_owner.get(prefix)
+            identity = namespace_identity_key(prefix)
+            previous = prefix_owners_by_identity.get(identity)
             if previous is not None:
+                previous_prefix, previous_distribution = previous
                 raise ArchitectureError(
-                    f"duplicate import prefix {prefix!r} is owned by both "
-                    f"{previous} and {distribution}",
+                    f"duplicate import prefixes {previous_prefix!r} "
+                    f"({previous_distribution}) and {prefix!r} "
+                    f"({distribution}) are case-equivalent",
                 )
-            for other_prefix, other_distribution in prefix_owner.items():
-                overlaps = prefix.startswith(
-                    f"{other_prefix}."
-                ) or other_prefix.startswith(f"{prefix}.")
+            for other_identity, owner in prefix_owners_by_identity.items():
+                other_prefix, other_distribution = owner
+                overlaps = identity.startswith(
+                    f"{other_identity}."
+                ) or other_identity.startswith(f"{identity}.")
                 if overlaps and other_distribution != distribution:
                     raise ArchitectureError(
                         f"overlapping import prefixes {other_prefix!r} "
                         f"({other_distribution}) and {prefix!r} "
                         f"({distribution}) have ambiguous ownership",
                     )
-            prefix_owner[prefix] = distribution
+            prefix_owners_by_identity[identity] = (prefix, distribution)
         packages[distribution] = PackageRule(imports, frozenset(allows))
 
     for distribution, rule in packages.items():
@@ -200,7 +204,8 @@ def load_architecture_config(
 
     prefixes = tuple(
         sorted(
-            prefix_owner.items(), key=lambda item: (-len(item[0]), item[0])
+            prefix_owners_by_identity.values(),
+            key=lambda item: (-len(item[0]), item[0]),
         ),
     )
     return ArchitectureConfig(

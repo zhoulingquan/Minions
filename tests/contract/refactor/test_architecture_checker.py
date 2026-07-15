@@ -497,6 +497,53 @@ def test_checkers_reject_duplicate_import_prefix_ownership(
         )
 
 
+def test_checkers_reject_case_equivalent_import_prefix_ownership(
+    tmp_path: Path,
+) -> None:
+    packages = _base_fixture(tmp_path)
+    packages["minions-runtime"]["imports"] = ["minions.Core"]
+    config = _write_config(
+        tmp_path,
+        packages,
+        ["minions", "minions-core", "minions-runtime"],
+        name="case-equivalent-prefix.toml",
+    )
+
+    for checker in (NAMESPACE_CHECKER, ARCHITECTURE_CHECKER):
+        result = _run_checker(checker, tmp_path, config=config)
+        _assert_failure(
+            result,
+            "duplicate",
+            "minions.core",
+            "minions-core",
+            "minions.Core",
+            "minions-runtime",
+        )
+
+
+def test_checkers_reject_same_owner_case_equivalent_import_prefixes(
+    tmp_path: Path,
+) -> None:
+    packages = _base_fixture(tmp_path)
+    packages["minions-core"]["imports"] = ["minions.core", "minions.Core"]
+    config = _write_config(
+        tmp_path,
+        packages,
+        ["minions", "minions-core", "minions-runtime"],
+        name="same-owner-case-equivalent-prefix.toml",
+    )
+
+    for checker in (NAMESPACE_CHECKER, ARCHITECTURE_CHECKER):
+        result = _run_checker(checker, tmp_path, config=config)
+        _assert_failure(
+            result,
+            "duplicate",
+            "minions.core",
+            "minions.Core",
+            "minions-core",
+        )
+
+
 def test_checkers_reject_overlapping_import_prefix_ownership(
     tmp_path: Path,
 ) -> None:
@@ -519,6 +566,77 @@ def test_checkers_reject_overlapping_import_prefix_ownership(
             "minions.core.detail",
             "minions-providers",
         )
+
+
+def test_checkers_reject_case_equivalent_boundary_overlap(
+    tmp_path: Path,
+) -> None:
+    packages = _base_fixture(tmp_path)
+    packages["minions-providers"]["imports"] = ["minions.Core.detail"]
+    config = _write_config(
+        tmp_path,
+        packages,
+        ["minions", "minions-core", "minions-runtime"],
+        name="case-equivalent-overlap.toml",
+    )
+
+    for checker in (NAMESPACE_CHECKER, ARCHITECTURE_CHECKER):
+        result = _run_checker(checker, tmp_path, config=config)
+        _assert_failure(
+            result,
+            "overlapping",
+            "minions.core",
+            "minions-core",
+            "minions.Core.detail",
+            "minions-providers",
+        )
+
+
+def test_checkers_allow_same_owner_parent_child_import_prefixes(
+    tmp_path: Path,
+) -> None:
+    packages = _base_fixture(
+        tmp_path,
+        active_packages=["minions", "minions-core"],
+    )
+    packages["minions-core"]["imports"] = [
+        "minions.core",
+        "minions.core.detail",
+    ]
+    config = _write_config(
+        tmp_path,
+        packages,
+        ["minions", "minions-core"],
+        name="same-owner-parent-child.toml",
+    )
+
+    for checker, phrase in (
+        (NAMESPACE_CHECKER, "namespace ownership valid"),
+        (ARCHITECTURE_CHECKER, "0 forbidden edges, 0 distribution cycles"),
+    ):
+        result = _run_checker(checker, tmp_path, config=config)
+        _assert_success(result, phrase)
+
+
+def test_checkers_keep_unicode_import_prefixes_distinct(
+    tmp_path: Path,
+) -> None:
+    packages = _base_fixture(tmp_path)
+    packages["minions-core"]["imports"] = ["minions.straße"]
+    packages["minions-runtime"]["imports"] = ["minions.strasse"]
+    config = _write_config(
+        tmp_path,
+        packages,
+        ["minions", "minions-core", "minions-runtime"],
+        name="unicode-distinct-prefixes.toml",
+    )
+
+    for checker, phrase in (
+        (NAMESPACE_CHECKER, "namespace ownership valid"),
+        (ARCHITECTURE_CHECKER, "0 forbidden edges, 0 distribution cycles"),
+    ):
+        result = _run_checker(checker, tmp_path, config=config)
+        _assert_success(result, phrase)
 
 
 @pytest.mark.parametrize("checker", (NAMESPACE_CHECKER, ARCHITECTURE_CHECKER))
