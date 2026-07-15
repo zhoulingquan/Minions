@@ -198,7 +198,8 @@ def _is_type_checking_guard(node: ast.AST) -> bool:
     )
 
 
-def _python_files(source_root: SourceRoot) -> Iterable[Path]:
+def iter_python_files(source_root: SourceRoot) -> Iterable[Path]:
+    """Yield Python source files using the namespace checker's semantics."""
     for path, _relative in iter_owned_files(source_root.path):
         if is_python_source(path):
             yield path
@@ -228,12 +229,13 @@ def _scan_file(
     return collector.records, [error.render() for error in collector.errors]
 
 
-def _validate_active_source_ownership(
+def validate_active_source_ownership(
     config: ArchitectureConfig,
     source_roots: dict[str, SourceRoot],
 ) -> None:
+    """Validate configured ownership for every active Python source."""
     for distribution, source_root in source_roots.items():
-        for path in _python_files(source_root):
+        for path in iter_python_files(source_root):
             module = module_name_for_path(source_root.path, path)
             configured = config.configured_owner(module)
             if configured is None:
@@ -268,10 +270,11 @@ def _validate_active_source_ownership(
                 )
 
 
-def _target_distribution(
+def resolve_target_distribution(
     config: ArchitectureConfig,
     record: ImportRecord,
 ) -> tuple[str | None, str | None]:
+    """Resolve an import occurrence to its active distribution ownership."""
     target = record.target_module
     top_level = target.partition(".")[0]
     if top_level.casefold() == "minions" and top_level != "minions":
@@ -396,29 +399,47 @@ def _distribution_cycles(
     )
 
 
-def check_architecture(
+def scan_import_records(
     root: Path,
     config_path: Path | None = None,
-) -> ArchitectureReport:
-    """Analyze active source roots and return all import-edge diagnostics."""
+) -> tuple[
+    ArchitectureConfig,
+    dict[str, SourceRoot],
+    tuple[ImportRecord, ...],
+    tuple[str, ...],
+]:
+    """Collect imports with the gate's source-root and ownership semantics."""
     root = root.resolve()
     config = load_architecture_config(root, config_path)
     source_roots = validate_source_roots(root, config)
-    _validate_active_source_ownership(config, source_roots)
+    validate_active_source_ownership(config, source_roots)
 
     records: list[ImportRecord] = []
     errors: list[str] = []
     for distribution in sorted(source_roots):
         source_root = source_roots[distribution]
-        for path in _python_files(source_root):
+        for path in iter_python_files(source_root):
             file_records, file_errors = _scan_file(source_root, path)
             records.extend(file_records)
             errors.extend(file_errors)
+    return config, source_roots, tuple(records), tuple(errors)
+
+
+def check_architecture(
+    root: Path,
+    config_path: Path | None = None,
+) -> ArchitectureReport:
+    """Analyze active source roots and return all import-edge diagnostics."""
+    config, _source_roots, records, scan_errors = scan_import_records(
+        root,
+        config_path,
+    )
 
     graph = {distribution: set() for distribution in config.active_packages}
     forbidden: list[ForbiddenEdge] = []
+    errors = list(scan_errors)
     for record in records:
-        target_distribution, ownership_error = _target_distribution(
+        target_distribution, ownership_error = resolve_target_distribution(
             config, record
         )
         if ownership_error is not None:
