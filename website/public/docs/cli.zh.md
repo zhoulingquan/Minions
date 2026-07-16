@@ -287,7 +287,7 @@ minions env delete TAVILY_API_KEY
 
 ### minions channels
 
-管理频道配置（iMessage / Discord / DingTalk / Feishu / QQ / Console 等）并向频道发送消息。
+管理频道配置（DingTalk / Feishu / QQ / WeCom / WeChat / Yuanbao / Console 等）并向频道发送消息。
 **说明**：交互式配置用 `config`（无 `configure` 子命令）；卸载自定义频道用 `remove`（无 `uninstall`）。
 
 **别名：** 可以用 `minions channel`（单数）作为 `minions channels` 的简写。
@@ -311,8 +311,6 @@ minions channels config --agent-id abc123 # 交互式配置特定智能体
 
 | 频道         | 需要填写的字段                                                             |
 | ------------ | -------------------------------------------------------------------------- |
-| **iMessage** | Bot 前缀、数据库路径、轮询间隔                                             |
-| **Discord**  | Bot 前缀、Bot Token、HTTP 代理、代理认证                                   |
 | **DingTalk** | Bot 前缀、Client ID、Client Secret、消息类型、Card 模板 ID/Key、Robot Code |
 | **Feishu**   | Bot 前缀、App ID、App Secret                                               |
 | **QQ**       | Bot 前缀、App ID、Client Secret                                            |
@@ -351,7 +349,7 @@ minions channels send \
 **必填参数（全部 5 个）：**
 
 - `--agent-id`：发送方智能体 ID
-- `--channel`：目标频道（console/dingtalk/feishu/discord/imessage/qq）
+- `--channel`：目标频道（console/dingtalk/feishu/qq/wecom/wechat/yuanbao）
 - `--target-user`：用户 ID（从 `minions chats list` 获取）
 - `--target-session`：会话 ID（从 `minions chats list` 获取）
 - `--text`：消息内容
@@ -770,7 +768,7 @@ minions --host 0.0.0.0 --port 9090 cron list
 
 - [项目介绍](./intro) —— Minions 可以做什么
 - [控制台](./console) —— Web 管理界面
-- [频道配置](./channels) —— 钉钉、飞书、iMessage、Discord、QQ 详细步骤
+- [频道配置](./channels) —— 钉钉、飞书、QQ、企业微信、微信、腾讯元宝 详细步骤
 - [心跳](./heartbeat) —— 定时自检/摘要
 - [技能](./skills) —— 内置技能与自定义技能
 - [配置与工作目录](./config) —— 工作目录与 config.json

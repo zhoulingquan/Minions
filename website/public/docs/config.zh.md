@@ -253,17 +253,11 @@ $MINIONS_SECRET_DIR/                       # 默认 ~/.minions.secret
 - **console** — 控制台（默认启用）
 - **dingtalk** — 钉钉
 - **feishu** — 飞书/Lark
-- **discord** — Discord
-- **telegram** — Telegram
 - **qq** — QQ 机器人
-- **imessage** — iMessage（仅 macOS）
-- **mattermost** — Mattermost
-- **matrix** — Matrix
 - **wecom** — 企业微信
 - **wechat** — 微信个人（iLink）
-- **xiaoyi** — 华为小艺
-- **mqtt** — MQTT
-- **voice** — Voice
+- **yuanbao** — 腾讯元宝
+- **（自定义频道）** — 通过插件系统扩展接入的其它频道
 
 > **完整配置说明：** 每个频道的通用字段、专属字段（如钉钉的 `client_id`、飞书的 `app_id`）和详细配置步骤请参见 [频道配置](./channels)。
 
@@ -438,7 +432,7 @@ MCP（模型上下文协议）允许智能体连接外部服务（如 Filesystem
 
 | 字段         | 类型   | 默认值 | 说明                                     |
 | ------------ | ------ | ------ | ---------------------------------------- |
-| `channel`    | string | `""`   | 频道名称（如 `"discord"`、`"dingtalk"`） |
+| `channel`    | string | `""`   | 频道名称（如 `"dingtalk"`、`"feishu"`） |
 | `user_id`    | string | `""`   | 该频道中的用户 ID                        |
 | `session_id` | string | `""`   | 会话/对话 ID                             |
 

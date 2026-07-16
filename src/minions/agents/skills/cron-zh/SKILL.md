@@ -141,7 +141,7 @@ minions cron create \
   --schedule-type cron \
   --name "每日早安" \
   --cron "0 9 * * *" \
-  --channel imessage \
+  --channel dingtalk \
   --target-user "CHANGEME" \
   --target-session "CHANGEME" \
   --text "早上好！"

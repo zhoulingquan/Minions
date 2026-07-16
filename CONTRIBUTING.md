@@ -2,7 +2,7 @@
 
 ## 欢迎！🐾
 
-感谢你对 Minions 的关注！Minions 是一个开源的**个人 AI 助手**，可以在你自己的环境中运行——无论是你的机器还是云端。它可以连接钉钉、飞书、QQ、Discord、iMessage 等聊天应用，支持定时任务和心跳机制，并通过 **Skills** 扩展其能力。我们热烈欢迎能让 Minions 对所有人更有用的贡献：无论是添加新的频道、新的模型提供商、Skill，改进文档，还是修复 bug。
+感谢你对 Minions 的关注！Minions 是一个开源、可自托管的**AI 智能体运行平台**，可以在你自己的环境中运行——无论是你的机器还是云端。它可以连接钉钉、飞书、QQ、企业微信、微信、腾讯元宝等聊天应用，支持定时任务和心跳机制，并通过 **Skills** 扩展其能力。我们热烈欢迎能让 Minions 对所有人更有用的贡献：无论是添加新的频道、新的模型提供商、Skill，改进文档，还是修复 bug。
 
 **快速链接：** [GitHub](https://github.com/agentscope-ai/Minions) · [文档](https://minions.agentscope.io/) · [许可证：Apache 2.0](LICENSE)
 
@@ -113,11 +113,11 @@ Minions 支持多种提供商：包括云提供商（如 DashScope、ModelScope�
 
 ### 添加新频道
 
-频道是 Minions 与**钉钉、飞书、QQ、Discord、iMessage** 等通信的方式。你可以添加新频道，以便 Minions 可以与你喜欢的 IM 或机器人平台配合使用。
+频道是 Minions 与**钉钉、飞书、QQ、企业微信、微信、腾讯元宝**等通信的方式（也可通过插件系统接入自定义频道）。你可以添加新频道，以便 Minions 可以与你喜欢的 IM 或机器人平台配合使用。
 
 - **协议：** 所有频道使用统一的进程内契约：**原生 payload → `content_parts`**（如 `TextContent`、`ImageContent`、`FileContent`）。agent 接收带有这些内容部分的 `AgentRequest`；回复通过频道的发送路径返回。
 - **实现：** 实现 **`BaseChannel` 的子类**（在 `src/minions/app/channels/base.py` 中）：
-  - 将类属性 `channel` 设置为唯一的频道键（如 `"telegram"`）。
+  - 将类属性 `channel` 设置为唯一的频道键（如 `"dingtalk"`）。
   - 实现生命周期和消息处理（如 receive → `content_parts` → `process` → send response）。
   - 如果频道是长期运行的（默认），使用 manager 的队列和消费者循环。
 - **发现：** 内置频道在 `src/minions/app/channels/registry.py` 中注册。**自定义频道**通过插件系统注册 — 创建 `type: "channel"` 的插件，在 `register()` 方法中调用 `api.register_channel(...)`。完整示例请参阅[插件系统文档](website/public/docs/plugins.zh.md)。
@@ -228,6 +228,6 @@ Minions 旨在在 **Windows**、**Linux** 和 **macOS** 上运行。欢迎改进
 
 - **讨论：** [GitHub Discussions](https://github.com/agentscope-ai/Minions/discussions)
 - **Bug 和功能：** [GitHub Issues](https://github.com/agentscope-ai/Minions/issues)
-- **社区：** 钉钉群（见 [README](README_zh.md)）和 [Discord](https://discord.gg/eYMpfnkG8h)
+- **社区：** 钉钉群（见 [README](README_zh.md)）
 
 感谢你为 Minions 贡献代码。你的工作帮助它成为每个人更好的助手。🐾
