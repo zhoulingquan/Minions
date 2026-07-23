@@ -40,6 +40,5 @@ SAGE 需要同时满足自动学习、自我成长、企业长期稳定、多租
 
 ## References
 
-- `docs/plans/2026-07-13-sage-complete-system-design.md`
-- `docs/plans/2026-07-13-sage-evolution-design.md`
+- （设计计划文档已归档移除）
 

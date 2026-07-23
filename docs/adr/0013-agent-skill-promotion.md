@@ -40,6 +40,5 @@ Add an explicit agent-skill promotion operation. The operation compares the curr
 
 ## References
 
-- `docs/plans/2026-07-13-agent-skill-promotion-design.md`
 - `src/minions/agents/skill_system/global_skill_service.py`
 

@@ -12,7 +12,7 @@ Minions 提供了插件系统，允许用户扩展 Minions 的功能。
 - **Command 插件**：注册自定义的 `/command` 魔法命令
 - **HTTP API 插件**：通过 FastAPI `APIRouter` 在 `/api` 下暴露自定义 REST 接口
 - **前端扩展插件**：在浏览器中运行的 JS 插件，共享宿主的 React / Ant Design 运行时，通过声明式 `window.Minions.*` API 扩展界面——注册侧边栏菜单、页面路由、UI 插槽、聊天定制等，无需修改宿主代码
-- **Channel 插件**：注册自定义消息频道（如 Slack、LINE）
+- **Channel 插件**：注册自定义消息频道（如对接新的 IM 平台）
 
 ## 插件管理
 
@@ -1411,7 +1411,7 @@ plugin = ThinkingLogPlugin()
 ### 示例 10：注册自定义消息频道
 
 Channel 插件可以为 Minions 添加新的消息平台。注册后的频道会在控制台 UI 中与内置
-频道（钉钉、Telegram 等）一起显示，支持同样的启用/禁用和配置方式。
+频道（钉钉、飞书等内置频道）一起显示，支持同样的启用/禁用和配置方式。
 
 #### 1. 创建插件目录
 

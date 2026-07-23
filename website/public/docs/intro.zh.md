@@ -10,7 +10,7 @@ Minions 是一款**个人助理型产品**，部署在你自己的环境中。
 
 ![控制台](https://img.alicdn.com/imgextra/i1/O1CN01ikrU3k1TRdNESHtzV_!!6000000002379-2-tps-3822-2070.png)
 
-- **多通道对话** — 通过钉钉、飞书、Discord、Telegram 等与你对话。
+- **多通道对话** — 通过钉钉、飞书、QQ、企业微信、微信、腾讯元宝等应用，或在 Web 控制台中与 Minions 对话；频道还可通过插件系统扩展（自定义频道）。
 - **多智能体协作** — 支持创建多个独立智能体，每个智能体拥有独立配置、业务经验和技能，
   还可以通过协作技能互相通信、共同完成复杂任务。
 - **定时执行** — 按你的配置自动运行任务。
@@ -32,7 +32,7 @@ Minions 由 [AgentScope 团队](https://github.com/agentscope-ai) 基于
 使用方式可以概括为两类：
 
 1. **在聊天软件里对话**
-   在钉钉、飞书、微信、Discord、Telegram等app里发消息，Minions 在同一 app 内回复，
+    在钉钉、飞书、QQ、企业微信、微信、腾讯元宝等 app 里发消息，Minions 在同一 app 内回复，
    查资料、记待办、回答问题等都由当前启用的 Skills 完成。一个 Minions 可同时接入多个
    app，你在哪个频道聊，它就在哪个频道回。
 
@@ -51,7 +51,7 @@ Minions 由 [AgentScope 团队](https://github.com/agentscope-ai) 基于
 
 - **控制台** — Minions 内置的 Web 管理界面，可以在控制台中对话、配置频道、管理技能、
   设置模型等。详见 [控制台](./console)。
-- **频道** — 你和 Minions 对话的「场所」（钉钉、飞书、QQ、Discord、iMessage 等）。在
+- **频道** — 你和 Minions 对话的「场所」（钉钉、飞书、QQ、企业微信、微信、腾讯元宝、Web 控制台等）。在
   [频道配置](./channels) 中按步骤配置。
 - **心跳** — 按固定间隔用你写好的一段问题去问 Minions，并可选择把回答发到你上次使用的
   频道。详见 [心跳](./heartbeat)。
@@ -81,7 +81,7 @@ Minions 由 [AgentScope 团队](https://github.com/agentscope-ai) 基于
 3. **[模型](./models)** — 配置云端 LLM 提供商的 API Key，或下载本地模型。这是使用
    Minions 的**必要前提**。
 4. **按需配置与使用**：
-   - [频道配置](./channels) — 接入钉钉 / 飞书 / 微信 / Discord / Telegram 等，在对应 app 里与 Minions 对话；
+    - [频道配置](./channels) — 接入钉钉 / 飞书 / QQ / 企业微信 / 微信 / 腾讯元宝 等，在对应 app 里与 Minions 对话，也可通过插件接入自定义频道；
    - [Skills](./skills) — 了解与扩展 Minions 能力；
    - [MCP和工具](./mcp) — 接入外部 MCP 工具服务器；
    - [魔法命令](./commands) — 使用特殊命令快速控制对话状态（如 `/new` 开启新对话、`/clear` 清空历史、`/stop` 停止任务、`/restart` 重启服务等），无需等待 AI 理解；

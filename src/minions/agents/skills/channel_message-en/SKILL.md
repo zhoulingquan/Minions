@@ -228,7 +228,7 @@ minions channels list --agent-id <your_agent>
 
 **Required parameters** (5):
 - `--agent-id`: sender agent ID
-- `--channel`: target channel (console/dingtalk/feishu/discord/imessage/qq/...)
+- `--channel`: target channel (console/dingtalk/feishu/qq/wecom/wechat/yuanbao built-in channels, or custom channels via plugins)
 - `--target-user`: target user ID (obtained from `minions chats list`)
 - `--target-session`: target session ID (obtained from `minions chats list`)
 - `--text`: message content

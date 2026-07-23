@@ -14,7 +14,7 @@ assignees: []
 
 - [ ] Core / Backend (app, agents, config, providers, utils, local_models)
 - [ ] Console (frontend web UI)
-- [ ] Channels (DingTalk, Feishu, QQ, Discord, iMessage, etc.)
+- [ ] Channels (Console, DingTalk, Feishu, QQ, WeCom, WeChat, Yuanbao, and custom channels via plugins)
 - [ ] Skills
 - [ ] CLI
 - [ ] Documentation (website)

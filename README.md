@@ -8,14 +8,13 @@
 [![Python 版本](https://img.shields.io/badge/python-3.11%20~%20%3C3.14-blue.svg?logo=python&label=Python)](https://www.python.org/downloads/)
 [![许可证](https://img.shields.io/badge/license-Apache%202.0-red.svg?logo=apache&label=%E8%AE%B8%E5%8F%AF%E8%AF%81)](LICENSE)
 [![GitHub Star](https://img.shields.io/github/stars/agentscope-ai/Minions?style=flat&logo=github&color=yellow&label=Star)](https://github.com/agentscope-ai/Minions/stargazers)
-[![Discord](https://img.shields.io/badge/Discord-Join_Us-blueviolet.svg?logo=discord)](https://discord.gg/eYMpfnkG8h)
 [![钉钉群](https://img.shields.io/badge/DingTalk-Join_Us-orange.svg)](https://qr.dingtalk.com/action/joingroup?code=v1,k1,OmDlBXpjW+I2vWjKDsjvI9dhcXjGZi3bQiojOq3dlDw=&_dt_no_comment=1&origin=11)
 
 [[文档](https://minions.agentscope.io/)] [[English](README.md)]
 
-**你的个人 AI 助理 — 随时随地，私有部署。**
+**开源的自托管 AI 智能体工作站与多智能体编排平台 — 可完全本地私有部署，数据不离开你的机器。**
 
-> Minions 基于 [QwenPAW](https://github.com/zhoulingquan/qwenpaw)（Qwen Personal Agent Workstation）发展而来。
+> Minions 由 [QwenPAW](https://github.com/zhoulingquan/qwenpaw)（Qwen Personal Agent Workstation）发展而来，在"私有部署的个人工作台"基础上，扩展为多智能体、多频道、可多租户运行的平台。
 
 </div>
 
@@ -23,7 +22,7 @@
 
 ## Minions 是什么
 
-**Minions 是一个开源的个人 AI 助理平台**。它不是套在 LLM 外层的聊天壳子，而是一个从底层设计的**智能体运行引擎** — 管理上下文、调度模型、执行工具、守卫安全、沉淀记忆，所有能力都可被 Skills 和插件扩展。
+**Minions 是一个开源、可自托管的 AI 智能体（Agent）运行平台**。它不是套在 LLM 外层的聊天壳子，而是一个从底层设计的**智能体运行引擎** — 管理上下文、调度模型、执行工具、守卫安全、沉淀记忆，所有能力都可被 Skills 和插件扩展。它既能以纯本地、私有方式在你自己的机器上运行，也能以多租户形态服务于团队与组织。
 
 ## 为什么选择 Minions（和其他 AI 助手的区别）
 
@@ -42,7 +41,7 @@
 
 ## 一句话上手
 
-**`pip install minions && minions init --defaults && minions app`** — 然后浏览器打开 `http://127.0.0.1:8088`，你的 AI 助理就上线了。
+**`pip install minions && minions init --defaults && minions app`** — 然后浏览器打开 `http://127.0.0.1:8088`，你的智能体工作台就上线了。
 
 ---
 
@@ -208,10 +207,12 @@ L5  扩展层
 | 层级 | 容量 | 机制 |
 |------|------|------|
 | **Working Context** | 当前轮次 | 活跃上下文，完整保留当前交互 |
-| **Memory Scroll** | 知识蒸馏 | 重要事实/决策/用户偏好经提取后沉淀，非向量检索 |
-| **Full History** | 完整逐字存储 | 早期轮次被逐出 Working Context 但完整保留，可随时精确召回 |
+| **Memory Scroll（折叠索引）** | 上下文内索引 | 被逐出 Working Context 的轮次以折叠摘要（headline）形式保留在上下文中，作为可重新展开的"地图"，非独立知识库、非向量检索 |
+| **Full History** | 完整逐字存储 | 早期轮次被逐出 Working Context 但完整保留于 SQLite + FTS5，可随时精确召回 |
 
-**联动机制**：Working Context 满了 → 历史轮次转入 Full History 存储 → 关键知识同步到 Memory Scroll → 需要时从 Full History 中精确检索，**不压缩、不摘要、不丢失**。
+**联动机制**：Working Context 满了 → 历史轮次逐字写入 Full History（SQLite + FTS5）→ 被逐出内容在上下文中以折叠索引（Memory Scroll）保留"地图" → 需要时从 Full History 中精确检索并重新展开，**不压缩、不丢失**。
+
+> 说明：Minions 的记忆系统以"逐字持久化 + 精确召回"为核心，避免传统助理的摘要压缩丢信息；它并不包含独立的"事实/偏好知识蒸馏沉淀"模块，折叠索引是上下文内的摘要地图而非独立知识库。
 
 ### 2. Scroll 上下文管理引擎
 

@@ -88,7 +88,7 @@
 
 > 侧边栏：**控制 → 频道**
 
-在这里管理各消息频道（Console、钉钉、飞书、Discord、QQ、微信、iMessage等）的开关和凭据。
+在这里管理各消息频道（Console、钉钉、飞书、QQ、企业微信、微信、腾讯元宝等）的开关和凭据。
 
 ![频道](https://img.alicdn.com/imgextra/i1/O1CN01sDfcFb1kfEcUB66Va_!!6000000004710-2-tps-3810-2064.png)
 

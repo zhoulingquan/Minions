@@ -228,7 +228,7 @@ minions channels list --agent-id <your_agent>
 
 **必填参数**（5个）：
 - `--agent-id`：发送方agent ID
-- `--channel`：目标频道（console/dingtalk/feishu/discord/imessage/qq/...）
+- `--channel`：目标频道（console/dingtalk/feishu/qq/wecom/wechat/yuanbao 等内置频道，或通过插件接入的自定义频道）
 - `--target-user`：目标用户ID（从 `minions chats list` 获取）
 - `--target-session`：目标会话ID（从 `minions chats list` 获取）
 - `--text`：消息内容
