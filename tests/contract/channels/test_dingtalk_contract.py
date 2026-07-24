@@ -22,7 +22,7 @@ import pytest
 from tests.contract.channels import ChannelContractTest
 
 if TYPE_CHECKING:
-    from minions.app.channels.base import BaseChannel
+    from minions.channels.base import BaseChannel
 
 
 class TestDingTalkChannelContract(ChannelContractTest):
@@ -51,7 +51,7 @@ class TestDingTalkChannelContract(ChannelContractTest):
 
         Uses mocks to avoid requiring real DingTalk credentials.
         """
-        from minions.app.channels.dingtalk.channel import DingTalkChannel
+        from minions.channels.dingtalk.channel import DingTalkChannel
 
         process = AsyncMock()
 

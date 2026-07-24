@@ -47,6 +47,8 @@ jobs:
             python-version: "3.11"
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Download dist artifacts
         uses: actions/download-artifact@v4
         with:
@@ -69,13 +71,14 @@ jobs:
         run: |
           python -m venv .verify-venv
           if [ "$RUNNER_OS" = "Windows" ]; then
+            VENV_PYTHON=".verify-venv/Scripts/python.exe"
             VENV_BIN="$(cd .verify-venv/Scripts && pwd)"
           else
+            VENV_PYTHON=".verify-venv/bin/python"
             VENV_BIN="$(cd .verify-venv/bin && pwd)"
           fi
-          source "$VENV_BIN/activate"
-          python -m pip install --upgrade pip
-          pip install dist/*.whl
+          "$VENV_PYTHON" -m pip install --upgrade pip
+          python scripts/install_built_wheels.py --venv .verify-venv
           echo "$VENV_BIN" >> "$GITHUB_PATH"
 
       - name: Read expected version
@@ -220,7 +223,7 @@ jobs:
         run: |
           expected=$(python3 -c "
           import re, pathlib
-          text = pathlib.Path('src/minions/__version__.py').read_text()
+          text = pathlib.Path('packages/minions-core/src/minions/__version__.py').read_text()
           print(re.search(r'__version__\s*=\s*\"([^\"]+)\"', text).group(1))
           ")
           response=$(curl -sf http://127.0.0.1:8088/api/version)
@@ -275,9 +278,9 @@ jobs:
       - name: Copy console build into package
         shell: bash
         run: |
-          rm -rf src/minions/console/*
-          mkdir -p src/minions/console
-          cp -R console/dist/* src/minions/console/
+          rm -rf packages/minions-app/src/minions/console/*
+          mkdir -p packages/minions-app/src/minions/console
+          cp -R console/dist/* packages/minions-app/src/minions/console/
 
       - name: Run install script (Linux/macOS)
         if: runner.os != 'Windows'
@@ -303,7 +306,7 @@ jobs:
           # Verify version matches source
           expected=$(python -c "
           import re, pathlib
-          text = pathlib.Path('src/minions/__version__.py').read_text()
+          text = pathlib.Path('packages/minions-core/src/minions/__version__.py').read_text()
           print(re.search(r'__version__\s*=\s*\"([^\"]+)\"', text).group(1))
           ")
           actual=$(minions --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+[a-zA-Z0-9.]*' | head -1)

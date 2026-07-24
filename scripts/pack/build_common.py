@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 # pylint:disable=too-many-statements
 """
-Create a temporary conda env, install Minions from a wheel, run conda-pack.
+Create a temporary conda env, install Minions from local workspace wheels,
+then run conda-pack.
 Used by build_macos.sh and build_win.ps1. Run from repo root.
 """
 from __future__ import annotations
@@ -16,6 +17,13 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+SCRIPTS_ROOT = REPO_ROOT / "scripts"
+if str(SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_ROOT))
+
+from install_built_wheels import collect_workspace_wheels  # noqa: E402
+
+
 ENV_PREFIX = "minions_pack_"
 
 # Packages affected by conda-unpack bug on Windows (conda-pack Issue #154)
@@ -51,25 +59,26 @@ def _run(
     subprocess.run(cmd, cwd=cwd or REPO_ROOT, env=run_env, check=True)
 
 
-def _pick_wheel(wheel_arg: str | None) -> Path:
+def _workspace_wheels(wheel_arg: str | None) -> tuple[tuple[Path, ...], Path]:
+    """Collect all local wheels and identify the source-free meta wheel."""
     if wheel_arg:
         wheel_path = Path(wheel_arg).expanduser()
         if not wheel_path.is_absolute():
             wheel_path = (REPO_ROOT / wheel_path).resolve()
-        if not wheel_path.exists():
+        if not wheel_path.is_file():
             raise FileNotFoundError(f"Wheel not found: {wheel_path}")
-        return wheel_path
+        dist = wheel_path.parent
+    else:
+        wheel_path = None
+        dist = REPO_ROOT / "dist"
 
-    wheels = sorted(
-        (REPO_ROOT / "dist").glob("minions-*.whl"),
-        key=lambda p: p.stat().st_mtime,
-        reverse=True,
-    )
-    if not wheels:
-        raise FileNotFoundError(
-            "No wheel found in dist/. Run: bash scripts/wheel_build.sh",
-        )
-    return wheels[0]
+    wheels = collect_workspace_wheels(dist)
+    if wheel_path is not None and wheel_path not in wheels:
+        raise FileNotFoundError(f"Wheel is not part of the workspace set: {wheel_path}")
+    meta_wheels = tuple(path for path in wheels if path.name.startswith("minions-"))
+    if len(meta_wheels) != 1:
+        raise RuntimeError(f"expected one minions meta wheel, found {len(meta_wheels)}")
+    return wheels, meta_wheels[0]
 
 
 def main() -> int:
@@ -98,8 +107,8 @@ def main() -> int:
         "--wheel",
         default=None,
         help=(
-            "Wheel path to install. If omitted, pick the newest "
-            "dist/minions-*.whl."
+            "Path to a wheel in the complete workspace set. All 14 sibling "
+            "wheels are installed; defaults to dist/."
         ),
     )
     parser.add_argument(
@@ -113,8 +122,9 @@ def main() -> int:
     args = parser.parse_args()
     out_path = Path(args.output).resolve()
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    wheel_path = _pick_wheel(args.wheel)
-    wheel_uri = wheel_path.resolve().as_uri()
+    wheel_paths, meta_wheel = _workspace_wheels(args.wheel)
+    component_wheels = tuple(path for path in wheel_paths if path != meta_wheel)
+    meta_requirement = f"minions[full] @ {meta_wheel.resolve().as_uri()}"
     env_name = (
         f"{ENV_PREFIX}{''.join(random.choices(string.ascii_lowercase, k=8))}"
     )
@@ -153,7 +163,8 @@ def main() -> int:
                 "-m",
                 "pip",
                 "install",
-                f"minions[full] @ {wheel_uri}",
+                *(str(path) for path in component_wheels),
+                meta_requirement,
             ],
             env=install_env,
         )

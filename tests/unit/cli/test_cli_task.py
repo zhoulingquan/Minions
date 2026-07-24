@@ -307,7 +307,7 @@ def test_e2e_cli_no_guard_and_skills_dir(monkeypatch, tmp_path):
 
 
 def test_isolated_workspace_creates_overlay(tmp_path):
-    """Overlay workspace symlinks skills and pre-populates manifest."""
+    """Overlay links or copies skills and pre-populates its manifest."""
     from minions.cli.task_cmd import _isolated_skills_workspace
     from minions.agents.skill_system import resolve_effective_skills
 
@@ -329,8 +329,13 @@ def test_isolated_workspace_creates_overlay(tmp_path):
         assert overlay is not None
         assert overlay != base_ws
 
-        assert (overlay / "skills").is_symlink()
-        assert (overlay / "skills").resolve() == skills_dir.resolve()
+        overlay_skills = overlay / "skills"
+        assert overlay_skills.is_dir()
+        if overlay_skills.is_symlink():
+            assert overlay_skills.resolve() == skills_dir.resolve()
+        else:
+            assert (overlay_skills / "alpha" / "SKILL.md").is_file()
+            assert (overlay_skills / "beta" / "SKILL.md").is_file()
 
         manifest_path = overlay / "skill.json"
         assert manifest_path.exists()
@@ -340,7 +345,7 @@ def test_isolated_workspace_creates_overlay(tmp_path):
         assert "not-a-skill" not in manifest["skills"]
         assert manifest["skills"]["alpha"]["enabled"] is True
 
-        assert (overlay / "AGENTS.md").is_symlink()
+        assert (overlay / "AGENTS.md").is_file()
         assert (overlay / "AGENTS.md").read_text() == "agent prompt"
 
         resolved = resolve_effective_skills(overlay, "console")

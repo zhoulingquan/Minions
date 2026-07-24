@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""UT for the tool_adapter approval-scope consumer (the lever).
+"""UT for the injected tool_adapter approval-scope consumer.
 
 ``_ask_user_approval`` must pick the recorded rule target from the user's
-chosen scope: SIMILAR → the generalized pattern, EXACT/None → the literal
-target. This exercises that decision with a fake ApprovalService + governor
-so no real model / HTTP / agentscope runtime is needed.
+chosen scope: SIMILAR -> the generalized pattern, EXACT/None -> the literal
+target. This exercises that decision through ``ApprovalRequester`` without
+an app singleton, real model, HTTP, or AgentScope runtime.
 """
 from __future__ import annotations
 
@@ -17,42 +17,21 @@ from minions.security.tool_guard.approval import (
 )
 
 
-class _FakePending:
-    def __init__(self, request_id: str) -> None:
-        self.request_id = request_id
-        self.scope: ApprovalScope | None = None
-
-
-class _FakeApprovalService:
-    """Stand-in for ApprovalService.
-
-    ``wait_for_approval`` resolves APPROVED and stashes the chosen scope on
-    the pending record — mirroring what ``resolve_request`` does for real.
-    """
-
+class _FakeApprovalRequester:
     def __init__(self, scope: ApprovalScope | None) -> None:
         self._scope = scope
-        self._pending = _FakePending("fake-req-id")
+        self.requests: list[dict] = []
 
-    async def cancel_stale_pending_for_tool_call(
-        self,
-        *_a,
-        **_kw,
-    ):  # noqa: ANN
-        return 0
-
-    async def create_pending(self, **kwargs):  # noqa: ANN
-        # Carry the display payload so we can assert on it too.
-        self._pending.extra = kwargs.get("extra", {})
-        return self._pending
-
-    async def wait_for_approval(
-        self,
-        _request_id,
-        _timeout_seconds,
-    ):  # noqa: ANN
-        self._pending.scope = self._scope
-        return ApprovalDecision.APPROVED
+    async def request_approval(self, **kwargs):  # noqa: ANN
+        self.requests.append(kwargs)
+        return type(
+            "ApprovalResponse",
+            (),
+            {
+                "decision": ApprovalDecision.APPROVED,
+                "scope": self._scope,
+            },
+        )()
 
 
 class _FakeGovernor:
@@ -86,19 +65,10 @@ def _tc(target: str = "git status") -> ToolCallSpec:
 
 
 async def _run_approval(scope: ApprovalScope | None, monkeypatch):
-    """Drive ``_ask_user_approval`` with fakes; return (governor, pending)."""
+    """Drive ``_ask_user_approval`` through an injected requester."""
     from minions.governance import tool_adapter
 
-    fake_svc = _FakeApprovalService(scope)
-    monkeypatch.setattr(
-        tool_adapter,
-        "get_approval_service",
-        lambda: fake_svc,
-        raising=False,
-    )
-    # Avoid the real LLM generalization round-trip. ``_ask_user_approval``
-    # imports this lazily from ``.generalize`` inside the function body, so
-    # the patch must land on the generalize module, not tool_adapter.
+    requester = _FakeApprovalRequester(scope)
     import minions.governance.generalize as generalize_mod
 
     async def _fake_generalize(
@@ -106,8 +76,9 @@ async def _run_approval(scope: ApprovalScope | None, monkeypatch):
         _target,
         _source,
         agent_id=None,
+        model_factory=None,
     ):  # noqa: ANN
-        del agent_id
+        del agent_id, model_factory
         return "git *"
 
     monkeypatch.setattr(
@@ -118,21 +89,12 @@ async def _run_approval(scope: ApprovalScope | None, monkeypatch):
     )
 
     governor = _FakeGovernor()
-    # ``_ask_user_approval`` imports get_approval_service lazily from
-    # ..app.approvals; patch that path too.
-    import minions.app.approvals as approvals_mod
-
-    monkeypatch.setattr(
-        approvals_mod,
-        "get_approval_service",
-        lambda: fake_svc,
-        raising=False,
-    )
-
     tc = _tc()
     await tool_adapter._ask_user_approval(
         governor=governor,
         tc_spec=tc,
+        approval_requester=requester,
+        model_factory=None,
         request_context={
             "user_id": "u",
             "channel": "console",
@@ -142,14 +104,14 @@ async def _run_approval(scope: ApprovalScope | None, monkeypatch):
         },
         source="No rule hit",
     )
-    return governor, fake_svc._pending
+    return governor, requester
 
 
 class TestApprovalScopeConsumer:
     """The consumer picks the recorded target from the chosen scope."""
 
     async def test_similar_records_pattern(self, monkeypatch):
-        governor, _pending = await _run_approval(
+        governor, _requester = await _run_approval(
             ApprovalScope.SIMILAR,
             monkeypatch,
         )
@@ -161,7 +123,7 @@ class TestApprovalScopeConsumer:
         assert "similar" in decision.reason
 
     async def test_exact_records_literal(self, monkeypatch):
-        governor, _pending = await _run_approval(
+        governor, _requester = await _run_approval(
             ApprovalScope.EXACT,
             monkeypatch,
         )
@@ -179,11 +141,28 @@ class TestApprovalScopeConsumer:
         assert "exact" in decision.reason
 
     async def test_display_payload_carries_both_targets(self, monkeypatch):
-        _governor, pending = await _run_approval(
+        _governor, requester = await _run_approval(
             ApprovalScope.SIMILAR,
             monkeypatch,
         )
-        display = pending.extra["display"]
+        display = requester.requests[0]["extra"]["display"]
         assert display["is_generalized"] is True
         assert display["exact_target"] == "git status"
         assert display["similar_target"] == "git *"
+
+    async def test_missing_requester_fails_closed(self):
+        from agentscope.permission import PermissionBehavior
+        from minions.governance import tool_adapter
+
+        governor = _FakeGovernor()
+        decision = await tool_adapter._ask_user_approval(
+            governor=governor,
+            tc_spec=_tc(),
+            approval_requester=None,
+            model_factory=None,
+            request_context={},
+        )
+
+        assert decision.behavior == PermissionBehavior.DENY
+        assert "not configured" in decision.message
+        assert governor.added == []

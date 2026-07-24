@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import secrets
@@ -111,9 +112,11 @@ def test_concurrent_task_quota_uses_recoverable_leases(tenancy_service):
         tenant_slug="acme",
     )
     tenancy_service.register_agent(owner, agent_id="worker")
-    with tenancy_service.store._transaction() as conn:  # test-only fixture control
+    # Direct transaction access is intentional test-fixture control.
+    with tenancy_service.store._transaction() as conn:
         conn.execute(
-            "UPDATE tenant_quotas SET max_concurrent_tasks=1 WHERE tenant_id=?",
+            "UPDATE tenant_quotas SET max_concurrent_tasks=1 "
+            "WHERE tenant_id=?",
             (str(owner.tenant_id),),
         )
 

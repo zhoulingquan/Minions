@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Tests for SAGE CaseBook and SageCatalog services."""
 
 from uuid import uuid4
@@ -109,7 +110,10 @@ async def test_catalog_revision_preserves_version_chain(tmp_path) -> None:
         revised = await catalog.revise_item(
             principal,
             original.item_id,
-            content="Review source reconciliation, then totals, then exceptions.",
+            content=(
+                "Review source reconciliation, then totals, then "
+                "exceptions."
+            ),
         )
 
         old = await store.get_item(principal, original.item_id)
@@ -144,4 +148,3 @@ async def test_catalog_can_mark_active_fact_as_disputed(tmp_path) -> None:
         assert disputed.state is ItemState.DISPUTED
     finally:
         await store.close()
-

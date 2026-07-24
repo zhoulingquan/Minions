@@ -1,8 +1,29 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "minions-runtime"
-version = "2.0.0"
+version = "0.1.0"
 requires-python = ">=3.11,<3.14"
-dependencies = []
+license = "Apache-2.0"
+dependencies = [
+    "minions-core==0.1.0",
+    "agentscope==2.0.4",
+    "aiofiles>=24.1.0",
+    "pydantic>=2.0,<3",
+    "python-frontmatter>=1.1.0",
+]
 
-[tool.uv]
-package = false
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = [
+    "minions",
+    "minions.runtime*",
+    "minions.token_usage*",
+    "minions.hooks*",
+]
+namespaces = true

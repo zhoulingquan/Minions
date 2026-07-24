@@ -1,59 +1,28 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "minions"
-dynamic = ["version"]
-description = "Minions is a **personal assistant** that runs in your own environment. It talks to you over multiple channels (DingTalk, Feishu, QQ, WeChat, WeCom, Yuanbao, etc.) and runs scheduled tasks according to your configuration. **What it can do is driven by Skills — the possibilities are open-ended.** Built-in skills include cron, PDF/Office handling, news digest, file reading, and more; you can add custom skills. All data and tasks run on your machine; no third-party hosting."
+version = "0.1.0"
+description = "A personal assistant that runs in your own environment."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
+license = "Apache-2.0"
 dependencies = [
-    "agentscope==2.0.4",
-    # Temporary direct pin until AgentScope constrains its MCP dependency.
-    "mcp>=1.13.0,<2.0.0",
-    "httpx>=0.27.0",
-    "packaging>=24.0",
-    "dingtalk-stream>=0.24.3",
-    "alibabacloud-dingtalk>=2.2.42",
-    "alibabacloud-tea-openapi>=0.4.4",
-    "alibabacloud-credentials>=0.3.0",
-    "alibabacloud-tea-util>=0.3.0",
-    "uvicorn>=0.40.0",
-    "apscheduler>=3.11.2,<4",
-    "playwright>=1.49.0",
-    "questionary>=2.1.1",
-    "mss>=9.0.0",
-    "transformers>=4.30.0",
-    "python-dotenv>=1.0.0",
-    "python-socks>=2.5.3",
-    "onnxruntime<1.24",
-    "lark-oapi>=1.5.3",
-    "pywebview>=4.0",
-    "aiofiles>=24.1.0",
-    "wecom-aibot-python-sdk==1.0.2",
-    "shortuuid>=1.0.0",
-    "google-genai>=1.67.0",
-    "tzdata>=2024.1",
-    "cryptography>=43.0.0",
-    "keyring>=25.0.0",
-    "pyyaml>=6.0",
-    "wcmatch>=10.0",
-    "json-repair>=0.30.0",
-    "segno>=1.6.6",
-    "modelscope>=1.35.0",
-    "huggingface_hub>=0.20.0",
-    "pillow>=10.0.0",
-    "agent-client-protocol>=0.9.0,<0.11.0",
-    # Streaming-markdown terminal UI for the bundled `minions` TUI
-    # (v4+ adds the streaming Markdown widget). 8.2.8 fixes parsing of
-    # multi-codepoint Kitty "associated text" so input methods (Chinese,
-    # Japanese, accents, ...) no longer leak escape sequences into the prompt
-    # (Textualize/textual#6592).
-    "textual>=8.2.8",
-    "psutil>=6.0.0",
-    "openai>=2.0.0,<=2.33.0",
-    # anyio 4.13.0: _deliver_cancellation busy-loop / getpid storm (Minions#2632)
-    "anyio>=4.0.0,<4.13.0",
-    "watchfiles>=0.22",
-    "orjson>=3.9",
-    "fastapi>=0.110,<1",
+    "minions-core==0.1.0",
+    "minions-runtime==0.1.0",
+    "minions-providers==0.1.0",
+    "minions-tool-calls==0.1.0",
+    "minions-drivers==0.1.0",
+    "minions-channels==0.1.0",
+    "minions-plugins==0.1.0",
+    "minions-loop==0.1.0",
+    "minions-governance==0.1.0",
+    "minions-modes==0.1.0",
+    "minions-agents==0.1.0",
+    "minions-app==0.1.0",
+    "minions-cli==0.1.0",
 ]
 
 [project.urls]
@@ -62,38 +31,8 @@ Repository = "https://github.com/agentscope-ai/Minions"
 Documentation = "https://minions.agentscope.io/docs/"
 Issues = "https://github.com/agentscope-ai/Minions/issues"
 
-[tool.setuptools.dynamic]
-version = {attr = "minions.__version__.__version__"}
-
-[tool.setuptools]
-packages = { find = { where = ["src"] } }
-include-package-data = true
-
-[tool.setuptools.package-data]
-# Dockerfile copies console build output to src/minions/console/ (no dist subdir).
-"minions" = [
-    "console/**",
-    "agents/md_files/**",
-    "agents/skills/**",
-    "security/tool_guard/rules/**",
-    "security/skill_scanner/rules/**",
-    "security/skill_scanner/data/**",
-    "docs/*.md",
-    "app/channels/yuanbao/proto/**",
-    "sage/migrations/*.sql",
-    "tenancy/migrations/*.sql",
-]
-
-[build-system]
-requires = ["setuptools>=42", "wheel"]
-build-backend = "setuptools.build_meta"
-
 [project.scripts]
 minions = "minions.cli.main:cli"
-
-# Optional doctor plugins: callable (DoctorRunContext) -> list[str]
-# [project.entry-points."minions.doctor"]
-# my_pkg = "my_pkg.doctor:doctor_notes"
 
 [project.optional-dependencies]
 test = [
@@ -103,28 +42,45 @@ test = [
     "pytest-timeout>=2.3.0",
     "pytest-xdist>=3.5.0",
     "hypothesis>=6.0.0",
-    "import-linter>=2.3,<3",
+    "import-linter>=2.13,<3",
     "build>=1.2,<2",
     "twine>=6,<7",
 ]
-dev = [
-    "pre-commit>=4.2.0",
-]
+dev = ["pre-commit>=4.2.0"]
 postgres = [
-    "psycopg[binary,pool]>=3.2,<4",
+    "minions-agents[postgres]==0.1.0",
+    "minions-app[postgres]==0.1.0",
 ]
-local = [
-    "huggingface_hub>=0.20.0",
-]
-whisper = [
-    "openai-whisper>=20231117",
+local = ["minions-providers[local]==0.1.0"]
+whisper = ["minions-agents[whisper]==0.1.0"]
+skills = [
+    "minions-agents[documents,pdf,presentations,spreadsheets]==0.1.0",
 ]
 full = [
-    "minions[local,whisper]",
+    "minions-providers[local]==0.1.0",
+    "minions-agents[documents,pdf,presentations,spreadsheets,whisper]==0.1.0",
 ]
+
+[tool.setuptools]
+packages = []
 
 [tool.uv.workspace]
 members = ["packages/*"]
+
+[tool.uv.sources]
+minions-core = { workspace = true }
+minions-runtime = { workspace = true }
+minions-providers = { workspace = true }
+minions-tool-calls = { workspace = true }
+minions-drivers = { workspace = true }
+minions-channels = { workspace = true }
+minions-plugins = { workspace = true }
+minions-loop = { workspace = true }
+minions-governance = { workspace = true }
+minions-modes = { workspace = true }
+minions-agents = { workspace = true }
+minions-app = { workspace = true }
+minions-cli = { workspace = true }
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -139,17 +95,14 @@ markers = [
     "integration: marks tests as integration tests",
     "e2e: marks tests as end-to-end tests",
 ]
-testpaths = [
-    "tests",
-]
+testpaths = ["tests"]
 
 [tool.coverage.run]
-source = ["src/minions"]
-omit = [
-    "*/tests/*",
-    "*/test_*",
-    "*/__pycache__/*",
-]
+source = ["minions"]
+omit = ["*/tests/*", "*/test_*", "*/__pycache__/*"]
+
+[tool.coverage.paths]
+source = ["packages/*/src/minions"]
 
 [tool.coverage.report]
 exclude_lines = [

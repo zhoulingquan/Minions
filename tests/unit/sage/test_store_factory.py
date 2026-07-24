@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Tests for fail-closed SAGE storage selection."""
 
 from contextlib import asynccontextmanager
@@ -18,7 +19,10 @@ from minions.sage.postgres_schema import SET_LOCAL_TENANT_SQL
 from minions.sage.sqlite_store import SQLiteSageStore
 
 
-def test_development_defaults_to_workspace_sqlite(tmp_path, monkeypatch) -> None:
+def test_development_defaults_to_workspace_sqlite(
+    tmp_path,
+    monkeypatch,
+) -> None:
     monkeypatch.delenv("MINIONS_SAGE_MODE", raising=False)
     monkeypatch.delenv("MINIONS_SAGE_STORE", raising=False)
     store = build_sage_store(tmp_path)
@@ -60,7 +64,9 @@ def test_postgres_selection_builds_production_adapter(tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_missing_postgres_dependency_has_clear_failure(monkeypatch) -> None:
+async def test_missing_postgres_dependency_has_clear_failure(
+    monkeypatch,
+) -> None:
     monkeypatch.setattr(postgres_module, "AsyncConnectionPool", None)
     store = PostgresSageStore("postgresql://user:secret@db/minions")
     with pytest.raises(RuntimeError, match=r"minions\[postgres\]"):

@@ -1,0 +1,1 @@
+import{r as s}from"./react-vendor-Dc5dhXQW.js";function a(t){const[e,n]=s.useState(""),u=s.useMemo(()=>{const r=e.toLowerCase();return t.filter(o=>!r||o.name.toLowerCase().includes(r)||(o.description||"").toLowerCase().includes(r))},[t,e]);return{searchQuery:e,setSearchQuery:n,filteredSkills:u}}export{a as useSkillFilter};

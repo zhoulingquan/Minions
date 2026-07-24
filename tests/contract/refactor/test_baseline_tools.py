@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+from typing import Any
 
 import pytest
 
@@ -114,10 +115,19 @@ def _generate(
     output: Path,
     *,
     config: Path | str | None = None,
-) -> dict[str, object]:
+) -> dict[str, Any]:
     result = _run_tool(tool, repo, "--json", str(output), config=config)
     assert result.returncode == 0, _output(result)
     return json.loads(output.read_text(encoding="utf-8"))
+
+
+def _capture_all(tmp_path: Path, source: str) -> dict[str, object]:
+    _fixture_repo(tmp_path, active_packages=["minions"])
+    _write(_source_root(tmp_path, "minions") / "app.py", source)
+    model = _generate(API_TOOL, tmp_path, tmp_path / "api.json")
+    modules = model["modules"]
+    assert isinstance(modules, list)
+    return modules[0]["all"]
 
 
 def test_import_baseline_records_all_internal_call_sites_and_scope(
@@ -154,10 +164,7 @@ def test_import_baseline_records_all_internal_call_sites_and_scope(
     assert model["schema_version"] == 1
     edges = model["edges"]
     assert isinstance(edges, list)
-    assert [
-        (edge["target_module"], edge["line"])
-        for edge in edges
-    ] == [
+    assert [(edge["target_module"], edge["line"]) for edge in edges] == [
         ("minions.runtime.absolute", 2),
         ("minions.runtime.first", 3),
         ("minions.runtime.second", 3),
@@ -189,18 +196,22 @@ def test_import_baseline_records_all_internal_call_sites_and_scope(
         "minions-runtime",
         "minions-runtime",
     ]
-    assert next(edge for edge in edges if edge["line"] == 6)[
-        "function_scope"
-    ] is False
-    assert next(edge for edge in edges if edge["line"] == 8)[
-        "function_scope"
-    ] is True
-    assert next(edge for edge in edges if edge["line"] == 10)[
-        "type_checking"
-    ] is True
-    assert next(edge for edge in edges if edge["line"] == 12)[
-        "type_checking"
-    ] is False
+    assert (
+        next(edge for edge in edges if edge["line"] == 6)["function_scope"]
+        is False
+    )
+    assert (
+        next(edge for edge in edges if edge["line"] == 8)["function_scope"]
+        is True
+    )
+    assert (
+        next(edge for edge in edges if edge["line"] == 10)["type_checking"]
+        is True
+    )
+    assert (
+        next(edge for edge in edges if edge["line"] == 12)["type_checking"]
+        is False
+    )
     encoded = output.read_text(encoding="utf-8")
     assert str(tmp_path) not in encoded
     assert "timestamp" not in encoded.lower()
@@ -322,11 +333,18 @@ def test_public_api_records_exports_declaration_kinds_and_private_exclusions(
     ]
 
 
-def test_public_api_marks_dynamic_all_instead_of_guessing(tmp_path: Path) -> None:
+def test_public_api_marks_dynamic_all_instead_of_guessing(
+    tmp_path: Path,
+) -> None:
     _fixture_repo(tmp_path, active_packages=["minions"])
     _write(
         _source_root(tmp_path, "minions") / "app.py",
-        'names = ["Visible"]\n__all__ = names + ["run"]\ndef run():\n    pass\n',
+        (
+            'names = ["Visible"]\n'
+            '__all__ = names + ["run"]\n'
+            "def run():\n"
+            "    pass\n"
+        ),
     )
 
     model = _generate(API_TOOL, tmp_path, tmp_path / "api.json")
@@ -382,7 +400,12 @@ def test_public_api_marks_match_capture_string_bindings_as_dynamic(
     prefix = '__all__ = ["literal"]\n' if initial_all else ""
     _write(
         _source_root(tmp_path, "minions") / "app.py",
-        f"{prefix}value = {{}}\nmatch value:\n    case {pattern}:\n        pass\n",
+        (
+            f"{prefix}value = {{}}\n"
+            "match value:\n"
+            f"    case {pattern}:\n"
+            "        pass\n"
+        ),
     )
 
     model = _generate(API_TOOL, tmp_path, tmp_path / "api.json")
@@ -462,9 +485,9 @@ def test_public_api_ignores_nested_and_comprehension_local_bindings(
             '__all__ = ["literal"]\n'
             "values = []\n"
             "def nested():\n"
-            "    __all__ = [\"function-local\"]\n"
+            '    __all__ = ["function-local"]\n'
             "class Nested:\n"
-            "    __all__ = [\"class-local\"]\n"
+            '    __all__ = ["class-local"]\n'
             f"result = {comprehension}\n"
         ),
     )
@@ -582,10 +605,7 @@ def test_public_api_ignores_lambda_body_effect(tmp_path: Path) -> None:
     (
         '@__all__.append("decorator")\nclass Target:\n    pass\n',
         'class Target(__all__.append("base")):\n    pass\n',
-        (
-            'class Target(metaclass=__all__.append("keyword")):\n'
-            "    pass\n"
-        ),
+        ('class Target(metaclass=__all__.append("keyword")):\n' "    pass\n"),
     ),
 )
 def test_public_api_scans_class_definition_time_effects(
@@ -696,6 +716,393 @@ def test_public_api_ignores_nested_method_body_effect(tmp_path: Path) -> None:
         "names": ["literal"],
         "status": "resolved",
     }
+
+
+@pytest.mark.parametrize(
+    "comprehension",
+    (
+        '[__all__.append("body") for item in values]',
+        '{__all__.append("body") for item in values}',
+        '{item: __all__.append("body") for item in values}',
+    ),
+)
+def test_public_api_uses_module_scope_for_eager_class_comprehension_bodies(
+    tmp_path: Path,
+    comprehension: str,
+) -> None:
+    captured = _capture_all(
+        tmp_path,
+        (
+            '__all__ = ["literal"]\n'
+            "values = []\n"
+            "class Target:\n"
+            '    __all__ = ["class-local"]\n'
+            f"    result = {comprehension}\n"
+        ),
+    )
+
+    assert captured == {"names": [], "status": "dynamic"}
+
+
+@pytest.mark.parametrize("kind", ("list", "set", "dict"))
+def test_public_api_evaluates_first_comprehension_iterable_in_class(
+    tmp_path: Path,
+    kind: str,
+) -> None:
+    expressions = {
+        "list": '[item for item in __all__.append("class-local")]',
+        "set": '{item for item in __all__.append("class-local")}',
+        "dict": '{item: item for item in __all__.append("class-local")}',
+    }
+    captured = _capture_all(
+        tmp_path,
+        (
+            '__all__ = ["literal"]\n'
+            "class Target:\n"
+            '    __all__ = ["class-local"]\n'
+            f"    result = {expressions[kind]}\n"
+        ),
+    )
+
+    assert captured == {"names": ["literal"], "status": "resolved"}
+
+
+@pytest.mark.parametrize(
+    "expression",
+    (
+        '(__all__.append("body") for item in values)',
+        '(item for item in values if __all__.append("if"))',
+        '(item for item in values for later in __all__.append("later"))',
+    ),
+)
+def test_public_api_ignores_delayed_generator_expression_parts(
+    tmp_path: Path,
+    expression: str,
+) -> None:
+    captured = _capture_all(
+        tmp_path,
+        '__all__ = ["literal"]\nvalues = []\nresult = ' + expression + "\n",
+    )
+
+    assert captured == {"names": ["literal"], "status": "resolved"}
+
+
+def test_public_api_scans_first_generator_iterable_immediately(
+    tmp_path: Path,
+) -> None:
+    captured = _capture_all(
+        tmp_path,
+        (
+            '__all__ = ["literal"]\n'
+            'result = (item for item in __all__.append("first"))\n'
+        ),
+    )
+
+    assert captured == {"names": [], "status": "dynamic"}
+
+
+def test_public_api_uses_class_scope_for_first_generator_iterable(
+    tmp_path: Path,
+) -> None:
+    captured = _capture_all(
+        tmp_path,
+        (
+            '__all__ = ["literal"]\n'
+            "class Target:\n"
+            '    __all__ = ["class-local"]\n'
+            '    result = (item for item in __all__.append("first"))\n'
+        ),
+    )
+
+    assert captured == {"names": ["literal"], "status": "resolved"}
+
+
+@pytest.mark.parametrize(
+    ("condition", "expected"),
+    (
+        ("True", {"names": [], "status": "dynamic"}),
+        ("False", {"names": ["literal"], "status": "resolved"}),
+        ("condition", {"names": [], "status": "dynamic"}),
+    ),
+)
+def test_public_api_tracks_conditional_class_local_deletion(
+    tmp_path: Path,
+    condition: str,
+    expected: dict[str, object],
+) -> None:
+    captured = _capture_all(
+        tmp_path,
+        (
+            '__all__ = ["literal"]\n'
+            "condition = object()\n"
+            "class Target:\n"
+            '    __all__ = ["class-local"]\n'
+            f"    if {condition}:\n"
+            "        del __all__\n"
+            '    __all__.append("after-delete")\n'
+        ),
+    )
+
+    assert captured == expected
+
+
+@pytest.mark.parametrize(
+    "control_flow",
+    (
+        "    for item in values:\n        del __all__\n",
+        (
+            "    match value:\n"
+            "        case 0:\n"
+            "            del __all__\n"
+            "        case _:\n"
+            "            pass\n"
+        ),
+        (
+            "    try:\n"
+            "        operation()\n"
+            "        del __all__\n"
+            "    except Exception:\n"
+            "        pass\n"
+        ),
+    ),
+)
+def test_public_api_conservatively_merges_class_control_flow(
+    tmp_path: Path,
+    control_flow: str,
+) -> None:
+    captured = _capture_all(
+        tmp_path,
+        (
+            '__all__ = ["literal"]\n'
+            "values = []\n"
+            "value = object()\n"
+            "class Target:\n"
+            '    __all__ = ["class-local"]\n'
+            f"{control_flow}"
+            '    __all__.append("after-control-flow")\n'
+        ),
+    )
+
+    assert captured == {"names": [], "status": "dynamic"}
+
+
+def test_public_api_applies_decorator_walrus_before_function_defaults(
+    tmp_path: Path,
+) -> None:
+    captured = _capture_all(
+        tmp_path,
+        (
+            '__all__ = ["literal"]\n'
+            "def decorator(function):\n"
+            "    return function\n"
+            "class Target:\n"
+            "    @(__all__ := decorator)\n"
+            '    def method(value=__all__.append("class-local")):\n'
+            "        pass\n"
+            '    __all__.append("still-class-local")\n'
+        ),
+    )
+
+    assert captured == {"names": ["literal"], "status": "resolved"}
+
+
+@pytest.mark.parametrize(
+    "definition",
+    (
+        (
+            '    @__all__.append("module-decorator")\n'
+            "    def method(value=(__all__ := [])):\n"
+            "        pass\n"
+        ),
+        (
+            "    def method("
+            'value=__all__.append("module-default")):\n'
+            "        pass\n"
+        ),
+    ),
+)
+def test_public_api_keeps_real_module_effects_before_class_local_binding(
+    tmp_path: Path,
+    definition: str,
+) -> None:
+    captured = _capture_all(
+        tmp_path,
+        '__all__ = ["literal"]\nclass Target:\n' + definition,
+    )
+
+    assert captured == {"names": [], "status": "dynamic"}
+
+
+def test_public_api_evaluates_annassign_value_before_annotation(
+    tmp_path: Path,
+) -> None:
+    captured = _capture_all(
+        tmp_path,
+        (
+            '__all__ = ["literal"]\n'
+            "class Target:\n"
+            "    field: "
+            '__all__.append("class-local") = (__all__ := [])\n'
+        ),
+    )
+
+    assert captured == {"names": ["literal"], "status": "resolved"}
+
+
+@pytest.mark.parametrize(
+    "definition",
+    (
+        'value: __all__.append("module-annotation")\n',
+        ("class Target:\n" '    value: __all__.append("class-annotation")\n'),
+        (
+            "def target("
+            'value: __all__.append("parameter-annotation")'
+            ') -> __all__.append("return-annotation"):\n'
+            "    pass\n"
+        ),
+    ),
+)
+def test_public_api_skips_postponed_annotations(
+    tmp_path: Path,
+    definition: str,
+) -> None:
+    captured = _capture_all(
+        tmp_path,
+        (
+            "from __future__ import annotations\n"
+            '__all__ = ["literal"]\n'
+            f"{definition}"
+        ),
+    )
+
+    assert captured == {"names": ["literal"], "status": "resolved"}
+
+
+@pytest.mark.parametrize(
+    "definition",
+    (
+        'value: object = __all__.append("module-value")\n',
+        ('@__all__.append("decorator")\n' "def target():\n" "    pass\n"),
+        ('def target(value=__all__.append("default")):\n' "    pass\n"),
+    ),
+)
+def test_public_api_still_scans_eager_fields_with_postponed_annotations(
+    tmp_path: Path,
+    definition: str,
+) -> None:
+    captured = _capture_all(
+        tmp_path,
+        (
+            "from __future__ import annotations\n"
+            '__all__ = ["literal"]\n'
+            f"{definition}"
+        ),
+    )
+
+    assert captured == {"names": [], "status": "dynamic"}
+
+
+@pytest.mark.parametrize(
+    "definition",
+    (
+        'value: __all__.append("module-annotation")\n',
+        ("class Target:\n" '    value: __all__.append("class-annotation")\n'),
+        (
+            "def target("
+            'value: __all__.append("parameter-annotation")):\n'
+            "    pass\n"
+        ),
+    ),
+)
+def test_public_api_scans_eager_annotations_without_future_import(
+    tmp_path: Path,
+    definition: str,
+) -> None:
+    captured = _capture_all(
+        tmp_path,
+        '__all__ = ["literal"]\n' + definition,
+    )
+
+    assert captured == {"names": [], "status": "dynamic"}
+
+
+@pytest.mark.parametrize(
+    "definition",
+    (
+        ('def target[T: __all__.append("bound")]():\n' "    pass\n"),
+        (
+            "def target["
+            'T: (__all__.append("first"), __all__.append("second"))'
+            "]():\n"
+            "    pass\n"
+        ),
+        ('class Target[T: __all__.append("bound")]:\n' "    pass\n"),
+        'type Alias = __all__.append("alias-value")\n',
+    ),
+)
+def test_public_api_skips_lazy_pep695_expressions(
+    tmp_path: Path,
+    definition: str,
+) -> None:
+    captured = _capture_all(
+        tmp_path,
+        '__all__ = ["literal"]\n' + definition,
+    )
+
+    assert captured == {"names": ["literal"], "status": "resolved"}
+
+
+def test_public_api_conservatively_marks_star_import_all_binding(
+    tmp_path: Path,
+) -> None:
+    captured = _capture_all(
+        tmp_path,
+        '__all__ = ["literal"]\nfrom exports import *\n',
+    )
+
+    assert captured == {"names": [], "status": "dynamic"}
+
+
+def test_public_api_propagates_nested_class_states_to_try_handlers(
+    tmp_path: Path,
+) -> None:
+    captured = _capture_all(
+        tmp_path,
+        (
+            '__all__ = ["literal"]\n'
+            "condition = object()\n"
+            "class Target:\n"
+            '    __all__ = ["class-local"]\n'
+            "    try:\n"
+            "        if condition:\n"
+            "            del __all__\n"
+            "            operation()\n"
+            '            __all__ = ["rebound"]\n'
+            "    except Exception:\n"
+            '        __all__.append("possible-module")\n'
+        ),
+    )
+
+    assert captured == {"names": [], "status": "dynamic"}
+
+
+@pytest.mark.parametrize(
+    "annotation",
+    (
+        'holder.value: __all__.append("attribute-annotation")\n',
+        'holder[0]: __all__.append("subscript-annotation")\n',
+    ),
+)
+def test_public_api_skips_non_simple_annassign_annotations(
+    tmp_path: Path,
+    annotation: str,
+) -> None:
+    captured = _capture_all(
+        tmp_path,
+        '__all__ = ["literal"]\nholder = object()\n' + annotation,
+    )
+
+    assert captured == {"names": ["literal"], "status": "resolved"}
 
 
 @pytest.mark.parametrize(

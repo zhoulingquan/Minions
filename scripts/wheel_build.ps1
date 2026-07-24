@@ -1,4 +1,4 @@
-# Build a full wheel package including the latest console frontend.
+# Build all workspace distributions including the latest console frontend.
 # Run from repo root: pwsh -File scripts/wheel_build.ps1
 
 $ErrorActionPreference = "Stop"
@@ -6,7 +6,7 @@ $RepoRoot = (Get-Item $PSScriptRoot).Parent.FullName
 Set-Location $RepoRoot
 
 $ConsoleDir = Join-Path $RepoRoot "console"
-$ConsoleDest = Join-Path $RepoRoot "src\minions\console"
+$ConsoleDest = Join-Path $RepoRoot "packages\minions-app\src\minions\console"
 
 Write-Host "[wheel_build] Building console frontend..."
 Push-Location $ConsoleDir
@@ -19,7 +19,7 @@ try {
   Pop-Location
 }
 
-Write-Host "[wheel_build] Copying console/dist/* -> src/minions/console/..."
+Write-Host "[wheel_build] Copying console/dist/* -> packages/minions-app/src/minions/console/..."
 if (Test-Path $ConsoleDest) {
   Remove-Item -Path (Join-Path $ConsoleDest "*") -Recurse -Force -ErrorAction SilentlyContinue
 } else {
@@ -30,18 +30,14 @@ Copy-Item -Path (Join-Path $ConsoleDist "*") -Destination $ConsoleDest -Recurse 
 
 Write-Host "[wheel_build] Bundling website docs into package..."
 $DocsSrc = Join-Path $RepoRoot "website\public\docs"
-$DocsDest = Join-Path $RepoRoot "src\minions\docs"
+$DocsDest = Join-Path $RepoRoot "packages\minions-app\src\minions\docs"
 if (Test-Path $DocsDest) { Remove-Item -Recurse -Force $DocsDest }
 New-Item -ItemType Directory -Force -Path $DocsDest | Out-Null
 Copy-Item -Path (Join-Path $DocsSrc "*.md") -Destination $DocsDest -Force
 
-Write-Host "[wheel_build] Building wheel + sdist..."
+Write-Host "[wheel_build] Building 14 wheels + sdists..."
 python -m pip install --quiet build
-$DistDir = Join-Path $RepoRoot "dist"
-if (Test-Path $DistDir) {
-  Remove-Item -Path (Join-Path $DistDir "*") -Force -ErrorAction SilentlyContinue
-}
-python -m build --outdir dist .
-if ($LASTEXITCODE -ne 0) { throw "python -m build failed with exit code $LASTEXITCODE" }
+python scripts/build_workspace.py
+if ($LASTEXITCODE -ne 0) { throw "scripts/build_workspace.py failed with exit code $LASTEXITCODE" }
 
-Write-Host "[wheel_build] Done. Wheel(s) in: $RepoRoot\dist\"
+Write-Host "[wheel_build] Done. Workspace artifacts in: $RepoRoot\dist\"

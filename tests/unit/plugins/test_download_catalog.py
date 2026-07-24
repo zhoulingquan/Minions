@@ -3,7 +3,17 @@
 
 from __future__ import annotations
 
+import pytest
+
 from minions.plugins.download_catalog import _is_entry_compatible
+
+
+@pytest.fixture(autouse=True)
+def _stable_current_minions_version(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep compatibility-range assertions independent of release version."""
+    import minions.__version__ as version_module
+
+    monkeypatch.setattr(version_module, "__version__", "2.0.0")
 
 
 def test_entry_with_minions_version_compatible() -> None:

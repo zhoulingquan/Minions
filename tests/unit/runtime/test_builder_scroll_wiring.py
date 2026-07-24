@@ -1,8 +1,9 @@
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 from types import SimpleNamespace
 
-from minions.runtime.builder import AgentBuilder
+from minions.agents.runtime_builder import AgentBuilder
 
 
 def _config(strategy: str):
@@ -16,7 +17,9 @@ def _config(strategy: str):
     )
 
 
-def test_scroll_runtime_wires_manager_middleware_and_recall_tools(monkeypatch) -> None:
+def test_scroll_runtime_wires_manager_middleware_and_recall_tools(
+    monkeypatch,
+) -> None:
     builder = AgentBuilder()
     components = SimpleNamespace(
         context_manager=object(),
@@ -25,7 +28,11 @@ def test_scroll_runtime_wires_manager_middleware_and_recall_tools(monkeypatch) -
         repl_tool=object(),
     )
     monkeypatch.setattr(builder, "_scroll_recall_runnable", lambda *_: True)
-    monkeypatch.setattr(builder, "_build_scroll_components", lambda *_: components)
+    monkeypatch.setattr(
+        builder,
+        "_build_scroll_components",
+        lambda *_: components,
+    )
     calls = []
     monkeypatch.setattr(
         builder,

@@ -1,0 +1,1 @@
+function o(r){return Array.from({length:8},(a,e)=>{const n=7-e,t=new Date;return t.setDate(t.getDate()-n),{id:`${r}-${e}`,title:`${r} · #${e+1}`,content:"This is a mock harvest content card used for the msg demo viewer. In the next phase, this will render real generated magazine/article output.",date:t}})}export{o as generateMockHistory};

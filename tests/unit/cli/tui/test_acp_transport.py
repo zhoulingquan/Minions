@@ -76,7 +76,9 @@ async def test_start_and_basic_turn():
     # output) sharing one tool_call_id; the UI merges them by id.
     tools = [e for e in events if isinstance(e, ToolCall)]
     assert any(
-        t.title == "read_file" and t.kind == "read" and t.params == "path: README.md"
+        t.title == "read_file"
+        and t.kind == "read"
+        and t.params == "path: README.md"
         for t in tools
     )
     assert any(

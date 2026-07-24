@@ -88,7 +88,12 @@ class TestComputeSkillContentHash:
         """Symlinks should be skipped."""
         (tmp_path / "real.txt").write_text("content")
         link = tmp_path / "link.txt"
-        link.symlink_to(tmp_path / "real.txt")
+        try:
+            link.symlink_to(tmp_path / "real.txt")
+        except OSError as exc:
+            if getattr(exc, "winerror", None) == 1314:
+                pytest.skip("Windows symlink privilege is not available")
+            raise
         h = compute_skill_content_hash(tmp_path)
         assert isinstance(h, str)
 

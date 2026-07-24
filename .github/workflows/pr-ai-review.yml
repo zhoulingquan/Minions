@@ -46,7 +46,7 @@ jobs:
       - name: Install Minions and dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          pip install -r requirements-workspace.txt
           pip install httpx
 
       - name: Verify gh CLI and authentication

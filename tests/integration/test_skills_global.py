@@ -174,7 +174,10 @@ def test_skills_batch_enable_disable_partial_success(app_server) -> None:
         _upload_workspace_skills(
             app_server,
             agent_id,
-            {name: _skill_md(name, "integration batch skill") for name in skill_names},
+            {
+                name: _skill_md(name, "integration batch skill")
+                for name in skill_names
+            },
         )
         enabled = app_server.api_request(
             "POST",

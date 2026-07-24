@@ -151,3 +151,9 @@ local-docs/
 docs-site/
 # ZCode agent workspace
 .zcode/
+
+# Package refactor build artifacts (multi-package workspace)
+packages/*/build/
+packages/*/*.egg-info/
+packages/*/dist/
+.verify-venv-final/

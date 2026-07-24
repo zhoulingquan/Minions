@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Tests for governed, reversible tenant knowledge consolidation."""
 
 from uuid import uuid4
@@ -62,7 +63,9 @@ async def test_duplicate_run_is_idempotent_approved_apply_and_rollback(
                     kind=ItemKind.INSIGHT,
                     scope=_scope(principal),
                     title="Close the books safely",
-                    content="Reconcile every source ledger before aggregation.",
+                    content=(
+                        "Reconcile every source ledger before " "aggregation."
+                    ),
                     state=ItemState.ACTIVE,
                 ),
             )
@@ -72,7 +75,9 @@ async def test_duplicate_run_is_idempotent_approved_apply_and_rollback(
         assert first == second
         candidates = await store.list_consolidation_candidates(principal)
         duplicate = next(
-            value for value in candidates if value.kind is ConsolidationKind.DUPLICATE
+            value
+            for value in candidates
+            if value.kind is ConsolidationKind.DUPLICATE
         )
 
         with pytest.raises(SageConflict, match="requires approval"):
@@ -93,15 +98,19 @@ async def test_duplicate_run_is_idempotent_approved_apply_and_rollback(
         applied = await service.apply(principal, approved.candidate_id)
         assert applied.state is CandidateState.APPLIED
         states = {
-            (await store.get_item(principal, item.item_id)).state for item in items
+            (await store.get_item(principal, item.item_id)).state
+            for item in items
         }
         assert states == {ItemState.ACTIVE, ItemState.SUPERSEDED}
 
         rolled_back = await service.rollback(principal, applied.candidate_id)
         assert rolled_back.state is CandidateState.ROLLED_BACK
-        restored = [await store.get_item(principal, item.item_id) for item in items]
+        restored = [
+            await store.get_item(principal, item.item_id) for item in items
+        ]
         assert all(
-            item is not None and item.state is ItemState.ACTIVE for item in restored
+            item is not None and item.state is ItemState.ACTIVE
+            for item in restored
         )
     finally:
         await store.close()
@@ -136,7 +145,9 @@ async def test_candidate_becomes_stale_when_a_source_changes(tmp_path) -> None:
             if value.kind is ConsolidationKind.DUPLICATE
         )
         approved = await service.approve(principal, candidate.candidate_id)
-        changed = items[0].model_copy(update={"content": "Changed after review"})
+        changed = items[0].model_copy(
+            update={"content": "Changed after review"},
+        )
         await store.save_item(principal, changed)
 
         with pytest.raises(SageConflict, match="sources changed"):
@@ -151,7 +162,9 @@ async def test_candidate_becomes_stale_when_a_source_changes(tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_explicit_auto_mode_applies_only_low_risk_private_merge(tmp_path) -> None:
+async def test_explicit_auto_mode_applies_only_low_risk_private_merge(
+    tmp_path,
+) -> None:
     principal = _principal(
         "sage.consolidation.apply",
         "sage.policy.manage",
@@ -222,7 +235,9 @@ async def test_candidates_remain_tenant_isolated(tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_semantic_similarity_creates_review_only_candidate(tmp_path) -> None:
+async def test_semantic_similarity_creates_review_only_candidate(
+    tmp_path,
+) -> None:
     principal = _principal()
     runtime = SageRuntime(SQLiteSageStore(tmp_path / "sage.db"))
     await runtime.start()
@@ -252,7 +267,9 @@ async def test_semantic_similarity_creates_review_only_candidate(tmp_path) -> No
         assert run is not None
         candidate = next(
             value
-            for value in await runtime.store.list_consolidation_candidates(principal)
+            for value in await runtime.store.list_consolidation_candidates(
+                principal,
+            )
             if set(value.source_ids) == {first.item_id, second.item_id}
         )
         assert candidate.kind is ConsolidationKind.DUPLICATE

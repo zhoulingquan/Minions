@@ -1,10 +1,15 @@
+# -*- coding: utf-8 -*-
 """Tests for SAGE's governed learning lifecycle."""
 
 from uuid import UUID, uuid4
 
 import pytest
 
-from minions.sage.errors import SageAccessDenied, SageConflict, SageInvalidTransition
+from minions.sage.errors import (
+    SageAccessDenied,
+    SageConflict,
+    SageInvalidTransition,
+)
 from minions.sage.growth import GrowthCycle
 from minions.sage.models import (
     CaseOutcome,
@@ -32,7 +37,10 @@ def _principal(*permissions: str) -> Principal:
 
 
 def _agent_scope(principal: Principal) -> ScopeRef:
-    return ScopeRef(scope_type=ScopeType.AGENT, scope_id=str(principal.agent_uid))
+    return ScopeRef(
+        scope_type=ScopeType.AGENT,
+        scope_id=str(principal.agent_uid),
+    )
 
 
 async def _evidence_cases(
@@ -77,7 +85,9 @@ async def test_reflection_cannot_activate_its_own_draft(tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_duplicate_case_ids_do_not_satisfy_independent_evidence(tmp_path) -> None:
+async def test_duplicate_case_ids_do_not_satisfy_independent_evidence(
+    tmp_path,
+) -> None:
     principal = _principal()
     store = SQLiteSageStore(tmp_path / "sage.db")
     await store.start()
@@ -132,7 +142,9 @@ async def test_low_risk_insight_follows_validation_approval_activation(
 
 
 @pytest.mark.asyncio
-async def test_high_risk_insight_needs_separate_publish_authority(tmp_path) -> None:
+async def test_high_risk_insight_needs_separate_publish_authority(
+    tmp_path,
+) -> None:
     approver = _principal("sage.insight.approve")
     store = SQLiteSageStore(tmp_path / "sage.db")
     await store.start()
@@ -166,7 +178,9 @@ async def test_high_risk_insight_needs_separate_publish_authority(tmp_path) -> N
 
 
 @pytest.mark.asyncio
-async def test_active_insight_can_be_rolled_back_but_not_reactivated(tmp_path) -> None:
+async def test_active_insight_can_be_rolled_back_but_not_reactivated(
+    tmp_path,
+) -> None:
     principal = _principal("sage.insight.approve", "sage.insight.rollback")
     store = SQLiteSageStore(tmp_path / "sage.db")
     await store.start()
@@ -183,11 +197,17 @@ async def test_active_insight_can_be_rolled_back_but_not_reactivated(tmp_path) -
         await growth.start_validation(principal, draft.insight_id)
         await growth.approve(principal, draft.insight_id)
         active = await growth.activate(principal, draft.insight_id)
-        before = await RecallPlanner(store).prepare(principal, "Reversible lesson")
+        before = await RecallPlanner(store).prepare(
+            principal,
+            "Reversible lesson",
+        )
         assert before.source_ids == (active.published_item_id,)
         rolled_back = await growth.rollback(principal, draft.insight_id)
         assert rolled_back.state is InsightState.ROLLED_BACK
-        after = await RecallPlanner(store).prepare(principal, "Reversible lesson")
+        after = await RecallPlanner(store).prepare(
+            principal,
+            "Reversible lesson",
+        )
         assert after.source_ids == ()
 
         with pytest.raises(SageInvalidTransition):
@@ -197,7 +217,9 @@ async def test_active_insight_can_be_rolled_back_but_not_reactivated(tmp_path) -
 
 
 @pytest.mark.asyncio
-async def test_revising_validating_insight_returns_it_to_draft(tmp_path) -> None:
+async def test_revising_validating_insight_returns_it_to_draft(
+    tmp_path,
+) -> None:
     principal = _principal("sage.insight.approve")
     store = SQLiteSageStore(tmp_path / "sage.db")
     await store.start()

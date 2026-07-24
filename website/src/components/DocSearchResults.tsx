@@ -72,10 +72,7 @@ interface DocSearchResultsProps {
 
 export function DocSearchResults({ query }: DocSearchResultsProps) {
   const { t, i18n } = useTranslation();
-  const { results, loading } = useDocSearch(
-    "zh",
-    query,
-  );
+  const { results, loading } = useDocSearch("zh", query);
 
   return (
     <div

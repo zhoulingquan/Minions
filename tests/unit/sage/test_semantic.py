@@ -1,10 +1,17 @@
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 from uuid import uuid4
 
 import pytest
 
-from minions.sage.models import ItemKind, ItemState, Principal, ScopeRef, ScopeType
+from minions.sage.models import (
+    ItemKind,
+    ItemState,
+    Principal,
+    ScopeRef,
+    ScopeType,
+)
 from minions.sage.runtime import SageRuntime
 from minions.sage.sqlite_store import SQLiteSageStore
 

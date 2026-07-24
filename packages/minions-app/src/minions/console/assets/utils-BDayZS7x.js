@@ -1,0 +1,1 @@
+import{d as t}from"./utils-vendor-ICSMezrC.js";import"./react-vendor-Dc5dhXQW.js";import"./ui-vendor-cRM-fG_K.js";const f=o=>{const r=typeof o=="string"?new Date(o).getTime():o;return isNaN(r)?"-":t(r).fromNow()};export{f as formatTimeAgo};

@@ -1,0 +1,1 @@
+function s(r){switch(r.type){case"start":return{progress:0,msg:"正在初始化备份..."};case"agent":return{progress:r.percent,msg:`正在备份第 ${r.index+1} / ${r.total} 个 Agent...`};case"saving":return{progress:r.percent,msg:"正在写入备份文件..."};case"done":return{progress:100,msg:"备份完成"};default:return{progress:0,msg:""}}}export{s as handleBackupProgressEvent};

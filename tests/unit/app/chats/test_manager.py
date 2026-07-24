@@ -21,7 +21,7 @@ from minions.app.chats.models import (
 from minions.app.chats.repo import (
     JsonChatRepository,
 )
-from minions.app.channels.schema import DEFAULT_CHANNEL
+from minions.channels.schema import DEFAULT_CHANNEL
 
 
 @pytest.fixture

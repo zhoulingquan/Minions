@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 from uuid import uuid4
@@ -57,9 +58,16 @@ async def test_authenticated_review_closes_case_and_forms_draft(tmp_path):
 
         assert case.state is CaseState.COMPLETED
         assert insight is not None and insight.state is InsightState.DRAFT
-        assert (await runtime.store.list_cases(principal))[0].case_id == case.case_id
-        assert (await runtime.store.list_insights(principal))[0].insight_id == insight.insight_id
-        traces = await runtime.store.list_traces(principal, case_id=case.case_id)
+        assert (await runtime.store.list_cases(principal))[
+            0
+        ].case_id == case.case_id
+        assert (await runtime.store.list_insights(principal))[
+            0
+        ].insight_id == insight.insight_id
+        traces = await runtime.store.list_traces(
+            principal,
+            case_id=case.case_id,
+        )
         assert traces[-1].payload["attestation"] == "authenticated-review"
     finally:
         await runtime.close()

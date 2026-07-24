@@ -1,0 +1,1 @@
+import{j as m}from"./react-vendor-Dc5dhXQW.js";import{r as l}from"./index-BaVIVhdi.js";import"./ui-vendor-cRM-fG_K.js";import"./utils-vendor-ICSMezrC.js";import"./dnd-vendor-zA92mhJ9.js";function x({categories:r,styles:t=l}){return r!=null&&r.length?m.jsx(m.Fragment,{children:r.map(n=>m.jsx("span",{className:t.categoryChip,children:n},n))}):null}export{x as SkillCategoryBadges};

@@ -122,6 +122,29 @@ def test_shutdown_command_stops_windows_wrapper_ancestors(monkeypatch) -> None:
     assert "24692" in result.output
 
 
+def test_find_frontend_dev_pids_uses_source_repo_console(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    console_dir = tmp_path / "console"
+    monkeypatch.setattr(
+        shutdown_cmd_module,
+        "find_minions_source_repo_root",
+        lambda: tmp_path,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        shutdown_cmd_module,
+        "_process_table",
+        lambda: [
+            (2002, f"node vite --root {console_dir}"),
+            (3003, "node vite --root C:/unrelated/console"),
+        ],
+    )
+
+    assert shutdown_cmd_module._find_frontend_dev_pids() == {2002}
+
+
 def test_terminate_pid_force_kills_on_windows(monkeypatch) -> None:
     calls: list[tuple[int, bool]] = []
     waits = iter([False, True])

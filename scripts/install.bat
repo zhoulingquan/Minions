@@ -237,7 +237,7 @@ REM ──── Prepare console frontend ────────────�
 REM %~1 = RepoDir
 set "_REPO_DIR=%~1"
 set "_CONSOLE_SRC=%_REPO_DIR%\console\dist"
-set "_CONSOLE_DEST=%_REPO_DIR%\src\minions\console"
+set "_CONSOLE_DEST=%_REPO_DIR%\packages\minions-app\src\minions\console"
 
 REM Already populated
 if exist "%_CONSOLE_DEST%\index.html" (
@@ -301,7 +301,7 @@ REM ──── Cleanup console frontend ────────────�
 :cleanup_console
 REM %~1 = RepoDir
 if "%CONSOLE_COPIED%"=="1" (
-    set "_CLEANUP_DEST=%~1\src\minions\console"
+    set "_CLEANUP_DEST=%~1\packages\minions-app\src\minions\console"
     if exist "!_CLEANUP_DEST!" rd /s /q "!_CLEANUP_DEST!" 2>nul
 )
 exit /b 0
@@ -390,9 +390,12 @@ if not errorlevel 1 (
 )
 rem === End Security Validation ===
 
-rem The input has now been verified as safe and can proceed with installation.
-uv pip install "%ARG_SOURCE_DIR%%EXTRAS_SUFFIX%" --python "%VENV_PYTHON%"
+rem Install every local distribution before the source-free root meta package.
+pushd "%ARG_SOURCE_DIR%"
+uv pip install --no-sources -r requirements-workspace-install.txt --python "%VENV_PYTHON%"
+if not errorlevel 1 if defined ARG_EXTRAS uv pip install --no-sources ".%EXTRAS_SUFFIX%" --python "%VENV_PYTHON%"
 set "_INST_ERR=%errorlevel%"
+popd
 call :cleanup_console "%ARG_SOURCE_DIR%"
 if %_INST_ERR% neq 0 (
     echo [minions] ERROR: Installation from source failed
@@ -418,8 +421,11 @@ if errorlevel 1 (
 )
 call :prepare_console "%CLONE_DIR%"
 echo [minions] Installing package from source...
-uv pip install "%CLONE_DIR%%EXTRAS_SUFFIX%" --python "%VENV_PYTHON%"
+pushd "%CLONE_DIR%"
+uv pip install --no-sources -r requirements-workspace-install.txt --python "%VENV_PYTHON%"
+if not errorlevel 1 if defined ARG_EXTRAS uv pip install --no-sources ".%EXTRAS_SUFFIX%" --python "%VENV_PYTHON%"
 set "_INST_ERR=%errorlevel%"
+popd
 if exist "%CLONE_DIR%" rd /s /q "%CLONE_DIR%"
 if %_INST_ERR% neq 0 (
     echo [minions] ERROR: Installation from source failed

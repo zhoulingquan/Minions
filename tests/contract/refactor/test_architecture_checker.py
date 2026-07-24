@@ -20,7 +20,18 @@ PackageConfig = dict[str, dict[str, list[str]]]
 
 EXPECTED_PACKAGES: PackageConfig = {
     "minions-core": {
-        "imports": ["minions.core"],
+        "imports": [
+            "minions.core",
+            "minions.config",
+            "minions.security",
+            "minions.envs",
+            "minions.observability",
+            "minions.utils",
+            "minions.constant",
+            "minions.exceptions",
+            "minions.schemas",
+            "minions.__version__",
+        ],
         "allows": [],
     },
     "minions-tool-calls": {
@@ -28,8 +39,8 @@ EXPECTED_PACKAGES: PackageConfig = {
         "allows": [],
     },
     "minions-runtime": {
-        "imports": ["minions.runtime"],
-        "allows": ["minions-core", "minions-tool-calls"],
+        "imports": ["minions.runtime", "minions.token_usage", "minions.hooks"],
+        "allows": ["minions-core"],
     },
     "minions-providers": {
         "imports": ["minions.providers", "minions.local_models"],
@@ -41,26 +52,26 @@ EXPECTED_PACKAGES: PackageConfig = {
     },
     "minions-channels": {
         "imports": ["minions.channels"],
-        "allows": ["minions-core"],
+        "allows": ["minions-core", "minions-runtime", "minions-providers"],
     },
     "minions-plugins": {
-        "imports": ["minions.plugins"],
-        "allows": ["minions-core", "minions-runtime"],
+        "imports": ["minions.plugins", "minions._version_compat"],
+        "allows": ["minions-core", "minions-runtime", "minions-channels"],
     },
     "minions-governance": {
-        "imports": [
-            "minions.governance",
-            "minions.security",
-            "minions.sandbox",
-        ],
-        "allows": ["minions-core"],
+        "imports": ["minions.governance", "minions.sandbox"],
+        "allows": ["minions-core", "minions-drivers"],
     },
     "minions-loop": {
         "imports": ["minions.loop"],
-        "allows": ["minions-core"],
+        "allows": ["minions-core", "minions-runtime"],
     },
     "minions-agents": {
-        "imports": ["minions.agents"],
+        "imports": [
+            "minions.agents",
+            "minions.market",
+            "minions.sage",
+        ],
         "allows": [
             "minions-core",
             "minions-runtime",
@@ -68,7 +79,9 @@ EXPECTED_PACKAGES: PackageConfig = {
             "minions-tool-calls",
             "minions-drivers",
             "minions-plugins",
+            "minions-loop",
             "minions-governance",
+            "minions-modes",
         ],
     },
     "minions-modes": {
@@ -80,33 +93,14 @@ EXPECTED_PACKAGES: PackageConfig = {
             "minions-governance",
         ],
     },
-    "minions": {
+    "minions-app": {
         "imports": [
-            "minions.__main__",
-            "minions.__version__",
-            "minions._version_compat",
-            "minions.api_action",
-            "minions.bootstrap",
-            "minions._compat",
             "minions.app",
-            "minions.cli",
-            "minions.hooks",
             "minions.backup",
-            "minions.market",
             "minions.agent_stats",
             "minions.tenancy",
-            "minions.services",
             "minions.tunnel",
-            "minions.sage",
-            "minions.tokenizer",
-            "minions.utils",
-            "minions.constant",
-            "minions.exceptions",
-            "minions.schemas",
-            "minions.config",
-            "minions.envs",
-            "minions.token_usage",
-            "minions.observability",
+            "minions.api_action",
         ],
         "allows": [
             "minions-core",
@@ -120,6 +114,36 @@ EXPECTED_PACKAGES: PackageConfig = {
             "minions-loop",
             "minions-agents",
             "minions-modes",
+        ],
+    },
+    "minions-cli": {
+        "imports": ["minions.cli", "minions.__main__"],
+        "allows": [
+            "minions-core",
+            "minions-runtime",
+            "minions-providers",
+            "minions-channels",
+            "minions-plugins",
+            "minions-agents",
+            "minions-app",
+        ],
+    },
+    "minions": {
+        "imports": [],
+        "allows": [
+            "minions-core",
+            "minions-runtime",
+            "minions-providers",
+            "minions-tool-calls",
+            "minions-drivers",
+            "minions-channels",
+            "minions-plugins",
+            "minions-loop",
+            "minions-governance",
+            "minions-modes",
+            "minions-agents",
+            "minions-app",
+            "minions-cli",
         ],
     },
 }
@@ -206,10 +230,12 @@ def _run_checker(
     repo: Path,
     *,
     config: Path | None = None,
+    extra_args: tuple[str, ...] = (),
 ) -> subprocess.CompletedProcess[str]:
     command = [sys.executable, str(checker), "--root", str(repo)]
     if config is not None:
         command.extend(("--config", str(config)))
+    command.extend(extra_args)
     return subprocess.run(
         command,
         cwd=REPO_ROOT,
@@ -241,15 +267,29 @@ def _assert_failure(
         assert detail.lower() in output.lower(), output
 
 
-def test_repository_configuration_is_the_fixed_twelve_distribution_model() -> (
-    None
-):
+def test_repository_uses_fixed_fourteen_distribution_model() -> None:
     with (REPO_ROOT / "architecture.toml").open("rb") as stream:
         actual = tomllib.load(stream)
 
     assert actual == {
         "packages": EXPECTED_PACKAGES,
-        "workspace": {"active_packages": ["minions"]},
+        "workspace": {
+            "active_packages": [
+                "minions-core",
+                "minions-runtime",
+                "minions-providers",
+                "minions-tool-calls",
+                "minions-drivers",
+                "minions-channels",
+                "minions-plugins",
+                "minions-loop",
+                "minions-governance",
+                "minions-modes",
+                "minions-agents",
+                "minions-app",
+                "minions-cli",
+            ],
+        },
     }
 
 
@@ -330,7 +370,8 @@ def test_namespace_checker_rejects_duplicate_module_or_resource_ownership(
 ) -> None:
     _base_fixture(tmp_path)
     first = _write(
-        _source_root(tmp_path, "minions") / "collision.json", "root"
+        _source_root(tmp_path, "minions") / "collision.json",
+        "root",
     )
     second = _write(
         _source_root(tmp_path, "minions-core") / "collision.json",
@@ -340,7 +381,11 @@ def test_namespace_checker_rejects_duplicate_module_or_resource_ownership(
     result = _run_checker(NAMESPACE_CHECKER, tmp_path)
 
     _assert_failure(
-        result, "collision.json", str(first), str(second), "duplicate"
+        result,
+        "collision.json",
+        str(first),
+        str(second),
+        "duplicate",
     )
 
 
@@ -374,7 +419,7 @@ def test_namespace_checker_normalizes_module_identity_across_source_roots(
     _base_fixture(tmp_path)
     module_file = _write(_source_root(tmp_path, "minions") / "foo.py")
     package_init = _write(
-        _source_root(tmp_path, "minions-core") / "foo" / "__init__.py"
+        _source_root(tmp_path, "minions-core") / "foo" / "__init__.py",
     )
 
     result = _run_checker(NAMESPACE_CHECKER, tmp_path)
@@ -394,7 +439,7 @@ def test_namespace_checker_treats_uppercase_py_as_python_module(
     _base_fixture(tmp_path)
     module_file = _write(_source_root(tmp_path, "minions") / "Foo.PY")
     package_init = _write(
-        _source_root(tmp_path, "minions-core") / "foo" / "__init__.py"
+        _source_root(tmp_path, "minions-core") / "foo" / "__init__.py",
     )
 
     result = _run_checker(NAMESPACE_CHECKER, tmp_path)
@@ -414,7 +459,7 @@ def test_namespace_checker_normalizes_case_variant_init_identity(
     _base_fixture(tmp_path)
     module_file = _write(_source_root(tmp_path, "minions") / "pkg.py")
     package_init = _write(
-        _source_root(tmp_path, "minions-core") / "pkg" / "__INIT__.PY"
+        _source_root(tmp_path, "minions-core") / "pkg" / "__INIT__.PY",
     )
 
     result = _run_checker(NAMESPACE_CHECKER, tmp_path)
@@ -437,7 +482,10 @@ def test_namespace_checker_rejects_source_root_for_inactive_package(
     result = _run_checker(NAMESPACE_CHECKER, tmp_path)
 
     _assert_failure(
-        result, "minions-providers", str(inactive_root), "inactive"
+        result,
+        "minions-providers",
+        str(inactive_root),
+        "inactive",
     )
 
 
@@ -690,6 +738,119 @@ def test_architecture_checker_accepts_allowed_absolute_import(
     result = _run_checker(ARCHITECTURE_CHECKER, tmp_path)
 
     _assert_success(result, "0 forbidden edges, 0 distribution cycles")
+
+
+@pytest.mark.parametrize(
+    "statement",
+    (
+        (
+            "import importlib\n"
+            'importlib.import_module("minions.runtime.runner")\n'
+        ),
+        '__import__("minions.runtime.runner")\n',
+        ("import sys\n" 'sys.modules.get("minions.runtime.runner")\n'),
+    ),
+)
+def test_architecture_checker_scans_literal_dynamic_imports(
+    tmp_path: Path,
+    statement: str,
+) -> None:
+    _base_fixture(tmp_path)
+    source = _write(
+        _source_root(tmp_path, "minions-core") / "core" / "dynamic.py",
+        statement,
+    )
+
+    result = _run_checker(ARCHITECTURE_CHECKER, tmp_path)
+
+    _assert_failure(
+        result,
+        str(source),
+        "minions-core",
+        "minions-runtime",
+        "minions.runtime.runner",
+    )
+
+
+def test_architecture_checker_report_includes_required_metrics(
+    tmp_path: Path,
+) -> None:
+    _base_fixture(tmp_path)
+    _write(_source_root(tmp_path, "minions-core") / "core" / "api.py")
+    _write(
+        _source_root(tmp_path, "minions-runtime") / "runtime" / "runner.py",
+        "from minions.core import api\n",
+    )
+
+    result = _run_checker(
+        ARCHITECTURE_CHECKER,
+        tmp_path,
+        extra_args=("--report",),
+    )
+
+    _assert_success(result, "0 forbidden edges, 0 distribution cycles")
+    output = _output(result)
+    for phrase in (
+        "Python files:",
+        "Python lines:",
+        "Internal import points:",
+        "module-level:",
+        "function-local:",
+        "TYPE_CHECKING:",
+        "Distribution edges:",
+        "Bidirectional pairs:",
+        "Distribution SCCs:",
+        "Unknown owners:",
+        "Forbidden imports:",
+    ):
+        assert phrase in output
+
+
+def test_source_root_mode_uses_target_distribution_owners(
+    tmp_path: Path,
+) -> None:
+    _base_fixture(tmp_path, active_packages=["minions"])
+    source = _write(
+        _source_root(tmp_path, "minions") / "core" / "api.py",
+        "import minions.runtime.runner\n",
+    )
+
+    result = _run_checker(
+        ARCHITECTURE_CHECKER,
+        tmp_path,
+        extra_args=("--source-root", "src/minions", "--report"),
+    )
+
+    _assert_failure(
+        result,
+        str(source),
+        "minions-core",
+        "minions-runtime",
+        "minions.runtime.runner",
+        "Distribution edges:",
+    )
+
+
+def test_source_root_mode_reports_unknown_source_owner(
+    tmp_path: Path,
+) -> None:
+    _base_fixture(tmp_path, active_packages=["minions"])
+    source = _write(
+        _source_root(tmp_path, "minions") / "unowned" / "api.py",
+    )
+
+    result = _run_checker(
+        ARCHITECTURE_CHECKER,
+        tmp_path,
+        extra_args=("--source-root", "src/minions"),
+    )
+
+    _assert_failure(
+        result,
+        str(source),
+        "unknown source owner",
+        "minions.unowned.api",
+    )
 
 
 def test_architecture_checker_rejects_noncanonical_configured_source_prefix(
@@ -1009,7 +1170,8 @@ def test_inactive_prefix_resolves_to_umbrella_instead_of_being_ignored(
     tmp_path: Path,
 ) -> None:
     packages = _base_fixture(
-        tmp_path, active_packages=["minions", "minions-runtime"]
+        tmp_path,
+        active_packages=["minions", "minions-runtime"],
     )
     packages["minions-runtime"]["allows"] = ["minions-core"]
     _write_config(tmp_path, packages, ["minions", "minions-runtime"])

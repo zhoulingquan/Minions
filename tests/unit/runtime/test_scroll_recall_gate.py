@@ -20,7 +20,7 @@ sandbox.
 
 from types import SimpleNamespace
 
-from minions.runtime.builder import AgentBuilder
+from minions.agents.runtime_builder import AgentBuilder
 
 
 def _agent_config(allow_unsandboxed: bool) -> SimpleNamespace:

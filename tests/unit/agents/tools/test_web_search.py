@@ -65,7 +65,9 @@ async def test_validate_public_url_accepts_public_resolution(monkeypatch):
             ),
         ],
     )
-    assert await _validate_public_url("https://example.com/") == "93.184.216.34"
+    assert (
+        await _validate_public_url("https://example.com/") == "93.184.216.34"
+    )
 
 
 @pytest.mark.asyncio

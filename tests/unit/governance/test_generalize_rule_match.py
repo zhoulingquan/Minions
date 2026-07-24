@@ -24,7 +24,6 @@ import asyncio
 
 import pytest
 
-from minions.agents import model_factory
 from minions.governance import generalize as g
 
 
@@ -73,11 +72,11 @@ class _RaisingModel:
 
 
 def _patch_model(monkeypatch, model) -> None:
-    """Make ``create_model_and_formatter`` return ``model``."""
+    """Inject ``model`` at governance's model-construction seam."""
     monkeypatch.setattr(
-        model_factory,
-        "create_model_and_formatter",
-        lambda *a, **kw: (model, None),
+        g,
+        "_build_model",
+        lambda *a, **kw: model,
     )
 
 
@@ -92,8 +91,8 @@ def _patch_model_unavailable(monkeypatch) -> None:
         raise RuntimeError("no active model")
 
     monkeypatch.setattr(
-        model_factory,
-        "create_model_and_formatter",
+        g,
+        "_build_model",
         _raise,
     )
 
@@ -104,9 +103,9 @@ def _spy_model(monkeypatch, model) -> dict:
 
     def _factory(*_a, **_kw):
         calls["n"] += 1
-        return (model, None)
+        return model
 
-    monkeypatch.setattr(model_factory, "create_model_and_formatter", _factory)
+    monkeypatch.setattr(g, "_build_model", _factory)
     return calls
 
 
@@ -116,6 +115,24 @@ def _spy_model(monkeypatch, model) -> dict:
 
 
 class TestShellGeneralization:
+    async def test_uses_injected_model_factory(self):
+        calls: list[str | None] = []
+
+        def _factory(*, agent_id=None):  # noqa: ANN001
+            calls.append(agent_id)
+            return (_FakeModel("git *"), None)
+
+        assert (
+            await g.generalize_rule_match(
+                "Bash",
+                "git status",
+                agent_id="agent-1",
+                model_factory=_factory,
+            )
+            == "Bash(git *)"
+        )
+        assert calls == ["agent-1"]
+
     async def test_simple_command_widened(self, monkeypatch):
         _patch_model_text(monkeypatch, "git *")
         assert (

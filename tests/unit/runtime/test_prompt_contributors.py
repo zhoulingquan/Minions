@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from minions.runtime.prompt_contributors import (
+from minions.agents.prompt_contributors import (
     WorkspacePromptFilesContributor,
     build_default_prompt_manager,
 )

@@ -8,7 +8,7 @@ Run from **repo root**.
 bash scripts/wheel_build.sh
 ```
 
-- Builds the console frontend (`console/`), copies `console/dist` to `src/minions/console/dist`, then builds the wheel. Output: `dist/*.whl`.
+- Builds the console frontend (`console/`), copies resources into `packages/minions-app/src/minions/`, then builds all 14 workspace wheels and sdists in `dist/`.
 
 ## Build website
 

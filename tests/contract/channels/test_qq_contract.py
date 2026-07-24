@@ -15,7 +15,7 @@ from unittest.mock import AsyncMock
 from tests.contract.channels import ChannelContractTest
 
 if TYPE_CHECKING:
-    from minions.app.channels.base import BaseChannel
+    from minions.channels.base import BaseChannel
 
 
 class TestQQChannelContract(ChannelContractTest):
@@ -28,7 +28,7 @@ class TestQQChannelContract(ChannelContractTest):
 
     def create_instance(self) -> "BaseChannel":
         """Provide a QQChannel instance for contract testing."""
-        from minions.app.channels.qq.channel import QQChannel
+        from minions.channels.qq.channel import QQChannel
 
         process = AsyncMock()
 

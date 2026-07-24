@@ -8,6 +8,10 @@ ARG UV_IMAGE=agentscope-registry.ap-southeast-1.cr.aliyuncs.com/agentscope/uv:la
 FROM ${NODE_IMAGE} AS console-builder
 WORKDIR /app
 COPY console /app/console
+# Vite transforming large module graphs (mermaid/monaco/antd) exceeds node's
+# default V8 heap limit in memory-constrained build environments; raise it to
+# match the CI runner default (see release-verify non-Docker console build).
+ENV NODE_OPTIONS="--max-old-space-size=8192"
 RUN cd /app/console && npm ci --include=dev && npm run build
 
 # Alias for uv binary so COPY --from can reference a build-arg image.
@@ -90,14 +94,16 @@ WORKDIR ${WORKSPACE_DIR}
 RUN python3 -m venv venv
 ENV PATH="/app/venv/bin:$PATH"
 
-COPY pyproject.toml setup.py README.md ./
-COPY src ./src
-COPY website/public/docs/ ./src/minions/docs/
+COPY pyproject.toml README.md ./
+COPY requirements-workspace.txt requirements-workspace-install.txt uv.lock ./
+COPY packages ./packages
+COPY website/public/docs/ ./packages/minions-app/src/minions/docs/
 # Inject console dist from build stage (repo does not commit dist).
-COPY --from=console-builder /app/console/dist/ ./src/minions/console/
+COPY --from=console-builder /app/console/dist/ ./packages/minions-app/src/minions/console/
 # Speed up Python package installation with uv.
 COPY --from=uv-src /uv /bin/uv
-RUN uv pip install --no-cache-dir . && rm -rf ./build
+RUN uv pip install --no-cache-dir --no-sources -r requirements-workspace-install.txt \
+  && find ./packages -type d -name build -prune -exec rm -rf '{}' +
 
 
 # Minions app port (default 8088). Override at runtime with -e MINIONS_PORT=3000.

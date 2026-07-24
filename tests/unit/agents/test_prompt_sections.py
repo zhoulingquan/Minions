@@ -20,12 +20,17 @@ class _FakeAgent:
 @pytest.fixture(autouse=True)
 def clean_prompt_sections():
     """Keep singleton registry state isolated for these tests."""
+    from minions.app.plugin_host import AppPluginHost
+    from minions.plugins.host import configure_plugin_host
+
+    configure_plugin_host(AppPluginHost())
     registry = PluginRegistry()
     for plugin_id in ("test-a", "test-b", "broken-plugin"):
         registry.unregister_plugin(plugin_id)
     yield
     for plugin_id in ("test-a", "test-b", "broken-plugin"):
         registry.unregister_plugin(plugin_id)
+    configure_plugin_host(None)
 
 
 def test_builder_orders_sections_after_host_anchor():

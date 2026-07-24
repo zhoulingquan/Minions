@@ -64,7 +64,10 @@ def test_agent_scoped_skills_import_list_batch_delete(app_server) -> None:
         imported = _upload_workspace_skills(
             app_server,
             agent_id,
-            {name: _skill_md(name, "scoped batch skill") for name in skill_names},
+            {
+                name: _skill_md(name, "scoped batch skill")
+                for name in skill_names
+            },
         )
         assert imported.get("count") == len(skill_names)
 
@@ -132,7 +135,10 @@ def test_agent_scoped_skills_batch_enable_disable(app_server) -> None:
         imported = _upload_workspace_skills(
             app_server,
             agent_id,
-            {name: _skill_md(name, "batch enable skill") for name in skill_names},
+            {
+                name: _skill_md(name, "batch enable skill")
+                for name in skill_names
+            },
         )
         assert imported.get("count") == len(skill_names)
 
@@ -196,7 +202,11 @@ def test_agent_scoped_skills_global_refresh(app_server) -> None:
     create_agent = app_server.api_request(
         "POST",
         "/api/agents",
-        json={"id": agent_id, "name": "Global skills refresh agent", "description": ""},
+        json={
+            "id": agent_id,
+            "name": "Global skills refresh agent",
+            "description": "",
+        },
     )
     assert create_agent.status_code == 201, app_server.logs_tail()
 

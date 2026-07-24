@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Security tests for the current-auth to SAGE identity bridge."""
 
 import base64
@@ -166,7 +167,11 @@ async def test_auth_middleware_binds_and_resets_identity(
     token = isolated_auth.register_user("owner", "secret-password")
     assert token is not None
     middleware = object.__new__(isolated_auth.AuthMiddleware)
-    monkeypatch.setattr(middleware, "_should_skip_auth", lambda _request: False)
+    monkeypatch.setattr(
+        middleware,
+        "_should_skip_auth",
+        lambda _request: False,
+    )
     monkeypatch.setattr(middleware, "_extract_token", lambda _request: token)
     request = SimpleNamespace(state=SimpleNamespace())
 

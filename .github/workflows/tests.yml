@@ -4,18 +4,30 @@ on:
   push:
     branches: [main, master, dev, develop]
     paths:
-      - 'src/**'
+      - 'packages/**'
       - 'tests/**'
       - 'pyproject.toml'
-      - 'setup.py'
+      - 'requirements-workspace.txt'
+      - 'requirements-workspace-install.txt'
+      - 'uv.lock'
+      - 'architecture.toml'
+      - '.importlinter'
+      - 'scripts/check_architecture.py'
+      - 'scripts/refactor/**'
       - '.github/workflows/tests.yml'
   pull_request:
     branches: [main, master, dev, develop]
     paths:
-      - 'src/**'
+      - 'packages/**'
       - 'tests/**'
       - 'pyproject.toml'
-      - 'setup.py'
+      - 'requirements-workspace.txt'
+      - 'requirements-workspace-install.txt'
+      - 'uv.lock'
+      - 'architecture.toml'
+      - '.importlinter'
+      - 'scripts/check_architecture.py'
+      - 'scripts/refactor/**'
       - '.github/workflows/tests.yml'
   workflow_dispatch:
     inputs:
@@ -83,9 +95,9 @@ jobs:
       - name: Copy console build into package
         shell: bash
         run: |
-          rm -rf src/minions/console/*
-          mkdir -p src/minions/console
-          cp -R console/dist/* src/minions/console/
+          rm -rf packages/minions-app/src/minions/console/*
+          mkdir -p packages/minions-app/src/minions/console
+          cp -R console/dist/* packages/minions-app/src/minions/console/
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -97,7 +109,7 @@ jobs:
         shell: bash
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev,test,full]"
+          pip install -r requirements-workspace.txt
 
       - name: Run unit tests
         shell: bash
@@ -110,7 +122,7 @@ jobs:
           if [ "${{ matrix.os }}" = "ubuntu-latest" ] && \
              [ "${{ matrix.python-version }}" = "3.13" ]; then
             pytest tests/unit -v \
-              --cov=src/minions \
+              --cov=minions \
               --cov-report=xml:coverage.unit.xml \
               --cov-fail-under=0
           else
@@ -168,9 +180,9 @@ jobs:
       - name: Copy console build into package
         shell: bash
         run: |
-          rm -rf src/minions/console/*
-          mkdir -p src/minions/console
-          cp -R console/dist/* src/minions/console/
+          rm -rf packages/minions-app/src/minions/console/*
+          mkdir -p packages/minions-app/src/minions/console
+          cp -R console/dist/* packages/minions-app/src/minions/console/
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -182,7 +194,7 @@ jobs:
         shell: bash
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev,test,full]"
+          pip install -r requirements-workspace.txt
 
       - name: Run contract tests
         shell: bash
@@ -193,7 +205,7 @@ jobs:
           if [ "${{ matrix.os }}" = "ubuntu-latest" ] && \
              [ "${{ matrix.python-version }}" = "3.13" ]; then
             pytest tests/contract -v \
-              --cov=src/minions \
+              --cov=minions \
               --cov-report=xml:coverage.contract.xml \
               --cov-fail-under=0
           else
@@ -251,9 +263,9 @@ jobs:
       - name: Copy console build into package
         shell: bash
         run: |
-          rm -rf src/minions/console/*
-          mkdir -p src/minions/console
-          cp -R console/dist/* src/minions/console/
+          rm -rf packages/minions-app/src/minions/console/*
+          mkdir -p packages/minions-app/src/minions/console
+          cp -R console/dist/* packages/minions-app/src/minions/console/
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -265,7 +277,7 @@ jobs:
         shell: bash
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev,test,full]"
+          pip install -r requirements-workspace.txt
 
       - name: Check if integrated tests exist
         id: check-integrated

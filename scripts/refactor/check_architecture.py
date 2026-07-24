@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Validate actual Python import edges against distribution architecture."""
 from __future__ import annotations
 
@@ -10,6 +11,7 @@ import tokenize
 from typing import Iterable, Sequence
 
 if __package__:
+    # pylint: disable-next=relative-beyond-top-level
     from ._architecture_common import (
         ArchitectureConfig,
         ArchitectureError,
@@ -75,12 +77,25 @@ class ForbiddenEdge:
 
 
 @dataclass(frozen=True)
+class ResolvedEdge:
+    """A resolved cross-distribution import occurrence."""
+
+    record: ImportRecord
+    target_distribution: str
+
+
+@dataclass(frozen=True)
 class ArchitectureReport:
     """Complete architecture analysis result."""
 
     forbidden_edges: tuple[ForbiddenEdge, ...]
     cycles: tuple[tuple[str, ...], ...]
     errors: tuple[str, ...]
+    records: tuple[ImportRecord, ...]
+    distribution_edges: tuple[ResolvedEdge, ...]
+    graph: tuple[tuple[str, tuple[str, ...]], ...]
+    python_files: int
+    python_lines: int
 
     @property
     def valid(self) -> bool:
@@ -133,6 +148,25 @@ class _ImportCollector(ast.NodeVisitor):
             else:
                 target = f"{base}.{alias.name}" if base else alias.name
             self._record(target, node.lineno)
+
+    def visit_Call(self, node: ast.Call) -> None:  # noqa: N802
+        """Record supported literal dynamic imports and module lookups."""
+        target: str | None = None
+        if (
+            isinstance(node.func, ast.Attribute)
+            and node.func.attr == "import_module"
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "importlib"
+        ):
+            target = _literal_call_argument(node)
+        elif isinstance(node.func, ast.Name) and node.func.id == "__import__":
+            target = _literal_call_argument(node)
+        elif _is_sys_modules_lookup(node.func):
+            target = _literal_call_argument(node)
+
+        if target is not None:
+            self._record(target, node.lineno)
+        self.generic_visit(node)
 
     def _resolve_from_base(self, node: ast.ImportFrom) -> str | None:
         if node.level == 0:
@@ -198,6 +232,33 @@ def _is_type_checking_guard(node: ast.AST) -> bool:
     )
 
 
+def _literal_call_argument(node: ast.Call) -> str | None:
+    """Return a call's first positional string argument when it is literal."""
+    if not node.args:
+        return None
+    value = node.args[0]
+    if isinstance(value, ast.Constant) and isinstance(value.value, str):
+        return value.value
+    return None
+
+
+def _is_sys_modules_lookup(node: ast.AST) -> bool:
+    """Return whether *node* is a supported ``sys.modules`` lookup call."""
+    if not isinstance(node, ast.Attribute) or node.attr not in {
+        "get",
+        "pop",
+        "setdefault",
+    }:
+        return False
+    modules = node.value
+    return (
+        isinstance(modules, ast.Attribute)
+        and modules.attr == "modules"
+        and isinstance(modules.value, ast.Name)
+        and modules.value.id == "sys"
+    )
+
+
 def iter_python_files(source_root: SourceRoot) -> Iterable[Path]:
     """Yield Python source files using the namespace checker's semantics."""
     for path, _relative in iter_owned_files(source_root.path):
@@ -206,7 +267,8 @@ def iter_python_files(source_root: SourceRoot) -> Iterable[Path]:
 
 
 def _scan_file(
-    source_root: SourceRoot, path: Path
+    source_root: SourceRoot,
+    path: Path,
 ) -> tuple[list[ImportRecord], list[str]]:
     try:
         with tokenize.open(path) as stream:
@@ -273,6 +335,8 @@ def validate_active_source_ownership(
 def resolve_target_distribution(
     config: ArchitectureConfig,
     record: ImportRecord,
+    *,
+    include_inactive: bool = False,
 ) -> tuple[str | None, str | None]:
     """Resolve an import occurrence to its active distribution ownership."""
     target = record.target_module
@@ -297,6 +361,8 @@ def resolve_target_distribution(
                 f"use canonical configured prefix {prefix} "
                 f"({_scope_flags(record)})"
             )
+        if include_inactive:
+            return distribution, None
         if distribution in config.active_packages:
             return distribution, None
         if "minions" in config.active_packages:
@@ -308,7 +374,9 @@ def resolve_target_distribution(
             f"({_scope_flags(record)})"
         )
 
-    if "minions" in config.active_packages:
+    if target == "minions":
+        return None, None
+    if not include_inactive and "minions" in config.active_packages:
         return "minions", None
     return None, (
         f"import ownership error: {record.source_file} line {record.line} imports "
@@ -425,22 +493,87 @@ def scan_import_records(
     return config, source_roots, tuple(records), tuple(errors)
 
 
+def scan_target_source_root(
+    root: Path,
+    source_root_path: Path,
+    config_path: Path | None = None,
+) -> tuple[
+    ArchitectureConfig,
+    dict[str, SourceRoot],
+    tuple[ImportRecord, ...],
+    tuple[str, ...],
+]:
+    """Scan a monolithic source root using the configured future owners."""
+    root = root.resolve()
+    config = load_architecture_config(root, config_path)
+    path = source_root_path
+    if not path.is_absolute():
+        path = root / path
+    path = path.resolve()
+    if not path.is_dir():
+        raise ArchitectureError(f"source root does not exist: {path}")
+
+    monolith = SourceRoot("minions", path)
+    records: list[ImportRecord] = []
+    errors: list[str] = []
+    for source_path in iter_python_files(monolith):
+        module = module_name_for_path(path, source_path)
+        configured = config.configured_owner(module)
+        if configured is None:
+            distribution = "minions"
+            errors.append(
+                f"unknown source owner: module {module} at {source_path} has no "
+                "configured distribution",
+            )
+        else:
+            distribution = configured.distribution
+            if not configured.uses_canonical_prefix:
+                errors.append(
+                    f"non-canonical configured source prefix: module {module} "
+                    f"in {source_path} matches configured prefix "
+                    f"{configured.prefix} for package {distribution}",
+                )
+        logical_root = SourceRoot(distribution, path)
+        file_records, file_errors = _scan_file(logical_root, source_path)
+        records.extend(file_records)
+        errors.extend(file_errors)
+    return (
+        config,
+        {"target-layout": monolith},
+        tuple(records),
+        tuple(errors),
+    )
+
+
 def check_architecture(
     root: Path,
     config_path: Path | None = None,
+    source_root: Path | None = None,
 ) -> ArchitectureReport:
     """Analyze active source roots and return all import-edge diagnostics."""
-    config, _source_roots, records, scan_errors = scan_import_records(
-        root,
-        config_path,
-    )
+    target_layout = source_root is not None
+    if source_root is None:
+        config, source_roots, records, scan_errors = scan_import_records(
+            root,
+            config_path,
+        )
+    else:
+        config, source_roots, records, scan_errors = scan_target_source_root(
+            root,
+            source_root,
+            config_path,
+        )
 
-    graph = {distribution: set() for distribution in config.active_packages}
+    graph_nodes = config.packages if target_layout else config.active_packages
+    graph = {distribution: set() for distribution in graph_nodes}
     forbidden: list[ForbiddenEdge] = []
+    resolved_edges: list[ResolvedEdge] = []
     errors = list(scan_errors)
     for record in records:
         target_distribution, ownership_error = resolve_target_distribution(
-            config, record
+            config,
+            record,
+            include_inactive=target_layout,
         )
         if ownership_error is not None:
             errors.append(ownership_error)
@@ -451,6 +584,7 @@ def check_architecture(
         ):
             continue
         graph[record.source_distribution].add(target_distribution)
+        resolved_edges.append(ResolvedEdge(record, target_distribution))
         rule = config.packages[record.source_distribution]
         if target_distribution not in rule.allows:
             forbidden.append(ForbiddenEdge(record, target_distribution))
@@ -462,11 +596,45 @@ def check_architecture(
             edge.record.target_module,
         ),
     )
+    resolved_edges.sort(
+        key=lambda edge: (
+            edge.record.source_distribution,
+            edge.target_distribution,
+            str(edge.record.source_file),
+            edge.record.line,
+            edge.record.target_module,
+        ),
+    )
+    python_files, python_lines = _source_metrics(source_roots)
     return ArchitectureReport(
         forbidden_edges=tuple(forbidden),
         cycles=_distribution_cycles(graph),
         errors=tuple(errors),
+        records=records,
+        distribution_edges=tuple(resolved_edges),
+        graph=tuple(
+            (distribution, tuple(sorted(targets)))
+            for distribution, targets in sorted(graph.items())
+        ),
+        python_files=python_files,
+        python_lines=python_lines,
     )
+
+
+def _source_metrics(source_roots: dict[str, SourceRoot]) -> tuple[int, int]:
+    """Count Python files and physical lines in active source roots."""
+    files = 0
+    lines = 0
+    for distribution in sorted(source_roots):
+        for path in iter_python_files(source_roots[distribution]):
+            files += 1
+            try:
+                with tokenize.open(path) as stream:
+                    lines += sum(1 for _line in stream)
+            except (OSError, UnicodeError):
+                # The primary scan reports the actionable read error.
+                continue
+    return files, lines
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -482,6 +650,19 @@ def _parser() -> argparse.ArgumentParser:
         type=Path,
         help="architecture config path (default: ROOT/architecture.toml)",
     )
+    parser.add_argument(
+        "--report",
+        action="store_true",
+        help="print architecture statistics and resolved distribution edges",
+    )
+    parser.add_argument(
+        "--source-root",
+        type=Path,
+        help=(
+            "scan one monolithic src/minions root using configured future "
+            "distribution owners"
+        ),
+    )
     return parser
 
 
@@ -491,14 +672,68 @@ def _scope_flags(record: ImportRecord) -> str:
     return f"function_scope={function_scope}, type_checking={type_checking}"
 
 
+def _print_report(report: ArchitectureReport) -> None:
+    """Print the permanent architecture baseline report required by the spec."""
+    internal = tuple(
+        record
+        for record in report.records
+        if record.target_module == "minions"
+        or record.target_module.startswith("minions.")
+    )
+    graph = {source: set(targets) for source, targets in report.graph}
+    bidirectional = {
+        tuple(sorted((source, target)))
+        for source, targets in graph.items()
+        for target in targets
+        if source in graph.get(target, set())
+    }
+    unknown = sum(
+        "ownership error" in error or "unconfigured internal module" in error
+        for error in report.errors
+    )
+
+    print(f"Python files: {report.python_files}")
+    print(f"Python lines: {report.python_lines}")
+    print(f"Internal import points: {len(internal)}")
+    print(
+        f"  module-level: {sum(not item.function_scope for item in internal)}",
+    )
+    print(f"  function-local: {sum(item.function_scope for item in internal)}")
+    print(f"  TYPE_CHECKING: {sum(item.type_checking for item in internal)}")
+    print("Distribution edges:")
+    if not report.distribution_edges:
+        print("  (none)")
+    else:
+        for edge in report.distribution_edges:
+            record = edge.record
+            print(
+                f"  {record.source_distribution} -> {edge.target_distribution}: "
+                f"{record.source_file}:{record.line} imports "
+                f"{record.target_module} ({_scope_flags(record)})",
+            )
+    print(f"Bidirectional pairs: {len(bidirectional)}")
+    for source, target in sorted(bidirectional):
+        print(f"  {source} <-> {target}")
+    print(f"Distribution SCCs: {len(report.cycles)}")
+    print(f"Unknown owners: {unknown}")
+    print(f"Forbidden imports: {len(report.forbidden_edges)}")
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the architecture gate CLI."""
     args = _parser().parse_args(argv)
     try:
-        report = check_architecture(args.root, args.config)
+        report = check_architecture(
+            args.root,
+            args.config,
+            source_root=args.source_root,
+        )
     except ArchitectureError as exc:
         print(f"architecture config/ownership error: {exc}", file=sys.stderr)
         return 1
+
+    if args.report:
+        _print_report(report)
 
     if report.valid:
         print("0 forbidden edges, 0 distribution cycles")

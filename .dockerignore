@@ -12,7 +12,6 @@ __pycache__
 *$py.class
 .venv
 venv
-uv.lock
 .pytest_cache
 .coverage
 htmlcov
@@ -30,7 +29,7 @@ pytest.ini
 .eslintrc
 .stylelintrc
 
-# Frontend: exclude build artifacts; ship pre-built src/console/dist in image
+# Frontend: exclude local build artifacts; Docker injects console-builder output
 website
 !website/
 !website/public/
@@ -42,8 +41,6 @@ console/.vite
 node_modules
 **/node_modules
 **/dist
-!src/minions/console/dist
-!src/minions/console/dist/**
 **/.vite
 
 # Example and local config (mount at runtime instead)

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Validate PEP 420 namespace ownership across workspace source roots."""
 from __future__ import annotations
 
@@ -7,6 +8,7 @@ import sys
 from typing import Sequence
 
 if __package__:
+    # pylint: disable-next=relative-beyond-top-level
     from ._architecture_common import (
         ArchitectureError,
         is_init_module,

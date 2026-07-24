@@ -152,6 +152,28 @@ def auth_app_server(  # pylint: disable=too-many-statements
                     f"app not ready in time:\n" f"{''.join(logs)[-3000:]}",
                 )
 
+            background_deadline = time.time() + 120.0
+            while time.time() < background_deadline:
+                if process.poll() is not None:
+                    raise AssertionError(
+                        "minions app exited during background startup\n"
+                        f"logs:\n{''.join(logs)[-4000:]}",
+                    )
+                recent_logs = "".join(logs[-200:])
+                if "Background startup completed" in recent_logs:
+                    break
+                if "Background startup encountered an error" in recent_logs:
+                    raise AssertionError(
+                        "minions app background startup failed\n"
+                        f"logs:\n{''.join(logs)[-8000:]}",
+                    )
+                time.sleep(0.25)
+            else:
+                raise AssertionError(
+                    "minions app background startup did not complete in time\n"
+                    f"logs:\n{''.join(logs)[-8000:]}",
+                )
+
             yield _AuthAppServer(
                 host=host,
                 port=port,

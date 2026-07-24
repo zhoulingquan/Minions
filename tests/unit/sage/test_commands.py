@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Tests for SAGE-native command registration."""
 
 from types import SimpleNamespace
@@ -5,15 +6,23 @@ from uuid import uuid4
 
 import pytest
 
-from minions.runtime.builtin_commands import collect_builtin_command_specs
+from minions.agents.builtin_commands import collect_builtin_command_specs
 from minions.sage.commands import build_sage_command_specs
 from minions.sage.identity import TrustedSageIdentity
-from minions.sage.models import ItemKind, ItemState, ScopeRef, ScopeType, TraceType
+from minions.sage.models import (
+    ItemKind,
+    ItemState,
+    ScopeRef,
+    ScopeType,
+    TraceType,
+)
 from minions.sage.runtime import SageRuntime
 from minions.sage.sqlite_store import SQLiteSageStore
 
 
-def test_runtime_registers_sage_names_and_retires_old_memory_commands() -> None:
+def test_runtime_registers_sage_names_and_retires_old_memory_commands() -> (
+    None
+):
     names = {spec.name for spec in collect_builtin_command_specs()}
     assert {
         "sage-status",
@@ -54,7 +63,9 @@ async def test_sage_find_returns_only_authorized_sources(tmp_path) -> None:
             state=ItemState.ACTIVE,
         )
         find = next(
-            spec for spec in build_sage_command_specs() if spec.name == "sage-find"
+            spec
+            for spec in build_sage_command_specs()
+            if spec.name == "sage-find"
         )
         result = await find.handler(ctx, "invoice review")
         text = result.get_text_content()
@@ -76,7 +87,11 @@ async def test_sage_feedback_records_recall_correction(tmp_path) -> None:
             agent_id="finance-agent",
             session_id="command-session",
             extras={
-                "sage.identity": TrustedSageIdentity(tenant_id, user_id, "test"),
+                "sage.identity": TrustedSageIdentity(
+                    tenant_id,
+                    user_id,
+                    "test",
+                ),
             },
             workspace=SimpleNamespace(sage_runtime=runtime),
         )
@@ -103,12 +118,18 @@ async def test_sage_feedback_records_recall_correction(tmp_path) -> None:
             ),
             user_input="current policy",
         )
-        pack = await runtime.prepare_for_turn(principal, turn, "current policy")
+        pack = await runtime.prepare_for_turn(
+            principal,
+            turn,
+            "current policy",
+        )
         assert pack.receipt is not None
         receipt_id = pack.receipt.receipt_id
         source_id = source.item_id
         feedback = next(
-            spec for spec in build_sage_command_specs() if spec.name == "sage-feedback"
+            spec
+            for spec in build_sage_command_specs()
+            if spec.name == "sage-feedback"
         )
         result = await feedback.handler(
             ctx,
@@ -146,7 +167,9 @@ async def test_sage_policy_shows_conservative_defaults(tmp_path) -> None:
             workspace=SimpleNamespace(sage_runtime=runtime),
         )
         policy = next(
-            spec for spec in build_sage_command_specs() if spec.name == "sage-policy"
+            spec
+            for spec in build_sage_command_specs()
+            if spec.name == "sage-policy"
         )
         result = await policy.handler(ctx, "")
         text = result.get_text_content()

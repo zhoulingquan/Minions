@@ -247,7 +247,7 @@ def test_get_model_max_input_length_uses_provider_resolution(monkeypatch):
     """/history, usage%%, and daemon status must report the same window the
     compaction trigger uses — the display path delegates to
     Provider.get_context_size instead of reading the raw field."""
-    from minions.config import config as config_mod
+    from minions.providers import context_windows
 
     class _Provider:
         def get_context_size(self, model_id):
@@ -269,4 +269,4 @@ def test_get_model_max_input_length_uses_provider_resolution(monkeypatch):
             model="claude-sonnet-4-5",
         ),
     )
-    assert config_mod.get_model_max_input_length(agent_config) == 200_000
+    assert context_windows.get_model_max_input_length(agent_config) == 200_000

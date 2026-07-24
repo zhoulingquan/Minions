@@ -1,8 +1,24 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "minions-governance"
-version = "2.0.0"
+version = "0.1.0"
 requires-python = ">=3.11,<3.14"
-dependencies = []
+license = "Apache-2.0"
+dependencies = [
+    "minions-core==0.1.0",
+    "minions-drivers==0.1.0",
+    "agentscope==2.0.4",
+    "pyyaml>=6.0",
+    "wcmatch>=10.0",
+]
 
-[tool.uv]
-package = false
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["minions", "minions.governance*", "minions.sandbox*"]
+namespaces = true

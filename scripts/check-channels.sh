@@ -91,7 +91,7 @@ fi
 # Check if dependencies are installed
 if ! python3 -c "import minions" 2>/dev/null; then
     echo -e "${YELLOW}Installing dependencies...${NC}"
-    pip install -e ".[dev]" -q
+    pip install -r requirements-workspace.txt -q
 fi
 
 # Run tests

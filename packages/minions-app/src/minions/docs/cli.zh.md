@@ -1,0 +1,775 @@
+# CLI
+
+`minions` 是 Minions 的命令行工具。本页按「上手 → 配置 → 日常管理」的顺序组织——
+新用户从头读，老用户直接跳到需要的章节。
+
+> 还不清楚「频道」「心跳」「定时任务」是什么？先看 [项目介绍](./intro)。
+
+---
+
+## 快速上手
+
+第一次用 Minions，只需要这两条命令。
+
+### minions init
+
+首次初始化，交互式引导你完成所有配置。
+
+```bash
+minions init              # 交互式初始化（推荐新用户）
+minions init --defaults   # 不交互，用默认值（适合脚本）
+minions init --force      # 覆盖已有配置文件
+```
+
+**交互流程（按顺序）：**
+
+1. **默认工作区初始化** —— 自动创建默认工作区及配置文件。
+2. **LLM 提供商** —— 选择提供商、输入 API Key、选择模型（**必选**）。
+3. **环境变量** —— 可选添加工具所需的键值对。
+4. **HEARTBEAT.md** —— 在默认编辑器中编辑心跳检查清单。
+
+### minions app
+
+启动 Minions 服务。频道、定时任务、控制台等所有运行时功能都依赖此服务。
+
+```bash
+minions app                             # 默认 127.0.0.1:8088
+minions app --reload                    # 代码改动自动重载（开发用）
+minions app --log-level debug           # 详细日志
+```
+
+| 选项          | 默认值      | 说明                                                          |
+| ------------- | ----------- | ------------------------------------------------------------- |
+| `--host`      | `127.0.0.1` | 绑定地址                                                      |
+| `--port`      | `8088`      | 绑定端口                                                      |
+| `--reload`    | 关闭        | 文件变动时自动重载（仅开发用）                                |
+| `--log-level` | `info`      | `critical` / `error` / `warning` / `info` / `debug` / `trace` |
+| `--workers`   | —           | **[已废弃]** 将被忽略，Minions 始终使用 1 个 worker           |
+
+> **说明：** `--workers` 选项因稳定性原因已废弃。Minions 被设计为单 worker 进程运行。多 worker 模式会导致内存状态管理和 WebSocket 连接出现问题。此选项将在未来版本中移除。
+
+### minions tui
+
+打开内置终端聊天界面。它会使用当前 Python 环境运行 Minions，适合开发安装
+和偏命令行的工作流。
+
+```bash
+minions                         # 用当前活跃 Agent 打开 TUI
+minions tui --agent writer      # 用指定 Agent 打开 TUI
+minions .                       # 将当前目录绑定为本次 TUI 会话的项目
+minions tui /path/to/repo       # 将其他目录绑定为本次 TUI 会话的项目
+```
+
+传入项目目录会把它作为本次 TUI 会话的活跃项目。
+这是会话级设置；不会写入 `agent.json`，也不会改变控制台里选择的项目。
+
+### 控制台
+
+`minions app` 启动后，在浏览器打开 `http://127.0.0.1:8088/` 即可进入 **控制台** ——
+一个用于对话、频道、定时任务、技能、模型等的 Web 管理界面。详见 [控制台](./console)。
+
+若未构建前端，根路径会返回类似 `{"message": "Minions Web Console is not available."}` 的提示信息（实际文案可能调整），API 仍可正常使用。
+
+**构建方式：** 在项目 `console/` 目录下执行 `npm ci && npm run build`，
+然后将构建产物复制到包目录：
+`mkdir -p src/minions/console && cp -R console/dist/. src/minions/console/`。
+Docker 镜像或 pip 安装包已内置控制台，无需单独构建。
+
+### minions daemon
+
+查看运行状态、版本、最近日志等，无需启动对话。与在对话中发送 `/daemon status` 等效果一致（CLI 无进程时可查看本地信息）。
+
+| 命令                           | 说明                                                                           |
+| ------------------------------ | ------------------------------------------------------------------------------ |
+| `minions daemon status`        | 状态（配置、工作目录、记忆服务）                                               |
+| `minions daemon restart`       | 打印说明（在对话中用 /daemon restart 可进程内重载）                            |
+| `minions daemon reload-config` | 重新读取并校验配置（频道/MCP 变更需在对话中 /daemon restart 或重启进程后生效） |
+| `minions daemon version`       | 版本与路径                                                                     |
+| `minions daemon logs [-n N]`   | 最近 N 行日志（默认 100，来自工作目录 `minions.log`）                          |
+
+**多智能体支持：** 所有命令都支持 `--agent-id` 参数（默认为 `default`）。
+
+```bash
+minions daemon status                     # 默认智能体状态
+minions daemon status --agent-id abc123   # 特定智能体状态
+minions daemon version
+minions daemon logs -n 50
+```
+
+### minions doctor
+
+对当前安装做**只读**检查：根目录 `config.json` 校验、工作区、`agent.json`、
+频道、MCP、控制台静态资源、HTTP API 可达性、活跃模型与各 Agent 模型连通性
+等。**单独运行 `doctor` 不会修复磁盘**；需要改文件时请使用子命令
+**`minions doctor fix`**（默认会在 `doctor-fix-backups/` 下备份后再写）。
+
+```bash
+minions doctor                      # 默认检查
+minions doctor --deep               # 额外：已启用频道出站探测 + 本地 llama 提示
+minions doctor --port 8088          # 强制指定 API 端口（见下文说明）
+minions doctor fix --dry-run        # 仅打印计划，不写盘
+minions doctor fix -y --only …      # 应用白名单内的修复项（详见 --help）
+```
+
+| 选项            | 作用对象 | 说明                                               |
+| --------------- | -------- | -------------------------------------------------- |
+| `--timeout`     | `doctor` | API / 连通性相关 HTTP 超时（默认 5 秒）            |
+| `--llm-timeout` | `doctor` | 模型连通性检测超时（默认 15 秒）                   |
+| `--deep`        | `doctor` | 对已启用频道做出站探测；`minions-local` 时附加说明 |
+
+**`doctor` 连的是哪个 host/port？** 根命令上的 `minions --host` /
+`--port` 对所有子命令生效（含 `doctor`）。若未指定，CLI 会用
+**`config.json` 里持久化的 `last_api`**（一般在 `minions app` 启动时写入）
+补全缺省项；**仅当没有 `last_api` 时**才回落到 `127.0.0.1:8088`。若发现
+检查打到了错误端口，可显式加 `--port`，或改配置里的 `last_api`。
+
+**`doctor fix`** 只会在工作目录范围内做保守修复。
+
+#### 推荐流程（先预览，再执行）
+
+```bash
+minions doctor fix --dry-run
+# 缩小到你明确想执行的修复项
+minions doctor fix --dry-run --only ensure-working-dir,ensure-workspace-dirs
+
+# 确认计划无误后再执行
+minions doctor fix --only ensure-working-dir,ensure-workspace-dirs
+```
+
+- `--dry-run` 仅打印计划，不写盘。
+- 若计划里包含只读校验（如 jobs.json 校验），FAIL 时仍会返回非 0 退出码
+  （便于 CI 使用）。
+
+#### 修复项（fix ids）
+
+可通过 `--only` 传入逗号分隔的 id。
+
+- 常见安示例：
+  - `ensure-working-dir`：工作目录不存在时创建
+  - `ensure-workspace-dirs`：创建缺失的 agent workspace 目录
+- 完整 fix ids 列表与风险说明请查看：
+  - `minions doctor fix --help`
+- 当 `minions doctor` 检测到问题时，输出里会给出对应的修复提示（含建议
+  的 `doctor fix --dry-run --only ...` 命令）。
+
+#### 修复项的安全执行方式
+
+示例：
+
+```bash
+minions doctor fix --dry-run --only seed-missing-agent-json,reset-invalid-agent-json
+minions doctor fix -y --only seed-missing-agent-json,reset-invalid-agent-json
+```
+
+- `-y` 仅在真实执行（不带 `--dry-run`）时生效。
+- `--non-interactive` 只允许安全 + 只读 + 技能同步类修复项
+
+#### 备份与恢复
+
+默认会写备份到：
+
+- `doctor-fix-backups/<时间戳>/files/`
+
+恢复时，将 `files/` 子树中的文件按相同相对路径复制回工作目录即可。
+
+> 除非你非常确定不需要回滚，否则不建议使用 `--no-backup`。
+
+---
+
+## 模型与环境变量
+
+使用 Minions 前至少需要配置一个 LLM 提供商。环境变量为内置工具（如网页搜索）提供凭据。
+
+### minions models
+
+管理 LLM 提供商和活跃模型。
+
+| 命令                                     | 说明                                   |
+| ---------------------------------------- | -------------------------------------- |
+| `minions models list`                    | 查看所有提供商、API Key 状态和当前模型 |
+| `minions models config`                  | 完整交互式配置：API Key → 选择模型     |
+| `minions models config-key [provider]`   | 单独配置某个提供商的 API Key           |
+| `minions models set-llm`                 | 只切换活跃模型（不改 API Key）         |
+| `minions models local`                   | 查看已下载的本地模型                   |
+| `minions models download <repo_id>`      | 下载一个本地模型（llama.cpp）          |
+| `minions models remove-local <model_id>` | 删除已下载的本地模型                   |
+
+```bash
+minions models list                    # 看当前状态
+minions models config                  # 完整交互式配置
+minions models config-key modelscope   # 只配 ModelScope 的 API Key
+minions models config-key dashscope    # 只配 DashScope 的 API Key
+minions models config-key custom       # 配置自定义提供商（Base URL + Key）
+minions models set-llm                 # 只切换模型
+```
+
+#### 本地模型
+
+Minions 也支持通过 llama.cpp，Ollama 或 LM Studio 在本地运行模型——无需 API Key。
+但在此之前需要先下载对应的应用，例如 [Ollama](https://ollama.com/download) 或 [LM Studio](https://lmstudio.ai/download)。
+
+```bash
+# 下载模型（自动选择 Q4_K_M GGUF）
+minions models download Qwen/Qwen3-4B-GGUF
+
+# 从 ModelScope 下载
+minions models download Qwen/Qwen2-0.5B-Instruct-GGUF --source modelscope
+
+# 查看已下载模型
+minions models local
+
+# 删除已下载模型
+minions models remove-local <model_id>
+minions models remove-local <model_id> --yes   # 跳过确认
+```
+
+| 选项       | 简写 | 默认值        | 说明                                           |
+| ---------- | ---- | ------------- | ---------------------------------------------- |
+| `--source` | `-s` | `huggingface` | 下载源（`huggingface` 或 `modelscope`）        |
+| `--file`   | `-f` | _（自动）_    | 指定文件名。省略时自动选择（GGUF 优先 Q4_K_M） |
+
+#### Ollama 模型
+
+Minions 集成 Ollama 以在本地运行模型。模型从 Ollama 守护进程动态加载——请先从 [ollama.com](https://ollama.com) 安装 Ollama。
+
+安装 Ollama SDK：`pip install 'minions[ollama]'`（或使用 `--extras ollama` 重新运行安装脚本）
+
+```bash
+# 下载 Ollama 模型
+ollama pull mistral:7b
+ollama pull qwen2.5:3b
+
+# 查看 Ollama 模型
+ollama list
+
+# 删除 Ollama 模型
+ollama rm mistral:7b
+
+# 在配置流程中使用（自动检测 Ollama 模型）
+minions models config           # 选择 Ollama → 从模型列表中选择
+minions models set-llm          # 切换到其他 Ollama 模型
+```
+
+**与本地模型的主要区别：**
+
+- 模型来自 Ollama 守护进程（不由 Minions 下载）
+- 使用 `ollama` 命令管理模型（非 `minions models`）
+- 通过 Ollama CLI 或 Minions 添加/删除模型时，模型列表自动更新
+
+> **注意：** API Key 的有效性需要用户自行保证，Minions 不会验证。
+> 详见 [配置 — 模型提供商](./config#模型提供商)。
+
+### minions env
+
+管理工具和技能在运行时使用的环境变量。
+
+| 命令                        | 说明                 |
+| --------------------------- | -------------------- |
+| `minions env list`          | 列出所有已配置的变量 |
+| `minions env set KEY VALUE` | 设置或更新变量       |
+| `minions env delete KEY`    | 删除变量             |
+
+```bash
+minions env list
+minions env set TAVILY_API_KEY "tvly-xxxxxxxx"
+minions env set GITHUB_TOKEN "ghp_xxxxxxxx"  # 也支持以 github_pat_ 开头的 fine-grained PAT
+minions env delete TAVILY_API_KEY
+```
+
+> **注意：** Minions 只负责存储和加载，值的有效性需要用户自行保证。
+> 详见 [配置 — 环境变量](./config#环境变量)。
+
+---
+
+## 频道
+
+将 Minions 连接到消息平台。
+
+### minions channels
+
+管理频道配置（DingTalk / Feishu / QQ / WeCom / WeChat / Yuanbao / Console 等）并向频道发送消息。
+**说明**：交互式配置用 `config`（无 `configure` 子命令）；卸载自定义频道用 `remove`（无 `uninstall`）。
+
+**别名：** 可以用 `minions channel`（单数）作为 `minions channels` 的简写。
+
+| 命令                      | 说明                                         |
+| ------------------------- | -------------------------------------------- |
+| `minions channels list`   | 查看所有频道的状态（密钥脱敏）               |
+| `minions channels send`   | 向用户/会话单向发送消息（需要全部 5 个参数） |
+| `minions channels config` | 交互式启用/禁用频道并填写凭据                |
+
+**多智能体支持：** 所有命令都支持 `--agent-id` 参数（默认为 `default`）。
+
+```bash
+minions channels list                    # 看默认智能体的频道状态
+minions channels list --agent-id abc123  # 看特定智能体的频道状态
+minions channels config                  # 交互式配置默认智能体
+minions channels config --agent-id abc123 # 交互式配置特定智能体
+```
+
+交互式 `config` 流程：依次选择频道、启用/禁用、填写凭据，循环直到选择「保存退出」。
+
+| 频道         | 需要填写的字段                                                             |
+| ------------ | -------------------------------------------------------------------------- |
+| **DingTalk** | Bot 前缀、Client ID、Client Secret、消息类型、Card 模板 ID/Key、Robot Code |
+| **Feishu**   | Bot 前缀、App ID、App Secret                                               |
+| **QQ**       | Bot 前缀、App ID、Client Secret                                            |
+| **Console**  | Bot 前缀                                                                   |
+
+> 各平台凭据的获取步骤，请看 [频道配置](./channels)。
+
+#### 向频道发送消息（主动通知）
+
+> 对应技能：**Channel Message（频道消息推送）**
+
+使用 `minions channels send` 主动向用户/会话推送消息，支持所有已配置的频道。这是**单向发送** —— 不会返回回复。
+
+智能体通过启用 **channel_message** 技能，可以在需要时自动使用此命令向用户发送主动通知。
+
+**典型使用场景：**
+
+- 任务完成后主动通知用户
+- 定时提醒、告警、状态更新
+- 将异步处理结果推送回原会话
+- 用户明确要求"处理完后通知我"
+
+```bash
+# 第一步：查询可用会话
+minions chats list --agent-id my_bot --channel feishu
+
+# 第二步：使用查询到的参数发送消息
+minions channels send \
+  --agent-id my_bot \
+  --channel feishu \
+  --target-user ou_xxxx \
+  --target-session session_id_xxxx \
+  --text "任务已完成！"
+```
+
+**必填参数（全部 5 个）：**
+
+- `--agent-id`：发送方智能体 ID
+- `--channel`：目标频道（console/dingtalk/feishu/qq/wecom/wechat/yuanbao）
+- `--target-user`：用户 ID（从 `minions chats list` 获取）
+- `--target-session`：会话 ID（从 `minions chats list` 获取）
+- `--text`：消息内容
+
+**重要提示：**
+
+- 发送前必须先用 `minions chats list` 查询 —— 不要猜测 `target-user` 或 `target-session`
+- 如果有多个会话，优先使用最近更新的
+- 这仅用于主动通知；智能体间通信请用 `minions agents chat`（见下方"智能体"章节）
+
+**与 `minions agents chat` 的区别：**
+
+- `minions channels send`：智能体向用户/频道推送，单向，无回复
+- `minions agents chat`：智能体间通信，双向，有回复
+
+---
+
+## 智能体
+
+管理智能体并支持智能体间通信。
+
+### minions agents
+
+> 对应技能：**Multi-Agent Collaboration（多智能体协作）**
+
+智能体通过启用 **multi_agent_collaboration** 技能，可以在需要时自动使用 `minions agents chat` 与其他智能体协作。
+
+**别名：** 可以用 `minions agent`（单数）作为 `minions agents` 的简写。
+
+| 命令                    | 说明                                                       |
+| ----------------------- | ---------------------------------------------------------- |
+| `minions agents list`   | 列出所有已配置的智能体（ID、名称、描述、工作区）           |
+| `minions agents create` | 创建新的智能体配置和工作区（本地操作，无需服务运行）       |
+| `minions agents delete` | 删除已配置的智能体（若正在运行则先停止，从智能体列表移除） |
+| `minions agents chat`   | 与另一个智能体通信（双向，支持多轮对话）                   |
+
+```bash
+# 列出所有智能体
+minions agents list
+minions agent list  # 单数别名效果相同
+
+# 创建新的智能体
+minions agents create --name "数据分析师"
+minions agents create --name "助手" --template coder --skill web_search --skill pdf_reader
+minions agents create --name "GPT Bot" --provider-id openai --model-id gpt-4
+
+# 删除智能体（默认智能体不可删除）
+minions agents delete my_agent
+minions agents delete my_agent --remove-workspace  # 同时删除工作区目录
+minions agents delete my_agent --yes                # 跳过确认
+
+# 与另一个智能体对话（实时模式，单次）
+minions agents chat \
+  --agent-id my_bot \
+  --to-agent helper_bot \
+  --text "请帮我分析这些数据"
+
+# 多轮对话（session 复用）
+minions agents chat \
+  --agent-id my_bot \
+  --to-agent helper_bot \
+  --session-id collab_session_001 \
+  --text "继续上一个问题"
+
+# 复杂任务（后台模式）
+minions agents chat --background \
+  --agent-id my_bot \
+  --to-agent data_analyst \
+  --text "分析 /data/logs/2026-03-26.log 并生成详细报告"
+# 返回 [TASK_ID: xxx] [SESSION: xxx]
+
+# 查询后台任务状态（查询时 --to-agent 为可选）
+minions agents chat --background \
+  --task-id <task_id>
+# 状态流程：submitted → pending → running → finished
+# finished 时结果显示：completed（✅）或 failed（❌）
+
+# 流式模式（逐步返回，仅实时模式支持）
+minions agents chat \
+  --agent-id my_bot \
+  --to-agent helper_bot \
+  --text "长篇分析任务" \
+  --mode stream
+```
+
+**必填参数（实时模式）：**
+
+- `--from-agent`（别名：`--agent-id`）：你的智能体 ID（发送方）
+- `--to-agent`：目标智能体 ID（接收方）
+- `--text`：消息内容
+
+**后台任务参数（新增）：**
+
+- `--background`：后台任务模式
+- `--task-id`：查询后台任务状态（与 `--background` 一起使用）
+
+**可选参数：**
+
+- `--session-id`：多轮对话的会话 ID（省略时自动生成）
+- `--mode`：响应模式 —— `final`（默认，完整响应）或 `stream`（逐步返回）
+  - **注意**：`--background` 与 `--mode stream` 互斥
+- `--base-url`：覆盖 API 地址
+- `--timeout`：超时时间（秒，默认 300）
+- `--json-output`：输出完整 JSON 而非纯文本
+
+**后台模式说明：**
+
+当任务复杂（如数据分析、批量处理、报告生成）时，使用 `--background` 可以避免阻塞当前智能体。提交后返回 `task_id`，稍后可以查询任务状态和结果。
+
+**适用场景**：
+
+- 数据分析和统计
+- 批量文件处理
+- 生成详细报告
+- 调用慢速外部 API
+- 不确定执行时间的复杂任务
+
+**任务状态流程**：
+
+- `submitted`：任务已接受，等待开始
+- `pending`：排队等待执行
+- `running`：正在执行
+- `finished`：已完成（结果为 `completed` 成功或 `failed` 失败）
+
+**说明：** `--from-agent` 和 `--agent-id` 等价，可互换使用。查询任务状态时只需 `--task-id`（`--to-agent` 为可选）。
+
+**与 `minions channels send` 的区别：**
+
+- `minions agents chat`：智能体间，双向，返回回复
+- `minions channels send`：智能体到用户/频道，单向，无回复
+
+---
+
+## 定时任务
+
+让 Minions 按时间自动执行任务——「每天 9 点发消息」「每 2 小时提问并转发回复」。
+**需要 `minions app` 正在运行。**
+
+### minions cron
+
+| 命令                           | 说明                           |
+| ------------------------------ | ------------------------------ |
+| `minions cron list`            | 列出所有任务                   |
+| `minions cron get <job_id>`    | 查看任务配置                   |
+| `minions cron state <job_id>`  | 查看运行状态（下次运行时间等） |
+| `minions cron create ...`      | 创建任务                       |
+| `minions cron delete <job_id>` | 删除任务                       |
+| `minions cron pause <job_id>`  | 暂停任务                       |
+| `minions cron resume <job_id>` | 恢复暂停的任务                 |
+| `minions cron run <job_id>`    | 立刻执行一次                   |
+
+**多智能体支持：** 所有命令都支持 `--agent-id` 参数（默认为 `default`）。
+
+### 创建任务
+
+**方式一——命令行参数（适合简单任务）**
+
+任务分两种类型：
+
+- **text** —— 到点向频道发一段固定文案。
+- **agent** —— 到点向 Minions 提问，把回复发到频道。
+
+```bash
+# text：每天 9 点发「早上好！」到钉钉（默认智能体）
+minions cron create \
+  --type text \
+  --schedule-type cron \
+  --name "每日早安" \
+  --cron "0 9 * * *" \
+  --channel dingtalk \
+  --target-user "你的用户ID" \
+  --target-session "会话ID" \
+  --text "早上好！"
+
+# agent：为特定智能体创建任务
+minions cron create \
+  --agent-id abc123 \
+  --type agent \
+  --schedule-type cron \
+  --name "检查待办" \
+  --cron "0 */2 * * *" \
+  --channel dingtalk \
+  --target-user "你的用户ID" \
+  --target-session "会话ID" \
+  --text "我有什么待办事项？"
+
+# 日程任务：一次性执行（不重复）
+minions cron create \
+  --type text \
+  --schedule-type scheduled \
+  --name "明早一次性提醒" \
+  --run-at "2026-05-13T09:00:00+08:00" \
+  --channel dingtalk \
+  --target-user "你的用户ID" \
+  --target-session "会话ID" \
+  --text "9 点组会提醒" \
+  --save-result-to-inbox
+
+# 日程任务：从指定时间开始，每天执行，累计执行 14 次
+minions cron create \
+  --type text \
+  --schedule-type scheduled \
+  --name "未来两周组会提醒" \
+  --run-at "2026-05-13T09:00:00+08:00" \
+  --repeat-every-days 1 \
+  --repeat-end-type count \
+  --repeat-count 14 \
+  --channel dingtalk \
+  --target-user "你的用户ID" \
+  --target-session "会话ID" \
+  --text "9 点组会提醒" \
+  --save-result-to-inbox
+```
+
+必填分两类：
+
+- `--schedule-type cron`：`--type`、`--name`、`--cron`、`--channel`、`--target-user`、`--target-session`、`--text`
+- `--schedule-type scheduled`：`--type`、`--name`、`--run-at`、`--channel`、`--target-user`、`--target-session`、`--text`
+
+重复日程（`scheduled`）时再补：
+
+- `--repeat-every-days`
+- 结束条件二选一：`--repeat-end-type count --repeat-count N` 或 `--repeat-end-type until --repeat-until <ISO8601>`
+- 或使用 `--repeat-end-type never`（不设结束）
+
+**方式二——JSON 文件（适合复杂或批量）**
+
+```bash
+minions cron create -f job_spec.json
+```
+
+JSON 结构见 `minions cron get <job_id>` 的返回。
+
+### 额外选项
+
+| 选项                                                   | 默认值   | 说明                                                              |
+| ------------------------------------------------------ | -------- | ----------------------------------------------------------------- |
+| `--timezone`                                           | 用户时区 | 调度时区（默认使用 config 中的 `user_timezone`）                  |
+| `--enabled` / `--no-enabled`                           | 启用     | 创建时启用或禁用                                                  |
+| `--mode`                                               | `final`  | `stream`（逐步发送）或 `final`（完成后一次性发送）                |
+| `--save-result-to-inbox` / `--no-save-result-to-inbox` | 自动规则 | 是否将执行结果写入收件箱（省略时由服务端默认策略决定）            |
+| `--repeat-every-days`                                  | 不重复   | 仅 `--schedule-type scheduled` 可用；每 N 天重复                  |
+| `--repeat-end-type`                                    | `never`  | 仅重复日程可用；`never` / `until` / `count`                       |
+| `--repeat-until`                                       | —        | 当 `--repeat-end-type until` 时必填；ISO 8601 结束时间            |
+| `--repeat-count`                                       | —        | 当 `--repeat-end-type count` 时必填；最大执行次数（不含手动执行） |
+| `--base-url`                                           | 自动     | 覆盖 API 地址                                                     |
+
+### Cron 表达式速查
+
+五段式：**分 时 日 月 周**（无秒）。
+
+| 表达式         | 含义          |
+| -------------- | ------------- |
+| `0 9 * * *`    | 每天 9:00     |
+| `0 */2 * * *`  | 每 2 小时整点 |
+| `30 8 * * 1-5` | 工作日 8:30   |
+| `0 0 * * 0`    | 每周日 0:00   |
+| `*/15 * * * *` | 每 15 分钟    |
+
+---
+
+## 会话管理
+
+通过 API 管理聊天会话。**需要 `minions app` 正在运行。**
+
+### minions chats
+
+| 命令                                     | 说明                                               |
+| ---------------------------------------- | -------------------------------------------------- |
+| `minions chats list`                     | 列出所有会话（支持 `--user-id`、`--channel` 筛选） |
+| `minions chats get <id>`                 | 查看会话详情和消息历史                             |
+| `minions chats create ...`               | 创建新会话                                         |
+| `minions chats update <id> --name "..."` | 重命名会话                                         |
+| `minions chats delete <id>`              | 删除会话                                           |
+
+**多智能体支持：** 所有命令都支持 `--agent-id` 参数（默认为 `default`）。
+
+```bash
+minions chats list                        # 默认智能体的会话
+minions chats list --agent-id abc123      # 特定智能体的会话
+minions chats list --user-id alice --channel dingtalk
+minions chats get 823845fe-dd13-43c2-ab8b-d05870602fd8
+minions chats create --session-id "discord:alice" --user-id alice --name "My Chat"
+minions chats create --agent-id abc123 -f chat.json
+minions chats update <chat_id> --name "新名称"
+minions chats delete <chat_id>
+```
+
+---
+
+## 技能
+
+扩展 Minions 的能力（PDF 阅读、网页搜索等）。
+
+### minions skills
+
+| 命令                       | 说明                               |
+| -------------------------- | ---------------------------------- |
+| `minions skills install`   | 从受支持的 URL 来源安装技能        |
+| `minions skills uninstall` | 从技能池或单个智能体工作区移除技能 |
+| `minions skills list`      | 列出所有技能及启用/禁用状态        |
+| `minions skills config`    | 交互式启用/禁用技能（复选框界面）  |
+| `minions skills info`      | 查看某个 workspace 技能的本地详情  |
+
+**多智能体支持：** 所有命令都支持 `--agent-id` 参数（默认为 `default`）。
+
+```bash
+minions skills install https://skills.sh/owner/repo/skill  # 导入到本地技能池
+minions skills install https://skills.sh/owner/repo/skill --agent-id abc123  # 直接导入到特定智能体工作区
+minions skills uninstall skill-creator  # 从本地技能池移除
+minions skills uninstall skill-creator --agent-id abc123  # 从特定智能体工作区移除
+minions skills list                   # 看默认智能体的技能
+minions skills list --agent-id abc123 # 看特定智能体的技能
+minions skills config                 # 交互式配置默认智能体
+minions skills config --agent-id abc123 # 交互式配置特定智能体
+minions skills info [skill_name]               # 看默认智能体的技能详情
+minions skills info [skill_name] --agent-id abc123 # 看特定智能体的技能详情
+```
+
+交互界面中：↑/↓ 选择、空格 切换、回车 确认。确认前会预览变更。
+
+> 内置技能说明和自定义技能编写方法，请看 [技能](./skills)。
+
+---
+
+## 维护
+
+### minions clean
+
+清空工作目录（默认 `~/.minions`）下的所有内容。
+
+```bash
+minions clean             # 交互确认
+minions clean --yes       # 不确认直接清空
+minions clean --dry-run   # 只列出会被删的内容，不删
+```
+
+---
+
+## 全局选项
+
+所有子命令都继承以下选项：
+
+| 选项            | 默认值      | 说明                                        |
+| --------------- | ----------- | ------------------------------------------- |
+| `--host`        | `127.0.0.1` | API 地址（自动检测上次 `minions app` 的值） |
+| `--port`        | `8088`      | API 端口（自动检测上次 `minions app` 的值） |
+| `-h` / `--help` |             | 显示帮助                                    |
+
+如果服务运行在非默认地址，全局传入即可：
+
+```bash
+minions --host 0.0.0.0 --port 9090 cron list
+```
+
+## 工作目录
+
+配置和数据都在 `~/.minions`（默认）：
+
+- **全局配置**: `config.json`（提供商、环境变量、智能体列表）
+- **智能体工作区**: `workspaces/{agent_id}/`（每个智能体独立的配置和数据）
+
+```
+~/.minions/
+├── config.json              # 全局配置
+└── workspaces/
+    ├── default/             # 默认智能体工作区
+    │   ├── agent.json       # 智能体配置
+    │   ├── chats.json       # 对话历史
+    │   ├── jobs.json        # 定时任务
+    │   ├── AGENTS.md        # 人设文件
+    │   └── sage/            # SAGE 开发数据（SQLite 模式）
+    └── abc123/              # 其他智能体工作区
+        └── ...
+```
+
+| 变量                  | 说明             |
+| --------------------- | ---------------- |
+| `MINIONS_WORKING_DIR` | 覆盖工作目录路径 |
+| `MINIONS_CONFIG_FILE` | 覆盖配置文件路径 |
+
+详见 [配置与工作目录](./config) 和 [多智能体](./multi-agent)。
+
+---
+
+## 命令总览
+
+| 命令                | 子命令                                                                               |  需要服务运行？   |
+| ------------------- | ------------------------------------------------------------------------------------ | :---------------: |
+| `minions init`      | —                                                                                    |        否         |
+| `minions app`       | —                                                                                    | —（启动服务本身） |
+| `minions desktop`   | —                                                                                    | —（启动服务本身） |
+| `minions doctor`    | `fix`                                                                                |        否         |
+| `minions daemon`    | `status` · `restart` · `reload-config` · `version` · `logs`                          |        否         |
+| `minions models`    | `list` · `config` · `config-key` · `set-llm` · `download` · `local` · `remove-local` |        否         |
+| `minions env`       | `list` · `set` · `delete`                                                            |        否         |
+| `minions channels`  | `list` · `send` · `install` · `add` · `remove` · `config`                            |      **是**       |
+| `minions agents`    | `list` · `create` · `delete` · `chat`                                                |    部分需要 ¹     |
+| `minions cron`      | `list` · `get` · `state` · `create` · `delete` · `pause` · `resume` · `run`          |      **是**       |
+| `minions chats`     | `list` · `get` · `create` · `update` · `delete`                                      |      **是**       |
+| `minions skills`    | `install` · `uninstall` · `list` · `config` · `info`                                 |        否         |
+| `minions task`      | —                                                                                    |        否         |
+| `minions auth`      | `reset-password`                                                                     |        否         |
+| `minions plugin`    | `install` · `list` · `info` · `uninstall` · `validate`                               |        否         |
+| `minions acp`       | —                                                                                    |        否         |
+| `minions clean`     | —                                                                                    |        否         |
+| `minions shutdown`  | —                                                                                    |        否         |
+| `minions update`    | —                                                                                    |        否         |
+| `minions uninstall` | —                                                                                    |        否         |
+
+¹ `create` 不需要服务运行；`list`、`delete`、`chat` 需要服务运行。
+
+---
+
+## 相关页面
+
+- [项目介绍](./intro) —— Minions 可以做什么
+- [控制台](./console) —— Web 管理界面
+- [频道配置](./channels) —— 钉钉、飞书、QQ、企业微信、微信、腾讯元宝 详细步骤
+- [心跳](./heartbeat) —— 定时自检/摘要
+- [技能](./skills) —— 内置技能与自定义技能
+- [配置与工作目录](./config) —— 工作目录与 config.json
+- [多智能体](./multi-agent) —— 多智能体配置、管理与协作

@@ -79,7 +79,7 @@ def dingtalk_channel(
     temp_media_dir,
 ) -> Generator:
     """Create a DingTalkChannel instance for testing."""
-    from minions.app.channels.dingtalk.channel import DingTalkChannel
+    from minions.channels.dingtalk.channel import DingTalkChannel
 
     channel = DingTalkChannel(
         process=mock_process_handler,
@@ -101,7 +101,7 @@ def dingtalk_channel_with_workspace(
     temp_workspace_dir,
 ) -> Generator:
     """Create a DingTalkChannel with workspace for testing."""
-    from minions.app.channels.dingtalk.channel import DingTalkChannel
+    from minions.channels.dingtalk.channel import DingTalkChannel
 
     channel = DingTalkChannel(
         process=mock_process_handler,
@@ -172,7 +172,7 @@ class TestDingTalkChannelInit:
         temp_media_dir,
     ):
         """Constructor should store all basic configuration parameters."""
-        from minions.app.channels.dingtalk.channel import DingTalkChannel
+        from minions.channels.dingtalk.channel import DingTalkChannel
 
         channel = DingTalkChannel(
             process=mock_process_handler,
@@ -197,7 +197,7 @@ class TestDingTalkChannelInit:
         temp_media_dir,
     ):
         """Constructor should store advanced configuration parameters."""
-        from minions.app.channels.dingtalk.channel import DingTalkChannel
+        from minions.channels.dingtalk.channel import DingTalkChannel
 
         channel = DingTalkChannel(
             process=mock_process_handler,
@@ -220,7 +220,7 @@ class TestDingTalkChannelInit:
 
     def test_init_creates_required_data_structures(self, mock_process_handler):
         """Constructor should initialize required internal data structures."""
-        from minions.app.channels.dingtalk.channel import DingTalkChannel
+        from minions.channels.dingtalk.channel import DingTalkChannel
 
         channel = DingTalkChannel(
             process=mock_process_handler,
@@ -246,7 +246,7 @@ class TestDingTalkChannelInit:
 
     def test_init_creates_locks(self, mock_process_handler):
         """Constructor should create required locks for thread safety."""
-        from minions.app.channels.dingtalk.channel import DingTalkChannel
+        from minions.channels.dingtalk.channel import DingTalkChannel
 
         channel = DingTalkChannel(
             process=mock_process_handler,
@@ -283,7 +283,7 @@ class TestDingTalkChannelFromEnv:
         monkeypatch,
     ):
         """from_env should read basic environment variables."""
-        from minions.app.channels.dingtalk.channel import DingTalkChannel
+        from minions.channels.dingtalk.channel import DingTalkChannel
 
         monkeypatch.setenv("DINGTALK_CHANNEL_ENABLED", "0")
         monkeypatch.setenv("DINGTALK_CLIENT_ID", "env_client_id")
@@ -303,7 +303,7 @@ class TestDingTalkChannelFromEnv:
         monkeypatch,
     ):
         """from_env should read advanced environment variables."""
-        from minions.app.channels.dingtalk.channel import DingTalkChannel
+        from minions.channels.dingtalk.channel import DingTalkChannel
 
         monkeypatch.setenv("DINGTALK_CLIENT_ID", "test_id")
         monkeypatch.setenv("DINGTALK_CLIENT_SECRET", "test_secret")
@@ -329,7 +329,7 @@ class TestDingTalkChannelFromEnv:
         monkeypatch,
     ):
         """from_env should parse DINGTALK_ALLOW_FROM correctly."""
-        from minions.app.channels.dingtalk.channel import DingTalkChannel
+        from minions.channels.dingtalk.channel import DingTalkChannel
 
         monkeypatch.setenv("DINGTALK_CLIENT_ID", "test_id")
         monkeypatch.setenv("DINGTALK_CLIENT_SECRET", "test_secret")
@@ -347,7 +347,7 @@ class TestDingTalkChannelFromEnv:
         monkeypatch,
     ):
         """from_env should handle empty DINGTALK_ALLOW_FROM."""
-        from minions.app.channels.dingtalk.channel import DingTalkChannel
+        from minions.channels.dingtalk.channel import DingTalkChannel
 
         monkeypatch.setenv("DINGTALK_CLIENT_ID", "test_id")
         monkeypatch.setenv("DINGTALK_CLIENT_SECRET", "test_secret")
@@ -359,7 +359,7 @@ class TestDingTalkChannelFromEnv:
 
     def test_from_env_defaults(self, mock_process_handler, monkeypatch):
         """from_env should use sensible defaults."""
-        from minions.app.channels.dingtalk.channel import DingTalkChannel
+        from minions.channels.dingtalk.channel import DingTalkChannel
 
         monkeypatch.setenv("DINGTALK_CLIENT_ID", "test_id")
         monkeypatch.setenv("DINGTALK_CLIENT_SECRET", "test_secret")
@@ -379,7 +379,7 @@ class TestDingTalkChannelFromConfig:
 
     def test_from_config_uses_config_values(self, mock_process_handler):
         """from_config should use values from config object."""
-        from minions.app.channels.dingtalk.channel import DingTalkChannel
+        from minions.channels.dingtalk.channel import DingTalkChannel
         from minions.config.config import DingTalkConfig
 
         config = DingTalkConfig(
@@ -528,7 +528,7 @@ class TestDingTalkTokenCache:
         dingtalk_channel,
     ):
         """Should fetch new token when cache is empty."""
-        from minions.app.channels.dingtalk.constants import (
+        from minions.channels.dingtalk.constants import (
             DINGTALK_TOKEN_TTL_SECONDS,
         )
 
@@ -1047,7 +1047,7 @@ class TestDingTalkPartsToText:
 
     def test_parts_to_single_text_with_text(self, dingtalk_channel):
         """Should combine text parts."""
-        from minions.app.channels.base import TextContent, ContentType
+        from minions.channels.base import TextContent, ContentType
 
         parts = [
             TextContent(type=ContentType.TEXT, text="Hello"),
@@ -1061,7 +1061,7 @@ class TestDingTalkPartsToText:
 
     def test_parts_to_single_text_with_prefix(self, dingtalk_channel):
         """Should include bot_prefix."""
-        from minions.app.channels.base import TextContent, ContentType
+        from minions.channels.base import TextContent, ContentType
 
         parts = [TextContent(type=ContentType.TEXT, text="Message")]
 
@@ -1075,7 +1075,7 @@ class TestDingTalkPartsToText:
 
     def test_parts_to_single_text_with_refusal(self, dingtalk_channel):
         """Should handle refusal content."""
-        from minions.app.channels.base import RefusalContent, ContentType
+        from minions.channels.base import RefusalContent, ContentType
 
         parts = [RefusalContent(type=ContentType.REFUSAL, refusal="I cannot")]
 
@@ -1085,7 +1085,7 @@ class TestDingTalkPartsToText:
 
     def test_parts_to_single_text_with_image(self, dingtalk_channel):
         """Media parts should be skipped (delivered separately)."""
-        from minions.app.channels.base import ImageContent, ContentType
+        from minions.channels.base import ImageContent, ContentType
 
         parts = [
             ImageContent(type=ContentType.IMAGE, image_url="http://img.jpg"),
@@ -1141,7 +1141,7 @@ class TestDingTalkBuildAgentRequest:
 
     def test_build_agent_request_creates_request(self, dingtalk_channel):
         """Should create AgentRequest from native payload."""
-        from minions.app.channels.base import TextContent, ContentType
+        from minions.channels.base import TextContent, ContentType
 
         payload = {
             "channel_id": "dingtalk",
@@ -1174,7 +1174,7 @@ class TestDingTalkUtils:
 
     def test_guess_suffix_from_file_content_pdf(self, tmp_path):
         """Should detect PDF files by magic bytes."""
-        from minions.app.channels.dingtalk.utils import (
+        from minions.channels.dingtalk.utils import (
             guess_suffix_from_file_content,
         )
 
@@ -1187,7 +1187,7 @@ class TestDingTalkUtils:
 
     def test_guess_suffix_from_file_content_png(self, tmp_path):
         """Should detect PNG files by magic bytes."""
-        from minions.app.channels.dingtalk.utils import (
+        from minions.channels.dingtalk.utils import (
             guess_suffix_from_file_content,
         )
 
@@ -1200,7 +1200,7 @@ class TestDingTalkUtils:
 
     def test_guess_suffix_from_file_content_jpg(self, tmp_path):
         """Should detect JPG files by magic bytes."""
-        from minions.app.channels.dingtalk.utils import (
+        from minions.channels.dingtalk.utils import (
             guess_suffix_from_file_content,
         )
 
@@ -1213,7 +1213,7 @@ class TestDingTalkUtils:
 
     def test_guess_suffix_from_file_content_unknown(self, tmp_path):
         """Should return None for unknown file types."""
-        from minions.app.channels.dingtalk.utils import (
+        from minions.channels.dingtalk.utils import (
             guess_suffix_from_file_content,
         )
 
@@ -1228,7 +1228,7 @@ class TestDingTalkUtils:
 
     def test_guess_suffix_from_nonexistent_file(self, tmp_path):
         """Should handle non-existent file."""
-        from minions.app.channels.dingtalk.utils import (
+        from minions.channels.dingtalk.utils import (
             guess_suffix_from_file_content,
         )
 
@@ -1332,7 +1332,7 @@ class TestDingTalkAICardStore:
 
     def test_load_empty_store(self, tmp_path):
         """Loading from non-existent file returns empty list."""
-        from minions.app.channels.dingtalk.ai_card import AICardPendingStore
+        from minions.channels.dingtalk.ai_card import AICardPendingStore
 
         store = AICardPendingStore(tmp_path / "nonexistent.json")
         result = store.load()
@@ -1341,7 +1341,7 @@ class TestDingTalkAICardStore:
 
     def test_load_existing_cards(self, tmp_path):
         """Loading from existing file returns cards."""
-        from minions.app.channels.dingtalk.ai_card import AICardPendingStore
+        from minions.channels.dingtalk.ai_card import AICardPendingStore
 
         card_file = tmp_path / "cards.json"
         card_file.write_text(
@@ -1365,7 +1365,7 @@ class TestDingTalkAICardStore:
 
     def test_save_cards(self, tmp_path):
         """Saving cards writes to file."""
-        from minions.app.channels.dingtalk.ai_card import (
+        from minions.channels.dingtalk.ai_card import (
             AICardPendingStore,
             ActiveAICard,
         )
@@ -1398,7 +1398,7 @@ class TestDingTalkAICardStore:
 
     def test_save_skips_terminal_states(self, tmp_path):
         """Saving should skip cards in terminal states."""
-        from minions.app.channels.dingtalk.ai_card import (
+        from minions.channels.dingtalk.ai_card import (
             AICardPendingStore,
             ActiveAICard,
             FINISHED,
@@ -1591,7 +1591,7 @@ class TestDingTalkSendContentParts:
         dingtalk_channel,
     ):
         """Whitespace-only text should not send a prefix-only message."""
-        from minions.app.channels.base import TextContent, ContentType
+        from minions.channels.base import TextContent, ContentType
 
         parts = [TextContent(type=ContentType.TEXT, text="   \n\t")]
 
@@ -1613,7 +1613,7 @@ class TestDingTalkSendContentParts:
         dingtalk_channel,
     ):
         """Conversation replies should not fail the whole agent pipeline."""
-        from minions.app.channels.base import TextContent, ContentType
+        from minions.channels.base import TextContent, ContentType
 
         parts = [TextContent(type=ContentType.TEXT, text="Hello")]
 
@@ -1647,7 +1647,7 @@ class TestDingTalkSendContentParts:
         dingtalk_channel,
     ):
         """Explicit API delivery failure should surface to callers."""
-        from minions.app.channels.base import TextContent, ContentType
+        from minions.channels.base import TextContent, ContentType
 
         parts = [TextContent(type=ContentType.TEXT, text="Hello")]
 
@@ -1684,7 +1684,7 @@ class TestDingTalkSendContentParts:
         """Send with file content uploads file and sends via webhook."""
         dingtalk_channel._http = mock_http_session
 
-        from minions.app.channels.base import FileContent, ContentType
+        from minions.channels.base import FileContent, ContentType
 
         # Create a test file
         test_file = tmp_path / "test.pdf"
@@ -1766,7 +1766,7 @@ class TestDingTalkCallbackHandler:
     @pytest.fixture
     def handler(self, mock_download_fetcher, mock_process_handler):
         """Create a DingTalkChannelHandler instance."""
-        from minions.app.channels.dingtalk.handler import (
+        from minions.channels.dingtalk.handler import (
             DingTalkChannelHandler,
         )
 
@@ -1862,7 +1862,7 @@ class TestDingTalkCallbackHandler:
 
     def test_handler_require_mention_flag(self, mock_download_fetcher):
         """Handler should store require_mention flag."""
-        from minions.app.channels.dingtalk.handler import (
+        from minions.channels.dingtalk.handler import (
             DingTalkChannelHandler,
         )
 
@@ -2059,7 +2059,7 @@ class TestDingTalkAICardMethods:
         dingtalk_channel,
     ):
         """Successfully stream content to AI card."""
-        from minions.app.channels.dingtalk.ai_card import (
+        from minions.channels.dingtalk.ai_card import (
             ActiveAICard,
             PROCESSING,
         )
@@ -2092,7 +2092,7 @@ class TestDingTalkAICardMethods:
         dingtalk_channel,
     ):
         """Finalize AI card streaming."""
-        from minions.app.channels.dingtalk.ai_card import (
+        from minions.channels.dingtalk.ai_card import (
             ActiveAICard,
             PROCESSING,
         )
@@ -2128,7 +2128,7 @@ class TestDingTalkAICardMethods:
         mock_http_session,
     ):
         """Skip streaming if content hasn't changed."""
-        from minions.app.channels.dingtalk.ai_card import (
+        from minions.channels.dingtalk.ai_card import (
             ActiveAICard,
             PROCESSING,
         )
@@ -2164,7 +2164,7 @@ class TestDingTalkAICardMethods:
     ):
         """Refresh token on 401 response from SDK."""
         from Tea.exceptions import TeaException
-        from minions.app.channels.dingtalk.ai_card import (
+        from minions.channels.dingtalk.ai_card import (
             ActiveAICard,
             PROCESSING,
         )
@@ -2748,7 +2748,7 @@ class TestDingTalkSendMethodsExtended:
         dingtalk_channel._http = mock_http_session
 
         with patch(
-            "minions.app.channels.dingtalk.channel.logger.warning",
+            "minions.channels.dingtalk.channel.logger.warning",
         ) as mock_warning:
             # Should return quietly (no raise) for non-API sends.
             await dingtalk_channel.send(
@@ -2825,7 +2825,7 @@ class TestDingTalkMediaPartSending:
             response_json={"errcode": 0, "errmsg": "ok"},
         )
 
-        from minions.app.channels.base import ImageContent, ContentType
+        from minions.channels.base import ImageContent, ContentType
 
         part = ImageContent(
             type=ContentType.IMAGE,
@@ -2876,7 +2876,7 @@ class TestDingTalkMediaPartSending:
             response_json={"errcode": 0, "errmsg": "ok"},
         )
 
-        from minions.app.channels.base import ImageContent, ContentType
+        from minions.channels.base import ImageContent, ContentType
 
         part = ImageContent(
             type=ContentType.IMAGE,
@@ -2896,7 +2896,7 @@ class TestDingTalkMediaPartSending:
         dingtalk_channel,
     ):
         """Skip sending if media_id is empty after stripping."""
-        from minions.app.channels.base import ImageContent, ContentType
+        from minions.channels.base import ImageContent, ContentType
 
         part = ImageContent(
             type=ContentType.IMAGE,
@@ -2914,7 +2914,7 @@ class TestDingTalkMediaPartSending:
     def test_map_upload_type(self, dingtalk_channel):
         """Map content types to DingTalk upload types."""
         from unittest.mock import MagicMock
-        from minions.app.channels.base import ContentType
+        from minions.channels.base import ContentType
 
         # Create mock parts for each type
         text_part = MagicMock()
@@ -2970,7 +2970,7 @@ class TestDingTalkMediaPartSending:
             response_json={"errcode": 0, "errmsg": "ok"},
         )
 
-        from minions.app.channels.base import VideoContent, ContentType
+        from minions.channels.base import VideoContent, ContentType
 
         part = VideoContent(
             type=ContentType.VIDEO,
@@ -3008,7 +3008,7 @@ class TestDingTalkHandlerRichContent:
     @pytest.fixture
     def rich_handler(self, mock_download_fetcher):
         """Create a handler for rich content tests."""
-        from minions.app.channels.dingtalk.handler import (
+        from minions.channels.dingtalk.handler import (
             DingTalkChannelHandler,
         )
 
@@ -3456,7 +3456,7 @@ class TestDingTalkAdditionalCoverage:
         """Send content parts with text only."""
         dingtalk_channel._http = mock_http_session
 
-        from minions.app.channels.base import TextContent, ContentType
+        from minions.channels.base import TextContent, ContentType
 
         parts = [TextContent(type=ContentType.TEXT, text="Hello world")]
 
@@ -3476,7 +3476,7 @@ class TestDingTalkAdditionalCoverage:
 
     def test_sender_from_chatbot_message_skip_bot(self):
         """Skip messages from bot itself."""
-        from minions.app.channels.dingtalk.content_utils import (
+        from minions.channels.dingtalk.content_utils import (
             sender_from_chatbot_message,
         )
 

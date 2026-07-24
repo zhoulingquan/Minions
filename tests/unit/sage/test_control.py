@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Tests for tenant capability policy resolution and decisions."""
 
 from uuid import uuid4
@@ -29,7 +30,9 @@ def _principal(*permissions: str) -> Principal:
 
 
 @pytest.mark.asyncio
-async def test_policy_center_uses_defaults_and_exact_scope_override(tmp_path) -> None:
+async def test_policy_center_uses_defaults_and_exact_scope_override(
+    tmp_path,
+) -> None:
     principal = _principal("sage.policy.manage")
     scope = ScopeRef(
         scope_type=ScopeType.USER,
@@ -91,7 +94,9 @@ async def test_policy_updates_require_manage_permission(tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_policy_decision_is_fail_closed_above_auto_risk(tmp_path) -> None:
+async def test_policy_decision_is_fail_closed_above_auto_risk(
+    tmp_path,
+) -> None:
     principal = _principal("sage.policy.manage")
     store = SQLiteSageStore(tmp_path / "sage.db")
     await store.start()

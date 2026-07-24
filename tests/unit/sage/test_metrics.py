@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Tests for tenant-scoped SAGE health snapshots."""
 
 from uuid import uuid4

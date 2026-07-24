@@ -19,6 +19,17 @@ from unittest.mock import MagicMock
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def configured_plugin_host():
+    """Provide the app-owned host for high-level plugin API tests."""
+    from minions.app.plugin_host import AppPluginHost
+    from minions.plugins.host import configure_plugin_host
+
+    configure_plugin_host(AppPluginHost())
+    yield
+    configure_plugin_host(None)
+
+
 # ---------------------------------------------------------------------------
 # Stub missing agentscope 2.0 modules so MultiAgentManager can be imported
 # in environments where agentscope 2.0 is not installed.

@@ -1,2 +1,15 @@
 [importlinter]
 root_package = minions
+exclude_type_checking_imports = False
+
+[importlinter:contract:bands]
+name = Minions dependency bands
+type = layers
+layers =
+    minions.__main__ : minions.cli
+    minions.app : minions.backup : minions.agent_stats : minions.tenancy : minions.tunnel : minions.api_action
+    minions.agents : minions.market : minions.sage : minions.agents._compat
+    minions.modes
+    minions.governance : minions.sandbox : minions.loop
+    minions.plugins : minions._version_compat : minions.channels : minions.drivers : minions.providers : minions.local_models : minions.runtime : minions.token_usage : minions.hooks : minions.tool_calls
+    minions.core : minions.config : minions.security : minions.envs : minions.observability : minions.utils : minions.constant : minions.exceptions : minions.schemas : minions.__version__

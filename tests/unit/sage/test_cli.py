@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Tests for safe SAGE operational commands."""
 
 from click.testing import CliRunner

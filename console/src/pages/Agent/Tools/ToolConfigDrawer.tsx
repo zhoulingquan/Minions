@@ -27,7 +27,7 @@ export function ToolConfigDrawer({
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const [loadingConfig, setLoadingConfig] = useState(false);
-  
+
   // Fetch latest config from backend whenever the drawer opens.
   // Cleanup cancels stale in-flight requests on rapid tool switches.
   useEffect(() => {

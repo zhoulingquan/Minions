@@ -25,12 +25,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 # 1. DoomLoopGate — semantic similarity
 # ===========================================================================
 
+
 class TestDoomLoopSemantic:
     """DoomLoopGate semantic detection tests."""
 
     @pytest.fixture
     def gate(self):
         from minions.loop.gates.doom_loop import DoomLoopGate
+
         return DoomLoopGate(
             window_size=3,
             similarity_threshold=0.7,
@@ -40,25 +42,55 @@ class TestDoomLoopSemantic:
     async def test_exact_match_still_works(self, gate):
         """Exact repetition should still be detected at any threshold."""
         from minions.loop.gates.doom_loop import _DoomState, _ToolCallRecord
+
         state = _DoomState()
-        state.history.extend([
-            _ToolCallRecord(tool_name="grep", args_hash="abc", args_text="pattern file.py"),
-            _ToolCallRecord(tool_name="grep", args_hash="abc", args_text="pattern file.py"),
-            _ToolCallRecord(tool_name="grep", args_hash="abc", args_text="pattern file.py"),
-        ])
+        state.history.extend(
+            [
+                _ToolCallRecord(
+                    tool_name="grep",
+                    args_hash="abc",
+                    args_text="pattern file.py",
+                ),
+                _ToolCallRecord(
+                    tool_name="grep",
+                    args_hash="abc",
+                    args_text="pattern file.py",
+                ),
+                _ToolCallRecord(
+                    tool_name="grep",
+                    args_hash="abc",
+                    args_text="pattern file.py",
+                ),
+            ],
+        )
         assert gate._detect_repetition(state) is True
 
     @pytest.mark.asyncio
     async def test_semantic_match_different_args(self, gate):
         """Different args with same purpose should be detected via Jaccard."""
         from minions.loop.gates.doom_loop import _DoomState, _ToolCallRecord
+
         state = _DoomState()
         # Same tool, different file names but same search pattern
-        state.history.extend([
-            _ToolCallRecord(tool_name="grep", args_hash="h1", args_text="search TODO in src/a.py"),
-            _ToolCallRecord(tool_name="grep", args_hash="h2", args_text="search TODO in src/b.py"),
-            _ToolCallRecord(tool_name="grep", args_hash="h3", args_text="search TODO in src/c.py"),
-        ])
+        state.history.extend(
+            [
+                _ToolCallRecord(
+                    tool_name="grep",
+                    args_hash="h1",
+                    args_text="search TODO in src/a.py",
+                ),
+                _ToolCallRecord(
+                    tool_name="grep",
+                    args_hash="h2",
+                    args_text="search TODO in src/b.py",
+                ),
+                _ToolCallRecord(
+                    tool_name="grep",
+                    args_hash="h3",
+                    args_text="search TODO in src/c.py",
+                ),
+            ],
+        )
         # With threshold 0.7, the Jaccard similarity of these should be high
         similarity = gate._compute_similarity(list(state.history)[-3:])
         assert similarity >= 0.5  # Should have meaningful overlap
@@ -67,12 +99,27 @@ class TestDoomLoopSemantic:
     async def test_no_false_positive_different_tools(self, gate):
         """Completely different tool calls should not trigger."""
         from minions.loop.gates.doom_loop import _DoomState, _ToolCallRecord
+
         state = _DoomState()
-        state.history.extend([
-            _ToolCallRecord(tool_name="grep", args_hash="h1", args_text="search pattern alpha"),
-            _ToolCallRecord(tool_name="read_file", args_hash="h2", args_text="completely different beta gamma"),
-            _ToolCallRecord(tool_name="write_file", args_hash="h3", args_text="entirely unrelated delta epsilon"),
-        ])
+        state.history.extend(
+            [
+                _ToolCallRecord(
+                    tool_name="grep",
+                    args_hash="h1",
+                    args_text="search pattern alpha",
+                ),
+                _ToolCallRecord(
+                    tool_name="read_file",
+                    args_hash="h2",
+                    args_text="completely different beta gamma",
+                ),
+                _ToolCallRecord(
+                    tool_name="write_file",
+                    args_hash="h3",
+                    args_text="entirely unrelated delta epsilon",
+                ),
+            ],
+        )
         assert gate._detect_repetition(state) is False
 
     @pytest.mark.asyncio
@@ -83,13 +130,28 @@ class TestDoomLoopSemantic:
             _DoomState,
             _ToolCallRecord,
         )
+
         gate = DoomLoopGate(window_size=3, similarity_threshold=1.0)
         state = _DoomState()
-        state.history.extend([
-            _ToolCallRecord(tool_name="grep", args_hash="h1", args_text="search TODO a.py"),
-            _ToolCallRecord(tool_name="grep", args_hash="h2", args_text="search TODO b.py"),
-            _ToolCallRecord(tool_name="grep", args_hash="h3", args_text="search TODO c.py"),
-        ])
+        state.history.extend(
+            [
+                _ToolCallRecord(
+                    tool_name="grep",
+                    args_hash="h1",
+                    args_text="search TODO a.py",
+                ),
+                _ToolCallRecord(
+                    tool_name="grep",
+                    args_hash="h2",
+                    args_text="search TODO b.py",
+                ),
+                _ToolCallRecord(
+                    tool_name="grep",
+                    args_hash="h3",
+                    args_text="search TODO c.py",
+                ),
+            ],
+        )
         # At 1.0, different hashes should NOT trigger even with similar text
         assert gate._detect_repetition(state) is False
 
@@ -98,12 +160,14 @@ class TestDoomLoopSemantic:
 # 2. SubAgentRubric — real evaluation
 # ===========================================================================
 
+
 class TestSubAgentRubric:
     """SubAgentRubric evaluation tests."""
 
     @pytest.mark.asyncio
     async def test_check_fn_satisfied(self):
         from minions.loop.gates.rubric import SubAgentRubric, RubricVerdict
+
         rubric = SubAgentRubric(check_fn=lambda output: True)
         result = await rubric.evaluate("goal", "output", 1)
         assert result.verdict == RubricVerdict.SATISFIED
@@ -111,6 +175,7 @@ class TestSubAgentRubric:
     @pytest.mark.asyncio
     async def test_check_fn_needs_revision(self):
         from minions.loop.gates.rubric import SubAgentRubric, RubricVerdict
+
         rubric = SubAgentRubric(check_fn=lambda output: False)
         result = await rubric.evaluate("goal", "output", 1)
         assert result.verdict == RubricVerdict.NEEDS_REVISION
@@ -140,6 +205,7 @@ class TestSubAgentRubric:
     @pytest.mark.asyncio
     async def test_heuristic_satisfied(self):
         from minions.loop.gates.rubric import SubAgentRubric, RubricVerdict
+
         rubric = SubAgentRubric()
         result = await rubric.evaluate("goal", "The task is complete now.", 1)
         assert result.verdict == RubricVerdict.SATISFIED
@@ -147,6 +213,7 @@ class TestSubAgentRubric:
     @pytest.mark.asyncio
     async def test_heuristic_needs_revision(self):
         from minions.loop.gates.rubric import SubAgentRubric, RubricVerdict
+
         rubric = SubAgentRubric()
         result = await rubric.evaluate("goal", "Working on it still.", 1)
         assert result.verdict == RubricVerdict.NEEDS_REVISION
@@ -167,12 +234,14 @@ class TestSubAgentRubric:
 # 3. BudgetGate — three-tier behavior
 # ===========================================================================
 
+
 class TestBudgetGate:
     """BudgetGate token-aware behavior tests."""
 
     @pytest.fixture
     def gate(self):
         from minions.loop.gates.budget import BudgetGate
+
         g = BudgetGate(max_tokens=10000, warn_ratio=0.7)
         g.activate()
         return g
@@ -184,6 +253,7 @@ class TestBudgetGate:
         ctx = {"agent": None, "iteration": 1}
         result = await gate.check(ctx)
         from minions.loop.gates.base import StopAction
+
         assert result.action == StopAction.BYPASS
 
     @pytest.mark.asyncio
@@ -193,8 +263,12 @@ class TestBudgetGate:
         ctx = {"agent": None, "iteration": 1}
         result = await gate.check(ctx)
         from minions.loop.gates.base import StopAction
+
         assert result.action == StopAction.INTERRUPT_AND_CONTINUE
-        assert "approaching limit" in result.reason.lower() or "wrap up" in (result.continuation_message or "").lower()
+        assert (
+            "approaching limit" in result.reason.lower()
+            or "wrap up" in (result.continuation_message or "").lower()
+        )
 
     @pytest.mark.asyncio
     async def test_terminate_when_exceeded(self, gate):
@@ -203,6 +277,7 @@ class TestBudgetGate:
         ctx = {"agent": None, "iteration": 1}
         result = await gate.check(ctx)
         from minions.loop.gates.base import StopAction
+
         assert result.action == StopAction.TERMINATE
 
     @pytest.mark.asyncio
@@ -213,6 +288,7 @@ class TestBudgetGate:
         # First check: warn
         result1 = await gate.check(ctx)
         from minions.loop.gates.base import StopAction
+
         assert result1.action == StopAction.INTERRUPT_AND_CONTINUE
         # Second check: bypass (already warned)
         result2 = await gate.check(ctx)
@@ -223,23 +299,29 @@ class TestBudgetGate:
 # 4. Parallel tool execution
 # ===========================================================================
 
+
 class TestParallelToolExecution:
     """ToolCoordinatorMiddleware parallel execution tests."""
 
     def test_execute_parallel_method_exists(self):
         """The execute_parallel method should exist on the middleware."""
         from minions.tool_calls._middleware import ToolCoordinatorMiddleware
+
         assert hasattr(ToolCoordinatorMiddleware, "execute_parallel")
 
     @pytest.mark.asyncio
     async def test_parallel_enabled_flag(self):
         """The parallel_enabled flag should be configurable."""
         from minions.tool_calls._middleware import ToolCoordinatorMiddleware
+
         mock_coordinator = MagicMock()
         mw = ToolCoordinatorMiddleware(mock_coordinator, parallel_enabled=True)
         assert mw.parallel_enabled is True
 
-        mw2 = ToolCoordinatorMiddleware(mock_coordinator, parallel_enabled=False)
+        mw2 = ToolCoordinatorMiddleware(
+            mock_coordinator,
+            parallel_enabled=False,
+        )
         assert mw2.parallel_enabled is False
 
 
@@ -247,36 +329,43 @@ class TestParallelToolExecution:
 # 5. Tool error classification
 # ===========================================================================
 
+
 class TestToolErrorClassification:
     """Tool error classification tests."""
 
     def test_classify_transient_timeout(self):
         from minions.tool_calls._coordinator import ToolCoordinator
+
         exc = asyncio.TimeoutError()
         assert ToolCoordinator._classify_error(exc) == "transient"
 
     def test_classify_transient_connection(self):
         from minions.tool_calls._coordinator import ToolCoordinator
+
         exc = ConnectionError("Connection refused")
         assert ToolCoordinator._classify_error(exc) == "transient"
 
     def test_classify_transient_rate_limit(self):
         from minions.tool_calls._coordinator import ToolCoordinator
+
         exc = Exception("rate limit exceeded")
         assert ToolCoordinator._classify_error(exc) == "transient"
 
     def test_classify_permanent_permission(self):
         from minions.tool_calls._coordinator import ToolCoordinator
+
         exc = PermissionError("access denied")
         assert ToolCoordinator._classify_error(exc) == "permanent"
 
     def test_classify_permanent_not_found(self):
         from minions.tool_calls._coordinator import ToolCoordinator
+
         exc = FileNotFoundError("no such file")
         assert ToolCoordinator._classify_error(exc) == "permanent"
 
     def test_classify_unknown(self):
         from minions.tool_calls._coordinator import ToolCoordinator
+
         exc = RuntimeError("something weird happened")
         assert ToolCoordinator._classify_error(exc) == "unknown"
 
@@ -284,6 +373,7 @@ class TestToolErrorClassification:
         """ToolCallContext should have retry_count and max_retries fields."""
         from minions.tool_calls._context import ToolCallContext
         import asyncio as _asyncio
+
         ctx = ToolCallContext(
             tool_call_id="test",
             tool_name="test",
@@ -304,12 +394,14 @@ class TestToolErrorClassification:
 # 6. IterationGate — adaptive budget
 # ===========================================================================
 
+
 class TestIterationGateAdaptive:
     """IterationGate adaptive budget tests."""
 
     @pytest.fixture
     def gate(self):
         from minions.loop.gates.iteration import IterationGate
+
         g = IterationGate(
             max_iterations=20,
             adaptive=True,
@@ -330,6 +422,7 @@ class TestIterationGateAdaptive:
         }
         await gate.check(ctx)
         from minions.loop.gates.iteration import _IterState
+
         state = gate._state()
         assert state.adjusted is True
 
@@ -337,9 +430,15 @@ class TestIterationGateAdaptive:
     async def test_non_adaptive_no_adjustment(self):
         """When adaptive=False, budget should not change."""
         from minions.loop.gates.iteration import IterationGate, _IterState
+
         g = IterationGate(max_iterations=20, adaptive=False)
         g.activate()
-        ctx = {"agent": MagicMock(), "final_msg": None, "iteration": 0, "has_tool_calls": True}
+        ctx = {
+            "agent": MagicMock(),
+            "final_msg": None,
+            "iteration": 0,
+            "has_tool_calls": True,
+        }
         await g.check(ctx)
         state = g._state()
         assert state.adjusted is False
@@ -360,7 +459,12 @@ class TestIterationGateAdaptive:
     @pytest.mark.asyncio
     async def test_reset_clears_adjusted(self, gate):
         """Reset should clear the adjusted flag."""
-        ctx = {"agent": MagicMock(), "final_msg": None, "iteration": 0, "has_tool_calls": True}
+        ctx = {
+            "agent": MagicMock(),
+            "final_msg": None,
+            "iteration": 0,
+            "has_tool_calls": True,
+        }
         await gate.check(ctx)
         gate.reset()
         state = gate._state()
@@ -371,6 +475,7 @@ class TestIterationGateAdaptive:
 # 7. Plan phase
 # ===========================================================================
 
+
 class TestPlanPhase:
     """Plan phase injection tests."""
 
@@ -379,11 +484,13 @@ class TestPlanPhase:
         # Just verify the method is defined, not that it works
         # (full integration requires AgentScope)
         from minions.agents.react_agent import MinionsAgent
+
         assert hasattr(MinionsAgent, "_build_plan_prompt")
 
     def test_plan_enabled_method_exists(self):
         """The _plan_enabled method should exist."""
         from minions.agents.react_agent import MinionsAgent
+
         assert hasattr(MinionsAgent, "_plan_enabled")
 
 
@@ -391,18 +498,21 @@ class TestPlanPhase:
 # 8. ReflectionGate
 # ===========================================================================
 
+
 class TestReflectionGate:
     """ReflectionGate periodic checkpoint tests."""
 
     @pytest.fixture
     def gate(self):
         from minions.loop.gates.reflection import ReflectionGate
+
         return ReflectionGate(interval=3, max_interventions=2)
 
     @pytest.mark.asyncio
     async def test_bypass_before_interval(self, gate):
         """Should bypass before reaching the interval."""
         from minions.loop.gates.base import StopAction
+
         ctx = {"has_tool_calls": False}
         result = await gate.check(ctx)  # iteration 1
         assert result.action == StopAction.BYPASS
@@ -413,6 +523,7 @@ class TestReflectionGate:
     async def test_trigger_at_interval(self, gate):
         """Should trigger at the interval boundary."""
         from minions.loop.gates.base import StopAction
+
         ctx = {"has_tool_calls": False}
         await gate.check(ctx)  # 1
         await gate.check(ctx)  # 2
@@ -423,6 +534,7 @@ class TestReflectionGate:
     async def test_skip_when_tool_calls_active(self, gate):
         """Should not reflect when agent is actively calling tools."""
         from minions.loop.gates.base import StopAction
+
         ctx = {"has_tool_calls": True}
         await gate.check(ctx)  # 1
         await gate.check(ctx)  # 2
@@ -433,17 +545,21 @@ class TestReflectionGate:
     async def test_max_interventions_cap(self, gate):
         """Should stop reflecting after max_interventions."""
         from minions.loop.gates.base import StopAction
+
         ctx = {"has_tool_calls": False}
         # intervention 1 at iteration 3
-        await gate.check(ctx); await gate.check(ctx)
+        await gate.check(ctx)
+        await gate.check(ctx)
         r1 = await gate.check(ctx)
         assert r1.action == StopAction.INTERRUPT_AND_CONTINUE
         # intervention 2 at iteration 6
-        await gate.check(ctx); await gate.check(ctx)
+        await gate.check(ctx)
+        await gate.check(ctx)
         r2 = await gate.check(ctx)
         assert r2.action == StopAction.INTERRUPT_AND_CONTINUE
         # intervention 3 at iteration 9 — should be bypassed (cap=2)
-        await gate.check(ctx); await gate.check(ctx)
+        await gate.check(ctx)
+        await gate.check(ctx)
         r3 = await gate.check(ctx)
         assert r3.action == StopAction.BYPASS
 
@@ -466,11 +582,13 @@ class TestReflectionGate:
 # Integration: config model
 # ===========================================================================
 
+
 class TestConfigModel:
     """Verify new config fields are properly defined."""
 
     def test_budget_gate_config_exists(self):
         from minions.config.config import BudgetGateConfig
+
         cfg = BudgetGateConfig()
         assert cfg.enabled is False
         assert cfg.max_tokens == 300_000
@@ -478,6 +596,7 @@ class TestConfigModel:
 
     def test_reflection_gate_config_exists(self):
         from minions.config.config import ReflectionGateConfig
+
         cfg = ReflectionGateConfig()
         assert cfg.enabled is False
         assert cfg.interval == 5
@@ -485,6 +604,7 @@ class TestConfigModel:
 
     def test_iteration_gate_config_adaptive_fields(self):
         from minions.config.config import IterationGateConfig
+
         cfg = IterationGateConfig()
         assert cfg.adaptive is False
         assert cfg.min_iterations == 5
@@ -492,6 +612,7 @@ class TestConfigModel:
 
     def test_loop_config_has_new_sections(self):
         from minions.config.config import LoopConfig
+
         cfg = LoopConfig()
         assert hasattr(cfg, "budget")
         assert hasattr(cfg, "reflection")
@@ -501,6 +622,7 @@ class TestConfigModel:
 
     def test_running_config_has_plan_phase(self):
         from minions.config.config import AgentsRunningConfig
+
         cfg = AgentsRunningConfig()
         assert hasattr(cfg, "plan_phase_enabled")
         assert cfg.plan_phase_enabled is False

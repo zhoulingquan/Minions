@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Capture deterministic static internal-import compatibility baselines."""
 from __future__ import annotations
 
@@ -8,17 +9,24 @@ import sys
 from typing import Any, Sequence
 
 if __package__:
+    # pylint: disable-next=relative-beyond-top-level
     from ._architecture_common import ArchitectureError, module_name_for_path
+
+    # pylint: disable-next=relative-beyond-top-level
     from .check_architecture import (
         resolve_target_distribution,
         scan_import_records,
     )
+
+    # pylint: disable-next=relative-beyond-top-level
     from .check_namespace import check_namespace
 else:
     from _architecture_common import (  # type: ignore[no-redef]
         ArchitectureError,
         module_name_for_path,
     )
+
+    # pylint: disable-next=no-name-in-module
     from check_architecture import (  # type: ignore[no-redef]
         resolve_target_distribution,
         scan_import_records,
@@ -94,29 +102,44 @@ def _parser() -> argparse.ArgumentParser:
         help="architecture config path (default: ROOT/architecture.toml)",
     )
     outputs = parser.add_mutually_exclusive_group(required=True)
-    outputs.add_argument("--json", type=Path, help="write the computed baseline")
-    outputs.add_argument("--check", type=Path, help="check an existing baseline")
+    outputs.add_argument(
+        "--json",
+        type=Path,
+        help="write the computed baseline",
+    )
+    outputs.add_argument(
+        "--check",
+        type=Path,
+        help="check an existing baseline",
+    )
     return parser
 
 
 def _serialized(model: dict[str, Any]) -> str:
-    return json.dumps(
-        model,
-        ensure_ascii=False,
-        indent=2,
-        sort_keys=True,
-    ) + "\n"
+    return (
+        json.dumps(
+            model,
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n"
+    )
 
 
 def _read_baseline(path: Path) -> dict[str, Any]:
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError as exc:
-        raise ArchitectureError(f"baseline file does not exist: {path}") from exc
+        raise ArchitectureError(
+            f"baseline file does not exist: {path}",
+        ) from exc
     except OSError as exc:
         raise ArchitectureError(f"cannot read baseline {path}: {exc}") from exc
     except (UnicodeError, json.JSONDecodeError) as exc:
-        raise ArchitectureError(f"invalid JSON baseline {path}: {exc}") from exc
+        raise ArchitectureError(
+            f"invalid JSON baseline {path}: {exc}",
+        ) from exc
     if not isinstance(value, dict):
         raise ArchitectureError(f"baseline {path} must contain a JSON object")
     return value
@@ -127,7 +150,9 @@ def _write_baseline(path: Path, model: dict[str, Any]) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(_serialized(model), encoding="utf-8", newline="\n")
     except OSError as exc:
-        raise ArchitectureError(f"cannot write baseline {path}: {exc}") from exc
+        raise ArchitectureError(
+            f"cannot write baseline {path}: {exc}",
+        ) from exc
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -148,7 +173,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
         _write_baseline(args.json, model)
     except ArchitectureError as exc:
-        print(f"import baseline config/ownership error: {exc}", file=sys.stderr)
+        print(
+            f"import baseline config/ownership error: {exc}",
+            file=sys.stderr,
+        )
         return 1
 
     print(f"wrote import baseline: {args.json} ({len(model['edges'])} edges)")

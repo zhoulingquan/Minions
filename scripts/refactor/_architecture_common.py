@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Shared configuration and source-root primitives for architecture gates."""
 from __future__ import annotations
 
@@ -55,7 +56,7 @@ class ArchitectureConfig:
         for prefix, distribution in self.prefix_owners:
             prefix_key = namespace_identity_key(prefix)
             if module_key == prefix_key or module_key.startswith(
-                f"{prefix_key}."
+                f"{prefix_key}.",
             ):
                 canonical = module == prefix or module.startswith(f"{prefix}.")
                 return ConfiguredOwnership(prefix, distribution, canonical)
@@ -65,7 +66,7 @@ class ArchitectureConfig:
 def _string_list(value: Any, field: str) -> tuple[str, ...]:
     if not isinstance(value, list):
         raise ArchitectureError(
-            f"config field {field} must be an array of strings"
+            f"config field {field} must be an array of strings",
         )
     if any(not isinstance(item, str) or not item for item in value):
         raise ArchitectureError(
@@ -116,7 +117,7 @@ def load_architecture_config(
     raw_packages = data.get("packages")
     if not isinstance(raw_packages, dict) or not raw_packages:
         raise ArchitectureError(
-            f"config {path} requires a non-empty [packages] table"
+            f"config {path} requires a non-empty [packages] table",
         )
 
     packages: dict[str, PackageRule] = {}
@@ -124,7 +125,7 @@ def load_architecture_config(
     for distribution, raw_rule in raw_packages.items():
         if not isinstance(distribution, str) or not distribution:
             raise ArchitectureError(
-                f"config {path} has an invalid package name"
+                f"config {path} has an invalid package name",
             )
         if not isinstance(raw_rule, dict):
             raise ArchitectureError(
@@ -138,12 +139,14 @@ def load_architecture_config(
                 f"allows (missing={missing_fields}, unknown={unexpected_fields})",
             )
         imports = _string_list(
-            raw_rule["imports"], f"packages.{distribution}.imports"
+            raw_rule["imports"],
+            f"packages.{distribution}.imports",
         )
         allows = _string_list(
-            raw_rule["allows"], f"packages.{distribution}.allows"
+            raw_rule["allows"],
+            f"packages.{distribution}.allows",
         )
-        if not imports:
+        if not imports and distribution != "minions":
             raise ArchitectureError(
                 f"config package {distribution} must own at least one import prefix",
             )
@@ -165,7 +168,7 @@ def load_architecture_config(
             for other_identity, owner in prefix_owners_by_identity.items():
                 other_prefix, other_distribution = owner
                 overlaps = identity.startswith(
-                    f"{other_identity}."
+                    f"{other_identity}.",
                 ) or other_identity.startswith(f"{identity}.")
                 if overlaps and other_distribution != distribution:
                     raise ArchitectureError(
@@ -233,7 +236,8 @@ def discover_source_roots(root: Path) -> dict[str, SourceRoot]:
     packages_dir = root / "packages"
     if packages_dir.is_dir():
         for member in sorted(
-            packages_dir.iterdir(), key=lambda path: path.name
+            packages_dir.iterdir(),
+            key=lambda path: path.name,
         ):
             if not member.is_dir():
                 continue

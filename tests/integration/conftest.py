@@ -286,16 +286,19 @@ class AppServer:
         response_text = response.text
 
         level = "PASS" if 200 <= response.status_code < 400 else "FAIL"
-        print(
-            (
-                f"[integration][{level}] {method.upper()} {path} | "
-                f"params={self._compact(request_params)} | "
-                f"request={self._compact(request_payload)} | "
-                f"status={response.status_code} | "
-                f"response={self._compact(response_text)}"
-            ),
-            flush=True,
+        message = (
+            f"[integration][{level}] {method.upper()} {path} | "
+            f"params={self._compact(request_params)} | "
+            f"request={self._compact(request_payload)} | "
+            f"status={response.status_code} | "
+            f"response={self._compact(response_text)}"
         )
+        encoding = getattr(sys.stdout, "encoding", None) or "utf-8"
+        console_safe_message = message.encode(
+            encoding,
+            errors="backslashreplace",
+        ).decode(encoding)
+        print(console_safe_message, flush=True)
         return response
 
 
@@ -429,6 +432,40 @@ def app_server(  # pylint: disable=too-many-statements,too-many-branches
                     "minions app did not become ready in time.\n"
                     f"last_error={last_error}\n"
                     f"logs:\n{''.join(logs)[-4000:]}",
+                )
+
+            # /api/version becomes available during the fast-start phase,
+            # while agents/plugins continue loading in the background. Most
+            # integration endpoints need that second phase; yielding here
+            # makes their first request race a 15s client timeout on slower
+            # Windows runners.
+            background_wait_seconds = (
+                180 if _integration_coverage_requested() else 120
+            )
+            background_started_at = time.time()
+            while (
+                time.time() - background_started_at < background_wait_seconds
+            ):
+                if process.poll() is not None:
+                    raise AssertionError(
+                        "minions app exited during background startup.\n"
+                        f"exit_code={process.returncode}\n"
+                        f"logs:\n{''.join(logs)[-4000:]}",
+                    )
+                recent_logs = "".join(logs[-200:])
+                if "Background startup completed" in recent_logs:
+                    break
+                if "Background startup encountered an error" in recent_logs:
+                    raise AssertionError(
+                        "minions app background startup failed.\n"
+                        f"logs:\n{''.join(logs)[-8000:]}",
+                    )
+                time.sleep(0.25)
+            else:
+                raise AssertionError(
+                    "minions app background startup did not complete "
+                    "in time.\n"
+                    f"logs:\n{''.join(logs)[-8000:]}",
                 )
 
             yield AppServer(

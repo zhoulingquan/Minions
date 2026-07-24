@@ -157,14 +157,14 @@ if [ -n "$EXTRAS" ]; then
     EXTRAS_SUFFIX="[$EXTRAS]"
 fi
 
-## Ensure console frontend assets are in src/minions/console/ for source installs.
+## Ensure console frontend assets are in the app component for source installs.
 ## Sets _CONSOLE_COPIED=1 if we populated the directory (so we can clean up).
 _CONSOLE_COPIED=0
 _CONSOLE_AVAILABLE=0
 prepare_console() {
     local repo_dir="$1"
     local console_src="$repo_dir/console/dist"
-    local console_dest="$repo_dir/src/minions/console"
+    local console_dest="$repo_dir/packages/minions-app/src/minions/console"
 
     # Already populated
     if [ -f "$console_dest/index.html" ]; then
@@ -213,16 +213,16 @@ prepare_console() {
 cleanup_console() {
     local repo_dir="$1"
     if [ "$_CONSOLE_COPIED" = 1 ]; then
-        rm -rf "$repo_dir/src/minions/console/"*
+        rm -rf "$repo_dir/packages/minions-app/src/minions/console/"*
     fi
 }
 
-## Ensure docs are available in src/minions/docs/ for source installs.
+## Ensure docs are available in the app component for source installs.
 _DOCS_COPIED=0
 prepare_docs() {
     local repo_dir="$1"
     local docs_src="$repo_dir/website/public/docs"
-    local docs_dest="$repo_dir/src/minions/docs"
+    local docs_dest="$repo_dir/packages/minions-app/src/minions/docs"
 
     if [ -d "$docs_dest" ] && ls "$docs_dest"/*.md >/dev/null 2>&1; then
         return
@@ -238,8 +238,23 @@ prepare_docs() {
 cleanup_docs() {
     local repo_dir="$1"
     if [ "$_DOCS_COPIED" = 1 ]; then
-        rm -rf "$repo_dir/src/minions/docs"
+        rm -rf "$repo_dir/packages/minions-app/src/minions/docs"
     fi
+}
+
+install_workspace_source() {
+    local repo_dir="$1"
+    [ -f "$repo_dir/requirements-workspace-install.txt" ] || \
+        die "Workspace requirements not found: $repo_dir/requirements-workspace-install.txt"
+    (
+        cd "$repo_dir"
+        uv pip install --no-sources -r requirements-workspace-install.txt \
+            --python "$MINIONS_VENV/bin/python" --index-url "$PYPI_MIRROR"
+        if [ -n "$EXTRAS_SUFFIX" ]; then
+            uv pip install --no-sources ".${EXTRAS_SUFFIX}" \
+                --python "$MINIONS_VENV/bin/python" --index-url "$PYPI_MIRROR"
+        fi
+    )
 }
 
 if [ "$FROM_SOURCE" = true ]; then
@@ -248,7 +263,7 @@ if [ "$FROM_SOURCE" = true ]; then
         prepare_console "$SOURCE_DIR"
         prepare_docs "$SOURCE_DIR"
         info "Installing package from source..."
-        uv pip install "${SOURCE_DIR}${EXTRAS_SUFFIX}" --python "$MINIONS_VENV/bin/python" --index-url "$PYPI_MIRROR"
+        install_workspace_source "$SOURCE_DIR"
         cleanup_console "$SOURCE_DIR"
         cleanup_docs "$SOURCE_DIR"
     else
@@ -259,7 +274,7 @@ if [ "$FROM_SOURCE" = true ]; then
         prepare_console "$CLONE_DIR"
         prepare_docs "$CLONE_DIR"
         info "Installing package from source..."
-        uv pip install "${CLONE_DIR}${EXTRAS_SUFFIX}" --python "$MINIONS_VENV/bin/python" --index-url "$PYPI_MIRROR"
+        install_workspace_source "$CLONE_DIR"
         # CLONE_DIR is cleaned up by trap; no need for cleanup_console/cleanup_docs
     fi
 else

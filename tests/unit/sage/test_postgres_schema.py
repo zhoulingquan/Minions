@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Static contract tests for the production PostgreSQL foundation."""
 
 import inspect
@@ -84,7 +85,9 @@ def test_postgres_policy_queries_remain_tenant_bound() -> None:
     assert "tenant_id = %s" in list_source
 
 
-def test_postgres_store_supports_queryless_kind_filtered_item_listing() -> None:
+def test_postgres_store_supports_queryless_kind_filtered_item_listing() -> (
+    None
+):
     source = inspect.getsource(PostgresSageStore.list_items)
     assert "kind = ANY(%s)" in source
     assert "_filter_scoped" in source

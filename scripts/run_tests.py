@@ -156,7 +156,7 @@ def run_pytest(
     if coverage:
         cmd.extend(
             [
-                "--cov=src/minions",
+                "--cov=minions",
                 "--cov-report=html",
                 "--cov-report=term-missing",
             ],
@@ -223,7 +223,7 @@ def main() -> int:
         print_error(
             "pytest is not installed. Please install dev dependencies:",
         )
-        print('  pip install -e ".[dev,full]"')
+        print("  pip install -r requirements-workspace.txt")
         return 1
 
     # Determine what to run

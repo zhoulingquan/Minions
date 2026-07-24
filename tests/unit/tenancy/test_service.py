@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import hashlib
@@ -35,7 +36,10 @@ def test_bootstrap_login_invite_and_immediate_revocation(tenancy_service):
         username="operator",
         password="correct-horse",
     )
-    assert tenancy_service.verify_token(operator_token).role is TenantRole.OPERATOR
+    assert (
+        tenancy_service.verify_token(operator_token).role
+        is TenantRole.OPERATOR
+    )
 
     tenancy_service.update_member(
         owner,
@@ -140,8 +144,10 @@ def test_private_agent_is_hidden_from_ordinary_tenant_members(tenancy_service):
         password="correct-horse",
     )
 
-    assert [value.agent_id for value in tenancy_service.list_agent_grants(viewer)] == [
-        "tenant-shared"
+    assert [
+        value.agent_id for value in tenancy_service.list_agent_grants(viewer)
+    ] == [
+        "tenant-shared",
     ]
 
 
@@ -255,7 +261,10 @@ def test_legacy_owner_keeps_identity_and_upgrades_password(tenancy_service):
     assert stored["password_iterations"] == 600_000
 
 
-def test_service_accepts_native_postgres_uuid_rows(tenancy_service, monkeypatch):
+def test_service_accepts_native_postgres_uuid_rows(
+    tenancy_service,
+    monkeypatch,
+):
     token, owner = tenancy_service.bootstrap_owner(
         username="owner",
         password="correct-horse",
@@ -281,12 +290,16 @@ def test_service_accepts_native_postgres_uuid_rows(tenancy_service, monkeypatch)
         return row
 
     monkeypatch.setattr(store, "get_first_active_owner", native_owner_row)
-    assert tenancy_service.system_owner_principal().tenant_id == owner.tenant_id
+    assert (
+        tenancy_service.system_owner_principal().tenant_id == owner.tenant_id
+    )
     monkeypatch.setattr(store, "resolve_session", native_session_row)
     assert tenancy_service.verify_token(token).user_id == owner.user_id
 
 
-def test_profile_update_rotates_sessions_and_preserves_membership(tenancy_service):
+def test_profile_update_rotates_sessions_and_preserves_membership(
+    tenancy_service,
+):
     old_token, owner = tenancy_service.bootstrap_owner(
         username="owner",
         password="correct-horse",
@@ -358,9 +371,12 @@ def test_owner_can_create_and_switch_between_isolated_spaces(tenancy_service):
     with pytest.raises(AuthenticationFailed):
         tenancy_service.verify_token(original_token)
     assert (
-        tenancy_service.verify_token(second_token).tenant_id == second_owner.tenant_id
+        tenancy_service.verify_token(second_token).tenant_id
+        == second_owner.tenant_id
     )
-    assert {item["slug"] for item in tenancy_service.list_spaces(second_owner)} == {
+    assert {
+        item["slug"] for item in tenancy_service.list_spaces(second_owner)
+    } == {
         "acme",
         "beta",
     }
@@ -374,7 +390,9 @@ def test_owner_can_create_and_switch_between_isolated_spaces(tenancy_service):
     with pytest.raises(AuthenticationFailed):
         tenancy_service.verify_token(second_token)
     assert acme_owner.tenant_id == owner.tenant_id
-    assert tenancy_service.verify_token(acme_token).tenant_id == owner.tenant_id
+    assert (
+        tenancy_service.verify_token(acme_token).tenant_id == owner.tenant_id
+    )
 
 
 def test_existing_user_must_prove_password_to_accept_another_space_invite(
@@ -454,8 +472,9 @@ def test_profile_change_revokes_sessions_from_every_space(tenancy_service):
         tenant_name="Beta",
         tenant_slug="beta",
     )
-    # create_space already replaces the original session; create another Acme
-    # session so both tenant scopes have a live token before the profile change.
+    # create_space already replaces the original session; create another
+    # Acme session so both tenant scopes have a live token before the
+    # profile change.
     acme_token, _ = tenancy_service.login(
         username="owner",
         password="correct-horse",
@@ -471,4 +490,7 @@ def test_profile_change_revokes_sessions_from_every_space(tenancy_service):
         tenancy_service.verify_token(acme_token)
     with pytest.raises(AuthenticationFailed):
         tenancy_service.verify_token(beta_token)
-    assert tenancy_service.verify_token(new_token).tenant_id == beta_owner.tenant_id
+    assert (
+        tenancy_service.verify_token(new_token).tenant_id
+        == beta_owner.tenant_id
+    )

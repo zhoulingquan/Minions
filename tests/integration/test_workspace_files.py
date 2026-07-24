@@ -497,13 +497,20 @@ def test_api_workspace_download_upload_cross_agent_roundtrip(
         assert download_source.status_code == 200, app_server.logs_tail()
         zip_blob = download_source.content
         assert zip_blob.startswith(b"PK")
+        with zipfile.ZipFile(io.BytesIO(zip_blob)) as archive:
+            assert not any(
+                name.endswith(("-shm", "-wal", "-journal"))
+                for name in archive.namelist()
+            )
 
         upload_target = app_server.client.post(
             f"{app_server.base_url}/api/workspace/upload",
             headers=target_headers,
             files={"file": ("roundtrip.zip", zip_blob, "application/zip")},
         )
-        assert upload_target.status_code == 200, app_server.logs_tail()
+        assert (
+            upload_target.status_code == 200
+        ), f"{upload_target.text}\n{app_server.logs_tail()}"
         assert upload_target.json().get("success") is True
 
         get_target = app_server.api_request(

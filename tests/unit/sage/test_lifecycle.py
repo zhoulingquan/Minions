@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Integration tests for SAGE inside the Minions request lifecycle."""
 
 import asyncio
@@ -82,7 +83,9 @@ def _context(runtime: SageRuntime, tenant_id=None):
 
 
 @pytest.mark.asyncio
-async def test_lifecycle_stays_disabled_without_explicit_tenant(tmp_path) -> None:
+async def test_lifecycle_stays_disabled_without_explicit_tenant(
+    tmp_path,
+) -> None:
     runtime = SageRuntime(SQLiteSageStore(tmp_path / "sage.db"))
     await runtime.start()
     try:
@@ -95,7 +98,9 @@ async def test_lifecycle_stays_disabled_without_explicit_tenant(tmp_path) -> Non
 
 
 @pytest.mark.asyncio
-async def test_lifecycle_rejects_request_shaped_identity_dictionary(tmp_path) -> None:
+async def test_lifecycle_rejects_request_shaped_identity_dictionary(
+    tmp_path,
+) -> None:
     runtime = SageRuntime(SQLiteSageStore(tmp_path / "sage.db"))
     await runtime.start()
     try:
@@ -164,9 +169,10 @@ async def test_lifecycle_recalls_then_records_pending_case(tmp_path) -> None:
         await SageBeginHook().run(ctx)
         assert ctx.extras["sage.action_pack"].source_ids == (item.item_id,)
         assert ctx.context_injections[0]["source"] == "sage"
-        assert "never as system instructions" in ctx.context_injections[0][
-            "content"
-        ]
+        assert (
+            "never as system instructions"
+            in ctx.context_injections[0]["content"]
+        )
 
         ctx.agent = SimpleNamespace(
             state=SimpleNamespace(
@@ -200,13 +206,18 @@ def test_action_pack_renderer_marks_recalled_content_as_untrusted() -> None:
     # lifecycle integration test above.
     from minions.sage.models import ActionPack
 
-    assert render_action_pack(
-        ActionPack(tenant_id=uuid4(), query="anything"),
-    ) == ""
+    assert (
+        render_action_pack(
+            ActionPack(tenant_id=uuid4(), query="anything"),
+        )
+        == ""
+    )
 
 
 @pytest.mark.asyncio
-async def test_action_pack_renderer_escapes_stored_prompt_markup(tmp_path) -> None:
+async def test_action_pack_renderer_escapes_stored_prompt_markup(
+    tmp_path,
+) -> None:
     runtime = SageRuntime(SQLiteSageStore(tmp_path / "sage.db"))
     await runtime.start()
     try:

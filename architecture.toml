@@ -1,5 +1,5 @@
 [packages.minions-core]
-imports = ["minions.core"]
+imports = ["minions.core", "minions.config", "minions.security", "minions.envs", "minions.observability", "minions.utils", "minions.constant", "minions.exceptions", "minions.schemas", "minions.__version__"]
 allows = []
 
 [packages.minions-tool-calls]
@@ -7,8 +7,8 @@ imports = ["minions.tool_calls"]
 allows = []
 
 [packages.minions-runtime]
-imports = ["minions.runtime"]
-allows = ["minions-core", "minions-tool-calls"]
+imports = ["minions.runtime", "minions.token_usage", "minions.hooks"]
+allows = ["minions-core"]
 
 [packages.minions-providers]
 imports = ["minions.providers", "minions.local_models"]
@@ -20,31 +20,53 @@ allows = ["minions-core"]
 
 [packages.minions-channels]
 imports = ["minions.channels"]
-allows = ["minions-core"]
+allows = ["minions-core", "minions-runtime", "minions-providers"]
 
 [packages.minions-plugins]
-imports = ["minions.plugins"]
-allows = ["minions-core", "minions-runtime"]
+imports = ["minions.plugins", "minions._version_compat"]
+allows = ["minions-core", "minions-runtime", "minions-channels"]
 
 [packages.minions-governance]
-imports = ["minions.governance", "minions.security", "minions.sandbox"]
-allows = ["minions-core"]
+imports = ["minions.governance", "minions.sandbox"]
+allows = ["minions-core", "minions-drivers"]
 
 [packages.minions-loop]
 imports = ["minions.loop"]
-allows = ["minions-core"]
+allows = ["minions-core", "minions-runtime"]
 
 [packages.minions-agents]
-imports = ["minions.agents"]
-allows = ["minions-core", "minions-runtime", "minions-providers", "minions-tool-calls", "minions-drivers", "minions-plugins", "minions-governance"]
+imports = ["minions.agents", "minions.market", "minions.sage"]
+allows = ["minions-core", "minions-runtime", "minions-providers", "minions-tool-calls", "minions-drivers", "minions-plugins", "minions-loop", "minions-governance", "minions-modes"]
 
 [packages.minions-modes]
 imports = ["minions.modes"]
 allows = ["minions-core", "minions-runtime", "minions-loop", "minions-governance"]
 
-[packages.minions]
-imports = ["minions.__main__", "minions.__version__", "minions._version_compat", "minions.api_action", "minions.bootstrap", "minions._compat", "minions.app", "minions.cli", "minions.hooks", "minions.backup", "minions.market", "minions.agent_stats", "minions.tenancy", "minions.services", "minions.tunnel", "minions.sage", "minions.tokenizer", "minions.utils", "minions.constant", "minions.exceptions", "minions.schemas", "minions.config", "minions.envs", "minions.token_usage", "minions.observability"]
+[packages.minions-app]
+imports = ["minions.app", "minions.backup", "minions.agent_stats", "minions.tenancy", "minions.tunnel", "minions.api_action"]
 allows = ["minions-core", "minions-runtime", "minions-providers", "minions-tool-calls", "minions-drivers", "minions-channels", "minions-plugins", "minions-governance", "minions-loop", "minions-agents", "minions-modes"]
 
+[packages.minions-cli]
+imports = ["minions.cli", "minions.__main__"]
+allows = ["minions-core", "minions-runtime", "minions-providers", "minions-channels", "minions-plugins", "minions-agents", "minions-app"]
+
+[packages.minions]
+imports = []
+allows = ["minions-core", "minions-runtime", "minions-providers", "minions-tool-calls", "minions-drivers", "minions-channels", "minions-plugins", "minions-loop", "minions-governance", "minions-modes", "minions-agents", "minions-app", "minions-cli"]
+
 [workspace]
-active_packages = ["minions"]
+active_packages = [
+    "minions-core",
+    "minions-runtime",
+    "minions-providers",
+    "minions-tool-calls",
+    "minions-drivers",
+    "minions-channels",
+    "minions-plugins",
+    "minions-loop",
+    "minions-governance",
+    "minions-modes",
+    "minions-agents",
+    "minions-app",
+    "minions-cli",
+]

@@ -71,9 +71,9 @@ jobs:
       - name: Copy console build into package
         shell: bash
         run: |
-          rm -rf src/minions/console/*
-          mkdir -p src/minions/console
-          cp -R console/dist/* src/minions/console/
+          rm -rf packages/minions-app/src/minions/console/*
+          mkdir -p packages/minions-app/src/minions/console
+          cp -R console/dist/* packages/minions-app/src/minions/console/
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -85,7 +85,7 @@ jobs:
         shell: bash
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev,test,full]"
+          pip install -r requirements-workspace.txt
 
       - name: Run unit tests
         shell: bash
@@ -98,7 +98,7 @@ jobs:
           if [ "${{ matrix.os }}" = "ubuntu-latest" ] && \
              [ "${{ matrix.python-version }}" = "3.13" ]; then
             pytest tests/unit -v \
-              --cov=src/minions \
+              --cov=minions \
               --cov-report=xml:coverage.unit.xml \
               --cov-fail-under=0
           else
@@ -152,9 +152,9 @@ jobs:
       - name: Copy console build into package
         shell: bash
         run: |
-          rm -rf src/minions/console/*
-          mkdir -p src/minions/console
-          cp -R console/dist/* src/minions/console/
+          rm -rf packages/minions-app/src/minions/console/*
+          mkdir -p packages/minions-app/src/minions/console
+          cp -R console/dist/* packages/minions-app/src/minions/console/
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -166,7 +166,7 @@ jobs:
         shell: bash
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev,test,full]"
+          pip install -r requirements-workspace.txt
 
       - name: Run contract tests
         shell: bash
@@ -177,7 +177,7 @@ jobs:
           if [ "${{ matrix.os }}" = "ubuntu-latest" ] && \
              [ "${{ matrix.python-version }}" = "3.13" ]; then
             pytest tests/contract -v \
-              --cov=src/minions \
+              --cov=minions \
               --cov-report=xml:coverage.contract.xml \
               --cov-fail-under=0
           else
@@ -231,9 +231,9 @@ jobs:
       - name: Copy console build into package
         shell: bash
         run: |
-          rm -rf src/minions/console/*
-          mkdir -p src/minions/console
-          cp -R console/dist/* src/minions/console/
+          rm -rf packages/minions-app/src/minions/console/*
+          mkdir -p packages/minions-app/src/minions/console
+          cp -R console/dist/* packages/minions-app/src/minions/console/
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -245,7 +245,7 @@ jobs:
         shell: bash
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev,test,full]"
+          pip install -r requirements-workspace.txt
 
       - name: Determine coverage flag
         id: cov_flag
@@ -389,11 +389,11 @@ jobs:
           cat > .coveragerc <<RCEOF
           [paths]
           source =
-              src/minions
-              */src/minions
-              /Users/runner/work/Minions/Minions/src/minions
-              /home/runner/work/Minions/Minions/src/minions
-              D:\a\Minions\Minions\src\minions
+              packages/*/src/minions
+              */packages/*/src/minions
+              /Users/runner/work/Minions/Minions/packages/*/src/minions
+              /home/runner/work/Minions/Minions/packages/*/src/minions
+              D:\a\Minions\Minions\packages\*\src\minions
           RCEOF
           COMBINE_ARGS=""
           for f in .coverage.unit .coverage.contract .coverage.integration .coverage.integration.* .coverage.e2e; do

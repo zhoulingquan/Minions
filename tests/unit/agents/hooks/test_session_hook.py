@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import pytest
 
 from minions.agents.acp.meta import ACP_EPHEMERAL_META_KEY
-from minions.hooks.session.session_hook import (
+from minions.agents.lifecycle_hooks.session import (
     SessionLoadHook,
     SessionSaveHook,
 )

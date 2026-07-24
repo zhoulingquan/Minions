@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Durability and isolation tests for the SAGE SQLite adapter."""
 
 import asyncio
@@ -28,7 +29,9 @@ from minions.sage.sqlite_store import SQLiteSageStore
 
 
 @pytest.mark.asyncio
-async def test_cancelled_sqlite_call_drains_worker_before_close(tmp_path) -> None:
+async def test_cancelled_sqlite_call_drains_worker_before_close(
+    tmp_path,
+) -> None:
     store = SQLiteSageStore(tmp_path / "sage.db")
     await store.start()
     started = threading.Event()
@@ -241,7 +244,9 @@ async def test_trace_event_key_cannot_cross_user_boundary(tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_cross_tenant_item_id_collision_cannot_poison_search(tmp_path) -> None:
+async def test_cross_tenant_item_id_collision_cannot_poison_search(
+    tmp_path,
+) -> None:
     alice = _principal()
     bob = _principal()
     shared_id = uuid4()
@@ -277,13 +282,17 @@ async def test_cross_tenant_item_id_collision_cannot_poison_search(tmp_path) -> 
             await store.save_item(bob, collision)
 
         hits = await store.search_items(alice, "protected")
-        assert [item.content for item in hits] == ["protected original content"]
+        assert [item.content for item in hits] == [
+            "protected original content",
+        ]
     finally:
         await store.close()
 
 
 @pytest.mark.asyncio
-async def test_restricted_items_require_classification_permission(tmp_path) -> None:
+async def test_restricted_items_require_classification_permission(
+    tmp_path,
+) -> None:
     base = _principal()
     privileged = base.model_copy(
         update={
@@ -431,7 +440,9 @@ async def test_growth_outbox_rejects_cross_tenant_access(tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_capability_policy_is_versioned_and_scope_addressable(tmp_path) -> None:
+async def test_capability_policy_is_versioned_and_scope_addressable(
+    tmp_path,
+) -> None:
     principal = _principal()
     scope = ScopeRef(
         scope_type=ScopeType.USER,

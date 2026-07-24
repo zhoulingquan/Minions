@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 from uuid import uuid4
@@ -30,7 +31,9 @@ def _principal() -> Principal:
 
 
 @pytest.mark.asyncio
-async def test_pending_case_creates_non_recallable_observed_draft(tmp_path) -> None:
+async def test_pending_case_creates_non_recallable_observed_draft(
+    tmp_path,
+) -> None:
     principal = _principal()
     runtime = SageRuntime(SQLiteSageStore(tmp_path / "sage.db"))
     await runtime.start()

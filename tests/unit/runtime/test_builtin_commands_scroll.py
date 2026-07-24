@@ -7,7 +7,7 @@ window (update on /compact, reset on /clear, preserve otherwise). The prior bug
 was that *every* command silently dropped the scroll block.
 """
 
-from minions.runtime.builtin_commands import _resolve_scroll_block
+from minions.agents.builtin_commands import _resolve_scroll_block
 
 
 def test_compact_saves_the_refreshed_block():

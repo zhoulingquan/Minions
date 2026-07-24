@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Complete governed SAGE evolution, recovery, and isolation flow."""
 
 from uuid import uuid4
@@ -36,7 +37,9 @@ def _principal(*, tenant_id=None) -> Principal:
 
 
 @pytest.mark.asyncio
-async def test_shadow_approval_auto_restart_and_tenant_isolation(tmp_path) -> None:
+async def test_shadow_approval_auto_restart_and_tenant_isolation(
+    tmp_path,
+) -> None:
     path = tmp_path / "sage.db"
     principal = _principal()
     scope = ScopeRef(
@@ -79,7 +82,9 @@ async def test_shadow_approval_auto_restart_and_tenant_isolation(tmp_path) -> No
                 verdict=verdict,
             )
         shadow_item = await first.store.get_item(principal, items[0].item_id)
-        assert shadow_item is not None and shadow_item.state is ItemState.ACTIVE
+        assert (
+            shadow_item is not None and shadow_item.state is ItemState.ACTIVE
+        )
         assert shadow_item.utility == 0
 
         # Move the low-risk capability to AUTO only after shadow evidence.
@@ -112,7 +117,9 @@ async def test_shadow_approval_auto_restart_and_tenant_isolation(tmp_path) -> No
             processed += 1
         assert processed == 3
 
-        candidates = await second.store.list_consolidation_candidates(principal)
+        candidates = await second.store.list_consolidation_candidates(
+            principal,
+        )
         duplicate = next(
             candidate
             for candidate in candidates
@@ -207,7 +214,10 @@ async def test_normal_work_grows_into_recallable_chinese_experience(
         candidate = verified_insights[-1]
         assert candidate.state is InsightState.VALIDATING
         assert len(candidate.evidence_case_ids) == 2
-        approved = await runtime.growth.approve(principal, candidate.insight_id)
+        approved = await runtime.growth.approve(
+            principal,
+            candidate.insight_id,
+        )
         active = await runtime.growth.activate(principal, approved.insight_id)
         assert active.published_item_id is not None
 

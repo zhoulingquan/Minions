@@ -35,7 +35,7 @@ jobs:
 
       - name: Install Minions with dev dependencies
         run: |
-          pip install -q -e ".[dev]"
+          pip install -q -r requirements-workspace.txt
 
       - name: Install pre-commit hooks
         run: |

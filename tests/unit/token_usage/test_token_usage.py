@@ -540,7 +540,7 @@ class TestTokenRecordingModelWrapper:
             "test_token_usage.json",
         )
         monkeypatch.setattr(
-            "minions.app.agent_context.get_current_session_id",
+            "minions.core.context.get_current_session_id",
             lambda: "sess-1",
         )
 

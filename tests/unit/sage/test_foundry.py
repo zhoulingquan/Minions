@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Tests for automatic case reflection and governed promotion."""
 
 from uuid import uuid4
@@ -70,7 +71,9 @@ async def test_repeated_successes_form_candidate_but_do_not_self_approve(
         candidate = candidates[0]
         assert len(candidate.evidence_case_ids) == 2
         assert candidate.approved_by is None
-        assert (await runtime.prepare(principal, "source ledgers")).source_ids == ()
+        assert (
+            await runtime.prepare(principal, "source ledgers")
+        ).source_ids == ()
 
         approver = principal.model_copy(
             update={"permissions": frozenset({"sage.insight.approve"})},

@@ -220,6 +220,7 @@ async def test_report_prompt_error_shows_details_for_local_diagnostics():
 
 
 async def test_approval_bridge_resolves_pending_approval(monkeypatch):
+    from minions.app.acp_host import AppACPHostServices
     from minions.app.approvals.service import ApprovalService
     from minions.security.tool_guard.approval import ApprovalDecision
     from minions.security.tool_guard.models import (
@@ -235,7 +236,10 @@ async def test_approval_bridge_resolves_pending_approval(monkeypatch):
         approval_svc,
     )
 
-    agent = MinionsACPAgent(agent_id="default")
+    agent = MinionsACPAgent(
+        agent_id="default",
+        host=AppACPHostServices(),
+    )
     conn = _ApprovalConn()
     agent.on_connect(conn)
 
@@ -296,9 +300,10 @@ async def test_approval_bridge_resolves_pending_approval(monkeypatch):
 
 
 def test_acp_bootstrap_includes_runtime_slash_commands():
+    from minions.app.acp_host import AppACPHostServices
     from minions.app.app_services import AppServiceManager
 
-    kwargs = MinionsACPAgent._build_bootstrap_kwargs(AppServiceManager())
+    kwargs = AppACPHostServices._build_bootstrap_kwargs(AppServiceManager())
     command_names = {
         spec.name for spec in kwargs.get("builtin_command_specs", [])
     }

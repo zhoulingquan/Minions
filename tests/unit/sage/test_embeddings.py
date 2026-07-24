@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Tests for optional, fail-soft semantic embedding support."""
 
 import asyncio
@@ -45,7 +46,10 @@ async def test_embedding_service_validates_dimensions() -> None:
 
 @pytest.mark.asyncio
 async def test_embedding_service_times_out_without_failing_recall() -> None:
-    result = await EmbeddingService(_SlowProvider(), timeout_seconds=0.001).embed(
+    result = await EmbeddingService(
+        _SlowProvider(),
+        timeout_seconds=0.001,
+    ).embed(
         "invoice",
     )
     assert result.vector is None
@@ -53,7 +57,7 @@ async def test_embedding_service_times_out_without_failing_recall() -> None:
 
 
 @pytest.mark.asyncio
-async def test_local_chinese_embedding_is_deterministic_and_normalized() -> None:
+async def test_local_chinese_embedding_is_deterministic() -> None:
     provider = LocalHashEmbeddingProvider(dimensions=128)
     first = await provider.embed("客户月度对账复核")
     second = await provider.embed("客户月度对账复核")

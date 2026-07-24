@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Security and behavior tests for the SAGE management API."""
 
 from types import SimpleNamespace
@@ -39,7 +40,11 @@ def _client(monkeypatch, runtime, identity: TrustedSageIdentity | None):
     async def get_workspace(_request):
         return workspace
 
-    monkeypatch.setattr(sage_router_module, "get_agent_for_request", get_workspace)
+    monkeypatch.setattr(
+        sage_router_module,
+        "get_agent_for_request",
+        get_workspace,
+    )
     application = FastAPI()
 
     if identity is not None:
@@ -61,7 +66,10 @@ def test_overview_uses_trusted_identity(monkeypatch, runtime) -> None:
     assert len(response.json()["policies"]) == 6
 
 
-def test_missing_identity_fails_closed_in_tenant_mode(monkeypatch, runtime) -> None:
+def test_missing_identity_fails_closed_in_tenant_mode(
+    monkeypatch,
+    runtime,
+) -> None:
     monkeypatch.setattr(sage_router_module, "is_tenant_mode", lambda: True)
     client = _client(monkeypatch, runtime, None)
     response = client.get("/api/sage/overview")
@@ -78,7 +86,10 @@ def test_policy_rejects_forged_tenant_field(monkeypatch, runtime) -> None:
     assert response.status_code == 422
 
 
-def test_maintenance_rejects_invalid_business_date(monkeypatch, runtime) -> None:
+def test_maintenance_rejects_invalid_business_date(
+    monkeypatch,
+    runtime,
+) -> None:
     client = _client(monkeypatch, runtime, _identity())
     response = client.post(
         "/api/sage/maintenance",
@@ -141,7 +152,9 @@ def test_authenticated_case_review_forms_a_draft_insight(
             principal,
             turn,
             trace_type=TraceType.AGENT_OUTPUT,
-            content="Validated the decision maker before sending the proposal.",
+            content=(
+                "Validated the decision maker before sending the " "proposal."
+            ),
         )
         await runtime.cases.mark_pending_review(principal, turn.case_id)
         return turn.case_id
@@ -159,7 +172,10 @@ def test_authenticated_case_review_forms_a_draft_insight(
     assert "Authenticated" not in response.text
 
 
-def test_insight_can_be_revised_through_management_api(monkeypatch, runtime) -> None:
+def test_insight_can_be_revised_through_management_api(
+    monkeypatch,
+    runtime,
+) -> None:
     import asyncio
 
     identity = _identity()

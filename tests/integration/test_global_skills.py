@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """Integration tests for global skills CRUD endpoints.
 
-Global skills endpoints (``/api/skills/global/*``) use ``GlobalSkillService()`` — a
-global singleton that ignores the ``agentId`` path parameter when
-reached via agent-scoped routing.  Tests here hit the global
-``/api/skills/global/*`` paths directly.
+Global skills endpoints (``/api/skills/global/*``) use
+``GlobalSkillService()`` — a global singleton that ignores the
+``agentId`` path parameter when reached via agent-scoped routing.
+Tests here hit the global ``/api/skills/global/*`` paths directly.
 
 Agent-scoped routing coverage for global skills URLs is in
 ``test_agent_scoped_routing.py``.
@@ -376,7 +376,7 @@ def test_global_batch_delete_partial(app_server) -> None:
 
     Test flow:
     1. Create global skill ``integ-global-bd-a``.
-    2. POST batch-delete with ``["integ-global-bd-a", "integ-global-bd-ghost"]``.
+    2. POST batch-delete with both the existing and missing names.
     3. Assert ``integ-global-bd-a`` succeeds, ``integ-global-bd-ghost`` fails.
 
     API endpoints:

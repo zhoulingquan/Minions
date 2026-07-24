@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Tests for durable and idempotent SAGE nightly scheduling."""
 
 from uuid import uuid4
@@ -69,9 +70,12 @@ async def test_off_policy_does_not_schedule_nightly_work(tmp_path) -> None:
             capability=SageCapability.NIGHTLY_CONSOLIDATION,
             mode=ActivationMode.OFF,
         )
-        assert await MaintenanceCoordinator(store, control).schedule_due(
-            principal,
-            local_date="2026-07-13",
-        ) == []
+        assert (
+            await MaintenanceCoordinator(store, control).schedule_due(
+                principal,
+                local_date="2026-07-13",
+            )
+            == []
+        )
     finally:
         await store.close()

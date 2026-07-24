@@ -11,9 +11,8 @@ ARCHIVE="${DIST}/minions-env.tar.gz"
 APP_NAME="Minions"
 APP_DIR="${DIST}/${APP_NAME}.app"
 
-echo "== Building wheel (includes console frontend) =="
-# Skip wheel_build if dist already has a wheel for current version
-VERSION_FILE="${REPO_ROOT}/src/minions/__version__.py"
+echo "== Building workspace wheels (includes console frontend) =="
+VERSION_FILE="${REPO_ROOT}/packages/minions-core/src/minions/__version__.py"
 CURRENT_VERSION=""
 if [[ -f "${VERSION_FILE}" ]]; then
   CURRENT_VERSION="$(
@@ -21,23 +20,7 @@ if [[ -f "${VERSION_FILE}" ]]; then
       "${VERSION_FILE}" 2>/dev/null
   )"
 fi
-if [[ -n "${CURRENT_VERSION}" ]]; then
-  shopt -s nullglob
-  whls=("${REPO_ROOT}/dist/minions-${CURRENT_VERSION}-"*.whl)
-  if [[ ${#whls[@]} -gt 0 ]]; then
-    echo "dist/ already has wheel for version ${CURRENT_VERSION}, skipping."
-  else
-    # Clean up old wheels to avoid confusion
-    old_whls=("${REPO_ROOT}/dist/minions-"*.whl)
-    if [[ ${#old_whls[@]} -gt 0 ]]; then
-      echo "Removing old wheel files: ${old_whls[*]}"
-      rm -f "${old_whls[@]}"
-    fi
-    bash scripts/wheel_build.sh
-  fi
-else
-  bash scripts/wheel_build.sh
-fi
+bash scripts/wheel_build.sh
 
 echo "== Building conda-packed env =="
 python "${PACK_DIR}/build_common.py" --output "$ARCHIVE" --format tar.gz

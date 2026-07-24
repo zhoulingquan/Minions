@@ -1,0 +1,14 @@
+packages/minions-core
+packages/minions-tool-calls
+packages/minions-runtime
+packages/minions-providers
+packages/minions-drivers
+packages/minions-channels
+packages/minions-plugins
+packages/minions-governance
+packages/minions-loop
+packages/minions-modes
+packages/minions-agents
+packages/minions-app
+packages/minions-cli
+.

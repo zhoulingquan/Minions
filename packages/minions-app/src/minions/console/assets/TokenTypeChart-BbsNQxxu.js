@@ -1,0 +1,1 @@
+import{j as r}from"./react-vendor-Dc5dhXQW.js";import{s as t}from"./index.module-DzgcWBTa.js";import{C as a,aU as e}from"./ui-vendor-cRM-fG_K.js";import"./utils-vendor-ICSMezrC.js";function l({chartConfig:s}){return s?r.jsx(a,{className:t.chartCard,title:r.jsx("span",{className:t.chartTitle,children:"Token 类型趋势"}),children:r.jsx(e,{...s})}):null}export{l as TokenTypeChart};

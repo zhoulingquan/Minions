@@ -24,8 +24,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 # Import BaseChannel directly for internal logic testing
-from minions.app.channels.base import BaseChannel, ProcessHandler
-from minions.app.channels.console.channel import ConsoleChannel
+from minions.channels.base import BaseChannel, ProcessHandler
+from minions.channels.console.channel import ConsoleChannel
 
 
 # =============================================================================

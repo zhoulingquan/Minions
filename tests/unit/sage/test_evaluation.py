@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Tests for feedback signals and bounded SAGE utility learning."""
 
 from uuid import uuid4
@@ -33,13 +34,19 @@ def _principal(*permissions: str, tenant_id=None) -> Principal:
 
 
 @pytest.mark.asyncio
-async def test_feedback_signal_is_idempotent_and_tenant_isolated(tmp_path) -> None:
+async def test_feedback_signal_is_idempotent_and_tenant_isolated(
+    tmp_path,
+) -> None:
     owner = _principal()
     intruder = _principal()
     store = SQLiteSageStore(tmp_path / "sage.db")
     await store.start()
     try:
-        evaluator = EvaluationEngine(store, PolicyCenter(store), SageCatalog(store))
+        evaluator = EvaluationEngine(
+            store,
+            PolicyCenter(store),
+            SageCatalog(store),
+        )
         source_id = uuid4()
         event_id = uuid4()
         first = await evaluator.record_feedback(
@@ -59,7 +66,10 @@ async def test_feedback_signal_is_idempotent_and_tenant_isolated(tmp_path) -> No
 
         assert first.sample_count == 1
         assert repeated.sample_count == 1
-        signals = await store.list_knowledge_signals(owner, source_id=source_id)
+        signals = await store.list_knowledge_signals(
+            owner,
+            source_id=source_id,
+        )
         assert len(signals) == 1
         assert signals[0].kind is SignalKind.FEEDBACK
         assert await store.list_knowledge_signals(intruder) == []
@@ -68,7 +78,9 @@ async def test_feedback_signal_is_idempotent_and_tenant_isolated(tmp_path) -> No
 
 
 @pytest.mark.asyncio
-async def test_shadow_learning_proposes_but_does_not_change_item(tmp_path) -> None:
+async def test_shadow_learning_proposes_but_does_not_change_item(
+    tmp_path,
+) -> None:
     principal = _principal()
     scope = ScopeRef(
         scope_type=ScopeType.USER,
@@ -100,13 +112,17 @@ async def test_shadow_learning_proposes_but_does_not_change_item(tmp_path) -> No
         assert quality is not None
         assert quality.proposed_utility > item.utility
         assert quality.applied_item_id is None
-        assert (await store.get_item(principal, item.item_id)).utility == item.utility
+        assert (
+            await store.get_item(principal, item.item_id)
+        ).utility == item.utility
     finally:
         await store.close()
 
 
 @pytest.mark.asyncio
-async def test_auto_learning_creates_bounded_active_item_version(tmp_path) -> None:
+async def test_auto_learning_creates_bounded_active_item_version(
+    tmp_path,
+) -> None:
     principal = _principal("sage.policy.manage")
     scope = ScopeRef(
         scope_type=ScopeType.USER,

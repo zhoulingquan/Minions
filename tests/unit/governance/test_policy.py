@@ -99,17 +99,21 @@ class TestDefaultPolicyLoad:
 
         # Before save: a workspace Write is ALLOWed by the default rule.
         target = f"{ws}/script.py"
-        assert policy.evaluate(_tc("Write", target)).action is (GovernanceAction.ALLOW)
+        assert policy.evaluate(_tc("Write", target)).action is (
+            GovernanceAction.ALLOW
+        )
 
         save_governance_policy(policy, str(policy_dir), ws)
 
         # After save: the live rules must still be resolved (no literal
         # WORKSPACE_DIR) and evaluate must still ALLOW the workspace write.
         for rule in policy.user_rules:
-            assert "WORKSPACE_DIR" not in rule.match, (
-                f"save_governance_policy mutated live rule: {rule.match!r}"
-            )
-        assert policy.evaluate(_tc("Write", target)).action is (GovernanceAction.ALLOW)
+            assert (
+                "WORKSPACE_DIR" not in rule.match
+            ), f"save_governance_policy mutated live rule: {rule.match!r}"
+        assert policy.evaluate(_tc("Write", target)).action is (
+            GovernanceAction.ALLOW
+        )
 
     def test_existing_policy_receives_web_defaults_only_once(self, tmp_path):
         policy_dir = tmp_path / "policy"
@@ -242,9 +246,9 @@ class TestGovernancePolicyEvaluate:
             )
             tc = _tc(tool_name, target)
             decision = policy.evaluate(tc)
-            assert decision.action == GovernanceAction.ASK, (
-                f"{tool_name}({target!r}) should be ASK, got {decision.action}"
-            )
+            assert (
+                decision.action == GovernanceAction.ASK
+            ), f"{tool_name}({target!r}) should be ASK, got {decision.action}"
 
     def test_env_file_ask(self, policy):
         """Accessing .env files should be ASK from builtin rules."""
@@ -358,9 +362,9 @@ class TestGovernancePolicyEvaluate:
         for target in ssh_targets:
             tc = _tc("Bash", f"cat {target}")
             decision = policy.evaluate(tc)
-            assert decision.action == GovernanceAction.ASK, (
-                f"Bash(cat {target}) should be ASK, got {decision.action}"
-            )
+            assert (
+                decision.action == GovernanceAction.ASK
+            ), f"Bash(cat {target}) should be ASK, got {decision.action}"
 
     def test_aws_dir_ask(self, policy):
         """Accessing .aws directory should be ASK."""
@@ -484,7 +488,9 @@ class TestAddRulePrepend:
         """add_rule(Browser DENY) overrides default Browser(**) ALLOW."""
         # Default policy has Browser(**) → ALLOW in user_rules
         tc_allow = _tc("Browser", "https://example.com")
-        assert governor.assert_policy(tc_allow).action == GovernanceAction.ALLOW
+        assert (
+            governor.assert_policy(tc_allow).action == GovernanceAction.ALLOW
+        )
 
         # Add a DENY rule for a specific site
         governor.add_rule(
@@ -602,24 +608,24 @@ class _FakeModel:
 
 
 def _patch_model(monkeypatch, text: str, delay: float = 0.0) -> None:
-    """Make ``create_model_and_formatter`` return a _FakeModel."""
-    import minions.agents.model_factory as factory
+    """Inject a _FakeModel at governance's model-construction seam."""
+    from minions.governance import generalize as generalize_mod
 
     monkeypatch.setattr(
-        factory,
-        "create_model_and_formatter",
-        lambda *a, **kw: (_FakeModel(text, delay), None),
+        generalize_mod,
+        "_build_model",
+        lambda *a, **kw: _FakeModel(text, delay),
     )
 
 
 def _patch_model_unavailable(monkeypatch) -> None:
     """Make model creation raise — simulates no configured provider."""
-    import minions.agents.model_factory as factory
+    from minions.governance import generalize as generalize_mod
 
     def _raise(*a, **kw):
         raise RuntimeError("no active model")
 
-    monkeypatch.setattr(factory, "create_model_and_formatter", _raise)
+    monkeypatch.setattr(generalize_mod, "_build_model", _raise)
 
 
 class TestGeneralizeRuleMatch:
@@ -630,28 +636,37 @@ class TestGeneralizeRuleMatch:
         from minions.governance.generalize import generalize_rule_match
 
         _patch_model(monkeypatch, "git *")
-        assert await generalize_rule_match("Bash", "git status") == "Bash(git *)"
+        assert (
+            await generalize_rule_match("Bash", "git status") == "Bash(git *)"
+        )
 
     async def test_file_generalizes(self, monkeypatch):
         from minions.governance.generalize import generalize_rule_match
 
         _patch_model(monkeypatch, "/ws/src/**")
         assert (
-            await generalize_rule_match("Read", "/ws/src/foo.py") == "Read(/ws/src/**)"
+            await generalize_rule_match("Read", "/ws/src/foo.py")
+            == "Read(/ws/src/**)"
         )
 
     async def test_unsafe_bare_wildcard_falls_back(self, monkeypatch):
         from minions.governance.generalize import generalize_rule_match
 
         _patch_model(monkeypatch, "*")
-        assert await generalize_rule_match("Bash", "git status") == "Bash(git status)"
+        assert (
+            await generalize_rule_match("Bash", "git status")
+            == "Bash(git status)"
+        )
 
     async def test_anchor_violation_falls_back(self, monkeypatch):
         """A pattern for a different command must not be trusted."""
         from minions.governance.generalize import generalize_rule_match
 
         _patch_model(monkeypatch, "rm *")
-        assert await generalize_rule_match("Bash", "git status") == "Bash(git status)"
+        assert (
+            await generalize_rule_match("Bash", "git status")
+            == "Bash(git status)"
+        )
 
     async def test_destructive_command_not_widened(self, monkeypatch):
         """rm/sudo/etc. stay exact even if the model proposes a glob."""
@@ -677,7 +692,10 @@ class TestGeneralizeRuleMatch:
         from minions.governance.generalize import generalize_rule_match
 
         _patch_model_unavailable(monkeypatch)
-        assert await generalize_rule_match("Bash", "git status") == "Bash(git status)"
+        assert (
+            await generalize_rule_match("Bash", "git status")
+            == "Bash(git status)"
+        )
 
     async def test_timeout_falls_back(self, monkeypatch):
         from minions.governance import generalize as policy_mod
@@ -695,13 +713,13 @@ class TestGeneralizeRuleMatch:
 
         called = {"n": 0}
 
-        import minions.agents.model_factory as factory
+        from minions.governance import generalize as generalize_mod
 
         def _spy(*_args, **_kwargs):
             called["n"] += 1
-            return (_FakeModel("*"), None)
+            return _FakeModel("*")
 
-        monkeypatch.setattr(factory, "create_model_and_formatter", _spy)
+        monkeypatch.setattr(generalize_mod, "_build_model", _spy)
         assert (
             await generalize_rule_match("Browser", "https://example.com/a")
             == "Browser(https://example.com/a)"
@@ -735,14 +753,14 @@ class TestAddApprovedRuleGeneralization:
     async def test_records_generalized_target(self, governor, monkeypatch):
         """A generalized target/pattern supplied by the caller is wrapped
         and persisted as ``ToolName(pattern)``."""
-        import minions.agents.model_factory as factory
+        from minions.governance import generalize as generalize_mod
 
         calls = {"n": 0}
         monkeypatch.setattr(
-            factory,
-            "create_model_and_formatter",
+            generalize_mod,
+            "_build_model",
             lambda *a, **kw: calls.__setitem__("n", calls["n"] + 1)
-            or (_FakeModel("git *"), None),
+            or _FakeModel("git *"),
         )
         added = await governor.add_approved_rule(
             _tc("Bash", "git status"),
@@ -813,14 +831,14 @@ class TestGeneralizeTargetForApproval:
 
         # Even with a model that would generalize, builtin source must
         # return the exact target and skip the LLM.
-        import minions.agents.model_factory as factory
+        from minions.governance import generalize as generalize_mod
 
         calls = {"n": 0}
         monkeypatch.setattr(
-            factory,
-            "create_model_and_formatter",
+            generalize_mod,
+            "_build_model",
             lambda *a, **kw: calls.__setitem__("n", calls["n"] + 1)
-            or (_FakeModel("*"), None),
+            or _FakeModel("*"),
         )
         result = await generalize_target_for_approval(
             "Read",

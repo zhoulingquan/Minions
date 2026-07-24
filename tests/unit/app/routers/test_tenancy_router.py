@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 from fastapi import FastAPI, Request
@@ -78,7 +79,10 @@ def test_owner_can_provision_a_space_through_the_http_contract(
     spaces_client = _client(monkeypatch, tenancy_service, selected)
     spaces = spaces_client.get("/api/tenancy/spaces")
     assert spaces.status_code == 200
-    assert {item["slug"] for item in spaces.json()["items"]} == {"acme", "beta"}
+    assert {item["slug"] for item in spaces.json()["items"]} == {
+        "acme",
+        "beta",
+    }
 
 
 def test_non_owner_cannot_provision_a_space(monkeypatch, tenancy_service):

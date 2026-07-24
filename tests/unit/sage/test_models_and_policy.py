@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Domain and policy tests for the SAGE subsystem."""
 
 from datetime import datetime, timezone

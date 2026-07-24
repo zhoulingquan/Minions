@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """End-to-end tests for the SAGE runtime facade."""
 
 from uuid import uuid4
@@ -155,7 +156,9 @@ async def test_runtime_rejects_turn_identity_substitution(tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_prepare_for_turn_persists_recall_receipt_trace(tmp_path) -> None:
+async def test_prepare_for_turn_persists_recall_receipt_trace(
+    tmp_path,
+) -> None:
     principal = _principal()
     runtime = SageRuntime(SQLiteSageStore(tmp_path / "sage.db"))
     await runtime.start()
@@ -183,7 +186,9 @@ async def test_prepare_for_turn_persists_recall_receipt_trace(tmp_path) -> None:
             principal,
             case_id=turn.case_id,
         )
-        recall = next(trace for trace in traces if trace.trace_type is TraceType.RECALL)
+        recall = next(
+            trace for trace in traces if trace.trace_type is TraceType.RECALL
+        )
         assert pack.receipt is not None
         assert recall.payload["receipt"]["receipt_id"] == str(
             pack.receipt.receipt_id,
@@ -212,7 +217,11 @@ async def test_feedback_is_recorded_against_recall_receipt(tmp_path) -> None:
             scope=_scope(principal),
             user_input="When was the policy updated?",
         )
-        pack = await runtime.prepare_for_turn(principal, turn, "policy updated")
+        pack = await runtime.prepare_for_turn(
+            principal,
+            turn,
+            "policy updated",
+        )
         receipt_id = pack.receipt.receipt_id
         source_id = item.item_id
         feedback = await runtime.feedback(
@@ -317,7 +326,11 @@ async def test_pending_completion_bundle_rolls_back_as_one_unit(
         def fail_job_write(_job):
             raise RuntimeError("simulated outbox failure")
 
-        monkeypatch.setattr(runtime.store, "_growth_job_values", fail_job_write)
+        monkeypatch.setattr(
+            runtime.store,
+            "_growth_job_values",
+            fail_job_write,
+        )
         with pytest.raises(RuntimeError, match="outbox failure"):
             await runtime.complete_turn_for_review(
                 principal,

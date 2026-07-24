@@ -2,26 +2,50 @@
 """Contracts for the explicit, side-effect-free Minions bootstrap."""
 from __future__ import annotations
 
-from contextlib import contextmanager
 import importlib
 import json
+import logging
 import os
 from pathlib import Path
 import subprocess
 import sys
 import threading
 
-import pytest
-
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-SRC_ROOT = REPO_ROOT / "src"
+COMPONENT_SOURCE_ROOTS = tuple(
+    REPO_ROOT / "packages" / distribution / "src"
+    for distribution in (
+        "minions-core",
+        "minions-runtime",
+        "minions-providers",
+        "minions-tool-calls",
+        "minions-drivers",
+        "minions-channels",
+        "minions-plugins",
+        "minions-loop",
+        "minions-governance",
+        "minions-modes",
+        "minions-agents",
+        "minions-app",
+        "minions-cli",
+    )
+)
+CORE_ROOT = COMPONENT_SOURCE_ROOTS[0] / "minions"
+AGENTS_ROOT = COMPONENT_SOURCE_ROOTS[10] / "minions"
+APP_ROOT = COMPONENT_SOURCE_ROOTS[11] / "minions"
+CLI_ROOT = COMPONENT_SOURCE_ROOTS[12] / "minions"
 
 
-def _run_isolated_python(code: str, *, env: dict[str, str]) -> None:
+def _run_isolated_python(
+    code: str,
+    *,
+    env: dict[str, str],
+    cwd: Path | None = None,
+) -> None:
     result = subprocess.run(
         [sys.executable, "-c", code],
-        cwd=REPO_ROOT,
+        cwd=cwd or REPO_ROOT,
         env=env,
         capture_output=True,
         text=True,
@@ -35,54 +59,156 @@ def _run_isolated_python(code: str, *, env: dict[str, str]) -> None:
 
 def _isolated_env(tmp_path: Path) -> dict[str, str]:
     env = os.environ.copy()
-    env["PYTHONPATH"] = str(SRC_ROOT)
+    env["PYTHONPATH"] = os.pathsep.join(
+        str(path) for path in COMPONENT_SOURCE_ROOTS
+    )
     env["MINIONS_WORKING_DIR"] = str(tmp_path / "working")
     env["MINIONS_SECRET_DIR"] = str(tmp_path / "secrets")
+    env["MINIONS_DISABLE_KEYRING"] = "1"
+    for name in (
+        "MINIONS_CWD_BOOTSTRAP_PROBE",
+        "MINIONS_EXPLICIT_BOOTSTRAP_PROBE",
+        "MINIONS_NAMESPACE_IMPORT_PROBE",
+        "MINIONS_OPENAPI_DOCS",
+    ):
+        env.pop(name, None)
     return env
 
 
 def _reload_bootstrap_module():
-    module = importlib.import_module("minions.bootstrap")
+    module = importlib.import_module("minions.core.bootstrap")
     return importlib.reload(module)
 
 
-def test_importing_namespace_does_not_configure_logging(tmp_path: Path) -> None:
-    code = """
-import logging
-
-root = logging.getLogger()
-project = logging.getLogger("minions")
-before = (root.level, tuple(root.handlers), project.level,
-          tuple(project.handlers), project.propagate)
-import minions
-after = (root.level, tuple(root.handlers), project.level,
-         tuple(project.handlers), project.propagate)
-assert after == before, (before, after)
-"""
-    _run_isolated_python(code, env=_isolated_env(tmp_path))
-
-
-def test_importing_namespace_does_not_load_persisted_env(
+def test_importing_namespace_has_no_logging_or_env_side_effects(
     tmp_path: Path,
 ) -> None:
     env = _isolated_env(tmp_path)
     secret_dir = Path(env["MINIONS_SECRET_DIR"])
     secret_dir.mkdir(parents=True)
-    (secret_dir / "envs.json").write_text(
-        json.dumps({"MINIONS_NAMESPACE_IMPORT_PROBE": ""}),
+    env_file = secret_dir / "envs.json"
+    env_file.write_text(
+        json.dumps({"MINIONS_NAMESPACE_IMPORT_PROBE": "loaded"}),
         encoding="utf-8",
     )
-    env.pop("MINIONS_NAMESPACE_IMPORT_PROBE", None)
 
     code = """
+import logging
 import os
+from pathlib import Path
+
+root = logging.getLogger()
+project = logging.getLogger("minions")
+before_logging = (
+    root.level,
+    tuple(root.handlers),
+    project.level,
+    tuple(project.handlers),
+    project.propagate,
+)
+secret_dir = Path(os.environ["MINIONS_SECRET_DIR"])
+before_files = tuple(sorted(path.name for path in secret_dir.iterdir()))
+
 import minions
+
+after_logging = (
+    root.level,
+    tuple(root.handlers),
+    project.level,
+    tuple(project.handlers),
+    project.propagate,
+)
+after_files = tuple(sorted(path.name for path in secret_dir.iterdir()))
+assert after_logging == before_logging
+assert after_files == before_files
 assert "MINIONS_NAMESPACE_IMPORT_PROBE" not in os.environ
 """
     _run_isolated_python(code, env=env)
 
 
-def test_bootstrap_loads_env_before_constant_import(tmp_path: Path) -> None:
+def test_importing_bootstrap_does_not_import_env_backed_modules(
+    tmp_path: Path,
+) -> None:
+    code = """
+import sys
+from minions.core import bootstrap
+
+assert "minions.constant" not in sys.modules
+assert "minions.envs.store" not in sys.modules
+assert "minions.core.paths" not in sys.modules
+assert bootstrap is not None
+"""
+    _run_isolated_python(code, env=_isolated_env(tmp_path))
+
+
+def test_initialize_environment_loads_cwd_dotenv_before_constants(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / ".env").write_text(
+        "MINIONS_CWD_BOOTSTRAP_PROBE=from-cwd\n" "MINIONS_OPENAPI_DOCS=true\n",
+        encoding="utf-8",
+    )
+    code = """
+import os
+from pathlib import Path
+from minions.core.bootstrap import initialize_environment
+
+status = initialize_environment()
+from minions.constant import DOCS_ENABLED
+
+assert status.initialized is True
+assert status.persisted_env_loaded is True
+assert status.env_file == (Path.cwd() / ".env").resolve()
+assert status.error is None
+assert os.environ["MINIONS_CWD_BOOTSTRAP_PROBE"] == "from-cwd"
+assert DOCS_ENABLED is True
+"""
+    _run_isolated_python(
+        code,
+        env=_isolated_env(tmp_path),
+        cwd=tmp_path,
+    )
+
+
+def test_initialize_environment_loads_explicit_dotenv(
+    tmp_path: Path,
+) -> None:
+    env_file = tmp_path / "settings" / "minions.env"
+    env_file.parent.mkdir()
+    env_file.write_text(
+        "MINIONS_EXPLICIT_BOOTSTRAP_PROBE=explicit\n",
+        encoding="utf-8",
+    )
+    other_cwd = tmp_path / "cwd"
+    other_cwd.mkdir()
+    code = f"""
+import os
+from pathlib import Path
+from minions.core.bootstrap import initialize_environment
+
+expected = Path({str(env_file)!r}).resolve()
+status = initialize_environment(expected)
+assert status.env_file == expected
+assert os.environ["MINIONS_EXPLICIT_BOOTSTRAP_PROBE"] == "explicit"
+"""
+    _run_isolated_python(
+        code,
+        env=_isolated_env(tmp_path),
+        cwd=other_cwd,
+    )
+
+
+def test_constant_has_no_repository_relative_dotenv_loading() -> None:
+    source = (CORE_ROOT / "constant.py").read_text(
+        encoding="utf-8",
+    )
+    assert "load_dotenv" not in source
+    assert "_env_path" not in source
+
+
+def test_persisted_env_is_loaded_before_constant_import(
+    tmp_path: Path,
+) -> None:
     env = _isolated_env(tmp_path)
     secret_dir = Path(env["MINIONS_SECRET_DIR"])
     secret_dir.mkdir(parents=True)
@@ -90,359 +216,207 @@ def test_bootstrap_loads_env_before_constant_import(tmp_path: Path) -> None:
         json.dumps({"MINIONS_OPENAPI_DOCS": "true"}),
         encoding="utf-8",
     )
-    env.pop("MINIONS_OPENAPI_DOCS", None)
-    env["MINIONS_DISABLE_KEYRING"] = "1"
-
     code = """
 import os
-from minions.bootstrap import bootstrap_minions
+from minions.core.bootstrap import initialize_environment
 
-bootstrap_minions()
+status = initialize_environment()
 from minions.constant import DOCS_ENABLED
 
+assert status.persisted_env_loaded is True
 assert os.environ["MINIONS_OPENAPI_DOCS"] == "true"
 assert DOCS_ENABLED is True
 """
     _run_isolated_python(code, env=env)
 
 
-def test_protected_bootstrap_paths_remain_frozen(tmp_path: Path) -> None:
-    env = _isolated_env(tmp_path)
-    code = """
-from contextlib import nullcontext
-import os
-from pathlib import Path
+def test_persisted_env_failure_warns_and_returns_status(
+    monkeypatch,
+    caplog,
+) -> None:
+    bootstrap = _reload_bootstrap_module()
+    calls: list[str] = []
 
-from minions._bootstrap_paths import (
-    get_bootstrap_secret_dir,
-    get_bootstrap_working_dir,
-)
+    def load_environment_file(_path) -> None:
+        calls.append("dotenv")
 
-working_dir = get_bootstrap_working_dir()
-secret_dir = get_bootstrap_secret_dir()
-os.environ["MINIONS_WORKING_DIR"] = str(working_dir.parent / "changed")
-os.environ["MINIONS_SECRET_DIR"] = str(secret_dir.parent / "changed-secret")
+    monkeypatch.setattr(
+        bootstrap,
+        "_load_environment_file",
+        load_environment_file,
+    )
 
-assert get_bootstrap_working_dir() == working_dir
-assert get_bootstrap_secret_dir() == secret_dir
+    def fail_persisted_env() -> None:
+        calls.append("persisted")
+        raise RuntimeError("persisted env unavailable")
 
-from minions.app import bootstrap_env
-from minions.backup._utils import safe_swap
-from minions.envs import store as env_store
-from minions.security import secret_store
+    monkeypatch.setattr(
+        bootstrap,
+        "_load_persisted_environment",
+        fail_persisted_env,
+    )
+    monkeypatch.setattr(
+        bootstrap,
+        "_initialize_logging",
+        lambda: calls.append("logging"),
+    )
 
-assert env_store.get_envs_json_path() == secret_dir / "envs.json"
-assert secret_store._get_secret_dir() == secret_dir
+    with caplog.at_level(logging.WARNING):
+        status = bootstrap.initialize_environment()
 
-with safe_swap.restore_process_lock():
-    pass
-assert (working_dir / ".minions_restore.lock").exists()
-assert not (
-    Path(os.environ["MINIONS_WORKING_DIR"]) / ".minions_restore.lock"
-).exists()
-
-cleaned = []
-safe_swap.restore_process_lock = lambda: nullcontext()
-safe_swap.cleanup_stale_restore_artifacts = cleaned.append
-env_store.load_envs_into_environ = lambda: {}
-assert bootstrap_env.load_bootstrap_env() == {}
-assert cleaned == [secret_dir]
-"""
-    _run_isolated_python(code, env=env)
+    assert status.initialized is True
+    assert status.persisted_env_loaded is False
+    assert status.error == "persisted env unavailable"
+    assert "persisted env unavailable" in caplog.text
+    assert calls == ["dotenv", "persisted", "logging"]
+    assert bootstrap.initialize_environment() == status
+    assert calls == ["dotenv", "persisted", "logging"]
 
 
-def test_keyring_account_identity_uses_frozen_relocation_snapshot(
+def test_initialize_environment_is_thread_safe_and_idempotent(
+    monkeypatch,
+) -> None:
+    bootstrap = _reload_bootstrap_module()
+    entered = threading.Event()
+    release = threading.Event()
+    calls: list[str] = []
+    statuses = []
+
+    def load_environment_file(_path) -> None:
+        calls.append("dotenv")
+
+    monkeypatch.setattr(
+        bootstrap,
+        "_load_environment_file",
+        load_environment_file,
+    )
+
+    def load_persisted() -> None:
+        calls.append("persisted")
+        entered.set()
+        assert release.wait(timeout=5)
+
+    monkeypatch.setattr(
+        bootstrap,
+        "_load_persisted_environment",
+        load_persisted,
+    )
+    monkeypatch.setattr(
+        bootstrap,
+        "_initialize_logging",
+        lambda: calls.append("logging"),
+    )
+
+    first = threading.Thread(
+        target=lambda: statuses.append(
+            bootstrap.initialize_environment(),
+        ),
+    )
+    second = threading.Thread(
+        target=lambda: statuses.append(
+            bootstrap.initialize_environment(),
+        ),
+    )
+    first.start()
+    assert entered.wait(timeout=5)
+    second.start()
+    release.set()
+    first.join(timeout=5)
+    second.join(timeout=5)
+
+    assert not first.is_alive()
+    assert not second.is_alive()
+    assert len(statuses) == 2
+    assert statuses[0] == statuses[1]
+    assert calls == ["dotenv", "persisted", "logging"]
+
+
+def test_bootstrap_uses_only_core_owned_restore_orchestration(
     tmp_path: Path,
 ) -> None:
-    env = os.environ.copy()
-    env["PYTHONPATH"] = str(SRC_ROOT)
-    for name in (
-        "MINIONS_KEYRING_ACCOUNT",
-        "MINIONS_WORKING_DIR",
-        "MINIONS_SECRET_DIR",
-    ):
-        env.pop(name, None)
-
-    code = f"""
-import os
-from minions.security import secret_store
-
-account = secret_store._keyring_account()
-assert account == "master_key"
-
-os.environ["MINIONS_WORKING_DIR"] = {str(tmp_path / "changed")!r}
-os.environ["MINIONS_SECRET_DIR"] = {str(tmp_path / "changed-secret")!r}
-
-assert secret_store._keyring_account() == account
-"""
-    _run_isolated_python(code, env=env)
-
-
-def test_keyring_account_override_is_frozen(tmp_path: Path) -> None:
-    env = _isolated_env(tmp_path)
-    env["MINIONS_KEYRING_ACCOUNT"] = "initial-account"
     code = """
-import os
-from minions.security import secret_store
+import sys
+from minions.core.bootstrap import initialize_environment
 
-assert secret_store._keyring_account() == "initial-account"
-os.environ["MINIONS_KEYRING_ACCOUNT"] = "changed-account"
-assert secret_store._keyring_account() == "initial-account"
+initialize_environment()
+assert not any(name == "minions.app" or name.startswith("minions.app.")
+               for name in sys.modules)
+assert not any(name == "minions.backup" or name.startswith("minions.backup.")
+               for name in sys.modules)
 """
-    _run_isolated_python(code, env=env)
+    _run_isolated_python(code, env=_isolated_env(tmp_path))
 
 
-def _composition_env(tmp_path: Path) -> dict[str, str]:
+def test_cli_and_app_initialize_before_env_backed_imports() -> None:
+    cli_source = (CLI_ROOT / "cli" / "main.py").read_text(
+        encoding="utf-8",
+    )
+    app_source = (APP_ROOT / "app" / "_app.py").read_text(
+        encoding="utf-8",
+    )
+
+    assert "from ..core.bootstrap import initialize_environment" in cli_source
+    assert cli_source.index("initialize_environment()") < cli_source.index(
+        "from ..config.utils import",
+    )
+    assert "from ..core.bootstrap import initialize_environment" in app_source
+    assert app_source.index("initialize_environment()") < app_source.index(
+        "from fastapi import FastAPI",
+    )
+    assert app_source.index("initialize_environment()") < app_source.index(
+        "FastAPI(",
+    )
+
+
+def test_cli_composition_root_observes_persisted_env(tmp_path: Path) -> None:
     env = _isolated_env(tmp_path)
     secret_dir = Path(env["MINIONS_SECRET_DIR"])
     secret_dir.mkdir(parents=True)
     (secret_dir / "envs.json").write_text(
-        json.dumps(
-            {
-                "MINIONS_COMPOSITION_PROBE": "loaded",
-                "MINIONS_OPENAPI_DOCS": "true",
-            },
-        ),
+        json.dumps({"MINIONS_OPENAPI_DOCS": "true"}),
         encoding="utf-8",
     )
-    env.pop("MINIONS_COMPOSITION_PROBE", None)
-    env.pop("MINIONS_OPENAPI_DOCS", None)
-    env["MINIONS_DISABLE_KEYRING"] = "1"
-    env["MINIONS_LOG_LEVEL"] = "debug"
-    return env
-
-
-def test_cli_composition_root_executes_bootstrap(tmp_path: Path) -> None:
     code = """
-import logging
-import os
-
 import minions.cli.main
 from minions.constant import DOCS_ENABLED
-
-project_logger = logging.getLogger("minions")
-assert os.environ["MINIONS_COMPOSITION_PROBE"] == "loaded"
 assert DOCS_ENABLED is True
-assert project_logger.level == logging.DEBUG
-assert project_logger.handlers
-assert project_logger.propagate is False
-"""
-    _run_isolated_python(code, env=_composition_env(tmp_path))
-
-
-def test_app_composition_root_preserves_project_logger(tmp_path: Path) -> None:
-    code = """
-import logging
-import os
-
-from minions.app import _app
-
-project_logger = logging.getLogger("minions")
-assert os.environ["MINIONS_COMPOSITION_PROBE"] == "loaded"
-assert _app.DOCS_ENABLED is True
-assert _app.app.docs_url == "/docs"
-assert _app.logger is project_logger
-assert _app.logger.level == logging.DEBUG
-assert _app.logger.handlers
-assert _app.logger.propagate is False
-"""
-    _run_isolated_python(code, env=_composition_env(tmp_path))
-
-
-def test_bootstrap_runs_env_then_logging_once(monkeypatch) -> None:
-    bootstrap = _reload_bootstrap_module()
-    bootstrap_env = importlib.import_module("minions.app.bootstrap_env")
-    logging_utils = importlib.import_module("minions.utils.logging")
-    calls: list[str] = []
-
-    monkeypatch.setenv("MINIONS_LOG_LEVEL", "debug")
-    monkeypatch.setattr(
-        bootstrap_env,
-        "load_bootstrap_env",
-        lambda: calls.append("env"),
-    )
-    monkeypatch.setattr(
-        logging_utils,
-        "setup_logger",
-        lambda level: calls.append(f"logging:{level}"),
-    )
-
-    bootstrap.bootstrap_minions()
-    bootstrap.bootstrap_minions()
-
-    assert calls == ["env", "logging:debug"]
-
-
-def test_package_init_timer_starts_after_compat_and_logging_imports(
-    tmp_path: Path,
-) -> None:
-    env = _isolated_env(tmp_path)
-    env["MINIONS_DISABLE_KEYRING"] = "1"
-    code = """
-import sys
-from minions import bootstrap
-
-assert "minions._compat" not in sys.modules
-assert "minions.utils.logging" not in sys.modules
-
-real_perf_counter = bootstrap.time.perf_counter
-observations = []
-
-def observe_import_boundary():
-    observations.append(
-        (
-            "minions._compat" in sys.modules,
-            "minions.utils.logging" in sys.modules,
-        ),
-    )
-    return real_perf_counter()
-
-bootstrap.time.perf_counter = observe_import_boundary
-bootstrap.bootstrap_minions()
-
-assert observations
-assert all(compat and logging for compat, logging in observations)
 """
     _run_isolated_python(code, env=env)
 
 
-def test_bootstrap_failure_propagates_and_remains_retryable(monkeypatch) -> None:
-    bootstrap = _reload_bootstrap_module()
-    bootstrap_env = importlib.import_module("minions.app.bootstrap_env")
-    logging_utils = importlib.import_module("minions.utils.logging")
-    calls: list[str] = []
+def test_app_is_a_real_package_without_eager_app_construction(
+    tmp_path: Path,
+) -> None:
+    code = """
+import sys
+import minions.app
 
-    def load_env() -> None:
-        calls.append("env")
-        if calls.count("env") == 1:
-            raise RuntimeError("bootstrap failed")
+assert minions.app.__file__ is not None
+assert "minions.app._app" not in sys.modules
+"""
+    _run_isolated_python(code, env=_isolated_env(tmp_path))
+    assert (APP_ROOT / "app" / "__init__.py").is_file()
 
-    monkeypatch.setattr(bootstrap_env, "load_bootstrap_env", load_env)
-    monkeypatch.setattr(
-        logging_utils,
-        "setup_logger",
-        lambda _level: calls.append("logging"),
+
+def test_agents_owns_compatibility_shim() -> None:
+    assert not any(
+        (root / "minions" / "_compat").exists()
+        for root in COMPONENT_SOURCE_ROOTS
     )
-
-    with pytest.raises(RuntimeError, match="bootstrap failed"):
-        bootstrap.bootstrap_minions()
-
-    bootstrap.bootstrap_minions()
-    bootstrap.bootstrap_minions()
-    assert calls == ["env", "env", "logging"]
-
-
-def test_waiting_bootstrap_caller_retries_after_failure(monkeypatch) -> None:
-    bootstrap = _reload_bootstrap_module()
-    bootstrap_env = importlib.import_module("minions.app.bootstrap_env")
-    logging_utils = importlib.import_module("minions.utils.logging")
-    first_entered = threading.Event()
-    release_first = threading.Event()
-    waiter_started = threading.Event()
-    calls: list[str] = []
-    errors: list[Exception] = []
-
-    def load_env() -> None:
-        calls.append("env")
-        if calls.count("env") == 1:
-            first_entered.set()
-            assert release_first.wait(timeout=5)
-            raise RuntimeError("first caller failed")
-
-    monkeypatch.setattr(bootstrap_env, "load_bootstrap_env", load_env)
-    monkeypatch.setattr(
-        logging_utils,
-        "setup_logger",
-        lambda _level: calls.append("logging"),
-    )
-
-    def call_bootstrap(*, waiter: bool = False) -> None:
-        if waiter:
-            waiter_started.set()
-        try:
-            bootstrap.bootstrap_minions()
-        except Exception as exc:  # expected from the first caller only
-            errors.append(exc)
-
-    first = threading.Thread(target=call_bootstrap)
-    waiter = threading.Thread(
-        target=call_bootstrap,
-        kwargs={"waiter": True},
-    )
-    first.start()
-    assert first_entered.wait(timeout=5)
-    waiter.start()
-    assert waiter_started.wait(timeout=5)
-    release_first.set()
-    first.join(timeout=5)
-    waiter.join(timeout=5)
-
-    assert not first.is_alive()
-    assert not waiter.is_alive()
-    assert len(errors) == 1
-    assert isinstance(errors[0], RuntimeError)
-    assert calls == ["env", "env", "logging"]
-
-    bootstrap.bootstrap_minions()
-    assert calls == ["env", "env", "logging"]
-
-
-def test_application_bootstrap_owns_restore_cleanup(monkeypatch) -> None:
-    bootstrap_env = importlib.import_module("minions.app.bootstrap_env")
-    safe_swap = importlib.import_module("minions.backup._utils.safe_swap")
-    env_store = importlib.import_module("minions.envs.store")
-    calls: list[str] = []
-
-    @contextmanager
-    def process_lock():
-        calls.append("lock-enter")
-        yield
-        calls.append("lock-exit")
-
-    monkeypatch.setattr(safe_swap, "restore_process_lock", process_lock)
-    monkeypatch.setattr(
-        safe_swap,
-        "cleanup_stale_restore_artifacts",
-        lambda _path: calls.append("cleanup"),
-    )
-    monkeypatch.setattr(
-        env_store,
-        "load_envs_into_environ",
-        lambda: calls.append("load") or {"persisted": "value"},
-    )
-
-    assert bootstrap_env.load_bootstrap_env() == {"persisted": "value"}
-    assert calls == ["lock-enter", "cleanup", "load", "lock-exit"]
-
-
-def test_namespace_roots_and_env_store_have_no_legacy_bootstrap() -> None:
-    assert not (SRC_ROOT / "minions" / "__init__.py").exists()
-    assert not (SRC_ROOT / "minions" / "app" / "__init__.py").exists()
-    store_source = (SRC_ROOT / "minions" / "envs" / "store.py").read_text(
+    assert (AGENTS_ROOT / "agents" / "_compat" / "__init__.py").is_file()
+    agents_source = (AGENTS_ROOT / "agents" / "__init__.py").read_text(
         encoding="utf-8",
     )
-    assert "minions.backup" not in store_source
+    assert "from . import _compat" in agents_source
 
 
-def test_composition_roots_bootstrap_before_env_backed_imports() -> None:
-    cli_source = (SRC_ROOT / "minions" / "cli" / "main.py").read_text(
-        encoding="utf-8",
+def test_transitional_bootstrap_modules_are_removed() -> None:
+    assert not any(
+        (root / "minions" / "bootstrap.py").exists()
+        for root in COMPONENT_SOURCE_ROOTS
     )
-    app_source = (SRC_ROOT / "minions" / "app" / "_app.py").read_text(
-        encoding="utf-8",
+    assert not any(
+        (root / "minions" / "_bootstrap_paths.py").exists()
+        for root in COMPONENT_SOURCE_ROOTS
     )
-
-    assert cli_source.index("bootstrap_minions()") < cli_source.index(
-        "from ..config.utils import",
-    )
-    assert app_source.index("bootstrap_minions()") < app_source.index(
-        "from ..config import",
-    )
-
-    assert "load_envs_into_environ" not in app_source
-    assert app_source.count("setup_logger") == 0
-
-
-def test_lazy_backup_exports_remain_discoverable() -> None:
-    backup = importlib.import_module("minions.backup")
-    assert set(backup.__all__).issubset(dir(backup))
+    assert not (APP_ROOT / "app" / "bootstrap_env.py").exists()

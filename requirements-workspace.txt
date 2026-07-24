@@ -1,0 +1,14 @@
+-e packages/minions-core
+-e packages/minions-tool-calls
+-e packages/minions-runtime
+-e packages/minions-providers
+-e packages/minions-drivers
+-e packages/minions-channels
+-e packages/minions-plugins
+-e packages/minions-governance
+-e packages/minions-loop
+-e packages/minions-modes
+-e packages/minions-agents
+-e packages/minions-app
+-e packages/minions-cli
+-e .[dev,test,full]

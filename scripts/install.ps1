@@ -221,7 +221,7 @@ function Prepare-Console {
     param([string]$RepoDir)
 
     $consoleSrc  = Join-Path $RepoDir "console\dist"
-    $consoleDest = Join-Path $RepoDir "src\minions\console"
+    $consoleDest = Join-Path $RepoDir "packages\minions-app\src\minions\console"
 
     # Already populated
     if (Test-Path (Join-Path $consoleDest "index.html")) { $script:ConsoleAvailable = $true; return }
@@ -275,10 +275,30 @@ function Prepare-Console {
 function Cleanup-Console {
     param([string]$RepoDir)
     if ($script:ConsoleCopied) {
-        $consoleDest = Join-Path $RepoDir "src\minions\console"
+        $consoleDest = Join-Path $RepoDir "packages\minions-app\src\minions\console"
         if (Test-Path $consoleDest) {
             Remove-Item -Path "$consoleDest\*" -Recurse -Force -ErrorAction SilentlyContinue
         }
+    }
+}
+
+function Install-WorkspaceSource {
+    param([string]$RepoDir)
+
+    $requirements = Join-Path $RepoDir "requirements-workspace-install.txt"
+    if (-not (Test-Path $requirements)) {
+        Stop-WithError "Workspace requirements not found: $requirements"
+    }
+    Push-Location $RepoDir
+    try {
+        uv pip install --no-sources -r requirements-workspace-install.txt --python $VenvPython
+        if ($LASTEXITCODE -ne 0) { Stop-WithError "Workspace installation failed" }
+        if ($ExtrasSuffix) {
+            uv pip install --no-sources ".${ExtrasSuffix}" --python $VenvPython
+            if ($LASTEXITCODE -ne 0) { Stop-WithError "Workspace extras installation failed" }
+        }
+    } finally {
+        Pop-Location
     }
 }
 
@@ -290,8 +310,7 @@ if ($FromSource) {
         Write-Info "Installing Minions from local source: $SourceDir"
         Prepare-Console $SourceDir
         Write-Info "Installing package from source..."
-        uv pip install "${SourceDir}${ExtrasSuffix}" --python $VenvPython
-        if ($LASTEXITCODE -ne 0) { Stop-WithError "Installation from source failed" }
+        Install-WorkspaceSource $SourceDir
         Cleanup-Console $SourceDir
     } else {
         if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
@@ -304,8 +323,7 @@ if ($FromSource) {
             if ($LASTEXITCODE -ne 0) { Stop-WithError "Failed to clone repository" }
             Prepare-Console $cloneDir
             Write-Info "Installing package from source..."
-            uv pip install "${cloneDir}${ExtrasSuffix}" --python $VenvPython
-            if ($LASTEXITCODE -ne 0) { Stop-WithError "Installation from source failed" }
+            Install-WorkspaceSource $cloneDir
         } finally {
             if (Test-Path $cloneDir) {
                 Remove-Item -Path $cloneDir -Recurse -Force -ErrorAction SilentlyContinue

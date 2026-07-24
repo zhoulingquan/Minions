@@ -9,7 +9,7 @@ from minions.config.config import (
     LightContextConfig,
     ToolResultPruningConfig,
 )
-from minions.runtime.builder import AgentBuilder
+from minions.agents.runtime_builder import AgentBuilder
 from minions.tool_calls import ToolCoordinator, ToolCoordinatorMiddleware
 
 

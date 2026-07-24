@@ -222,9 +222,9 @@ def test_promotion_without_rollout_does_not_trigger_later_auto_update(
     global_dir = _register_global_skill(global_root, "demo")
     manifest = store.read_global_skills_manifest()
     manifest["skills"]["demo"]["auto_update"] = True
-    manifest["skills"]["demo"]["auto_update_synced_hash"] = (
-        store.compute_skill_content_hash(global_dir)
-    )
+    manifest["skills"]["demo"][
+        "auto_update_synced_hash"
+    ] = store.compute_skill_content_hash(global_dir)
     store.write_json_atomic(store.get_global_skill_manifest_path(), manifest)
 
     service = global_service.GlobalSkillService()

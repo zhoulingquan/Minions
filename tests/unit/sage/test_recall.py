@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Tests for bounded, scoped SAGE retrieval."""
 
 from datetime import timedelta
@@ -35,7 +36,9 @@ def _principal(*permissions: str) -> Principal:
 
 
 @pytest.mark.asyncio
-async def test_recall_returns_only_active_unexpired_current_tenant_items(tmp_path) -> None:
+async def test_recall_returns_only_active_unexpired_current_tenant_items(
+    tmp_path,
+) -> None:
     principal = _principal()
     foreign = _principal()
     store = SQLiteSageStore(tmp_path / "sage.db")
@@ -142,7 +145,9 @@ async def test_recall_prefers_more_specific_scope(tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_recall_includes_only_active_playbooks_and_source_links(tmp_path) -> None:
+async def test_recall_includes_only_active_playbooks_and_source_links(
+    tmp_path,
+) -> None:
     principal = _principal()
     scope = ScopeRef(
         scope_type=ScopeType.AGENT,
@@ -168,7 +173,10 @@ async def test_recall_includes_only_active_playbooks_and_source_links(tmp_path) 
         await store.save_playbook(principal, active)
         await store.save_playbook(principal, draft)
 
-        pack = await RecallPlanner(store).prepare(principal, "Vendor onboarding")
+        pack = await RecallPlanner(store).prepare(
+            principal,
+            "Vendor onboarding",
+        )
         assert [playbook.playbook_id for playbook in pack.playbooks] == [
             active.playbook_id,
         ]
@@ -210,7 +218,9 @@ async def test_recall_respects_token_budget(tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_recall_always_loads_anchors_and_separates_warnings(tmp_path) -> None:
+async def test_recall_always_loads_anchors_and_separates_warnings(
+    tmp_path,
+) -> None:
     principal = _principal()
     store = SQLiteSageStore(tmp_path / "sage.db")
     await store.start()
@@ -241,14 +251,18 @@ async def test_recall_always_loads_anchors_and_separates_warnings(tmp_path) -> N
 
         assert [item.item_id for item in pack.anchors] == [anchor.item_id]
         assert [item.item_id for item in pack.warnings] == [warning.item_id]
-        assert warning.item_id not in [item.item_id for item in pack.known_facts]
+        assert warning.item_id not in [
+            item.item_id for item in pack.known_facts
+        ]
         assert pack.source_ids[0] == anchor.item_id
     finally:
         await store.close()
 
 
 @pytest.mark.asyncio
-async def test_recall_uses_independent_section_budgets_and_emits_receipt(tmp_path) -> None:
+async def test_recall_uses_independent_section_budgets_and_emits_receipt(
+    tmp_path,
+) -> None:
     principal = _principal()
     store = SQLiteSageStore(tmp_path / "sage.db")
     await store.start()
@@ -302,7 +316,9 @@ async def test_recall_uses_independent_section_budgets_and_emits_receipt(tmp_pat
 
 
 @pytest.mark.asyncio
-async def test_hybrid_recall_finds_entity_match_without_lexical_match(tmp_path) -> None:
+async def test_hybrid_recall_finds_entity_match_without_lexical_match(
+    tmp_path,
+) -> None:
     principal = _principal()
     store = SQLiteSageStore(tmp_path / "sage.db")
     await store.start()
@@ -339,7 +355,9 @@ async def test_hybrid_recall_finds_entity_match_without_lexical_match(tmp_path) 
 
 
 @pytest.mark.asyncio
-async def test_shadow_recall_records_new_ranking_without_applying_it(tmp_path) -> None:
+async def test_shadow_recall_records_new_ranking_without_applying_it(
+    tmp_path,
+) -> None:
     principal = _principal()
     store = SQLiteSageStore(tmp_path / "sage.db")
     await store.start()

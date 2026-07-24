@@ -1,0 +1,1 @@
+import{j as s}from"./react-vendor-Dc5dhXQW.js";import{s as t}from"./index.module-DEcI9prf.js";function m({className:e}){return s.jsxs("div",{className:`${t.emptyState} ${e||""}`,children:[s.jsx("span",{className:t.emptyIcon,children:"📦"}),s.jsx("span",{children:"尚未配置环境变量。"})]})}export{m as EmptyState};
