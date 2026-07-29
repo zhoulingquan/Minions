@@ -101,7 +101,7 @@ Minions 支持多种提供商：包括云提供商（如 DashScope、ModelScope�
 1. （强制）原生兼容 OpenAI `chat.completions` API 或 Anthropic `messages` API，如不满足该条件，请先创建 issue 讨论，直接添加一个不兼容的提供商会大幅增加维护成本。
 2. （推荐）支持 `/model/list` 端点以自动获取模型列表，虽然不强制，但这会大大提升用户体验。
 
-确定满足上述条件后，可以在 `src/minions/providers/provider_manager.py` 中创建新的 Provider 实例并在 `ProviderManager` 类中注册，使其成为 Minions 内置的提供商。
+确定满足上述条件后，可以在 `packages/minions-providers/src/minions/providers/provider_manager.py` 中创建新的 Provider 实例并在 `ProviderManager` 类中注册，使其成为 Minions 内置的提供商。
 
 如果想要将新的提供商作为内置提供商贡献，请在 PR 中提供以下内容：
 
@@ -116,11 +116,11 @@ Minions 支持多种提供商：包括云提供商（如 DashScope、ModelScope�
 频道是 Minions 与**钉钉、飞书、QQ、企业微信、微信、腾讯元宝**等通信的方式（也可通过插件系统接入自定义频道）。你可以添加新频道，以便 Minions 可以与你喜欢的 IM 或机器人平台配合使用。
 
 - **协议：** 所有频道使用统一的进程内契约：**原生 payload → `content_parts`**（如 `TextContent`、`ImageContent`、`FileContent`）。agent 接收带有这些内容部分的 `AgentRequest`；回复通过频道的发送路径返回。
-- **实现：** 实现 **`BaseChannel` 的子类**（在 `src/minions/app/channels/base.py` 中）：
+- **实现：** 实现 **`BaseChannel` 的子类**（在 `packages/minions-app/src/minions/app/channels/base.py` 中）：
   - 将类属性 `channel` 设置为唯一的频道键（如 `"dingtalk"`）。
   - 实现生命周期和消息处理（如 receive → `content_parts` → `process` → send response）。
   - 如果频道是长期运行的（默认），使用 manager 的队列和消费者循环。
-- **发现：** 内置频道在 `src/minions/app/channels/registry.py` 中注册。**自定义频道**通过插件系统注册 — 创建 `type: "channel"` 的插件，在 `register()` 方法中调用 `api.register_channel(...)`。完整示例请参阅[插件系统文档](website/public/docs/plugins.zh.md)。
+- **发现：** 内置频道在 `packages/minions-app/src/minions/app/channels/registry.py` 中注册。**自定义频道**通过插件系统注册 — 创建 `type: "channel"` 的插件，在 `register()` 方法中调用 `api.register_channel(...)`。完整示例请参阅[插件系统文档](website/public/docs/plugins.zh.md)。
 - **CLI：** `minions channels config` — 交互式配置；`minions channels list` — 查看状态。
 
 如果你贡献**新的内置频道**，将其添加到注册表，如有需要，添加配置器以使其出现在 Console 和 CLI 中。在 `website/public/docs/channels.*.md` 中记录新频道（身份验证、webhooks 等）。
@@ -135,7 +135,7 @@ Minions 支持多种提供商：包括云提供商（如 DashScope、ModelScope�
   - **`SKILL.md`** — agent 的 Markdown 指令。使用 YAML front matter 至少包含 `name` 和 `description`；可选的 `metadata`（如用于 Console）。
   - **`references/`**（可选）— agent 可以使用的参考文档。
   - **`scripts/`**（可选）— skill 使用的脚本或工具。
-- **位置：** 内置 skills 位于 `src/minions/agents/skills/<skill_name>/` 下。应用程序将内置和用户的 **customized_skills**（来自工作目录）合并到 **active_skills** 中；除了在目录中放置有效的 `SKILL.md` 外，不需要额外的注册。
+- **位置：** 内置 skills 位于 `packages/minions-agents/src/minions/agents/skills/<skill_name>/` 下。应用程序将内置和用户的 **customized_skills**（来自工作目录）合并到 **active_skills** 中；除了在目录中放置有效的 `SKILL.md` 外，不需要额外的注册。
 - **内容：** 编写清晰的、面向任务的指令。描述**何时**应该使用该 skill 以及**如何**使用（步骤、命令、文件格式）。如果针对**基础**仓库，避免过于小众或个人的工作流程；这些作为自定义或社区 Skills 非常好。
 
 #### 编写有效的 Skill Description

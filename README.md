@@ -434,7 +434,7 @@ docker run -p 127.0.0.1:8088:8088 \
 git clone https://github.com/agentscope-ai/Minions.git
 cd Minions
 cd console && npm ci && npm run build && cd ..
-pip install -e .
+pip install -r requirements-workspace-install.txt
 minions init --defaults
 minions app
 ```

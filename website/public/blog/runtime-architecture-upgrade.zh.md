@@ -94,7 +94,7 @@ AppServiceManager（FastAPI lifespan 级，跨 workspace 共享）
 代码中的实际约束：
 
 ```python
-# src/minions/app/app_services/app_service_manager.py
+# packages/minions-app/src/minions/app/app_services/app_service_manager.py
 
 class AppServiceManager:
     __slots__ = (
@@ -112,7 +112,7 @@ class AppServiceManager:
 
 之前的痛点是 runner 是一个 god method。解决方案是把请求处理拆成 **8 个固定阶段**，每个阶段是 hook 的挂载点。
 
-`Runtime` 类（`src/minions/runtime/runtime.py`）是 per-workspace 的请求编排器。每个请求调用 `run()`，通过 8 阶段生命周期产出 SSE 信封对象。
+`Runtime` 类（`packages/minions-runtime/src/minions/runtime/runtime.py`）是 per-workspace 的请求编排器。每个请求调用 `run()`，通过 8 阶段生命周期产出 SSE 信封对象。
 
 ```python
 class Runtime:
@@ -123,7 +123,7 @@ class Runtime:
 
 ### 8 个阶段
 
-定义在 `src/minions/runtime/phases.py` 中：
+定义在 `packages/minions-runtime/src/minions/runtime/phases.py` 中：
 
 ```python
 class Phase(str, Enum):
@@ -161,7 +161,7 @@ class Phase(str, Enum):
 
 ### 三种 Hook 动作
 
-每个 hook 返回 `HookResult`，包含三种动作之一（`src/minions/runtime/hooks.py`）：
+每个 hook 返回 `HookResult`，包含三种动作之一（`packages/minions-runtime/src/minions/runtime/hooks.py`）：
 
 ```python
 class HookAction(str, Enum):
@@ -180,7 +180,7 @@ class HookAction(str, Enum):
 
 ### AgentBuilder — 每个请求的 Agent 组装
 
-`AgentBuilder`（`src/minions/runtime/builder.py`）负责为每个请求构建一个完整的 `MinionsAgent`，它整合了：
+`AgentBuilder`（`packages/minions-runtime/src/minions/runtime/builder.py`）负责为每个请求构建一个完整的 `MinionsAgent`，它整合了：
 
 | 组件              | 来源                                             | 描述                                                     |
 | ----------------- | ------------------------------------------------ | -------------------------------------------------------- |
@@ -195,9 +195,9 @@ class HookAction(str, Enum):
 
 ### AgentExecutor 与 Envelope
 
-`AgentExecutor`（`src/minions/runtime/executor.py`）驱动 agent 的 reply stream，并包装心跳机制——确保在长时间空闲期间（如 tool-guard 审批等待），发出 keep-alive 信封而不是让 SSE 连接断开。
+`AgentExecutor`（`packages/minions-runtime/src/minions/runtime/executor.py`）驱动 agent 的 reply stream，并包装心跳机制——确保在长时间空闲期间（如 tool-guard 审批等待），发出 keep-alive 信封而不是让 SSE 连接断开。
 
-`Envelope`（`src/minions/runtime/envelope.py`）是 SSE 状态机，负责将 agentscope 的 `EventType` 事件翻译为前端的流式信封协议，跟踪每个请求的状态（文本块、推理块、工具调用、数据块）并产出正确的事件序列。
+`Envelope`（`packages/minions-runtime/src/minions/runtime/envelope.py`）是 SSE 状态机，负责将 agentscope 的 `EventType` 事件翻译为前端的流式信封协议，跟踪每个请求的状态（文本块、推理块、工具调用、数据块）并产出正确的事件序列。
 
 ---
 
@@ -220,7 +220,7 @@ class HookAction(str, Enum):
 
 ### HookRegistry — 拓扑排序
 
-`HookRegistry`（`src/minions/runtime/hooks.py`）管理 hook 的注册和执行：
+`HookRegistry`（`packages/minions-runtime/src/minions/runtime/hooks.py`）管理 hook 的注册和执行：
 
 - Hook 按 `Phase` 分组
 - 同一 phase 内，hook 通过 `before` / `after` 约束**拓扑排序**，priority 作为平局破除
@@ -263,7 +263,7 @@ class HookBase:
 
 ### AgentMode — 功能包
 
-`AgentMode`（`src/minions/modes/base.py`）是一个**行为包**：命令、工具、hook 和 prompt contributor 打包在一起。
+`AgentMode`（`packages/minions-modes/src/minions/modes/base.py`）是一个**行为包**：命令、工具、hook 和 prompt contributor 打包在一起。
 
 ```python
 class AgentMode:
@@ -290,7 +290,7 @@ class AgentMode:
 
 ### WorkspacePlugins — 注册表容器
 
-所有 per-workspace 的注册表都位于 `WorkspacePlugins`（`src/minions/app/workspace/workspace_plugins.py`）：
+所有 per-workspace 的注册表都位于 `WorkspacePlugins`（`packages/minions-app/src/minions/app/workspace/workspace_plugins.py`）：
 
 ```python
 @dataclass
@@ -316,7 +316,7 @@ class WorkspacePlugins:
 
 ### PromptManager — 可组合的 System Prompt
 
-之前 system prompt 构建分散在 mixin、runner 和 env 模块中，新增一个 prompt 片段需要找到正确的注入点。现在，`PromptManager`（`src/minions/runtime/prompt_manager.py`）从有序的 `PromptContributor` 实例中声明式组装 system prompt：
+之前 system prompt 构建分散在 mixin、runner 和 env 模块中，新增一个 prompt 片段需要找到正确的注入点。现在，`PromptManager`（`packages/minions-runtime/src/minions/runtime/prompt_manager.py`）从有序的 `PromptContributor` 实例中声明式组装 system prompt：
 
 ```python
 class PromptContributor:
@@ -353,7 +353,7 @@ class PromptManager:
 
 ### ToolRegistry — 声明式 Tool 注册
 
-之前的痛点是 tool 硬编码在 agent 类中，每次加 tool 必须侵入 agent 类 ~80 行。`ToolRegistry`（`src/minions/runtime/tool_registry.py`）用声明式、可过滤的注册表替代了旧的硬编码 tool 字典。
+之前的痛点是 tool 硬编码在 agent 类中，每次加 tool 必须侵入 agent 类 ~80 行。`ToolRegistry`（`packages/minions-runtime/src/minions/runtime/tool_registry.py`）用声明式、可过滤的注册表替代了旧的硬编码 tool 字典。
 
 每个 tool 由一个 `ToolDescriptor` 描述（以下为核心门控字段，完整定义还包含 `async_execution`、`description`、`metadata` 等）：
 
@@ -385,7 +385,7 @@ async def get_goal(...):
 
 ### SlashCommandRegistry — 统一命令分发
 
-之前 Minions 有**四套并行命令机制**：conversation、control、daemon 和 skill，每个方法手写 3 遍。`SlashCommandRegistry`（`src/minions/runtime/slash_command_registry.py`）将它们统一为一个分发点。
+之前 Minions 有**四套并行命令机制**：conversation、control、daemon 和 skill，每个方法手写 3 遍。`SlashCommandRegistry`（`packages/minions-runtime/src/minions/runtime/slash_command_registry.py`）将它们统一为一个分发点。
 
 ```python
 @dataclass(frozen=True)
@@ -399,7 +399,7 @@ class CommandSpec:
 
 ### @api_action — 三路自动生成
 
-对于之前列出的痛点 "对外接口三套重复"，`@api_action`（`src/minions/api_action.py`）从根本上解决了这个问题：**一个装饰器，同时生成 HTTP API、CLI 子命令和 slash 命令**。
+对于之前列出的痛点 "对外接口三套重复"，`@api_action`（`packages/minions-app/src/minions/api_action.py`）从根本上解决了这个问题：**一个装饰器，同时生成 HTTP API、CLI 子命令和 slash 命令**。
 
 ![@api_action — 三路自动生成](https://img.alicdn.com/imgextra/i3/O1CN01x6ttvV1ywYDU1zuDX_!!6000000006643-55-tps-820-410.svg)
 
@@ -441,7 +441,7 @@ class CronManager(ManagerBase):
 
 ### ToolCoordinator — Tool 调用生命周期
 
-`ToolCoordinator`（`src/minions/tool_calls/`）提供了**单 tool call 粒度**的控制。旧系统中 `/stop` 只能杀掉整个 agent。现在可以追踪、取消或后台化单个 tool 调用。
+`ToolCoordinator`（`packages/minions-tool-calls/src/minions/tool_calls/`）提供了**单 tool call 粒度**的控制。旧系统中 `/stop` 只能杀掉整个 agent。现在可以追踪、取消或后台化单个 tool 调用。
 
 关键组件包括 `ToolCallEntry`（per-call 状态）、`ToolCallStatus`（PENDING → RUNNING → DONE / CANCELLED 状态机）、`ToolCoordinatorMiddleware`（注入 agent 中间件栈）、`ToolResultLimiter`（结果大小限制）、`ToolStream`（流式工具输出）、`ToolCallContext` / `ToolHookRegistry`（HITL 生命周期钩子）等。
 
@@ -451,7 +451,7 @@ class CronManager(ManagerBase):
 
 ### ServiceManager — Per-Agent 资源生命周期
 
-`ServiceManager`（`src/minions/app/workspace/service_manager.py`）管理 per-agent 服务，支持：
+`ServiceManager`（`packages/minions-app/src/minions/app/workspace/service_manager.py`）管理 per-agent 服务，支持：
 
 - **声明式描述符** — 每个服务有 `ServiceDescriptor`，包含优先级、依赖、start/stop 方法
 - **基于优先级的并行启动** — 同优先级服务并发启动

@@ -148,7 +148,7 @@ MINIONS_INTEGRATION_COVERAGE=1 pytest tests/integration/ --no-cov
 执行流程:
 
 1. 在 `.integration_coverage/` 写入 coverage rcfile,使用 **绝对路径**
-   `source=…/src/minions`
+   `source=…/packages/minions-*/src/minions`
 2. 每个子进程通过 `COVERAGE_PROCESS_START` 与 `COVERAGE_FILE` 注入
 3. 会话结束后合并并行数据文件,生成
    `htmlcov-integration/index.html`

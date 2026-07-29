@@ -88,9 +88,9 @@ minions update
 cd Minions
 git pull origin main
 cd console && npm ci && npm run build
-cd .. && mkdir -p src/minions/console
-cp -R console/dist/. src/minions/console/
-pip install -e .
+cd .. && mkdir -p packages/minions-app/src/minions/console
+cp -R console/dist/. packages/minions-app/src/minions/console/
+pip install -r requirements-workspace-install.txt
 ```
 
 4. 如果你使用的是 Docker，拉取最新镜像并重启容器：

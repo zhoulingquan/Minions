@@ -1,6 +1,6 @@
 # Minions Test & Coverage Makefile
 
-.PHONY: test test-unit test-contract test-integration test-channel test-channel-contract coverage-full clean dev dev-server dev-build
+.PHONY: test test-unit test-contract test-integration test-channel test-channel-contract coverage-full clean dev dev-server dev-build update-baselines check-baselines
 
 # Python path
 PYTHON := python
@@ -32,6 +32,17 @@ coverage-full:
 # Check contract coverage for all channels
 check-contracts:
 	$(PYTHON) scripts/check_channel_contracts.py
+
+# Regenerate refactor compatibility baselines (run after intentional
+# API/import changes, then review and commit docs/refactor/*.json).
+update-baselines:
+	$(PYTHON) scripts/refactor/analyze_imports.py --root . --json docs/refactor/import-baseline.json
+	$(PYTHON) scripts/refactor/capture_public_api.py --root . --json docs/refactor/public-api-baseline.json
+
+# Fail if committed refactor baselines drifted from current source (CI gate).
+check-baselines:
+	$(PYTHON) scripts/refactor/analyze_imports.py --root . --check docs/refactor/import-baseline.json
+	$(PYTHON) scripts/refactor/capture_public_api.py --root . --check docs/refactor/public-api-baseline.json
 
 # Clean generated files
 clean:

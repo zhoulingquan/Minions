@@ -23,22 +23,22 @@ When answering questions about **installation, configuration, or behavioral prin
 
 | Topic or Keywords (examples) | Preferred Documentation (`$DOCS_DIR/`) | Common Source Entry Points (relative to `$MINIONS_ROOT`) |
 |---------------------|-----------------------------------|-----------------------------------|
-| Installation, dependencies, getting started | `quickstart`, `intro` | `src/minions/cli/`, `pyproject.toml` |
-| Configuration, config.json, environment variables | `config` | `src/minions/config/config.py`, `src/minions/constant.py` |
-| Skills, SKILL, skill_pool, built-in skills | `skills` | `src/minions/agents/skill_system/`, `src/minions/agents/skills/` |
-| MCP, plugins | `mcp` | `src/minions/app/routers/` (grep `mcp` as needed) |
-| Multi-agent, workspace, agent, built-in QA | `multi-agent` | `src/minions/app/routers/agents.py`, `src/minions/app/migration.py`, `src/minions/constant.py` (`BUILTIN_QA_AGENT_ID`, etc.) |
-| SAGE, business experience, lessons, recall | `sage` | `src/minions/sage/`, `docs/sage-deployment.md` |
+| Installation, dependencies, getting started | `quickstart`, `intro` | `packages/minions-cli/src/minions/cli/`, `pyproject.toml` |
+| Configuration, config.json, environment variables | `config` | `packages/minions-core/src/minions/config/config.py`, `packages/minions-core/src/minions/constant.py` |
+| Skills, SKILL, skill_pool, built-in skills | `skills` | `packages/minions-agents/src/minions/agents/skill_system/`, `packages/minions-agents/src/minions/agents/skills/` |
+| MCP, plugins | `mcp` | `packages/minions-app/src/minions/app/routers/` (grep `mcp` as needed) |
+| Multi-agent, workspace, agent, built-in QA | `multi-agent` | `packages/minions-app/src/minions/app/routers/agents.py`, `packages/minions-app/src/minions/app/migration.py`, `packages/minions-core/src/minions/constant.py` (`BUILTIN_QA_AGENT_ID`, etc.) |
+| SAGE, business experience, lessons, recall | `sage` | `packages/minions-agents/src/minions/sage/`, `docs/sage-deployment.md` |
 | Console, frontend | `console` | `console/` |
-| CLI, subcommands, init | `cli` | `src/minions/cli/` (e.g., `init_cmd.py`) |
-| Channels, sessions | `channels` | Search for `channels` keyword under `src/minions` |
-| Context, window | `context` | `config` docs + related logic in `src/minions/agents/` |
-| Models, API Key | `models` | `src/minions/config/config.py` |
-| Heartbeat, HEARTBEAT | `heartbeat` | Search for `heartbeat` / `HEARTBEAT` under `src/minions` |
+| CLI, subcommands, init | `cli` | `packages/minions-cli/src/minions/cli/` (e.g., `init_cmd.py`) |
+| Channels, sessions | `channels` | Search for `channels` keyword under `packages/*/src/minions` |
+| Context, window | `context` | `config` docs + related logic in `packages/minions-agents/src/minions/agents/` |
+| Models, API Key | `models` | `packages/minions-core/src/minions/config/config.py` |
+| Heartbeat, HEARTBEAT | `heartbeat` | Search for `heartbeat` / `HEARTBEAT` under `packages/*/src/minions` |
 | Desktop client | `desktop` | `desktop/` (if present in the repository) |
 | Security | `security` | Read `security.<lang>.md` first |
 | Errors, FAQ | `faq` | Read `faq.<lang>.md` first, then examine source code as needed |
-| Commands and slash commands | `commands` | CLI/command registration modules under `src/minions` (search as needed) |
+| Commands and slash commands | `commands` | CLI/command registration modules under `packages/*/src/minions` (search as needed) |
 
 ## Conventions
 

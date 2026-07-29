@@ -138,3 +138,122 @@ def test_main_ci_paths_include_workspace_inputs() -> None:
         "scripts/check_architecture.py",
     ):
         assert expected in text
+
+
+# --- User-facing docs & config: no monolithic src/ paths ---------------------
+#
+# After the multi-distribution refactor, no user/operator-facing doc or config
+# should reference the removed monolithic ``src/minions`` (or the even older
+# ``src/agentscope``) layout, nor ``--cov=src``. Legitimate references use the
+# ``packages/<component>/src/minions`` form and are normalized away before the
+# check; an explicit allowlist covers the few files that legitimately mention
+# the old layout (baseline data, the refactor plan itself, and the synthetic
+# fixtures used by these contract tests).
+
+_USER_FACING_TEXT_SUFFIXES = {
+    ".bat", ".cfg", ".flake8", ".ini", ".md", ".ps1", ".py", ".sh",
+    ".toml", ".ts", ".yaml", ".yml",
+}
+
+# Directories whose text files are scanned for legacy monolithic paths.
+_USER_FACING_SCAN_DIRS = (
+    "console/src",
+    "docs",
+    "e2e",
+    "packages",  # covers bundled docs, md_files, skills, and per-package config
+    "tests",
+    "website",
+)
+
+# Repo-root text files scanned in addition to the directories above.
+_USER_FACING_SCAN_ROOT_FILES = (
+    "CONTRIBUTING.md",
+    "README.md",
+    "SECURITY.md",
+    ".flake8",
+    ".gitignore",
+    "pyproject.toml",
+)
+
+# Files that may legitimately mention the old layout (relative to REPO_ROOT,
+# matched by posix path prefix so a directory covers all of its contents).
+_LEGACY_PATH_ALLOWLIST = (
+    # Refactor baseline data captures the pre/during-refactor import graph.
+    "docs/refactor/import-baseline.json",
+    "docs/refactor/public-api-baseline.json",
+    # The refactor plan documents the migration from src/minions.
+    "docs/superpowers/plans/2026-07-23-minions-multi-distribution-refactor.md",
+    # Contract tests build synthetic fixtures that exercise the architecture
+    # checker / baseline tools against the old monolithic layout on purpose.
+    "tests/contract/refactor/test_architecture_checker.py",
+    "tests/contract/refactor/test_baseline_tools.py",
+    # This file's own assertions reference the forbidden tokens.
+    "tests/contract/refactor/test_automation_workspace_paths.py",
+    # Historical comment documenting a long-fixed dual-import scenario.
+    "tests/unit/providers/test_provider_class_identity.py",
+)
+
+# A ``packages/<component>/src/minions`` reference is the legitimate new form.
+_PACKAGES_SRC_MINIONS = re.compile(r"packages/[^/\s'\"]+/src/minions")
+
+
+def _is_allowlisted(posix_path: str) -> bool:
+    return any(
+        posix_path == allowed or posix_path.startswith(allowed + "/")
+        for allowed in _LEGACY_PATH_ALLOWLIST
+    )
+
+
+def _user_facing_files() -> list[Path]:
+    files: list[Path] = []
+    for name in _USER_FACING_SCAN_ROOT_FILES:
+        path = REPO_ROOT / name
+        if path.is_file():
+            files.append(path)
+    for directory in _USER_FACING_SCAN_DIRS:
+        root = REPO_ROOT / directory
+        if not root.is_dir():
+            continue
+        for path in root.rglob("*"):
+            if not path.is_file():
+                continue
+            if path.suffix.lower() not in _USER_FACING_TEXT_SUFFIXES:
+                continue
+            files.append(path)
+    # Deduplicate while preserving order.
+    seen: set[Path] = set()
+    unique: list[Path] = []
+    for path in files:
+        if path not in seen:
+            seen.add(path)
+            unique.append(path)
+    return unique
+
+
+def test_user_facing_docs_have_no_monolithic_source_paths() -> None:
+    violations: list[str] = []
+    for path in _user_facing_files():
+        posix = path.relative_to(REPO_ROOT).as_posix()
+        if _is_allowlisted(posix):
+            continue
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        normalized = text.replace("\\", "/")
+        for line_number, line in enumerate(normalized.splitlines(), start=1):
+            # Strip legitimate packages/<component>/src/minions references,
+            # then look for any remaining bare monolithic path tokens.
+            without_component_paths = _PACKAGES_SRC_MINIONS.sub("", line)
+            for token in ("src/minions", "src/agentscope", "--cov=src"):
+                if token in without_component_paths:
+                    violations.append(
+                        f"{posix}:{line_number}: {line.strip()}"
+                    )
+                    break
+
+    assert not violations, (
+        "User-facing docs/config must not reference the removed monolithic "
+        "src/minions (or src/agentscope / --cov=src) layout; use "
+        "packages/<component>/src/minions instead. "
+        "If a reference is intentional, add it to "
+        "_LEGACY_PATH_ALLOWLIST in test_automation_workspace_paths.py.\n"
+        + "\n".join(violations)
+    )

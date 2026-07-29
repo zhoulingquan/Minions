@@ -273,6 +273,23 @@ def test_internal_dependencies_use_exact_workspace_version_pins() -> None:
         assert _internal_dependencies(project) == expected, distribution
 
 
+def test_architecture_allows_match_declared_internal_dependencies() -> None:
+    """The ``allows`` list in ``architecture.toml`` must stay in sync with the
+    internal dependencies each component declares in its ``pyproject.toml``.
+
+    ``INTERNAL_DEPENDENCIES`` is already asserted (above) to equal the real
+    ``minions-*==VERSION`` pins read from each component's pyproject. This test
+    closes the loop: the architecture boundary declaration (``allows``) must
+    match those same pins, so the two independent copies of the dependency
+    graph cannot silently drift apart.
+    """
+    architecture = _load_toml(REPO_ROOT / "architecture.toml")
+    packages = architecture["packages"]
+    for distribution, declared in INTERNAL_DEPENDENCIES.items():
+        allowed = set(packages[distribution]["allows"])
+        assert allowed == declared, distribution
+
+
 def test_resources_are_owned_and_declared_by_their_component() -> None:
     required_files = {
         "minions-core": [

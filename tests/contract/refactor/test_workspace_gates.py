@@ -294,7 +294,9 @@ def test_build_workspace_dry_run_orders_components_before_meta() -> None:
     ]
     assert len(builds) == 14
     assert builds[0].endswith("packages/minions-core")
-    assert builds[-1].endswith("minions-package-refactor")
+    # The meta distribution is the source-free umbrella package whose
+    # pyproject.toml lives at the repository root (not under packages/).
+    assert builds[-1] == REPO_ROOT.resolve().as_posix()
     assert all("packages/minions-" in item for item in builds[:-1])
 
 

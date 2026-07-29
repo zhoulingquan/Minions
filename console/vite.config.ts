@@ -106,7 +106,7 @@ export default defineConfig(({ mode }) => {
     build: {
       // Output to Minions's console directory,
       // so we don't need to copy files manually after build.
-      // outDir: path.resolve(__dirname, "../src/minions/console"),
+      // outDir: path.resolve(__dirname, "../packages/minions-app/src/minions/console"),
       // emptyOutDir: true,
       cssCodeSplit: true,
       sourcemap: mode !== "production",

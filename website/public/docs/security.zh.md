@@ -610,7 +610,7 @@ governance decision: tool=Bash target="..." action=sandbox_fallback sandbox=bubb
 
 对于需要深度定制的场景,扫描器支持编程方式配置:
 
-扫描器使用 `src/minions/security/skill_scanner/rules/signatures/` 中的 YAML 规则文件。你可以通过 YAML 策略文件自定义扫描策略:
+扫描器使用 `packages/minions-core/src/minions/security/skill_scanner/rules/signatures/` 中的 YAML 规则文件。你可以通过 YAML 策略文件自定义扫描策略:
 
 ```python
 from minions.security.skill_scanner import SkillScanner

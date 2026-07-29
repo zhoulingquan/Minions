@@ -320,6 +320,28 @@ jobs:
       test_marker: 'integration'
     secrets: inherit
 
+  baseline-drift:
+    name: Baseline Drift
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      # Baseline tools depend only on the stdlib (argparse/ast/json/tomllib)
+      # plus the checked-in source tree and architecture.toml -- no install
+      # of the workspace packages is required. Python is pinned to 3.13 to
+      # match the environment the baselines were generated in (AST behavior
+      # can differ between versions and cause false drift).
+      - name: Run baseline drift gate
+        shell: bash
+        run: make check-baselines
+
   coverage-report:
     name: Coverage Report
     needs: [unit-tests, contract-tests, integrated-tests, e2e-tests]
@@ -488,7 +510,7 @@ jobs:
 
   test-summary:
     name: Test Summary
-    needs: [unit-tests, contract-tests, integrated-tests, e2e-tests, coverage-report]
+    needs: [unit-tests, contract-tests, integrated-tests, e2e-tests, coverage-report, baseline-drift]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -499,11 +521,13 @@ jobs:
           echo "Contract tests: ${{ needs.contract-tests.result }}"
           echo "Integrated tests: ${{ needs.integrated-tests.result }}"
           echo "E2E tests: ${{ needs.e2e-tests.result }}"
+          echo "Baseline drift: ${{ needs.baseline-drift.result }}"
 
           if [ "${{ needs.unit-tests.result }}" = "failure" ] || \
              [ "${{ needs.contract-tests.result }}" = "failure" ] || \
              [ "${{ needs.integrated-tests.result }}" = "failure" ] || \
-             [ "${{ needs.e2e-tests.result }}" = "failure" ]; then
+             [ "${{ needs.e2e-tests.result }}" = "failure" ] || \
+             [ "${{ needs.baseline-drift.result }}" = "failure" ]; then
             echo "❌ Some tests failed"
             exit 1
           else

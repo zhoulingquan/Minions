@@ -9,8 +9,8 @@ Subprocess coverage (optional):
     MINIONS_INTEGRATION_COVERAGE=1 pytest tests/integration/
 
 When set, ``pytest_sessionstart`` writes a coverage rcfile under
-``.integration_coverage/`` with an **absolute** ``source=`` path
-(``…/src/minions``); the app subprocess runs with
+``.integration_coverage/`` with **absolute** ``source=`` paths
+(``…/packages/minions-*/src/minions``); the app subprocess runs with
 ``COVERAGE_PROCESS_START`` / ``COVERAGE_FILE`` so the child traces
 that tree. The fixture stops the app with **SIGINT** first so coverage
 can flush (SIGTERM often yields empty data). After the session, files
@@ -61,12 +61,32 @@ def _write_integration_subprocess_rc(root: Path, dest_ini: Path) -> None:
     when the file is loaded via ``COVERAGE_PROCESS_START``, which produced
     empty traces (0 files) even though the app ran.
     """
-    src_minions = (root / "src" / "minions").resolve()
+    # The multi-distribution workspace splits ``minions`` across 13 packages;
+    # coverage must trace every component source root, not a single ``src/``.
+    _workspace_packages = (
+        "minions-core",
+        "minions-runtime",
+        "minions-providers",
+        "minions-tool-calls",
+        "minions-drivers",
+        "minions-channels",
+        "minions-plugins",
+        "minions-loop",
+        "minions-governance",
+        "minions-modes",
+        "minions-agents",
+        "minions-app",
+        "minions-cli",
+    )
+    source_lines = "\n".join(
+        f"    {(root / 'packages' / pkg / 'src' / 'minions').resolve()}"
+        for pkg in _workspace_packages
+    )
     text = (
         "[run]\n"
         "parallel = true\n"
         "branch = false\n"
-        f"source = {src_minions}\n"
+        f"source =\n{source_lines}\n"
         "omit =\n"
         "    */tests/*\n"
         "    */test_*\n"

@@ -339,7 +339,7 @@ pytest tests/tests/test_chat_p0.py --reruns 2 -v
 ### Coverage report
 
 ```bash
-pytest tests/tests/test_chat_p0.py --cov=src --cov-report=html -v
+pytest tests/tests/test_chat_p0.py --cov=minions --cov-report=html -v
 ```
 
 ### Generate test data

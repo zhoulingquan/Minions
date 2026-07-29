@@ -2,7 +2,7 @@
 # pylint: disable=redefined-outer-name,protected-access,unused-argument
 """Tests for file_guardian path-sensitive file guard.
 
-Target: src/minions/security/tool_guard/guardians/file_guardian.py
+Target: packages/minions-core/src/minions/security/tool_guard/guardians/file_guardian.py
 Goal: push coverage from 38% to 78%+.
 """
 from __future__ import annotations

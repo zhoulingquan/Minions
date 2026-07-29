@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Unit tests for src/minions/plugins/download_catalog.py."""
+"""Unit tests for packages/minions-plugins/src/minions/plugins/download_catalog.py."""
 
 from __future__ import annotations
 

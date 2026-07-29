@@ -52,7 +52,7 @@ Reports that miss these requirements may be closed as `invalid` or `no-action`.
 
 ## Alignment with `minions init`
 
-The security model and recommended baseline in this document are **aligned with** what users see and accept during **`minions init`**. The init flow shows a security notice that covers: single-operator boundary; shared delegated authority when multiple people message the same instance; restricting channels and users (allowlists); using separate config/credentials and OS users or hosts per trust boundary; least privilege and sandboxing; keeping secrets out of the working directory and skill-accessible paths; and reviewing config and skills regularly. When updating either this document or the `SECURITY_WARNING` in `src/minions/cli/init_cmd.py`, keep the **concepts and recommendations** consistent so operators get the same message in both places.
+The security model and recommended baseline in this document are **aligned with** what users see and accept during **`minions init`**. The init flow shows a security notice that covers: single-operator boundary; shared delegated authority when multiple people message the same instance; restricting channels and users (allowlists); using separate config/credentials and OS users or hosts per trust boundary; least privilege and sandboxing; keeping secrets out of the working directory and skill-accessible paths; and reviewing config and skills regularly. When updating either this document or the `SECURITY_WARNING` in `packages/minions-cli/src/minions/cli/init_cmd.py`, keep the **concepts and recommendations** consistent so operators get the same message in both places.
 
 ## Security & Trust
 

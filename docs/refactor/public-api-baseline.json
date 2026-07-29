@@ -9134,112 +9134,112 @@
       "declarations": [
         {
           "kind": "class",
-          "line": 43,
+          "line": 45,
           "name": "MdFileInfo"
         },
         {
           "kind": "class",
-          "line": 53,
+          "line": 55,
           "name": "MdFileContent"
         },
         {
           "kind": "async_function",
-          "line": 100,
+          "line": 106,
           "name": "list_working_files"
         },
         {
           "kind": "async_function",
-          "line": 122,
+          "line": 128,
           "name": "read_working_file"
         },
         {
           "kind": "async_function",
-          "line": 144,
+          "line": 150,
           "name": "write_working_file"
         },
         {
           "kind": "async_function",
-          "line": 164,
+          "line": 170,
           "name": "get_agent_language"
         },
         {
           "kind": "async_function",
-          "line": 182,
+          "line": 188,
           "name": "put_agent_language"
         },
         {
           "kind": "async_function",
-          "line": 239,
+          "line": 245,
           "name": "get_audio_mode"
         },
         {
           "kind": "async_function",
-          "line": 254,
+          "line": 260,
           "name": "put_audio_mode"
         },
         {
           "kind": "async_function",
-          "line": 286,
+          "line": 292,
           "name": "get_transcription_provider_type"
         },
         {
           "kind": "async_function",
-          "line": 306,
+          "line": 312,
           "name": "put_transcription_provider_type"
         },
         {
           "kind": "async_function",
-          "line": 341,
+          "line": 347,
           "name": "get_local_whisper_status"
         },
         {
           "kind": "async_function",
-          "line": 358,
+          "line": 364,
           "name": "get_transcription_providers"
         },
         {
           "kind": "async_function",
-          "line": 379,
+          "line": 385,
           "name": "put_transcription_provider"
         },
         {
           "kind": "async_function",
-          "line": 405,
+          "line": 411,
           "name": "post_transcribe_audio"
         },
         {
           "kind": "async_function",
-          "line": 481,
+          "line": 487,
           "name": "get_agents_running_config"
         },
         {
           "kind": "async_function",
-          "line": 498,
+          "line": 504,
           "name": "put_agents_running_config"
         },
         {
           "kind": "async_function",
-          "line": 528,
+          "line": 534,
           "name": "get_system_prompt_files"
         },
         {
           "kind": "async_function",
-          "line": 543,
+          "line": 549,
           "name": "put_system_prompt_files"
         },
         {
           "kind": "async_function",
-          "line": 636,
+          "line": 642,
           "name": "download_workspace"
         },
         {
           "kind": "async_function",
-          "line": 674,
+          "line": 680,
           "name": "upload_workspace"
         },
         {
           "kind": "async_function",
-          "line": 714,
+          "line": 720,
           "name": "get_available_commands"
         }
       ],
@@ -12793,7 +12793,7 @@
       "declarations": [
         {
           "kind": "function",
-          "line": 314,
+          "line": 316,
           "name": "shutdown_cmd"
         }
       ],
@@ -12860,7 +12860,7 @@
       "declarations": [
         {
           "kind": "function",
-          "line": 248,
+          "line": 270,
           "name": "task_cmd"
         }
       ],
@@ -19649,12 +19649,12 @@
       "declarations": [
         {
           "kind": "class",
-          "line": 49,
+          "line": 50,
           "name": "SageTurn"
         },
         {
           "kind": "class",
-          "line": 63,
+          "line": 64,
           "name": "SageRuntime"
         }
       ],

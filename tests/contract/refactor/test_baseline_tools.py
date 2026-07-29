@@ -1264,3 +1264,22 @@ def test_importing_baseline_tools_has_no_cli_side_effects() -> None:
     assert result.returncode == 0, _output(result)
     assert result.stdout == ""
     assert result.stderr == ""
+
+
+@pytest.mark.parametrize(
+    ("tool", "baseline"),
+    (
+        (IMPORT_TOOL, REPO_ROOT / "docs" / "refactor" / "import-baseline.json"),
+        (API_TOOL, REPO_ROOT / "docs" / "refactor" / "public-api-baseline.json"),
+    ),
+)
+def test_committed_baselines_match_source(tool: Path, baseline: Path) -> None:
+    """Committed baselines must stay in sync with the current source tree.
+
+    The baselines are regenerated with ``make update-baselines`` (which calls
+    ``analyze_imports.py --json`` / ``capture_public_api.py --json``). A drift
+    here means an intentional API/import change was made without refreshing the
+    baselines -- run ``make update-baselines``, review the diff, then commit.
+    """
+    result = _run_tool(tool, REPO_ROOT, "--check", str(baseline))
+    assert result.returncode == 0, _output(result)

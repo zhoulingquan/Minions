@@ -23,22 +23,22 @@ metadata:
 
 | 主题或关键词（示例） | 优先文档（`$DOCS_DIR/`） | 常见源码入口（相对 `$MINIONS_ROOT`） |
 |---------------------|-----------------------------------|-----------------------------------|
-| 安装、依赖、首次使用 | `quickstart`、`intro` | `src/minions/cli/`、`pyproject.toml` |
-| 配置、config.json、环境变量 | `config` | `src/minions/config/config.py`、`src/minions/constant.py` |
-| 技能、SKILL、skill_pool、内置技能 | `skills` | `src/minions/agents/skill_system/`、`src/minions/agents/skills/` |
-| MCP、插件 | `mcp` | `src/minions/app/routers/`（按需 grep `mcp`） |
-| 多智能体、工作区、agent、内置 QA | `multi-agent` | `src/minions/app/routers/agents.py`、`src/minions/app/migration.py`、`src/minions/constant.py`（`BUILTIN_QA_AGENT_ID` 等） |
-| SAGE、业务经验、心得、召回 | `sage` | `src/minions/sage/`、`docs/sage-deployment.md` |
+| 安装、依赖、首次使用 | `quickstart`、`intro` | `packages/minions-cli/src/minions/cli/`、`pyproject.toml` |
+| 配置、config.json、环境变量 | `config` | `packages/minions-core/src/minions/config/config.py`、`packages/minions-core/src/minions/constant.py` |
+| 技能、SKILL、skill_pool、内置技能 | `skills` | `packages/minions-agents/src/minions/agents/skill_system/`、`packages/minions-agents/src/minions/agents/skills/` |
+| MCP、插件 | `mcp` | `packages/minions-app/src/minions/app/routers/`（按需 grep `mcp`） |
+| 多智能体、工作区、agent、内置 QA | `multi-agent` | `packages/minions-app/src/minions/app/routers/agents.py`、`packages/minions-app/src/minions/app/migration.py`、`packages/minions-core/src/minions/constant.py`（`BUILTIN_QA_AGENT_ID` 等） |
+| SAGE、业务经验、心得、召回 | `sage` | `packages/minions-agents/src/minions/sage/`、`docs/sage-deployment.md` |
 | 控制台、前端 | `console` | `console/` |
-| 命令行、子命令、init | `cli` | `src/minions/cli/`（如 `init_cmd.py`） |
-| 频道、会话 | `channels` | 在 `src/minions` 下按 `channels` 关键词检索 |
-| 上下文、窗口 | `context` | `config` 文档 + `src/minions/agents/` 相关逻辑 |
-| 模型、API Key | `models` | `src/minions/config/config.py` |
-| 心跳、HEARTBEAT | `heartbeat` | 在 `src/minions` 下检索 `heartbeat` / `HEARTBEAT` |
+| 命令行、子命令、init | `cli` | `packages/minions-cli/src/minions/cli/`（如 `init_cmd.py`） |
+| 频道、会话 | `channels` | 在 `packages/*/src/minions` 下按 `channels` 关键词检索 |
+| 上下文、窗口 | `context` | `config` 文档 + `packages/minions-agents/src/minions/agents/` 相关逻辑 |
+| 模型、API Key | `models` | `packages/minions-core/src/minions/config/config.py` |
+| 心跳、HEARTBEAT | `heartbeat` | 在 `packages/*/src/minions` 下检索 `heartbeat` / `HEARTBEAT` |
 | 桌面客户端 | `desktop` | `desktop/`（若仓库中存在） |
 | 安全 | `security` | 先读 `security.<lang>.md` |
 | 报错、常见问题 | `faq` | 先 `faq.<lang>.md`，再针对性看源码 |
-| 命令与斜杠指令 | `commands` | `src/minions` 下与 CLI/命令注册相关的模块（按需检索） |
+| 命令与斜杠指令 | `commands` | `packages/minions-cli/src/minions/cli/` 下与 CLI/命令注册相关的模块（按需检索） |
 
 ## 约定
 

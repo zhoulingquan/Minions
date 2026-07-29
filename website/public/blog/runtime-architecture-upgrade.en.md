@@ -94,7 +94,7 @@ Strict contract: `AppServiceManager` has **exactly three** fields — `task_trac
 Actual constraint in code:
 
 ```python
-# src/minions/app/app_services/app_service_manager.py
+# packages/minions-app/src/minions/app/app_services/app_service_manager.py
 
 class AppServiceManager:
     __slots__ = (
@@ -112,7 +112,7 @@ class AppServiceManager:
 
 The previous pain point was that the runner was a god method. The solution is to split request processing into **8 fixed phases**, each serving as a hook mounting point.
 
-The `Runtime` class (`src/minions/runtime/runtime.py`) is the per-workspace request orchestrator. Each request invokes `run()`, which produces SSE envelope objects through the 8-phase lifecycle.
+The `Runtime` class (`packages/minions-runtime/src/minions/runtime/runtime.py`) is the per-workspace request orchestrator. Each request invokes `run()`, which produces SSE envelope objects through the 8-phase lifecycle.
 
 ```python
 class Runtime:
@@ -123,7 +123,7 @@ class Runtime:
 
 ### The 8 Phases
 
-Defined in `src/minions/runtime/phases.py`:
+Defined in `packages/minions-runtime/src/minions/runtime/phases.py`:
 
 ```python
 class Phase(str, Enum):
@@ -161,7 +161,7 @@ Key design: **Phase positions are fixed; hooks registered at each phase are plug
 
 ### Three Hook Actions
 
-Each hook returns a `HookResult` containing one of three actions (`src/minions/runtime/hooks.py`):
+Each hook returns a `HookResult` containing one of three actions (`packages/minions-runtime/src/minions/runtime/hooks.py`):
 
 ```python
 class HookAction(str, Enum):
@@ -180,7 +180,7 @@ The previous pain points were hardcoded tools in the agent class and scattered p
 
 ### AgentBuilder — Per-Request Agent Assembly
 
-`AgentBuilder` (`src/minions/runtime/builder.py`) is responsible for constructing a complete `MinionsAgent` for each request. It integrates:
+`AgentBuilder` (`packages/minions-runtime/src/minions/runtime/builder.py`) is responsible for constructing a complete `MinionsAgent` for each request. It integrates:
 
 | Component         | Source                                           | Description                                                                    |
 | ----------------- | ------------------------------------------------ | ------------------------------------------------------------------------------ |
@@ -195,9 +195,9 @@ Key improvement: **Tools are no longer hardcoded in the agent class.** They are 
 
 ### AgentExecutor & Envelope
 
-`AgentExecutor` (`src/minions/runtime/executor.py`) drives the agent's reply stream and wraps a heartbeat mechanism — ensuring that during long idle periods (e.g., tool-guard approval waits), keep-alive envelopes are emitted instead of letting the SSE connection drop.
+`AgentExecutor` (`packages/minions-runtime/src/minions/runtime/executor.py`) drives the agent's reply stream and wraps a heartbeat mechanism — ensuring that during long idle periods (e.g., tool-guard approval waits), keep-alive envelopes are emitted instead of letting the SSE connection drop.
 
-`Envelope` (`src/minions/runtime/envelope.py`) is an SSE state machine that translates agentscope `EventType` events into the frontend's streaming envelope protocol, tracking per-request state (text blocks, reasoning blocks, tool calls, data blocks) and producing the correct event sequence.
+`Envelope` (`packages/minions-runtime/src/minions/runtime/envelope.py`) is an SSE state machine that translates agentscope `EventType` events into the frontend's streaming envelope protocol, tracking per-request state (text blocks, reasoning blocks, tool calls, data blocks) and producing the correct event sequence.
 
 ---
 
@@ -220,7 +220,7 @@ Both inherit from `HookBase` in `runtime/hooks.py`. `ModeGatedHook` automaticall
 
 ### HookRegistry — Topological Sorting
 
-`HookRegistry` (`src/minions/runtime/hooks.py`) manages hook registration and execution:
+`HookRegistry` (`packages/minions-runtime/src/minions/runtime/hooks.py`) manages hook registration and execution:
 
 - Hooks are grouped by `Phase`
 - Within the same phase, hooks are **topologically sorted** via `before` / `after` constraints, with priority as tiebreaker
@@ -263,7 +263,7 @@ A notable pattern: setup/cleanup hook pairs (e.g., `SkillEnvHook` in PRE_EXECUTE
 
 ### AgentMode — Feature Bundle
 
-`AgentMode` (`src/minions/modes/base.py`) is a **behavior bundle**: commands, tools, hooks, and prompt contributors packaged together.
+`AgentMode` (`packages/minions-modes/src/minions/modes/base.py`) is a **behavior bundle**: commands, tools, hooks, and prompt contributors packaged together.
 
 ```python
 class AgentMode:
@@ -290,7 +290,7 @@ class AgentMode:
 
 ### WorkspacePlugins — Registry Container
 
-All per-workspace registries reside in `WorkspacePlugins` (`src/minions/app/workspace/workspace_plugins.py`):
+All per-workspace registries reside in `WorkspacePlugins` (`packages/minions-app/src/minions/app/workspace/workspace_plugins.py`):
 
 ```python
 @dataclass
@@ -316,7 +316,7 @@ class WorkspacePlugins:
 
 ### PromptManager — Composable System Prompt
 
-Previously, system prompt construction was scattered across mixin, runner, and env modules; adding a new prompt fragment required finding the correct injection point. Now, `PromptManager` (`src/minions/runtime/prompt_manager.py`) declaratively assembles the system prompt from ordered `PromptContributor` instances:
+Previously, system prompt construction was scattered across mixin, runner, and env modules; adding a new prompt fragment required finding the correct injection point. Now, `PromptManager` (`packages/minions-runtime/src/minions/runtime/prompt_manager.py`) declaratively assembles the system prompt from ordered `PromptContributor` instances:
 
 ```python
 class PromptContributor:
@@ -353,7 +353,7 @@ Adding a new prompt fragment = writing a `PromptContributor` and registering it.
 
 ### ToolRegistry — Declarative Tool Registration
 
-The previous pain point was that tools were hardcoded in the agent class; adding a tool required ~80 lines of invasive changes to the agent class. `ToolRegistry` (`src/minions/runtime/tool_registry.py`) replaces the old hardcoded tool dictionary with a declarative, filterable registry.
+The previous pain point was that tools were hardcoded in the agent class; adding a tool required ~80 lines of invasive changes to the agent class. `ToolRegistry` (`packages/minions-runtime/src/minions/runtime/tool_registry.py`) replaces the old hardcoded tool dictionary with a declarative, filterable registry.
 
 Each tool is described by a `ToolDescriptor` (core gating fields shown below; the full definition also includes `async_execution`, `description`, `metadata`, etc.):
 
@@ -385,7 +385,7 @@ At build time, `ToolRegistry.filter()` selects the correct tools based on the cu
 
 ### SlashCommandRegistry — Unified Command Dispatch
 
-Previously, Minions had **four parallel command mechanisms**: conversation, control, daemon, and skill, each method written 3 times. `SlashCommandRegistry` (`src/minions/runtime/slash_command_registry.py`) unifies them into a single dispatch point.
+Previously, Minions had **four parallel command mechanisms**: conversation, control, daemon, and skill, each method written 3 times. `SlashCommandRegistry` (`packages/minions-runtime/src/minions/runtime/slash_command_registry.py`) unifies them into a single dispatch point.
 
 ```python
 @dataclass(frozen=True)
@@ -399,7 +399,7 @@ class CommandSpec:
 
 ### @api_action — Triple Auto-Generation
 
-Addressing the previously listed pain point of "three duplicate external interfaces," `@api_action` (`src/minions/api_action.py`) fundamentally solves this problem: **one decorator simultaneously generates HTTP API, CLI subcommands, and slash commands**.
+Addressing the previously listed pain point of "three duplicate external interfaces," `@api_action` (`packages/minions-app/src/minions/api_action.py`) fundamentally solves this problem: **one decorator simultaneously generates HTTP API, CLI subcommands, and slash commands**.
 
 ![@api_action — Triple Auto-Generation](https://img.alicdn.com/imgextra/i1/O1CN01WHSvAw1TncP49OphG_!!6000000002427-55-tps-820-410.svg)
 
@@ -441,7 +441,7 @@ Adding a new management interface = writing one `@api_action` method. Triple reg
 
 ### ToolCoordinator — Tool Call Lifecycle
 
-`ToolCoordinator` (`src/minions/tool_calls/`) provides **single tool call granularity** control. In the old system, `/stop` could only kill the entire agent. Now individual tool calls can be tracked, cancelled, or backgrounded.
+`ToolCoordinator` (`packages/minions-tool-calls/src/minions/tool_calls/`) provides **single tool call granularity** control. In the old system, `/stop` could only kill the entire agent. Now individual tool calls can be tracked, cancelled, or backgrounded.
 
 Key components include `ToolCallEntry` (per-call state), `ToolCallStatus` (PENDING → RUNNING → DONE / CANCELLED state machine), `ToolCoordinatorMiddleware` (injected into agent middleware stack), `ToolResultLimiter` (result size limiting), `ToolStream` (streaming tool output), `ToolCallContext` / `ToolHookRegistry` (HITL lifecycle hooks), etc.
 
@@ -451,7 +451,7 @@ Key components include `ToolCallEntry` (per-call state), `ToolCallStatus` (PENDI
 
 ### ServiceManager — Per-Agent Resource Lifecycle
 
-`ServiceManager` (`src/minions/app/workspace/service_manager.py`) manages per-agent services, supporting:
+`ServiceManager` (`packages/minions-app/src/minions/app/workspace/service_manager.py`) manages per-agent services, supporting:
 
 - **Declarative descriptors** — Each service has a `ServiceDescriptor` with priority, dependencies, start/stop methods
 - **Priority-based parallel startup** — Same-priority services start concurrently

@@ -147,10 +147,10 @@ pg_dump --format=custom --no-owner --file=/backup/minions-$(date +%F).dump minio
 发布前必须通过：
 
 ```bash
-python -m compileall -q src/minions/sage
+python -m compileall -q packages/minions-agents/src/minions/sage
 python -m pytest -q tests/unit/sage tests/unit/tenancy/test_runtime.py tests/unit/app/routers/test_sage_router.py
 python -m pytest -q tests/integration/test_sage_complete_flow.py
-ruff check src/minions/sage src/minions/app/routers/sage.py
+ruff check packages/minions-agents/src/minions/sage packages/minions-app/src/minions/app/routers/sage.py
 cd console
 npm run test:run -- src/pages/Settings/Sage/SagePage.test.tsx
 npm run build

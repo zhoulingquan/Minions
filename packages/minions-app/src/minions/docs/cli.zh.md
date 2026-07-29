@@ -72,7 +72,7 @@ minions tui /path/to/repo       # 将其他目录绑定为本次 TUI 会话的�
 
 **构建方式：** 在项目 `console/` 目录下执行 `npm ci && npm run build`，
 然后将构建产物复制到包目录：
-`mkdir -p src/minions/console && cp -R console/dist/. src/minions/console/`。
+`mkdir -p packages/minions-app/src/minions/console && cp -R console/dist/. packages/minions-app/src/minions/console/`。
 Docker 镜像或 pip 安装包已内置控制台，无需单独构建。
 
 ### minions daemon

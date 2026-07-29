@@ -7,7 +7,7 @@ no server).
 
 ``rebuild-console-npm`` runs ``npm ci && npm run build`` under ``console/``
 in a source checkout and copies ``console/dist`` into
-``src/minions/console/`` (needs network for npm).
+``packages/minions-app/src/minions/console/`` (needs network for npm).
 
 ``validate-all-jobs-json`` reuses
 :func:`~minions.cli.doctor_checks.check_cron_jobs_files` (read-only); exits
@@ -593,14 +593,14 @@ def _plan_fixes(
             skip_msgs.append(
                 "rebuild-console-npm: only in a Minions source checkout "
                 "(./console/package.json + ./console/package-lock.json + "
-                "./src/minions/)",
+                "./packages/minions-app/src/minions/)",
             )
         elif not shutil.which("npm"):
             skip_msgs.append("rebuild-console-npm: npm not found on PATH")
         else:
             console = repo / "console"
             dist = console / "dist"
-            dst = repo / "src" / "minions" / "console"
+            dst = repo / "packages" / "minions-app" / "src" / "minions" / "console"
             desc = (
                 f"npm ci + npm run build in {console}, then copy {dist} -> "
                 f"{dst} (bundles web UI for editable installs)"

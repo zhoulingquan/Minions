@@ -36,11 +36,9 @@ dist/
 # Console frontend build (generated in Docker/CI, do not commit)
 console/.cursor/
 console/.wiki/
-src/minions/console/dist/
-src/minions/console/
 
 # Docs bundled at build time (copied from website/public/docs/)
-src/minions/docs/
+# Tracked under packages/minions-app/src/minions/docs/ -- do not ignore.
 
 # frontend (website)
 website/node_modules/

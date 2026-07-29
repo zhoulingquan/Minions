@@ -40,5 +40,5 @@ Add an explicit agent-skill promotion operation. The operation compares the curr
 
 ## References
 
-- `src/minions/agents/skill_system/global_skill_service.py`
+- `packages/minions-agents/src/minions/agents/skill_system/global_skill_service.py`
 

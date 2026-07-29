@@ -53,13 +53,13 @@ SQLite 模式适用于本机单进程开发和自动化测试，不适合多实�
 
 ```bash
 psql "$MINIONS_MIGRATION_DSN" -v ON_ERROR_STOP=1 \
-  -f src/minions/tenancy/migrations/0001_control_plane.sql
+  -f packages/minions-app/src/minions/tenancy/migrations/0001_control_plane.sql
 psql "$MINIONS_MIGRATION_DSN" -v ON_ERROR_STOP=1 \
-  -f src/minions/tenancy/migrations/0002_task_leases.sql
+  -f packages/minions-app/src/minions/tenancy/migrations/0002_task_leases.sql
 psql "$MINIONS_MIGRATION_DSN" -v ON_ERROR_STOP=1 \
-  -f src/minions/tenancy/migrations/0003_invite_uniqueness.sql
+  -f packages/minions-app/src/minions/tenancy/migrations/0003_invite_uniqueness.sql
 psql "$MINIONS_MIGRATION_DSN" -v ON_ERROR_STOP=1 \
-  -f src/minions/tenancy/migrations/runtime_role.sql
+  -f packages/minions-app/src/minions/tenancy/migrations/runtime_role.sql
 ```
 
 `runtime_role.sql` 只创建示例角色，不包含明文密码。由数据库管理员通过密钥管理系统

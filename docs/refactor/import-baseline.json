@@ -9429,7 +9429,7 @@
     },
     {
       "function_scope": false,
-      "line": 12,
+      "line": 13,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9440,7 +9440,7 @@
     },
     {
       "function_scope": false,
-      "line": 13,
+      "line": 14,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9451,7 +9451,7 @@
     },
     {
       "function_scope": false,
-      "line": 14,
+      "line": 15,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9462,7 +9462,7 @@
     },
     {
       "function_scope": false,
-      "line": 15,
+      "line": 16,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9473,7 +9473,7 @@
     },
     {
       "function_scope": false,
-      "line": 15,
+      "line": 16,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9484,7 +9484,7 @@
     },
     {
       "function_scope": false,
-      "line": 15,
+      "line": 16,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9495,7 +9495,7 @@
     },
     {
       "function_scope": false,
-      "line": 16,
+      "line": 17,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9506,7 +9506,7 @@
     },
     {
       "function_scope": false,
-      "line": 17,
+      "line": 18,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9517,7 +9517,7 @@
     },
     {
       "function_scope": false,
-      "line": 17,
+      "line": 18,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9528,7 +9528,7 @@
     },
     {
       "function_scope": false,
-      "line": 18,
+      "line": 19,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9539,7 +9539,7 @@
     },
     {
       "function_scope": false,
-      "line": 19,
+      "line": 20,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9550,7 +9550,7 @@
     },
     {
       "function_scope": false,
-      "line": 20,
+      "line": 21,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9561,7 +9561,7 @@
     },
     {
       "function_scope": false,
-      "line": 21,
+      "line": 22,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9572,7 +9572,7 @@
     },
     {
       "function_scope": false,
-      "line": 22,
+      "line": 23,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9583,7 +9583,7 @@
     },
     {
       "function_scope": false,
-      "line": 22,
+      "line": 23,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9594,7 +9594,7 @@
     },
     {
       "function_scope": false,
-      "line": 22,
+      "line": 23,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9605,7 +9605,7 @@
     },
     {
       "function_scope": false,
-      "line": 22,
+      "line": 23,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9616,7 +9616,7 @@
     },
     {
       "function_scope": false,
-      "line": 22,
+      "line": 23,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9627,7 +9627,7 @@
     },
     {
       "function_scope": false,
-      "line": 22,
+      "line": 23,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9638,7 +9638,7 @@
     },
     {
       "function_scope": false,
-      "line": 22,
+      "line": 23,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9649,7 +9649,7 @@
     },
     {
       "function_scope": false,
-      "line": 22,
+      "line": 23,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9660,7 +9660,7 @@
     },
     {
       "function_scope": false,
-      "line": 22,
+      "line": 23,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9671,7 +9671,7 @@
     },
     {
       "function_scope": false,
-      "line": 22,
+      "line": 23,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9682,7 +9682,7 @@
     },
     {
       "function_scope": false,
-      "line": 22,
+      "line": 23,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9693,7 +9693,7 @@
     },
     {
       "function_scope": false,
-      "line": 22,
+      "line": 23,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9704,7 +9704,7 @@
     },
     {
       "function_scope": false,
-      "line": 22,
+      "line": 23,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9715,7 +9715,7 @@
     },
     {
       "function_scope": false,
-      "line": 22,
+      "line": 23,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9726,7 +9726,7 @@
     },
     {
       "function_scope": false,
-      "line": 22,
+      "line": 23,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9737,7 +9737,7 @@
     },
     {
       "function_scope": false,
-      "line": 22,
+      "line": 23,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9748,7 +9748,7 @@
     },
     {
       "function_scope": false,
-      "line": 22,
+      "line": 23,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9759,7 +9759,7 @@
     },
     {
       "function_scope": false,
-      "line": 41,
+      "line": 42,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9770,7 +9770,7 @@
     },
     {
       "function_scope": false,
-      "line": 42,
+      "line": 43,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9781,7 +9781,7 @@
     },
     {
       "function_scope": false,
-      "line": 43,
+      "line": 44,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -9792,7 +9792,7 @@
     },
     {
       "function_scope": false,
-      "line": 44,
+      "line": 45,
       "ownership_error": null,
       "source_distribution": "minions-agents",
       "source_file": "packages/minions-agents/src/minions/sage/runtime.py",
@@ -20341,7 +20341,7 @@
     },
     {
       "function_scope": true,
-      "line": 343,
+      "line": 349,
       "ownership_error": null,
       "source_distribution": "minions-app",
       "source_file": "packages/minions-app/src/minions/app/routers/workspace.py",
@@ -20352,7 +20352,7 @@
     },
     {
       "function_scope": true,
-      "line": 360,
+      "line": 366,
       "ownership_error": null,
       "source_distribution": "minions-app",
       "source_file": "packages/minions-app/src/minions/app/routers/workspace.py",
@@ -20363,7 +20363,7 @@
     },
     {
       "function_scope": true,
-      "line": 360,
+      "line": 366,
       "ownership_error": null,
       "source_distribution": "minions-app",
       "source_file": "packages/minions-app/src/minions/app/routers/workspace.py",
@@ -20374,7 +20374,7 @@
     },
     {
       "function_scope": true,
-      "line": 409,
+      "line": 415,
       "ownership_error": null,
       "source_distribution": "minions-app",
       "source_file": "packages/minions-app/src/minions/app/routers/workspace.py",
@@ -29625,6 +29625,17 @@
     },
     {
       "function_scope": false,
+      "line": 13,
+      "ownership_error": null,
+      "source_distribution": "minions-cli",
+      "source_file": "packages/minions-cli/src/minions/cli/shutdown_cmd.py",
+      "source_module": "minions.cli.shutdown_cmd",
+      "target_distribution": "minions-core",
+      "target_module": "minions.utils.console_static.find_minions_source_repo_root",
+      "type_checking": false
+    },
+    {
+      "function_scope": false,
       "line": 14,
       "ownership_error": null,
       "source_distribution": "minions-cli",
@@ -29889,7 +29900,7 @@
     },
     {
       "function_scope": true,
-      "line": 100,
+      "line": 122,
       "ownership_error": null,
       "source_distribution": "minions-cli",
       "source_file": "packages/minions-cli/src/minions/cli/task_cmd.py",
@@ -29900,7 +29911,7 @@
     },
     {
       "function_scope": true,
-      "line": 101,
+      "line": 123,
       "ownership_error": null,
       "source_distribution": "minions-cli",
       "source_file": "packages/minions-cli/src/minions/cli/task_cmd.py",
@@ -29911,7 +29922,7 @@
     },
     {
       "function_scope": true,
-      "line": 259,
+      "line": 281,
       "ownership_error": null,
       "source_distribution": "minions-cli",
       "source_file": "packages/minions-cli/src/minions/cli/task_cmd.py",
@@ -29922,7 +29933,7 @@
     },
     {
       "function_scope": true,
-      "line": 260,
+      "line": 282,
       "ownership_error": null,
       "source_distribution": "minions-cli",
       "source_file": "packages/minions-cli/src/minions/cli/task_cmd.py",
@@ -29933,7 +29944,7 @@
     },
     {
       "function_scope": true,
-      "line": 261,
+      "line": 283,
       "ownership_error": null,
       "source_distribution": "minions-cli",
       "source_file": "packages/minions-cli/src/minions/cli/task_cmd.py",

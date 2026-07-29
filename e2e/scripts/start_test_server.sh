@@ -95,7 +95,7 @@ fi
 if [ -z "$LAUNCH_CMD" ]; then
   echo "✗ Cannot find minions."
   echo "  Set MINIONS_PYTHON=/path/to/python-with-minions, or"
-  echo "  install with: pip install -e '.[dev]'"
+  echo "  install with: pip install -r requirements-workspace-install.txt"
   exit 1
 fi
 
